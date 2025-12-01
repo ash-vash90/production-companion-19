@@ -39,7 +39,10 @@ const Auth = () => {
     setLoading(false);
 
     if (error) {
-      toast.error(t('error'), { description: error.message });
+      const errorMessage = error.message === 'Invalid login credentials' 
+        ? 'Invalid email or password. Please try again.'
+        : error.message;
+      toast.error(t('error'), { description: errorMessage });
     } else {
       toast.success(t('success'), { description: 'Successfully logged in' });
       navigate('/');
@@ -58,7 +61,10 @@ const Auth = () => {
     setLoading(false);
 
     if (error) {
-      toast.error(t('error'), { description: error.message });
+      const errorMessage = error.message.includes('already registered')
+        ? 'This email is already registered. Please log in instead.'
+        : error.message;
+      toast.error(t('error'), { description: errorMessage });
     } else {
       toast.success(t('success'), { description: 'Account created successfully! You can now log in.' });
       setLanguage(selectedLanguage);
