@@ -57,43 +57,87 @@ const Production = () => {
     }
   };
 
-  const handlePrintLabel = (serialNumber: string) => {
-    // Create a simple label for printing
+  const handlePrintLabel = (serialNumber: string, operatorInitials?: string) => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.toLocaleString('en', { month: 'short' }).toUpperCase();
+    const day = String(now.getDate()).padStart(2, '0');
+    const dateStr = `${year} / ${month} / ${day}`;
+    
     const printWindow = window.open('', '_blank');
     if (printWindow) {
       printWindow.document.write(`
         <html>
           <head>
             <title>Label: ${serialNumber}</title>
+            <link rel="preconnect" href="https://fonts.googleapis.com">
+            <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+            <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;600;700&display=swap" rel="stylesheet">
             <style>
+              * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+              }
               body {
-                font-family: Arial, sans-serif;
+                font-family: 'Instrument Sans', sans-serif;
                 padding: 20px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
               }
               .label {
-                border: 2px solid #000;
+                border: 3px solid #000;
                 padding: 20px;
-                width: 300px;
+                width: 350px;
                 text-align: center;
               }
+              .date {
+                font-size: 14px;
+                font-weight: 600;
+                margin-bottom: 15px;
+                letter-spacing: 0.5px;
+              }
+              .product {
+                font-size: 18px;
+                font-weight: 700;
+                margin-bottom: 20px;
+                text-transform: uppercase;
+              }
               .serial {
-                font-size: 24px;
-                font-weight: bold;
-                margin: 20px 0;
+                font-size: 28px;
+                font-weight: 700;
+                margin: 25px 0;
+                letter-spacing: 1px;
               }
               .barcode {
                 font-family: 'Libre Barcode 128', cursive;
                 font-size: 48px;
                 margin: 20px 0;
+                letter-spacing: 0;
+              }
+              .wo {
+                font-size: 14px;
+                font-weight: 600;
+                margin-top: 15px;
+              }
+              .operator {
+                font-size: 16px;
+                font-weight: 700;
+                margin-top: 20px;
+                padding-top: 15px;
+                border-top: 2px solid #000;
               }
             </style>
           </head>
           <body>
             <div class="label">
-              <h2>${workOrder?.product_type}</h2>
+              <div class="date">${dateStr}</div>
+              <div class="product">${workOrder?.product_type}</div>
               <div class="serial">${serialNumber}</div>
               <div class="barcode">${serialNumber}</div>
-              <p>WO: ${workOrder?.wo_number}</p>
+              <div class="wo">WO: ${workOrder?.wo_number}</div>
+              ${operatorInitials ? `<div class="operator">OP: ${operatorInitials}</div>` : ''}
             </div>
             <script>
               window.onload = function() {
@@ -106,12 +150,11 @@ const Production = () => {
       `);
       printWindow.document.close();
 
-      // Log activity
       supabase.from('activity_logs').insert({
         user_id: user?.id,
         action: 'print_label',
         entity_type: 'work_order_item',
-        details: { serial_number: serialNumber, wo_number: workOrder?.wo_number },
+        details: { serial_number: serialNumber, wo_number: workOrder?.wo_number, operator: operatorInitials },
       });
     }
   };
