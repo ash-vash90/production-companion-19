@@ -43,6 +43,7 @@ const WorkOrders = () => {
       const { data, error } = await supabase
         .from('work_orders')
         .select('*')
+        .neq('status', 'cancelled')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -93,6 +94,7 @@ const WorkOrders = () => {
           serial_number: serialNumber,
           position_in_batch: i,
           status: 'planned',
+          assigned_to: user.id,
         });
       }
 
@@ -268,16 +270,16 @@ const WorkOrders = () => {
                       className="w-full mt-4"
                       onClick={async (e) => {
                         e.stopPropagation();
-                        if (!confirm(`Delete work order ${wo.wo_number}? This will also delete all associated items and cannot be undone.`)) return;
+                        if (!confirm(`Cancel work order ${wo.wo_number}? This will hide it from the list but keep the history for traceability.`)) return;
                         
                         try {
                           const { error } = await supabase
                             .from('work_orders')
-                            .delete()
+                            .update({ status: 'cancelled' })
                             .eq('id', wo.id);
                           
                           if (error) throw error;
-                          toast.success('Success', { description: 'Work order deleted' });
+                          toast.success('Success', { description: 'Work order cancelled' });
                           fetchWorkOrders();
                         } catch (error: any) {
                           toast.error('Error', { description: error.message });
