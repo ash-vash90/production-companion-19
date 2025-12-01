@@ -37,6 +37,19 @@ export function AppSidebar() {
       url: '/work-orders', 
       icon: Package 
     },
+  ];
+
+  const adminItems = [
+    { 
+      title: t('analytics'), 
+      url: '/analytics', 
+      icon: Settings 
+    },
+    { 
+      title: t('roleManagement'), 
+      url: '/role-management', 
+      icon: Settings 
+    },
     { 
       title: t('settingsPage'), 
       url: '/settings', 
@@ -66,10 +79,30 @@ export function AppSidebar() {
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>{t('navigation')}</SidebarGroupLabel>
+          <SidebarGroupLabel>{t('mainMenu')}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {menuItems.map((item) => (
+                <SidebarMenuItem key={item.url}>
+                  <SidebarMenuButton
+                    isActive={isActive(item.url)}
+                    onClick={() => navigate(item.url)}
+                    tooltip={isCollapsed ? item.title : undefined}
+                  >
+                    <item.icon className="h-4 w-4" />
+                    <span>{item.title}</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+        
+        <SidebarGroup>
+          <SidebarGroupLabel>{t('administration')}</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {adminItems.map((item) => (
                 <SidebarMenuItem key={item.url}>
                   <SidebarMenuButton
                     isActive={isActive(item.url)}
