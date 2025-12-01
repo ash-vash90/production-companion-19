@@ -108,7 +108,13 @@ const WorkOrders = () => {
       fetchWorkOrders();
     } catch (error: any) {
       console.error('Error creating work order:', error);
-      toast.error(t('error'), { description: error.message });
+      
+      let errorMessage = error.message;
+      if (error.code === '23505') {
+        errorMessage = `Work order number ${formData.woNumber} already exists. Please use a different number.`;
+      }
+      
+      toast.error(t('error'), { description: errorMessage });
     } finally {
       setCreating(false);
     }
