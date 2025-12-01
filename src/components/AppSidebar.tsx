@@ -1,4 +1,4 @@
-import { LayoutDashboard, Package, Settings, LogOut, Factory } from 'lucide-react';
+import { LayoutDashboard, Package, Settings, LogOut, Factory, CalendarDays, BarChart3, Users } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -43,12 +43,17 @@ export function AppSidebar() {
     { 
       title: t('analytics'), 
       url: '/analytics', 
-      icon: Settings 
+      icon: BarChart3 
     },
     { 
       title: t('roleManagement'), 
       url: '/role-management', 
-      icon: Settings 
+      icon: Users 
+    },
+    { 
+      title: t('productionCalendar'), 
+      url: '/calendar', 
+      icon: CalendarDays 
     },
     { 
       title: t('settingsPage'), 

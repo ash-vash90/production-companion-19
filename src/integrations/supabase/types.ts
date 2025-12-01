@@ -556,6 +556,7 @@ export type Database = {
           notes: string | null
           parent_wo_id: string | null
           product_type: Database["public"]["Enums"]["product_type"]
+          scheduled_date: string | null
           started_at: string | null
           status: Database["public"]["Enums"]["work_order_status"]
           updated_at: string
@@ -571,6 +572,7 @@ export type Database = {
           notes?: string | null
           parent_wo_id?: string | null
           product_type: Database["public"]["Enums"]["product_type"]
+          scheduled_date?: string | null
           started_at?: string | null
           status?: Database["public"]["Enums"]["work_order_status"]
           updated_at?: string
@@ -586,6 +588,7 @@ export type Database = {
           notes?: string | null
           parent_wo_id?: string | null
           product_type?: Database["public"]["Enums"]["product_type"]
+          scheduled_date?: string | null
           started_at?: string | null
           status?: Database["public"]["Enums"]["work_order_status"]
           updated_at?: string
