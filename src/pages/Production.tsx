@@ -271,37 +271,49 @@ const Production = () => {
                   <div
                     key={item.id}
                     className="flex items-center justify-between p-5 md:p-4 border-2 rounded-lg hover:bg-accent/50 transition-all cursor-pointer active:scale-98"
-                    onClick={() => navigate(`/production/step/${item.id}`)}
-                  >
-                    <div className="flex items-center gap-4 md:gap-3">
-                      <div className="flex flex-col items-center justify-center h-14 w-14 md:h-12 md:w-12 rounded-lg bg-primary text-white font-bold text-xl md:text-base shadow-sm">
-                        {item.position_in_batch}
-                      </div>
-                      <div>
-                        <p className="font-data text-base md:text-sm font-medium">{item.serial_number}</p>
-                        <p className="text-sm md:text-xs text-muted-foreground font-data">
-                          {t('step')} {item.current_step} 
-                        </p>
-                      </div>
+                  onClick={() => navigate(`/production/step/${item.id}`)}
+                >
+                  <div className="flex items-center gap-4 md:gap-3">
+                    <div className="flex flex-col items-center justify-center h-14 w-14 md:h-12 md:w-12 rounded-lg bg-primary text-white font-bold text-xl md:text-base shadow-sm">
+                      {item.position_in_batch}
                     </div>
-                    <div className="flex items-center gap-3 md:gap-2">
-                      <Badge className={`${getStatusColor(item.status)} text-white h-9 px-4 text-sm md:h-auto md:px-3 md:text-xs`}>
-                        {t(item.status as any)}
-                      </Badge>
-                       {item.status === 'completed' && (
-                        <Button
-                          size="icon"
-                          variant="outline"
-                          className="h-12 w-12 md:h-9 md:w-9"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handlePrintLabel(item.serial_number, item.operator_initials);
-                          }}
-                        >
-                          <Printer className="h-6 w-6 md:h-4 md:w-4" />
-                        </Button>
-                       )}
+                    <div>
+                      <p className="font-data text-base md:text-sm font-medium">{item.serial_number}</p>
+                      <p className="text-sm md:text-xs text-muted-foreground font-data">
+                        {t('step')} {item.current_step} 
+                      </p>
                     </div>
+                  </div>
+                  <div className="flex items-center gap-3 md:gap-2">
+                    <Badge className={`${getStatusColor(item.status)} text-white h-9 px-4 text-sm md:h-auto md:px-3 md:text-xs`}>
+                      {t(item.status as any)}
+                    </Badge>
+                     {item.status === 'completed' && (
+                      <Button
+                        size="icon"
+                        variant="outline"
+                        className="h-12 w-12 md:h-9 md:w-9"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handlePrintLabel(item.serial_number, item.operator_initials);
+                        }}
+                      >
+                        <Printer className="h-6 w-6 md:h-4 md:w-4" />
+                      </Button>
+                     )}
+                     {workOrder.product_type === 'SENSOR' && item.status === 'in_progress' && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/production/sensor/${item.id}`);
+                        }}
+                      >
+                        Sensor Workflow
+                      </Button>
+                     )}
+                  </div>
                   </div>
                 ))}
               </div>

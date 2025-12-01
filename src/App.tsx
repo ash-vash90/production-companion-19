@@ -10,6 +10,9 @@ import Auth from "./pages/Auth";
 import WorkOrders from "./pages/WorkOrders";
 import Production from "./pages/Production";
 import ProductionStep from "./pages/ProductionStep";
+import ProductionSensor from "./pages/ProductionSensor";
+import QualityCertificates from "./pages/QualityCertificates";
+import ProductionReports from "./pages/ProductionReports";
 import Settings from "./pages/Settings";
 import Analytics from "./pages/Analytics";
 import RoleManagement from "./pages/RoleManagement";
@@ -32,6 +35,9 @@ const App = () => (
               <Route path="/work-orders" element={<WorkOrders />} />
               <Route path="/production/:itemId" element={<Production />} />
               <Route path="/production/step/:itemId" element={<ProductionStep />} />
+              <Route path="/production/sensor/:itemId" element={<ProductionSensor />} />
+              <Route path="/quality-certificates" element={<QualityCertificates />} />
+              <Route path="/production-reports" element={<ProductionReports />} />
               <Route path="/analytics" element={<Analytics />} />
               <Route path="/role-management" element={<RoleManagement />} />
               <Route path="/calendar" element={<ProductionCalendar />} />

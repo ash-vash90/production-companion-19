@@ -1,0 +1,94 @@
+import React, { useEffect, useState } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { supabase } from '@/integrations/supabase/client';
+import { useNavigate } from 'react-router-dom';
+import { ExternalLink, Loader2 } from 'lucide-react';
+
+export function ProductionOverview() {
+  const navigate = useNavigate();
+  const [workOrders, setWorkOrders] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchWorkOrders();
+  }, []);
+
+  const fetchWorkOrders = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('work_orders')
+        .select('*')
+        .in('status', ['planned', 'in_progress'])
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      if (error) throw error;
+      setWorkOrders(data || []);
+    } catch (error) {
+      console.error('Error fetching work orders:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getStatusBadgeClass = (status: string) => {
+    if (status === 'in_progress') return 'bg-primary text-primary-foreground';
+    return 'bg-secondary text-secondary-foreground';
+  };
+
+  if (loading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Active Work Orders</CardTitle>
+          <CardDescription>Current production queue</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex justify-center py-8">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Active Work Orders</CardTitle>
+        <CardDescription>Current production queue</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {workOrders.length > 0 ? (
+          <div className="space-y-3">
+            {workOrders.map((wo) => (
+              <div
+                key={wo.id}
+                onClick={() => navigate(`/production/${wo.id}`)}
+                className="flex items-center justify-between rounded-lg border-2 bg-card p-3 transition-all cursor-pointer hover:bg-accent/50 hover:border-primary"
+              >
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-sm font-semibold">{wo.wo_number}</span>
+                    <Badge className={getStatusBadgeClass(wo.status)}>
+                      {wo.status}
+                    </Badge>
+                  </div>
+                  <div className="mt-1 text-xs text-muted-foreground">
+                    {wo.product_type} • Batch: {wo.batch_size}
+                  </div>
+                </div>
+                <ExternalLink className="h-4 w-4 text-muted-foreground" />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="py-8 text-center text-sm text-muted-foreground">
+            No active work orders
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
