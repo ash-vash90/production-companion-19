@@ -183,18 +183,18 @@ const Production = () => {
               <ArrowLeft className="h-6 w-6 md:h-5 md:w-5" />
             </Button>
             <div className="space-y-1">
-              <h1 className="text-3xl md:text-4xl font-bold tracking-tight font-logo">{workOrder.wo_number}</h1>
+              <h1 className="text-3xl md:text-4xl font-bold tracking-tight">{workOrder.wo_number}</h1>
               <p className="text-base md:text-lg text-muted-foreground font-data">
                 {workOrder.product_type} • Batch: {workOrder.batch_size}
               </p>
             </div>
           </div>
 
-          <Card className="card-eco">
+          <Card>
             <CardHeader>
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                  <CardTitle className="font-logo text-2xl md:text-xl">{t('production')} Items</CardTitle>
+                  <CardTitle className="text-2xl md:text-xl">{t('production')} Items</CardTitle>
                   <CardDescription className="text-base md:text-sm">Track individual items through production</CardDescription>
                 </div>
                 <Badge className={`${getStatusColor(workOrder.status)} text-white h-10 px-5 text-base md:h-auto md:px-3 md:text-sm self-start`}>
@@ -207,11 +207,11 @@ const Production = () => {
                 {items.map((item) => (
                   <div
                     key={item.id}
-                    className="flex items-center justify-between p-5 md:p-4 border-2 rounded-lg hover:bg-accent/50 hover:border-primary transition-all cursor-pointer active:scale-98"
+                    className="flex items-center justify-between p-5 md:p-4 border-2 rounded-lg hover:bg-accent/50 transition-all cursor-pointer active:scale-98"
                     onClick={() => navigate(`/production/step/${item.id}`)}
                   >
                     <div className="flex items-center gap-4 md:gap-3">
-                      <div className="flex flex-col items-center justify-center h-14 w-14 md:h-12 md:w-12 rounded-lg bg-brand-gradient text-white font-bold text-xl md:text-base shadow-lg">
+                      <div className="flex flex-col items-center justify-center h-14 w-14 md:h-12 md:w-12 rounded-lg bg-primary text-white font-bold text-xl md:text-base shadow-sm">
                         {item.position_in_batch}
                       </div>
                       <div>

@@ -9,14 +9,13 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary/90 shadow-md hover:shadow-lg",
-        destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-md",
-        outline: "border-2 border-input bg-background hover:bg-accent hover:text-accent-foreground hover:border-primary",
+        default: "bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm",
+        destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-sm",
+        outline: "border-2 border-input bg-background hover:bg-accent hover:text-accent-foreground",
         secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
-        rhosonics: "bg-brand-gradient text-white hover:brightness-110 hover:-translate-y-0.5 font-data text-xs uppercase tracking-wider btn-chamfer shadow-lg [&_svg]:size-5",
-        eco: "bg-[hsl(var(--c-eco-surface))] text-primary border-2 border-[hsl(var(--c-eco-border))] hover:bg-primary hover:text-white font-data text-xs uppercase tracking-wider btn-chamfer transition-all duration-200 [&_svg]:size-5",
+        rhosonics: "bg-primary text-white hover:bg-primary/90 hover:-translate-y-0.5 font-data text-xs uppercase tracking-wider btn-chamfer shadow-md [&_svg]:size-5",
       },
       size: {
         default: "h-12 px-6 py-3 text-base [&_svg]:size-5",

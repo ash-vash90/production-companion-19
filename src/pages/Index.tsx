@@ -57,11 +57,11 @@ const Index = () => {
 
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
-      planned: 'bg-slate-400 text-white',
-      in_progress: 'bg-[hsl(var(--c-green-accent))] text-white',
-      completed: 'bg-[hsl(var(--c-green-main))] text-white',
-      on_hold: 'bg-warning text-white',
-      cancelled: 'bg-destructive text-white',
+      planned: 'bg-status-planned text-white',
+      in_progress: 'bg-status-in-progress text-white',
+      completed: 'bg-status-completed text-white',
+      on_hold: 'bg-status-on-hold text-white',
+      cancelled: 'bg-status-cancelled text-white',
     };
     return colors[status] || 'bg-muted';
   };
@@ -75,7 +75,7 @@ const Index = () => {
       <Layout>
         <div className="space-y-6 md:space-y-8">
           <div className="space-y-2">
-            <h1 className="text-3xl md:text-4xl font-bold tracking-tight font-logo">
+            <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
               {t('dashboard')}
             </h1>
             <p className="text-base md:text-lg text-muted-foreground">
@@ -84,11 +84,11 @@ const Index = () => {
           </div>
 
           <div className="grid gap-4 md:gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            <Card className="card-eco">
+            <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-                <CardTitle className="text-base md:text-sm font-medium font-data uppercase tracking-wider">Total Orders</CardTitle>
-                <div className="h-12 w-12 md:h-10 md:w-10 rounded-lg bg-primary/20 flex items-center justify-center">
-                  <Package className="h-6 w-6 md:h-5 md:w-5 text-primary" />
+                <CardTitle className="text-base md:text-sm font-medium">Total Orders</CardTitle>
+                <div className="h-12 w-12 md:h-10 md:w-10 rounded-lg bg-muted flex items-center justify-center">
+                  <Package className="h-6 w-6 md:h-5 md:w-5 text-foreground" />
                 </div>
               </CardHeader>
               <CardContent>
@@ -97,11 +97,11 @@ const Index = () => {
               </CardContent>
             </Card>
 
-            <Card className="card-eco">
+            <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-                <CardTitle className="text-base md:text-sm font-medium font-data uppercase tracking-wider">{t('inProgress')}</CardTitle>
-                <div className="h-12 w-12 md:h-10 md:w-10 rounded-lg bg-warning/20 flex items-center justify-center">
-                  <Clock className="h-6 w-6 md:h-5 md:w-5 text-warning" />
+                <CardTitle className="text-base md:text-sm font-medium">{t('inProgress')}</CardTitle>
+                <div className="h-12 w-12 md:h-10 md:w-10 rounded-lg bg-muted flex items-center justify-center">
+                  <Clock className="h-6 w-6 md:h-5 md:w-5 text-foreground" />
                 </div>
               </CardHeader>
               <CardContent>
@@ -110,11 +110,11 @@ const Index = () => {
               </CardContent>
             </Card>
 
-            <Card className="card-eco">
+            <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-                <CardTitle className="text-base md:text-sm font-medium font-data uppercase tracking-wider">{t('completed')}</CardTitle>
-                <div className="h-12 w-12 md:h-10 md:w-10 rounded-lg bg-success/20 flex items-center justify-center">
-                  <CheckCircle className="h-6 w-6 md:h-5 md:w-5 text-success" />
+                <CardTitle className="text-base md:text-sm font-medium">{t('completed')}</CardTitle>
+                <div className="h-12 w-12 md:h-10 md:w-10 rounded-lg bg-muted flex items-center justify-center">
+                  <CheckCircle className="h-6 w-6 md:h-5 md:w-5 text-foreground" />
                 </div>
               </CardHeader>
               <CardContent>
@@ -123,11 +123,11 @@ const Index = () => {
               </CardContent>
             </Card>
 
-            <Card className="card-eco">
+            <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-                <CardTitle className="text-base md:text-sm font-medium font-data uppercase tracking-wider">{t('onHold')}</CardTitle>
-                <div className="h-12 w-12 md:h-10 md:w-10 rounded-lg bg-destructive/20 flex items-center justify-center">
-                  <AlertCircle className="h-6 w-6 md:h-5 md:w-5 text-destructive" />
+                <CardTitle className="text-base md:text-sm font-medium">{t('onHold')}</CardTitle>
+                <div className="h-12 w-12 md:h-10 md:w-10 rounded-lg bg-muted flex items-center justify-center">
+                  <AlertCircle className="h-6 w-6 md:h-5 md:w-5 text-foreground" />
                 </div>
               </CardHeader>
               <CardContent>
@@ -139,7 +139,7 @@ const Index = () => {
 
           <Card>
             <CardHeader>
-              <CardTitle className="font-logo">Recent Work Orders</CardTitle>
+              <CardTitle>Recent Work Orders</CardTitle>
               <CardDescription>Latest production orders in the system</CardDescription>
             </CardHeader>
             <CardContent>
