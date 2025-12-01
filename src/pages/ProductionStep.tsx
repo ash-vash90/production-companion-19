@@ -311,6 +311,7 @@ const ProductionStep = () => {
             onOpenChange={setShowMeasurementDialog}
             stepExecution={stepExecution}
             productionStep={currentStep}
+            workOrderItem={item}
             onComplete={fetchData}
           />
 
