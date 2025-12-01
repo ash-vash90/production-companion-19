@@ -72,15 +72,15 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[hsl(var(--c-slate-50))] p-4">
-      <Card className="w-full max-w-md shadow-2xl">
+    <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4">
+      <Card className="w-full max-w-md shadow-2xl border-2">
         <CardHeader className="space-y-3 text-center">
           <div className="flex justify-center mb-4">
             <div className="h-16 w-16 md:h-14 md:w-14 rounded-lg bg-primary flex items-center justify-center shadow-sm">
-              <Factory className="h-9 w-9 md:h-7 md:w-7 text-white" />
+              <Factory className="h-9 w-9 md:h-7 md:w-7 text-primary-foreground" />
             </div>
           </div>
-          <CardTitle className="text-3xl md:text-2xl font-logo text-[hsl(var(--c-obsidian))] lowercase">rhosonics</CardTitle>
+          <CardTitle className="text-3xl md:text-2xl font-logo text-foreground lowercase">rhosonics</CardTitle>
           <CardDescription className="text-sm md:text-xs uppercase tracking-wider text-muted-foreground">
             MES Production System
           </CardDescription>
