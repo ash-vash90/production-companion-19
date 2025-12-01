@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { useNavigate } from 'react-router-dom';
 import Layout from '@/components/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
@@ -17,6 +18,7 @@ import { Switch } from '@/components/ui/switch';
 
 const Settings = () => {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [webhooks, setWebhooks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -28,15 +30,15 @@ const Settings = () => {
     eventType: 'work_order_created' as const,
     enabled: true,
   });
-
+  
   const eventTypes = [
-    { value: 'work_order_created', label: 'Work Order Created' },
-    { value: 'production_step_completed', label: 'Production Step Completed' },
-    { value: 'quality_check_passed', label: 'Quality Check Passed' },
-    { value: 'item_completed', label: 'Item Completed' },
-    { value: 'batch_completed', label: 'Batch Completed' },
-    { value: 'material_scanned', label: 'Material Scanned' },
-    { value: 'subassembly_linked', label: 'Sub-Assembly Linked' },
+    { value: 'work_order_created', label: t('workOrderCreatedEvent') },
+    { value: 'production_step_completed', label: t('productionStepCompletedEvent') },
+    { value: 'quality_check_passed', label: t('qualityCheckPassedEvent') },
+    { value: 'item_completed', label: t('itemCompletedEvent') },
+    { value: 'batch_completed', label: t('batchCompletedEvent') },
+    { value: 'material_scanned', label: t('materialScannedEvent') },
+    { value: 'subassembly_linked', label: t('subAssemblyLinkedEvent') },
   ];
 
   useEffect(() => {
@@ -58,7 +60,7 @@ const Settings = () => {
       setWebhooks(data || []);
     } catch (error) {
       console.error('Error fetching webhooks:', error);
-      toast.error('Error', { description: 'Failed to load webhooks' });
+      toast.error(t('error'), { description: t('failedLoadWebhooks') });
     } finally {
       setLoading(false);
     }
@@ -81,13 +83,13 @@ const Settings = () => {
 
       if (error) throw error;
 
-      toast.success('Success', { description: 'Webhook created successfully' });
+      toast.success(t('success'), { description: t('webhookCreatedSuccess') });
       setDialogOpen(false);
       setFormData({ name: '', webhookUrl: '', eventType: 'work_order_created', enabled: true });
       fetchWebhooks();
     } catch (error: any) {
       console.error('Error creating webhook:', error);
-      toast.error('Error', { description: error.message });
+      toast.error(t('error'), { description: error.message });
     }
   };
 
@@ -101,10 +103,10 @@ const Settings = () => {
       if (error) throw error;
 
       setWebhooks(prev => prev.map(w => w.id === id ? { ...w, enabled } : w));
-      toast.success('Success', { description: `Webhook ${enabled ? 'enabled' : 'disabled'}` });
+      toast.success(t('success'), { description: `${t('webhookEnabled')} ${enabled ? t('enabled') : t('disabled')}` });
     } catch (error: any) {
       console.error('Error toggling webhook:', error);
-      toast.error('Error', { description: error.message });
+      toast.error(t('error'), { description: error.message });
     }
   };
 
@@ -118,10 +120,10 @@ const Settings = () => {
       if (error) throw error;
 
       setWebhooks(prev => prev.filter(w => w.id !== id));
-      toast.success('Success', { description: 'Webhook deleted' });
+      toast.success(t('success'), { description: t('webhookDeleted') });
     } catch (error: any) {
       console.error('Error deleting webhook:', error);
-      toast.error('Error', { description: error.message });
+      toast.error(t('error'), { description: error.message });
     }
   };
 
@@ -132,34 +134,34 @@ const Settings = () => {
       <Layout>
         <div className="space-y-6">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
-            <p className="text-muted-foreground">Configure Zapier webhooks and integrations</p>
+            <h1 className="text-3xl font-bold tracking-tight">{t('settingsPage')}</h1>
+            <p className="text-muted-foreground">{t('configureWebhooks')}</p>
           </div>
 
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle>Zapier Webhooks</CardTitle>
+                  <CardTitle>{t('zapierWebhooks')}</CardTitle>
                   <CardDescription>
-                    Configure webhooks to trigger Zapier automations on production events
+                    {t('webhooksDescription')}
                   </CardDescription>
                 </div>
                 <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
                   <DialogTrigger asChild>
                     <Button>
                       <Plus className="mr-2 h-4 w-4" />
-                      Add Webhook
+                      {t('addWebhook')}
                     </Button>
                   </DialogTrigger>
                   <DialogContent>
                     <DialogHeader>
-                      <DialogTitle>Add Zapier Webhook</DialogTitle>
-                      <DialogDescription>Create a new webhook integration</DialogDescription>
+                      <DialogTitle>{t('addZapierWebhook')}</DialogTitle>
+                      <DialogDescription>{t('createWebhookIntegration')}</DialogDescription>
                     </DialogHeader>
                     <form onSubmit={handleCreate} className="space-y-4">
                       <div className="space-y-2">
-                        <Label htmlFor="name">Webhook Name *</Label>
+                        <Label htmlFor="name">{t('webhookName')} *</Label>
                         <Input
                           id="name"
                           value={formData.name}
@@ -169,7 +171,7 @@ const Settings = () => {
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="webhookUrl">Webhook URL *</Label>
+                        <Label htmlFor="webhookUrl">{t('webhookUrl')} *</Label>
                         <Input
                           id="webhookUrl"
                           value={formData.webhookUrl}
@@ -179,7 +181,7 @@ const Settings = () => {
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="eventType">Trigger Event *</Label>
+                        <Label htmlFor="eventType">{t('triggerEvent')} *</Label>
                         <Select
                           value={formData.eventType}
                           onValueChange={(value: any) => setFormData({ ...formData, eventType: value })}
@@ -198,10 +200,10 @@ const Settings = () => {
                       </div>
                       <DialogFooter>
                         <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
-                          Cancel
+                          {t('cancel')}
                         </Button>
                         <Button type="submit">
-                          Create Webhook
+                          {t('createWebhook')}
                         </Button>
                       </DialogFooter>
                     </form>
@@ -217,11 +219,11 @@ const Settings = () => {
               ) : webhooks.length === 0 ? (
                 <div className="text-center py-12">
                   <Webhook className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                  <h3 className="text-lg font-semibold mb-2">No webhooks configured</h3>
-                  <p className="text-muted-foreground mb-4">Create your first webhook to integrate with Zapier</p>
+                  <h3 className="text-lg font-semibold mb-2">{t('noWebhooksConfigured')}</h3>
+                  <p className="text-muted-foreground mb-4">{t('createFirstWebhook')}</p>
                   <Button onClick={() => setDialogOpen(true)}>
                     <Plus className="mr-2 h-4 w-4" />
-                    Add Webhook
+                    {t('addWebhook')}
                   </Button>
                 </div>
               ) : (
@@ -235,11 +237,11 @@ const Settings = () => {
                         <div className="flex items-center gap-2 mb-2">
                           <h4 className="font-medium">{webhook.name}</h4>
                           <Badge variant={webhook.enabled ? 'default' : 'secondary'}>
-                            {webhook.enabled ? 'Enabled' : 'Disabled'}
+                            {webhook.enabled ? t('enabled') : t('disabled')}
                           </Badge>
                         </div>
                         <p className="text-sm text-muted-foreground mb-1">
-                          Event: {eventTypes.find(t => t.value === webhook.event_type)?.label}
+                          {t('event')}: {eventTypes.find(type => type.value === webhook.event_type)?.label}
                         </p>
                         <p className="text-xs text-muted-foreground font-mono truncate max-w-md">
                           {webhook.webhook_url}

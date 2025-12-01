@@ -50,7 +50,7 @@ const WorkOrders = () => {
       setWorkOrders(data || []);
     } catch (error) {
       console.error('Error fetching work orders:', error);
-      toast.error(t('error'), { description: 'Failed to load work orders' });
+      toast.error(t('error'), { description: t('failedLoadWorkOrders') });
     } finally {
       setLoading(false);
     }
@@ -112,7 +112,7 @@ const WorkOrders = () => {
         details: { wo_number: formData.woNumber, product_type: formData.productType, batch_size: formData.batchSize },
       });
 
-      toast.success(t('success'), { description: `Work order ${formData.woNumber} created successfully` });
+      toast.success(t('success'), { description: `${t('workOrderNumber')} ${formData.woNumber} ${t('workOrderCreated')}` });
       setDialogOpen(false);
       setFormData({ woNumber: '', productType: 'SDM_ECO', batchSize: 1 });
       fetchWorkOrders();
@@ -121,7 +121,7 @@ const WorkOrders = () => {
       
       let errorMessage = error.message;
       if (error.code === '23505') {
-        errorMessage = `Work order number ${formData.woNumber} already exists. Please use a different number.`;
+        errorMessage = `${t('workOrderNumber')} ${formData.woNumber} ${t('workOrderExists')}`;
       }
       
       toast.error(t('error'), { description: errorMessage });
@@ -150,7 +150,7 @@ const WorkOrders = () => {
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="space-y-2">
               <h1 className="text-3xl md:text-4xl font-bold tracking-tight">{t('workOrders')}</h1>
-              <p className="text-base md:text-lg text-muted-foreground">Manage production work orders</p>
+              <p className="text-base md:text-lg text-muted-foreground">{t('manageWorkOrders')}</p>
             </div>
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
@@ -162,7 +162,7 @@ const WorkOrders = () => {
               <DialogContent className="max-w-md">
                 <DialogHeader>
                   <DialogTitle className="text-2xl">{t('createWorkOrder')}</DialogTitle>
-                  <DialogDescription className="text-base">Create a new production work order</DialogDescription>
+                  <DialogDescription className="text-base">{t('createWorkOrderDesc')}</DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleCreate} className="space-y-5">
                   <div className="space-y-3">
@@ -227,8 +227,8 @@ const WorkOrders = () => {
             <Card>
               <CardContent className="py-16 text-center">
                 <Package className="h-20 w-20 md:h-16 md:w-16 mx-auto mb-6 text-muted-foreground/50" />
-                <h3 className="text-2xl md:text-xl font-semibold mb-3">No work orders yet</h3>
-                <p className="text-base md:text-sm text-muted-foreground mb-6">Create your first work order to get started</p>
+                <h3 className="text-2xl md:text-xl font-semibold mb-3">{t('noWorkOrdersYet')}</h3>
+                <p className="text-base md:text-sm text-muted-foreground mb-6">{t('createFirstWorkOrder')}</p>
                 <Button onClick={() => setDialogOpen(true)} variant="rhosonics" size="lg">
                   <Plus className="mr-2" />
                   {t('createWorkOrder')}
@@ -258,7 +258,7 @@ const WorkOrders = () => {
                         <span className="font-bold font-data text-lg md:text-base">{wo.batch_size}</span>
                       </div>
                       <div className="flex justify-between items-center p-3 rounded-lg bg-muted/50">
-                        <span className="text-muted-foreground font-data">Created:</span>
+                        <span className="text-muted-foreground font-data">{t('created')}:</span>
                         <span className="font-medium font-data">
                           {new Date(wo.created_at).toLocaleDateString()}
                         </span>
@@ -270,7 +270,7 @@ const WorkOrders = () => {
                       className="w-full mt-4"
                       onClick={async (e) => {
                         e.stopPropagation();
-                        if (!confirm(`Cancel work order ${wo.wo_number}? This will hide it from the list but keep the history for traceability.`)) return;
+                        if (!confirm(`${t('cancel')} ${t('workOrderNumber').toLowerCase()} ${wo.wo_number}? ${t('cancelWorkOrderConfirm')}`)) return;
                         
                         try {
                           const { error } = await supabase
@@ -279,14 +279,14 @@ const WorkOrders = () => {
                             .eq('id', wo.id);
                           
                           if (error) throw error;
-                          toast.success('Success', { description: 'Work order cancelled' });
+                          toast.success(t('success'), { description: t('workOrderCancelled') });
                           fetchWorkOrders();
                         } catch (error: any) {
-                          toast.error('Error', { description: error.message });
+                          toast.error(t('error'), { description: error.message });
                         }
                       }}
                     >
-                      Delete
+                      {t('deleteButton')}
                     </Button>
                   </CardContent>
                 </Card>

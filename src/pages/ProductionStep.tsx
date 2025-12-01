@@ -105,7 +105,7 @@ const ProductionStep = () => {
       }
     } catch (error) {
       console.error('Error fetching data:', error);
-      toast.error(t('error'), { description: 'Failed to load production data' });
+      toast.error(t('error'), { description: t('failedLoadProduction') });
     } finally {
       setLoading(false);
     }
@@ -140,7 +140,7 @@ const ProductionStep = () => {
         setShowChecklistDialog(true);
       }
 
-      toast.success(t('success'), { description: 'Step started' });
+      toast.success(t('success'), { description: t('stepStarted') });
     } catch (error: any) {
       console.error('Error starting step:', error);
       toast.error(t('error'), { description: error.message });
@@ -183,7 +183,7 @@ const ProductionStep = () => {
         details: { step_number: item.current_step, serial_number: item.serial_number },
       });
 
-      toast.success(t('success'), { description: 'Step completed' });
+      toast.success(t('success'), { description: t('stepCompleted') });
       navigate(`/production/${item.work_order_id}`);
     } catch (error: any) {
       console.error('Error completing step:', error);
@@ -206,9 +206,9 @@ const ProductionStep = () => {
       <Layout>
         <div className="text-center py-12">
           <AlertCircle className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-          <h3 className="text-lg font-semibold mb-2">Production step not found</h3>
+          <h3 className="text-lg font-semibold mb-2">{t('productionStepNotFound')}</h3>
           <Button onClick={() => navigate('/work-orders')}>
-            Back to Work Orders
+            {t('backToWorkOrders')}
           </Button>
         </div>
       </Layout>
@@ -226,13 +226,13 @@ const ProductionStep = () => {
             <div className="space-y-1">
               <h1 className="text-3xl md:text-4xl font-bold tracking-tight font-data">{item.serial_number}</h1>
               <p className="text-base md:text-lg text-muted-foreground font-data">
-                {workOrder.product_type} • Step {item.current_step} of {productionSteps.length}
+                {workOrder.product_type} • {t('step')} {item.current_step} {t('of')} {productionSteps.length}
               </p>
             </div>
           </div>
           <Button variant="outline" size="lg" onClick={() => setShowValidationHistory(true)} className="gap-2">
             <History className="h-5 w-5" />
-            <span className="hidden sm:inline">History</span>
+            <span className="hidden sm:inline">{t('history')}</span>
           </Button>
         </div>
 
@@ -241,65 +241,65 @@ const ProductionStep = () => {
             <CardTitle className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <span className="text-2xl md:text-xl font-ui">{currentStep.title_en}</span>
               <Badge variant={stepExecution ? 'default' : 'outline'} className="h-10 px-5 text-base md:h-auto md:px-3 md:text-sm self-start">
-                {stepExecution ? 'In Progress' : 'Not Started'}
+                {stepExecution ? t('inProgress') : t('notStarted')}
               </Badge>
             </CardTitle>
             <CardDescription className="text-base md:text-sm">
-              {currentStep.description_en || 'Follow the instructions to complete this step'}
+              {currentStep.description_en || t('followInstructions')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="p-4 border rounded-lg bg-muted/30 space-y-2">
-              <h3 className="text-sm font-semibold uppercase tracking-wide">How to complete this step</h3>
+              <h3 className="text-sm font-semibold uppercase tracking-wide">{t('howToComplete')}</h3>
               <ol className="list-decimal list-inside space-y-1 text-sm">
                 {currentStep.requires_batch_number && (
-                  <li>Scan all required material batches using the "Scan Materials" button.</li>
+                  <li>{t('scanMaterialsInstruction')}</li>
                 )}
                 {(currentStep.requires_value_input || currentStep.measurement_fields) && (
-                  <li>Enter all required measurements using the "Enter Measurements" button and ensure they pass validation.</li>
+                  <li>{t('enterMeasurementsInstruction')}</li>
                 )}
                 {currentStep.has_checklist && (
-                  <li>Review and check all required items in the "Complete Checklist" dialog.</li>
+                  <li>{t('completeChecklistInstruction')}</li>
                 )}
-                <li>When everything above is done, press "Complete Step" to move to the next step.</li>
+                <li>{t('completeStepInstruction')}</li>
               </ol>
             </div>
 
             {currentStep.requires_barcode_scan && (
               <div className="flex items-center gap-3 p-4 bg-accent/50 rounded-lg border-2">
                 <ScanBarcode className="h-6 w-6 text-primary" />
-                <span className="text-base font-medium">This step requires barcode scanning</span>
+                <span className="text-base font-medium">{t('requiresBarcode')}</span>
               </div>
             )}
 
             {!stepExecution ? (
               <Button onClick={handleStartStep} variant="rhosonics" size="lg" className="w-full">
-                Start Step
+                {t('startStep')}
               </Button>
             ) : (
               <div className="space-y-4">
                 {currentStep.requires_batch_number && (
                   <Button onClick={() => setShowBatchScanDialog(true)} variant="outline" size="lg" className="w-full">
                     <ScanBarcode className="mr-2" />
-                    Scan Materials
+                    {t('scanMaterials')}
                   </Button>
                 )}
                 
                 {(currentStep.requires_value_input || currentStep.measurement_fields) && (
                   <Button onClick={() => setShowMeasurementDialog(true)} variant="outline" size="lg" className="w-full">
-                    Enter Measurements
+                    {t('enterMeasurements')}
                   </Button>
                 )}
 
                 {currentStep.has_checklist && (
                   <Button onClick={() => setShowChecklistDialog(true)} variant="outline" size="lg" className="w-full">
-                    Complete Checklist
+                    {t('completeChecklist')}
                   </Button>
                 )}
 
                 <Button onClick={handleCompleteStep} variant="rhosonics" size="lg" className="w-full">
                   <CheckCircle2 className="mr-2" />
-                  Complete Step
+                  {t('completeStep')}
                 </Button>
               </div>
             )}
@@ -309,7 +309,7 @@ const ProductionStep = () => {
         {/* Progress indicator */}
         <Card>
           <CardHeader>
-            <CardTitle className="font-ui">Progress</CardTitle>
+            <CardTitle className="font-ui">{t('progress')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3 md:space-y-2">
@@ -350,7 +350,7 @@ const ProductionStep = () => {
                     <div className="flex-1 flex items-center justify-between">
                       <span className="text-base md:text-sm font-medium font-data">{step.title_en}</span>
                       {hasFailed && (
-                        <Badge variant="destructive" className="ml-2">Failed</Badge>
+                        <Badge variant="destructive" className="ml-2">{t('failed')}</Badge>
                       )}
                     </div>
                   </div>

@@ -51,7 +51,7 @@ const Production = () => {
       setItems(itemsData || []);
     } catch (error) {
       console.error('Error fetching production data:', error);
-      toast.error(t('error'), { description: 'Failed to load production data' });
+      toast.error(t('error'), { description: t('failedLoadProduction') });
     } finally {
       setLoading(false);
     }
@@ -168,7 +168,7 @@ const Production = () => {
 
       if (error) throw error;
 
-      toast.success(t('success'), { description: 'Production started' });
+      toast.success(t('success'), { description: t('productionStarted') });
       fetchProductionData();
     } catch (error: any) {
       console.error('Error starting production:', error);
@@ -207,9 +207,9 @@ const Production = () => {
         <Layout>
           <div className="text-center py-12">
             <Package className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-            <h3 className="text-lg font-semibold mb-2">Work order not found</h3>
+            <h3 className="text-lg font-semibold mb-2">{t('workOrderNotFound')}</h3>
             <Button onClick={() => navigate('/work-orders')}>
-              Back to Work Orders
+              {t('backToWorkOrders')}
             </Button>
           </div>
         </Layout>
@@ -237,8 +237,8 @@ const Production = () => {
             <CardHeader>
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                  <CardTitle className="text-2xl md:text-xl">{t('production')} Items</CardTitle>
-                  <CardDescription className="text-base md:text-sm">Track individual items through production</CardDescription>
+                  <CardTitle className="text-2xl md:text-xl">{t('production')} {t('items')}</CardTitle>
+                  <CardDescription className="text-base md:text-sm">{t('trackItems')}</CardDescription>
                 </div>
                 <Badge className={`${getStatusColor(workOrder.status)} text-white h-10 px-5 text-base md:h-auto md:px-3 md:text-sm self-start`}>
                   {t(workOrder.status as any)}
@@ -260,7 +260,7 @@ const Production = () => {
                       <div>
                         <p className="font-data text-base md:text-sm font-medium">{item.serial_number}</p>
                         <p className="text-sm md:text-xs text-muted-foreground font-data">
-                          Step {item.current_step} 
+                          {t('step')} {item.current_step} 
                         </p>
                       </div>
                     </div>
