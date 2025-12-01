@@ -249,6 +249,22 @@ const ProductionStep = () => {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div className="p-4 border rounded-lg bg-muted/30 space-y-2">
+              <h3 className="text-sm font-semibold uppercase tracking-wide">How to complete this step</h3>
+              <ol className="list-decimal list-inside space-y-1 text-sm">
+                {currentStep.requires_batch_number && (
+                  <li>Scan all required material batches using the "Scan Materials" button.</li>
+                )}
+                {(currentStep.requires_value_input || currentStep.measurement_fields) && (
+                  <li>Enter all required measurements using the "Enter Measurements" button and ensure they pass validation.</li>
+                )}
+                {currentStep.has_checklist && (
+                  <li>Review and check all required items in the "Complete Checklist" dialog.</li>
+                )}
+                <li>When everything above is done, press "Complete Step" to move to the next step.</li>
+              </ol>
+            </div>
+
             {currentStep.requires_barcode_scan && (
               <div className="flex items-center gap-3 p-4 bg-accent/50 rounded-lg border-2">
                 <ScanBarcode className="h-6 w-6 text-primary" />
