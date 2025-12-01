@@ -205,7 +205,8 @@ const Production = () => {
                 {items.map((item) => (
                   <div
                     key={item.id}
-                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-colors"
+                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-colors cursor-pointer"
+                    onClick={() => navigate(`/production/step/${item.id}`)}
                   >
                     <div className="flex items-center gap-4">
                       <div className="flex flex-col items-center justify-center h-12 w-12 rounded-lg bg-primary/10 text-primary font-bold">
@@ -214,7 +215,7 @@ const Production = () => {
                       <div>
                         <p className="font-mono text-sm font-medium">{item.serial_number}</p>
                         <p className="text-xs text-muted-foreground">
-                          Step {item.current_step} of 3
+                          Step {item.current_step} 
                         </p>
                       </div>
                     </div>
@@ -225,18 +226,13 @@ const Production = () => {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => handlePrintLabel(item.serial_number)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handlePrintLabel(item.serial_number);
+                        }}
                       >
                         <Printer className="h-4 w-4" />
                       </Button>
-                      {item.status === 'planned' && (
-                        <Button
-                          size="sm"
-                          onClick={() => handleStartProduction(item.id)}
-                        >
-                          Start
-                        </Button>
-                      )}
                     </div>
                   </div>
                 ))}
