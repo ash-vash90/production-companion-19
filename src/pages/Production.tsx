@@ -39,6 +39,14 @@ const Production = () => {
         .single();
 
       if (woError) throw woError;
+      
+      // Block access to cancelled work orders
+      if (woData.status === 'cancelled') {
+        toast.error(t('error'), { description: t('workOrderCancelledAccess') });
+        navigate('/work-orders');
+        return;
+      }
+      
       setWorkOrder(woData);
 
       const { data: itemsData, error: itemsError } = await supabase
@@ -72,77 +80,89 @@ const Production = () => {
             <title>Label: ${serialNumber}</title>
             <link rel="preconnect" href="https://fonts.googleapis.com">
             <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-            <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+            <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@500;600;700&family=Libre+Barcode+128&display=swap" rel="stylesheet">
             <style>
               * {
                 margin: 0;
                 padding: 0;
                 box-sizing: border-box;
               }
+              @page {
+                size: 4in 3in;
+                margin: 0;
+              }
               body {
                 font-family: 'Instrument Sans', sans-serif;
-                padding: 20px;
+                background: white;
                 display: flex;
                 align-items: center;
                 justify-content: center;
+                height: 3in;
+                width: 4in;
               }
               .label {
-                border: 3px solid #000;
-                padding: 20px;
-                width: 350px;
+                border: 4px solid #000;
+                padding: 16px;
+                width: 100%;
+                height: 100%;
                 text-align: center;
+                display: flex;
+                flex-direction: column;
+                justify-content: space-between;
               }
               .date {
-                font-size: 14px;
+                font-size: 11px;
                 font-weight: 600;
-                margin-bottom: 15px;
-                letter-spacing: 0.5px;
-              }
-              .product {
-                font-size: 18px;
-                font-weight: 700;
-                margin-bottom: 20px;
+                letter-spacing: 0.3px;
                 text-transform: uppercase;
               }
-              .serial {
-                font-size: 28px;
+              .product {
+                font-size: 16px;
                 font-weight: 700;
-                margin: 25px 0;
+                text-transform: uppercase;
                 letter-spacing: 1px;
+              }
+              .serial {
+                font-size: 32px;
+                font-weight: 700;
+                letter-spacing: 2px;
+                margin: 8px 0;
               }
               .barcode {
                 font-family: 'Libre Barcode 128', cursive;
-                font-size: 48px;
-                margin: 20px 0;
+                font-size: 56px;
+                line-height: 1;
                 letter-spacing: 0;
+                margin: 4px 0;
               }
-              .wo {
-                font-size: 14px;
+              .info {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                font-size: 12px;
                 font-weight: 600;
-                margin-top: 15px;
-              }
-              .operator {
-                font-size: 16px;
-                font-weight: 700;
-                margin-top: 20px;
-                padding-top: 15px;
-                border-top: 2px solid #000;
+                padding-top: 8px;
+                border-top: 3px solid #000;
               }
             </style>
           </head>
           <body>
             <div class="label">
               <div class="date">${dateStr}</div>
-              <div class="product">${workOrder?.product_type}</div>
+              <div class="product">${workOrder?.product_type || ''}</div>
               <div class="serial">${serialNumber}</div>
               <div class="barcode">${serialNumber}</div>
-              <div class="wo">WO: ${workOrder?.wo_number}</div>
-              ${operatorInitials ? `<div class="operator">OP: ${operatorInitials}</div>` : ''}
+              <div class="info">
+                <span>WO: ${workOrder?.wo_number || ''}</span>
+                ${operatorInitials ? `<span>OP: ${operatorInitials}</span>` : '<span></span>'}
+              </div>
             </div>
             <script>
               window.onload = function() {
-                window.print();
-                window.close();
+                setTimeout(() => {
+                  window.print();
+                  setTimeout(() => window.close(), 500);
+                }, 100);
               }
             </script>
           </body>
@@ -268,17 +288,19 @@ const Production = () => {
                       <Badge className={`${getStatusColor(item.status)} text-white h-9 px-4 text-sm md:h-auto md:px-3 md:text-xs`}>
                         {t(item.status as any)}
                       </Badge>
-                      <Button
-                        size="icon"
-                        variant="outline"
-                        className="h-12 w-12 md:h-9 md:w-9"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handlePrintLabel(item.serial_number);
-                        }}
-                      >
-                        <Printer className="h-6 w-6 md:h-4 md:w-4" />
-                      </Button>
+                       {item.status === 'completed' && (
+                        <Button
+                          size="icon"
+                          variant="outline"
+                          className="h-12 w-12 md:h-9 md:w-9"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handlePrintLabel(item.serial_number, item.operator_initials);
+                          }}
+                        >
+                          <Printer className="h-6 w-6 md:h-4 md:w-4" />
+                        </Button>
+                       )}
                     </div>
                   </div>
                 ))}

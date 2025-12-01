@@ -10,6 +10,7 @@ export const translations = {
     reports: 'Reports',
     settings: 'Settings',
     logout: 'Logout',
+    navigation: 'Navigation',
     
     // Auth
     login: 'Login',
@@ -95,6 +96,8 @@ export const translations = {
     items: 'Items',
     step: 'Step',
     of: 'of',
+    workOrderCancelledAccess: 'This work order has been cancelled',
+    adminOnlyAccess: 'Access to webhook settings is restricted to administrators only.',
     
     // Production Step Page
     stepStarted: 'Step started',
@@ -156,6 +159,7 @@ export const translations = {
     reports: 'Rapporten',
     settings: 'Instellingen',
     logout: 'Uitloggen',
+    navigation: 'Navigatie',
     
     // Auth
     login: 'Inloggen',
@@ -241,6 +245,8 @@ export const translations = {
     items: 'Items',
     step: 'Stap',
     of: 'van',
+    workOrderCancelledAccess: 'Deze werkorder is geannuleerd',
+    adminOnlyAccess: 'Toegang tot webhook-instellingen is alleen voor beheerders.',
     
     // Production Step Page
     stepStarted: 'Stap gestart',
