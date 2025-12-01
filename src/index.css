@@ -8,128 +8,134 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Base colors - Lab clean white */
-    --background: 0 0% 100%;
-    --foreground: 222 47% 11%;
+    /* Rhosonics Brand Colors */
+    --c-green-main: 125 50% 40%;      /* #33993c - Primary Solid */
+    --c-green-accent: 81 60% 45%;     /* #73B82E - Gradient Highlight */
     
-    /* Rhosonics Green - Primary brand color */
-    --primary: 125 50% 40%;
+    /* Neutrals - Exact from design system */
+    --c-obsidian: 226 33% 10%;        /* #111522 */
+    --c-slate-50: 210 40% 98%;        /* #F8FAFC */
+    --c-slate-100: 214 32% 97%;       /* #F1F5F9 */
+    --c-slate-200: 214 32% 91%;       /* #E2E8F0 */
+    --c-slate-400: 215 16% 65%;       /* #94A3B8 */
+    --c-slate-500: 215 16% 47%;       /* #64748B */
+    --c-slate-800: 217 33% 17%;       /* #1E293B */
+    --c-slate-900: 222 47% 11%;       /* #0F172A */
+    
+    /* Eco Tints (Sustainability) */
+    --c-eco-surface: 125 39% 94%;     /* #ecf8ed - Card Backgrounds */
+    --c-eco-border: 125 48% 90%;      /* #d9f2db - Borders */
+    
+    /* Design System Mappings */
+    --background: var(--c-slate-50);
+    --foreground: var(--c-obsidian);
+    
+    --primary: var(--c-green-main);
     --primary-foreground: 0 0% 100%;
     
-    /* Lime Accent - Gradients only */
-    --accent: 81 60% 45%;
-    --accent-foreground: 222 47% 11%;
+    --accent: var(--c-green-accent);
+    --accent-foreground: 0 0% 100%;
     
-    /* Industrial dark surfaces */
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: var(--c-obsidian);
+    
+    --card-eco: var(--c-eco-surface);
+    --card-eco-border: var(--c-eco-border);
+    
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover-foreground: var(--c-obsidian);
     
-    /* Secondary industrial gray */
-    --secondary: 215 15% 92%;
-    --secondary-foreground: 222 47% 11%;
+    --secondary: var(--c-slate-100);
+    --secondary-foreground: var(--c-obsidian);
     
-    /* Muted technical backgrounds */
-    --muted: 215 15% 95%;
-    --muted-foreground: 215 16% 47%;
+    --muted: var(--c-slate-100);
+    --muted-foreground: var(--c-slate-500);
     
-    /* Status colors */
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
     
-    --success: 125 50% 40%;
+    --success: var(--c-green-main);
     --success-foreground: 0 0% 100%;
     
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 100%;
     
-    /* Borders and inputs - subtle technical */
-    --border: 215 15% 88%;
-    --input: 215 15% 88%;
-    --ring: 125 50% 40%;
+    --border: var(--c-slate-200);
+    --input: var(--c-slate-200);
+    --ring: var(--c-green-main);
     
-    /* Master gradient definition */
-    --gradient-primary: linear-gradient(135deg, hsl(125, 50%, 40%), hsl(81, 60%, 45%));
+    /* Gradients */
+    --gradient-brand: linear-gradient(135deg, hsl(var(--c-green-accent)) 0%, hsl(var(--c-green-main)) 100%);
     
-    /* Status indicators */
-    --status-planned: 215 15% 70%;
-    --status-in-progress: 81 60% 45%;
-    --status-completed: 125 50% 40%;
+    /* Status colors */
+    --status-planned: var(--c-slate-400);
+    --status-in-progress: var(--c-green-accent);
+    --status-completed: var(--c-green-main);
     --status-on-hold: 38 92% 50%;
     --status-cancelled: 0 84% 60%;
     
     /* Sidebar */
     --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 222 47% 11%;
-    --sidebar-primary: 125 50% 40%;
+    --sidebar-foreground: var(--c-obsidian);
+    --sidebar-primary: var(--c-green-main);
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 215 15% 95%;
-    --sidebar-accent-foreground: 222 47% 11%;
-    --sidebar-border: 215 15% 88%;
-    --sidebar-ring: 125 50% 40%;
+    --sidebar-accent: var(--c-slate-100);
+    --sidebar-accent-foreground: var(--c-obsidian);
+    --sidebar-border: var(--c-slate-200);
+    --sidebar-ring: var(--c-green-main);
     
-    --radius: 0.25rem;
+    /* Shapes */
+    --radius: 6px;
+    --chamfer-btn: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+    
+    /* Shadows */
+    --shadow-card: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
   }
   
   .dark {
-    /* Jet Black base */
-    --background: 222 47% 11%;
-    --foreground: 0 0% 98%;
+    /* Dark mode with Obsidian base */
+    --background: var(--c-obsidian);
+    --foreground: var(--c-slate-50);
     
-    /* Rhosonics Green maintains visibility */
-    --primary: 125 50% 45%;
-    --primary-foreground: 222 47% 11%;
+    --primary: var(--c-green-main);
+    --primary-foreground: 0 0% 100%;
     
-    /* Lime Accent for dark mode */
-    --accent: 81 60% 50%;
-    --accent-foreground: 222 47% 11%;
+    --accent: var(--c-green-accent);
+    --accent-foreground: 0 0% 100%;
     
-    /* Dark industrial surfaces */
-    --card: 222 40% 15%;
-    --card-foreground: 0 0% 98%;
-    --popover: 222 40% 15%;
-    --popover-foreground: 0 0% 98%;
+    --card: var(--c-slate-900);
+    --card-foreground: var(--c-slate-50);
     
-    /* Secondary dark gray */
-    --secondary: 215 20% 25%;
-    --secondary-foreground: 0 0% 98%;
+    --popover: var(--c-slate-900);
+    --popover-foreground: var(--c-slate-50);
     
-    /* Muted dark backgrounds */
-    --muted: 215 20% 20%;
-    --muted-foreground: 215 20% 65%;
+    --secondary: var(--c-slate-800);
+    --secondary-foreground: var(--c-slate-50);
     
-    /* Status colors adjusted for dark */
+    --muted: var(--c-slate-800);
+    --muted-foreground: var(--c-slate-400);
+    
     --destructive: 0 63% 50%;
-    --destructive-foreground: 0 0% 98%;
+    --destructive-foreground: 0 0% 100%;
     
-    --success: 125 50% 45%;
-    --success-foreground: 0 0% 98%;
+    --success: var(--c-green-main);
+    --success-foreground: 0 0% 100%;
     
     --warning: 38 92% 55%;
-    --warning-foreground: 222 47% 11%;
+    --warning-foreground: 0 0% 100%;
     
-    /* Dark borders and inputs */
-    --border: 215 20% 25%;
-    --input: 215 20% 25%;
-    --ring: 125 50% 45%;
+    --border: var(--c-slate-800);
+    --input: var(--c-slate-800);
+    --ring: var(--c-green-main);
     
-    /* Status indicators for dark mode */
-    --status-planned: 215 20% 40%;
-    --status-in-progress: 81 60% 50%;
-    --status-completed: 125 50% 45%;
-    --status-on-hold: 38 92% 55%;
-    --status-cancelled: 0 63% 50%;
-    
-    /* Dark sidebar */
-    --sidebar-background: 222 40% 15%;
-    --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 125 50% 45%;
-    --sidebar-primary-foreground: 222 47% 11%;
-    --sidebar-accent: 215 20% 25%;
-    --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 215 20% 25%;
-    --sidebar-ring: 125 50% 45%;
+    --sidebar-background: var(--c-slate-900);
+    --sidebar-foreground: var(--c-slate-50);
+    --sidebar-primary: var(--c-green-main);
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: var(--c-slate-800);
+    --sidebar-accent-foreground: var(--c-slate-50);
+    --sidebar-border: var(--c-slate-800);
+    --sidebar-ring: var(--c-green-main);
   }
 }
 
@@ -140,26 +146,65 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground antialiased;
-    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
     font-family: 'Instrument Sans', system-ui, sans-serif;
+    line-height: 1.5;
   }
   
-  /* Technical data styling */
-  .data-display {
+  /* Typography Classes */
+  .font-logo {
+    font-family: 'Unbounded', sans-serif;
+    font-weight: 500;
+  }
+  
+  .font-ui {
+    font-family: 'Instrument Sans', sans-serif;
+  }
+  
+  .font-data {
     font-family: 'JetBrains Mono', monospace;
-    font-feature-settings: "ss01", "ss02";
+    font-weight: 500;
+    letter-spacing: 0.02em;
+  }
+  
+  /* Label Tech Style */
+  .label-tech {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    text-transform: uppercase;
     letter-spacing: 0.05em;
+    font-weight: 500;
+    color: hsl(var(--c-green-main));
   }
   
-  /* Gradient button style */
-  .btn-gradient {
-    background: var(--gradient-primary);
-    color: white;
+  /* Brand Gradient */
+  .bg-brand-gradient {
+    background: var(--gradient-brand);
   }
   
-  /* Industrial card styling */
-  .card-industrial {
-    background: linear-gradient(to bottom, hsl(var(--card)), hsl(var(--muted)));
-    border: 1px solid hsl(var(--border));
+  /* Card Variants */
+  .card-eco {
+    background: hsl(var(--card-eco));
+    border: 1px solid hsl(var(--card-eco-border));
+  }
+  
+  /* Chamfered Buttons */
+  .btn-chamfer {
+    clip-path: var(--chamfer-btn);
+  }
+  
+  /* Button Styles */
+  .btn-rhosonics {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    padding: 0.6rem 1.2rem;
+    clip-path: var(--chamfer-btn);
+    transition: all 0.2s;
+  }
+  
+  .btn-rhosonics:hover {
+    transform: translateY(-1px);
   }
 }

@@ -57,11 +57,11 @@ const Index = () => {
 
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
-      planned: 'bg-status-planned',
-      in_progress: 'bg-status-in-progress',
-      completed: 'bg-status-completed',
-      on_hold: 'bg-status-on-hold',
-      cancelled: 'bg-status-cancelled',
+      planned: 'bg-slate-400 text-white',
+      in_progress: 'bg-[hsl(var(--c-green-accent))] text-white',
+      completed: 'bg-[hsl(var(--c-green-main))] text-white',
+      on_hold: 'bg-warning text-white',
+      cancelled: 'bg-destructive text-white',
     };
     return colors[status] || 'bg-muted';
   };

@@ -20,32 +20,32 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-50 w-full border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60">
+    <div className="min-h-screen bg-[hsl(var(--c-slate-50))]">
+      <header className="sticky top-0 z-50 w-full border-b border-[hsl(var(--c-slate-200))] bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
         <div className="container flex h-16 items-center justify-between px-4">
           <div className="flex items-center gap-6">
             <button 
               onClick={() => navigate('/')}
-              className="flex items-center gap-2 font-semibold hover:opacity-80 transition-opacity"
+              className="flex items-center gap-3 hover:opacity-80 transition-opacity"
             >
-              <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-                <Factory className="h-5 w-5 text-primary-foreground" />
+              <div className="h-9 w-9 rounded-lg bg-[hsl(var(--c-green-main))] flex items-center justify-center">
+                <Factory className="h-5 w-5 text-white" />
               </div>
-              <span className="text-lg">Production MES</span>
+              <span className="font-logo text-lg text-[hsl(var(--c-obsidian))]">RHOSONICS</span>
             </button>
             
-            <nav className="hidden md:flex gap-6">
+            <nav className="hidden md:flex gap-4">
               <Button 
                 variant="ghost" 
                 onClick={() => navigate('/')}
-                className="font-medium"
+                className="font-data text-xs uppercase tracking-wider"
               >
                 {t('dashboard')}
               </Button>
               <Button 
                 variant="ghost" 
                 onClick={() => navigate('/work-orders')}
-                className="font-medium"
+                className="font-data text-xs uppercase tracking-wider"
               >
                 <Package className="mr-2 h-4 w-4" />
                 {t('workOrders')}
@@ -58,6 +58,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               variant="ghost"
               size="sm"
               onClick={() => setLanguage(language === 'en' ? 'nl' : 'en')}
+              className="font-mono text-xs uppercase tracking-wider"
             >
               {language === 'en' ? 'NL' : 'EN'}
             </Button>
