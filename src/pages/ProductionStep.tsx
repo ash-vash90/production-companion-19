@@ -8,10 +8,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Loader2, ArrowLeft, CheckCircle2, AlertCircle, ScanBarcode } from 'lucide-react';
+import { Loader2, ArrowLeft, CheckCircle2, AlertCircle, ScanBarcode, History, XCircle } from 'lucide-react';
 import MeasurementDialog from '@/components/production/MeasurementDialog';
 import ChecklistDialog from '@/components/production/ChecklistDialog';
 import BatchScanDialog from '@/components/production/BatchScanDialog';
+import ValidationHistoryDialog from '@/components/production/ValidationHistoryDialog';
 
 const ProductionStep = () => {
   const { itemId } = useParams();
@@ -29,6 +30,8 @@ const ProductionStep = () => {
   const [showMeasurementDialog, setShowMeasurementDialog] = useState(false);
   const [showChecklistDialog, setShowChecklistDialog] = useState(false);
   const [showBatchScanDialog, setShowBatchScanDialog] = useState(false);
+  const [showValidationHistory, setShowValidationHistory] = useState(false);
+  const [failedSteps, setFailedSteps] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     if (user && itemId) {
@@ -83,6 +86,22 @@ const ProductionStep = () => {
           .maybeSingle();
 
         setStepExecution(execData);
+      }
+
+      // Fetch failed steps for visual indicators
+      const { data: failedExecsData } = await supabase
+        .from('step_executions')
+        .select('production_step:production_steps(step_number)')
+        .eq('work_order_item_id', itemId)
+        .eq('validation_status', 'failed');
+
+      if (failedExecsData) {
+        const failedStepNumbers = new Set(
+          failedExecsData
+            .map((exec: any) => exec.production_step?.step_number)
+            .filter((num: number | undefined) => num !== undefined)
+        );
+        setFailedSteps(failedStepNumbers);
       }
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -199,16 +218,22 @@ const ProductionStep = () => {
   return (
     <Layout>
       <div className="space-y-6 md:space-y-8">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate(`/production/${item.work_order_id}`)} className="h-12 w-12 md:h-10 md:w-10">
-            <ArrowLeft className="h-6 w-6 md:h-5 md:w-5" />
-          </Button>
-          <div className="space-y-1">
-            <h1 className="text-3xl md:text-4xl font-bold tracking-tight font-data">{item.serial_number}</h1>
-            <p className="text-base md:text-lg text-muted-foreground font-data">
-              {workOrder.product_type} • Step {item.current_step} of {productionSteps.length}
-            </p>
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="icon" onClick={() => navigate(`/production/${item.work_order_id}`)} className="h-12 w-12 md:h-10 md:w-10">
+              <ArrowLeft className="h-6 w-6 md:h-5 md:w-5" />
+            </Button>
+            <div className="space-y-1">
+              <h1 className="text-3xl md:text-4xl font-bold tracking-tight font-data">{item.serial_number}</h1>
+              <p className="text-base md:text-lg text-muted-foreground font-data">
+                {workOrder.product_type} • Step {item.current_step} of {productionSteps.length}
+              </p>
+            </div>
           </div>
+          <Button variant="outline" size="lg" onClick={() => setShowValidationHistory(true)} className="gap-2">
+            <History className="h-5 w-5" />
+            <span className="hidden sm:inline">History</span>
+          </Button>
         </div>
 
         <Card>
@@ -272,33 +297,49 @@ const ProductionStep = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-3 md:space-y-2">
-              {productionSteps.map((step, idx) => (
-                <div
-                  key={step.id}
-                  className={`flex items-center gap-4 md:gap-3 p-4 md:p-3 rounded-lg transition-all ${
-                    step.step_number === item.current_step
-                      ? 'bg-primary/10 border-2 border-primary'
-                      : step.step_number < item.current_step
-                      ? 'bg-accent/50 border border-border'
-                      : 'bg-muted/30 border border-border'
-                  }`}
-                >
-                  <div className={`flex items-center justify-center h-10 w-10 md:h-8 md:w-8 rounded-full ${
-                    step.step_number < item.current_step
-                      ? 'bg-primary text-primary-foreground shadow-lg'
-                      : step.step_number === item.current_step
-                      ? 'bg-primary/20 text-primary border-2 border-primary'
-                      : 'bg-muted text-muted-foreground'
-                  }`}>
-                    {step.step_number < item.current_step ? (
-                      <CheckCircle2 className="h-5 w-5 md:h-4 md:w-4" />
-                    ) : (
-                      <span className="text-base md:text-sm font-bold font-data">{step.step_number}</span>
-                    )}
+              {productionSteps.map((step, idx) => {
+                const hasFailed = failedSteps.has(step.step_number);
+                return (
+                  <div
+                    key={step.id}
+                    className={`flex items-center gap-4 md:gap-3 p-4 md:p-3 rounded-lg transition-all ${
+                      step.step_number === item.current_step
+                        ? 'bg-primary/10 border-2 border-primary'
+                        : step.step_number < item.current_step
+                        ? hasFailed
+                          ? 'bg-destructive/10 border border-destructive/30'
+                          : 'bg-accent/50 border border-border'
+                        : 'bg-muted/30 border border-border'
+                    }`}
+                  >
+                    <div className={`flex items-center justify-center h-10 w-10 md:h-8 md:w-8 rounded-full ${
+                      step.step_number < item.current_step
+                        ? hasFailed
+                          ? 'bg-destructive text-destructive-foreground shadow-lg'
+                          : 'bg-primary text-primary-foreground shadow-lg'
+                        : step.step_number === item.current_step
+                        ? 'bg-primary/20 text-primary border-2 border-primary'
+                        : 'bg-muted text-muted-foreground'
+                    }`}>
+                      {step.step_number < item.current_step ? (
+                        hasFailed ? (
+                          <XCircle className="h-5 w-5 md:h-4 md:w-4" />
+                        ) : (
+                          <CheckCircle2 className="h-5 w-5 md:h-4 md:w-4" />
+                        )
+                      ) : (
+                        <span className="text-base md:text-sm font-bold font-data">{step.step_number}</span>
+                      )}
+                    </div>
+                    <div className="flex-1 flex items-center justify-between">
+                      <span className="text-base md:text-sm font-medium font-data">{step.title_en}</span>
+                      {hasFailed && (
+                        <Badge variant="destructive" className="ml-2">Failed</Badge>
+                      )}
+                    </div>
                   </div>
-                  <span className="text-base md:text-sm font-medium font-data">{step.title_en}</span>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </CardContent>
         </Card>
@@ -329,6 +370,13 @@ const ProductionStep = () => {
             workOrderItem={item}
             productionStep={currentStep}
             onComplete={fetchData}
+          />
+
+          <ValidationHistoryDialog
+            open={showValidationHistory}
+            onOpenChange={setShowValidationHistory}
+            workOrderItemId={item.id}
+            serialNumber={item.serial_number}
           />
         </>
       )}
