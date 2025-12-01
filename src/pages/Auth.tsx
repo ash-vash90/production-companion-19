@@ -72,48 +72,52 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 via-background to-accent/10 p-4">
-      <Card className="w-full max-w-md shadow-lg">
+    <div className="min-h-screen flex items-center justify-center bg-[hsl(var(--c-slate-50))] p-4">
+      <Card className="w-full max-w-md shadow-card">
         <CardHeader className="space-y-1 text-center">
           <div className="flex justify-center mb-4">
-            <div className="h-12 w-12 rounded-lg bg-primary flex items-center justify-center">
-              <Factory className="h-6 w-6 text-primary-foreground" />
+            <div className="h-14 w-14 rounded-lg bg-[hsl(var(--c-green-main))] flex items-center justify-center">
+              <Factory className="h-7 w-7 text-white" />
             </div>
           </div>
-          <CardTitle className="text-2xl font-bold">Production MES</CardTitle>
-          <CardDescription>Manufacturing Execution System</CardDescription>
+          <CardTitle className="text-2xl font-logo text-[hsl(var(--c-obsidian))]">RHOSONICS</CardTitle>
+          <CardDescription className="font-data text-xs uppercase tracking-wider text-[hsl(var(--c-green-main))]">
+            MES PRODUCTION SYSTEM
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="login" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="login">{t('login')}</TabsTrigger>
-              <TabsTrigger value="signup">{t('signup')}</TabsTrigger>
+              <TabsTrigger value="login" className="font-mono text-xs uppercase">{t('login')}</TabsTrigger>
+              <TabsTrigger value="signup" className="font-mono text-xs uppercase">{t('signup')}</TabsTrigger>
             </TabsList>
             
             <TabsContent value="login">
               <form onSubmit={handleSignIn} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="email">{t('email')}</Label>
+                  <Label htmlFor="email" className="font-data text-xs uppercase tracking-wider">{t('email')}</Label>
                   <Input
                     id="email"
                     type="email"
-                    placeholder="operator@company.com"
+                    placeholder="operator@rhosonics.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
+                    className="rounded-card"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="password">{t('password')}</Label>
+                  <Label htmlFor="password" className="font-data text-xs uppercase tracking-wider">{t('password')}</Label>
                   <Input
                     id="password"
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
+                    className="rounded-card"
                   />
                 </div>
-                <Button type="submit" className="w-full" disabled={loading}>
+                <Button type="submit" className="w-full btn-rhosonics" variant="rhosonics" size="rhosonics" disabled={loading}>
                   {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   {t('login')}
                 </Button>
@@ -123,7 +127,7 @@ const Auth = () => {
             <TabsContent value="signup">
               <form onSubmit={handleSignUp} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="fullName">{t('fullName')}</Label>
+                  <Label htmlFor="fullName" className="font-data text-xs uppercase tracking-wider">{t('fullName')}</Label>
                   <Input
                     id="fullName"
                     type="text"
@@ -131,33 +135,36 @@ const Auth = () => {
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     required
+                    className="rounded-card"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="signup-email">{t('email')}</Label>
+                  <Label htmlFor="signup-email" className="font-data text-xs uppercase tracking-wider">{t('email')}</Label>
                   <Input
                     id="signup-email"
                     type="email"
-                    placeholder="operator@company.com"
+                    placeholder="operator@rhosonics.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
+                    className="rounded-card"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="signup-password">{t('password')}</Label>
+                  <Label htmlFor="signup-password" className="font-data text-xs uppercase tracking-wider">{t('password')}</Label>
                   <Input
                     id="signup-password"
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
+                    className="rounded-card"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="language">Language / Taal</Label>
+                  <Label htmlFor="language" className="font-data text-xs uppercase tracking-wider">Language / Taal</Label>
                   <Select value={selectedLanguage} onValueChange={(value) => setSelectedLanguage(value as 'en' | 'nl')}>
-                    <SelectTrigger>
+                    <SelectTrigger className="rounded-card">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -166,7 +173,7 @@ const Auth = () => {
                     </SelectContent>
                   </Select>
                 </div>
-                <Button type="submit" className="w-full" disabled={loading}>
+                <Button type="submit" className="w-full" variant="rhosonics" size="rhosonics" disabled={loading}>
                   {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   {t('signup')}
                 </Button>
@@ -179,6 +186,7 @@ const Auth = () => {
             variant="ghost"
             size="sm"
             onClick={() => setLanguage(language === 'en' ? 'nl' : 'en')}
+            className="font-mono text-xs uppercase tracking-wider"
           >
             {language === 'en' ? 'Nederlands' : 'English'}
           </Button>
