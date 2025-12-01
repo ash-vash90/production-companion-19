@@ -151,9 +151,6 @@ const Index = () => {
                 <div className="text-center py-12 text-muted-foreground">
                   <Package className="h-16 w-16 mx-auto mb-4 text-muted-foreground/50" />
                   <p className="text-lg mb-4">No work orders found</p>
-                  <Button variant="rhosonics" size="lg" onClick={() => navigate('/work-orders')}>
-                    {t('createWorkOrder')}
-                  </Button>
                 </div>
               ) : (
                 <div className="space-y-3 md:space-y-4">
