@@ -230,10 +230,9 @@ const WorkOrders = () => {
               {workOrders.map((wo) => (
                 <Card
                   key={wo.id}
-                  className="cursor-pointer hover:shadow-xl hover:border-primary transition-all active:scale-98"
-                  onClick={() => navigate(`/production/${wo.id}`)}
+                  className="cursor-pointer hover:shadow-xl hover:border-primary transition-all"
                 >
-                  <CardHeader>
+                  <CardHeader onClick={() => navigate(`/production/${wo.id}`)}>
                     <div className="flex items-center justify-between mb-2">
                       <CardTitle className="text-xl md:text-lg font-data">{wo.wo_number}</CardTitle>
                       <Badge className={`${getStatusColor(wo.status)} text-white h-8 px-4 text-sm md:h-auto md:px-3 md:text-xs`}>
@@ -243,7 +242,7 @@ const WorkOrders = () => {
                     <CardDescription className="text-base md:text-sm">{wo.product_type}</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-3 text-base md:text-sm">
+                    <div className="space-y-3 text-base md:text-sm" onClick={() => navigate(`/production/${wo.id}`)}>
                       <div className="flex justify-between items-center p-3 rounded-lg bg-muted/50">
                         <span className="text-muted-foreground font-data">{t('batchSize')}:</span>
                         <span className="font-bold font-data text-lg md:text-base">{wo.batch_size}</span>
@@ -255,6 +254,30 @@ const WorkOrders = () => {
                         </span>
                       </div>
                     </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full mt-4"
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        if (!confirm(`Delete work order ${wo.wo_number}? This will also delete all associated items and cannot be undone.`)) return;
+                        
+                        try {
+                          const { error } = await supabase
+                            .from('work_orders')
+                            .delete()
+                            .eq('id', wo.id);
+                          
+                          if (error) throw error;
+                          toast.success('Success', { description: 'Work order deleted' });
+                          fetchWorkOrders();
+                        } catch (error: any) {
+                          toast.error('Error', { description: error.message });
+                        }
+                      }}
+                    >
+                      Delete
+                    </Button>
                   </CardContent>
                 </Card>
               ))}
