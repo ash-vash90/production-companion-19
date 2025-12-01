@@ -59,6 +59,14 @@ const ProductionStep = () => {
         .single();
 
       if (woError) throw woError;
+      
+      // Block access to cancelled work orders
+      if (woData.status === 'cancelled') {
+        toast.error(t('error'), { description: t('workOrderCancelledAccess') });
+        navigate('/work-orders');
+        return;
+      }
+      
       setWorkOrder(woData);
 
       // Fetch production steps for this product type

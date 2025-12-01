@@ -23,6 +23,7 @@ const Settings = () => {
   const [webhooks, setWebhooks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [userRole, setUserRole] = useState<string | null>(null);
   
   const [formData, setFormData] = useState({
     name: '',
@@ -46,8 +47,25 @@ const Settings = () => {
       navigate('/auth');
       return;
     }
+    fetchUserRole();
     fetchWebhooks();
   }, [user, navigate]);
+
+  const fetchUserRole = async () => {
+    if (!user) return;
+    
+    try {
+      const { data } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+      
+      setUserRole(data?.role || null);
+    } catch (error) {
+      console.error('Error fetching user role:', error);
+    }
+  };
 
   const fetchWebhooks = async () => {
     try {
@@ -129,6 +147,8 @@ const Settings = () => {
 
   if (!user) return null;
 
+  const isAdmin = userRole === 'admin';
+
   return (
     <ProtectedRoute>
       <Layout>
@@ -137,6 +157,18 @@ const Settings = () => {
             <h1 className="text-3xl font-bold tracking-tight">{t('settingsPage')}</h1>
             <p className="text-muted-foreground">{t('configureWebhooks')}</p>
           </div>
+
+          {!isAdmin && (
+            <Card className="border-destructive/50 bg-destructive/10">
+              <CardContent className="pt-6">
+                <p className="text-sm text-destructive">
+                  {t('adminOnlyAccess')}
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
+          {isAdmin && (
 
           <Card>
             <CardHeader>
@@ -266,6 +298,7 @@ const Settings = () => {
               )}
             </CardContent>
           </Card>
+          )}
         </div>
       </Layout>
     </ProtectedRoute>

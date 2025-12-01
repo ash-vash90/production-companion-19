@@ -36,6 +36,7 @@ const Index = () => {
       const { data: workOrders } = await supabase
         .from('work_orders')
         .select('*')
+        .neq('status', 'cancelled')
         .order('created_at', { ascending: false })
         .limit(5);
 
@@ -83,64 +84,63 @@ const Index = () => {
             </p>
           </div>
 
-          <div className="grid gap-4 md:gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-                <CardTitle className="text-base md:text-sm font-medium">Total Orders</CardTitle>
-                <div className="h-12 w-12 md:h-10 md:w-10 rounded-lg bg-muted flex items-center justify-center">
-                  <Package className="h-6 w-6 md:h-5 md:w-5 text-foreground" />
-                </div>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
+                <Package className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-4xl md:text-3xl font-bold font-data">{stats.totalWorkOrders}</div>
-                <p className="text-sm md:text-xs text-muted-foreground mt-2">Active production orders</p>
+                <div className="text-2xl font-bold font-data">{stats.totalWorkOrders}</div>
+                <p className="text-xs text-muted-foreground mt-1">Active production orders</p>
               </CardContent>
             </Card>
 
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-                <CardTitle className="text-base md:text-sm font-medium">{t('inProgress')}</CardTitle>
-                <div className="h-12 w-12 md:h-10 md:w-10 rounded-lg bg-muted flex items-center justify-center">
-                  <Clock className="h-6 w-6 md:h-5 md:w-5 text-foreground" />
-                </div>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">{t('inProgress')}</CardTitle>
+                <Clock className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-4xl md:text-3xl font-bold font-data">{stats.inProgress}</div>
-                <p className="text-sm md:text-xs text-muted-foreground mt-2">Currently processing</p>
+                <div className="text-2xl font-bold font-data">{stats.inProgress}</div>
+                <p className="text-xs text-muted-foreground mt-1">Currently processing</p>
               </CardContent>
             </Card>
 
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-                <CardTitle className="text-base md:text-sm font-medium">{t('completed')}</CardTitle>
-                <div className="h-12 w-12 md:h-10 md:w-10 rounded-lg bg-muted flex items-center justify-center">
-                  <CheckCircle className="h-6 w-6 md:h-5 md:w-5 text-foreground" />
-                </div>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">{t('completed')}</CardTitle>
+                <CheckCircle className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-4xl md:text-3xl font-bold font-data">{stats.completed}</div>
-                <p className="text-sm md:text-xs text-muted-foreground mt-2">Finished today</p>
+                <div className="text-2xl font-bold font-data">{stats.completed}</div>
+                <p className="text-xs text-muted-foreground mt-1">Finished today</p>
               </CardContent>
             </Card>
 
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-                <CardTitle className="text-base md:text-sm font-medium">{t('onHold')}</CardTitle>
-                <div className="h-12 w-12 md:h-10 md:w-10 rounded-lg bg-muted flex items-center justify-center">
-                  <AlertCircle className="h-6 w-6 md:h-5 md:w-5 text-foreground" />
-                </div>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">{t('onHold')}</CardTitle>
+                <AlertCircle className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-4xl md:text-3xl font-bold font-data">{stats.onHold}</div>
-                <p className="text-sm md:text-xs text-muted-foreground mt-2">Awaiting action</p>
+                <div className="text-2xl font-bold font-data">{stats.onHold}</div>
+                <p className="text-xs text-muted-foreground mt-1">Awaiting action</p>
               </CardContent>
             </Card>
           </div>
 
           <Card>
             <CardHeader>
-              <CardTitle>Recent Work Orders</CardTitle>
-              <CardDescription>Latest production orders in the system</CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Recent Work Orders</CardTitle>
+                  <CardDescription>Latest production orders in the system</CardDescription>
+                </div>
+                <Button variant="rhosonics" onClick={() => navigate('/work-orders')}>
+                  {t('createWorkOrder')}
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               {loading ? (
