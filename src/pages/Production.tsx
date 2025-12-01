@@ -177,61 +177,64 @@ const Production = () => {
   return (
     <ProtectedRoute>
       <Layout>
-        <div className="space-y-6">
+        <div className="space-y-6 md:space-y-8">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/work-orders')}>
-              <ArrowLeft className="h-5 w-5" />
+            <Button variant="ghost" size="icon" onClick={() => navigate('/work-orders')} className="h-12 w-12 md:h-10 md:w-10">
+              <ArrowLeft className="h-6 w-6 md:h-5 md:w-5" />
             </Button>
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight">{workOrder.wo_number}</h1>
-              <p className="text-muted-foreground">
+            <div className="space-y-1">
+              <h1 className="text-3xl md:text-4xl font-bold tracking-tight font-logo">{workOrder.wo_number}</h1>
+              <p className="text-base md:text-lg text-muted-foreground font-data">
                 {workOrder.product_type} • Batch: {workOrder.batch_size}
               </p>
             </div>
           </div>
 
-          <Card>
+          <Card className="card-eco">
             <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>{t('production')} Items</CardTitle>
-                <Badge className={`${getStatusColor(workOrder.status)} text-white`}>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <CardTitle className="font-logo text-2xl md:text-xl">{t('production')} Items</CardTitle>
+                  <CardDescription className="text-base md:text-sm">Track individual items through production</CardDescription>
+                </div>
+                <Badge className={`${getStatusColor(workOrder.status)} text-white h-10 px-5 text-base md:h-auto md:px-3 md:text-sm self-start`}>
                   {t(workOrder.status as any)}
                 </Badge>
               </div>
-              <CardDescription>Track individual items through production</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
+              <div className="space-y-4 md:space-y-3">
                 {items.map((item) => (
                   <div
                     key={item.id}
-                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-colors cursor-pointer"
+                    className="flex items-center justify-between p-5 md:p-4 border-2 rounded-lg hover:bg-accent/50 hover:border-primary transition-all cursor-pointer active:scale-98"
                     onClick={() => navigate(`/production/step/${item.id}`)}
                   >
-                    <div className="flex items-center gap-4">
-                      <div className="flex flex-col items-center justify-center h-12 w-12 rounded-lg bg-primary/10 text-primary font-bold">
+                    <div className="flex items-center gap-4 md:gap-3">
+                      <div className="flex flex-col items-center justify-center h-14 w-14 md:h-12 md:w-12 rounded-lg bg-brand-gradient text-white font-bold text-xl md:text-base shadow-lg">
                         {item.position_in_batch}
                       </div>
                       <div>
-                        <p className="font-mono text-sm font-medium">{item.serial_number}</p>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="font-data text-base md:text-sm font-medium">{item.serial_number}</p>
+                        <p className="text-sm md:text-xs text-muted-foreground font-data">
                           Step {item.current_step} 
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Badge className={`${getStatusColor(item.status)} text-white`}>
+                    <div className="flex items-center gap-3 md:gap-2">
+                      <Badge className={`${getStatusColor(item.status)} text-white h-9 px-4 text-sm md:h-auto md:px-3 md:text-xs`}>
                         {t(item.status as any)}
                       </Badge>
                       <Button
-                        size="sm"
+                        size="icon"
                         variant="outline"
+                        className="h-12 w-12 md:h-9 md:w-9"
                         onClick={(e) => {
                           e.stopPropagation();
                           handlePrintLabel(item.serial_number);
                         }}
                       >
-                        <Printer className="h-4 w-4" />
+                        <Printer className="h-6 w-6 md:h-4 md:w-4" />
                       </Button>
                     </div>
                   </div>
