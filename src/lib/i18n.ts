@@ -11,6 +11,7 @@ export const translations = {
     settings: 'Settings',
     logout: 'Logout',
     navigation: 'Navigation',
+    productionCalendar: 'Production Calendar',
     
     // Auth
     login: 'Login',
@@ -86,6 +87,17 @@ export const translations = {
     cancelWorkOrderConfirm: 'This will hide it from the list but keep the history for traceability.',
     workOrderCancelled: 'Work order cancelled',
     deleteButton: 'Delete',
+    
+    // Calendar
+    productionCalendarDescription: 'Schedule and manage work orders with drag-and-drop',
+    unscheduledOrders: 'Unscheduled Orders',
+    dragToSchedule: 'Drag orders to calendar to schedule',
+    noUnscheduledOrders: 'All orders scheduled',
+    workOrderRescheduled: 'Work order rescheduled successfully',
+    errorUpdatingWorkOrder: 'Error updating work order',
+    errorFetchingData: 'Error fetching data',
+    loading: 'Loading...',
+    recentWorkOrders: 'Recent Work Orders',
     
     // Production Page
     failedLoadProduction: 'Failed to load production data',
@@ -232,6 +244,7 @@ export const translations = {
     settings: 'Instellingen',
     logout: 'Uitloggen',
     navigation: 'Navigatie',
+    productionCalendar: 'Productiekalender',
     
     // Auth
     login: 'Inloggen',
@@ -307,6 +320,17 @@ export const translations = {
     cancelWorkOrderConfirm: 'Dit verbergt het uit de lijst maar behoudt de geschiedenis voor traceerbaarheid.',
     workOrderCancelled: 'Werkorder geannuleerd',
     deleteButton: 'Verwijderen',
+    
+    // Calendar
+    productionCalendarDescription: 'Plan en beheer werkorders met slepen en neerzetten',
+    unscheduledOrders: 'Ongeplande Orders',
+    dragToSchedule: 'Sleep orders naar kalender om in te plannen',
+    noUnscheduledOrders: 'Alle orders ingepland',
+    workOrderRescheduled: 'Werkorder succesvol opnieuw ingepland',
+    errorUpdatingWorkOrder: 'Fout bij bijwerken werkorder',
+    errorFetchingData: 'Fout bij ophalen gegevens',
+    loading: 'Laden...',
+    recentWorkOrders: 'Recente Werkorders',
     
     // Production Page
     failedLoadProduction: 'Kan productiegegevens niet laden',
