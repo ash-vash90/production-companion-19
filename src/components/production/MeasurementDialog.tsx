@@ -14,6 +14,7 @@ interface MeasurementDialogProps {
   onOpenChange: (open: boolean) => void;
   stepExecution: any;
   productionStep: any;
+  workOrderItem: any;
   onComplete: () => void;
 }
 
@@ -22,6 +23,7 @@ const MeasurementDialog: React.FC<MeasurementDialogProps> = ({
   onOpenChange,
   stepExecution,
   productionStep,
+  workOrderItem,
   onComplete,
 }) => {
   const { user } = useAuth();
@@ -131,32 +133,65 @@ const MeasurementDialog: React.FC<MeasurementDialogProps> = ({
     const validation = validateMeasurements();
     setValidationResult(validation);
 
-    if (!validation.passed && productionStep.blocks_on_failure) {
-      // Check if we need to restart from a specific step
-      if (validationRules.restart) {
-        toast.error('Validation Failed', { 
-          description: `${validation.message}. You must restart from Step ${validationRules.restart}` 
-        });
-      } else {
-        toast.error('Validation Failed', { description: validation.message });
-      }
-      return;
-    }
-
     setSaving(true);
     try {
-      const { error } = await supabase
+      // Save the measurement data and validation result
+      const { error: execError } = await supabase
         .from('step_executions')
         .update({
           operator_initials: operatorInitials as 'MB' | 'HL' | 'AB' | 'EV',
           measurement_values: measurements,
           validation_status: validation.passed ? 'passed' : 'failed',
           validation_message: validation.message,
+          status: validation.passed ? 'completed' : 'completed', // Mark as completed even on failure
+          completed_at: new Date().toISOString(),
         })
         .eq('id', stepExecution.id);
 
-      if (error) throw error;
+      if (execError) throw execError;
 
+      // If validation failed and we need to restart from a specific step
+      if (!validation.passed && productionStep.restart_from_step) {
+        const restartStep = productionStep.restart_from_step;
+        
+        // Update the work order item to restart from the specified step
+        const { error: itemError } = await supabase
+          .from('work_order_items')
+          .update({
+            current_step: restartStep,
+            status: 'in_progress',
+          })
+          .eq('id', workOrderItem.id);
+
+        if (itemError) throw itemError;
+
+        await supabase.from('activity_logs').insert({
+          user_id: user?.id,
+          action: 'validation_failed_restart',
+          entity_type: 'step_execution',
+          entity_id: stepExecution.id,
+          details: { 
+            measurements, 
+            validation: validation.passed, 
+            operator: operatorInitials,
+            failed_step: workOrderItem.current_step,
+            restart_step: restartStep,
+          },
+        });
+
+        toast.error('Validation Failed', { 
+          description: `${validation.message} - Restarting from Step ${restartStep}` 
+        });
+        
+        onComplete();
+        onOpenChange(false);
+        setMeasurements({});
+        setOperatorInitials('');
+        setValidationResult(null);
+        return;
+      }
+
+      // Log successful measurement
       await supabase.from('activity_logs').insert({
         user_id: user?.id,
         action: 'record_measurement',
