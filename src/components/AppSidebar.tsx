@@ -1,4 +1,4 @@
-import { LayoutDashboard, Package, Settings, LogOut, Factory, CalendarDays, BarChart3, Users } from 'lucide-react';
+import { LayoutDashboard, Package, Settings, LogOut, Factory, CalendarDays, BarChart3, Users, FileText, ClipboardList } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -36,6 +36,16 @@ export function AppSidebar() {
       title: t('workOrders'), 
       url: '/work-orders', 
       icon: Package 
+    },
+    { 
+      title: 'Quality Certificates', 
+      url: '/quality-certificates', 
+      icon: FileText 
+    },
+    { 
+      title: 'Production Reports', 
+      url: '/production-reports', 
+      icon: ClipboardList 
     },
   ];
 
