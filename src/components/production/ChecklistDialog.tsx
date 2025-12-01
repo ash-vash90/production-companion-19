@@ -148,7 +148,7 @@ const ChecklistDialog: React.FC<ChecklistDialogProps> = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[600px] max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-logo">Complete Checklist</DialogTitle>
+          <DialogTitle className="text-2xl font-ui">Complete Checklist</DialogTitle>
           <DialogDescription className="text-base">
             Review and check all items in the production checklist
           </DialogDescription>
