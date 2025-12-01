@@ -8,112 +8,128 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Industrial blue color scheme */
-    --background: 210 20% 98%;
-    --foreground: 220 15% 15%;
-
+    /* Base colors - Lab clean white */
+    --background: 0 0% 100%;
+    --foreground: 222 47% 11%;
+    
+    /* Rhosonics Green - Primary brand color */
+    --primary: 125 50% 40%;
+    --primary-foreground: 0 0% 100%;
+    
+    /* Lime Accent - Gradients only */
+    --accent: 81 60% 45%;
+    --accent-foreground: 222 47% 11%;
+    
+    /* Industrial dark surfaces */
     --card: 0 0% 100%;
-    --card-foreground: 220 15% 15%;
-
+    --card-foreground: 222 47% 11%;
     --popover: 0 0% 100%;
-    --popover-foreground: 220 15% 15%;
-
-    --primary: 217 91% 45%;
-    --primary-foreground: 0 0% 100%;
-
-    --secondary: 210 15% 92%;
-    --secondary-foreground: 220 15% 15%;
-
-    --muted: 210 15% 92%;
-    --muted-foreground: 220 10% 45%;
-
-    --accent: 27 95% 58%;
-    --accent-foreground: 0 0% 100%;
-
-    --destructive: 0 72% 51%;
+    --popover-foreground: 222 47% 11%;
+    
+    /* Secondary industrial gray */
+    --secondary: 215 15% 92%;
+    --secondary-foreground: 222 47% 11%;
+    
+    /* Muted technical backgrounds */
+    --muted: 215 15% 95%;
+    --muted-foreground: 215 16% 47%;
+    
+    /* Status colors */
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
-
-    --success: 142 71% 45%;
+    
+    --success: 125 50% 40%;
     --success-foreground: 0 0% 100%;
-
-    --warning: 45 93% 58%;
-    --warning-foreground: 220 15% 15%;
-
-    --border: 210 15% 88%;
-    --input: 210 15% 88%;
-    --ring: 217 91% 45%;
-
-    --radius: 0.5rem;
-
-    /* Custom production colors */
-    --status-planned: 210 50% 50%;
-    --status-in-progress: 45 93% 58%;
-    --status-completed: 142 71% 45%;
-    --status-on-hold: 27 95% 58%;
-    --status-cancelled: 0 72% 51%;
-
-    /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(217 91% 45%) 0%, hsl(217 91% 35%) 100%);
-    --gradient-accent: linear-gradient(135deg, hsl(27 95% 58%) 0%, hsl(27 95% 48%) 100%);
-
-    /* Shadows */
-    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-
+    
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+    
+    /* Borders and inputs - subtle technical */
+    --border: 215 15% 88%;
+    --input: 215 15% 88%;
+    --ring: 125 50% 40%;
+    
+    /* Master gradient definition */
+    --gradient-primary: linear-gradient(135deg, hsl(125, 50%, 40%), hsl(81, 60%, 45%));
+    
+    /* Status indicators */
+    --status-planned: 215 15% 70%;
+    --status-in-progress: 81 60% 45%;
+    --status-completed: 125 50% 40%;
+    --status-on-hold: 38 92% 50%;
+    --status-cancelled: 0 84% 60%;
+    
+    /* Sidebar */
     --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 220 15% 15%;
-    --sidebar-primary: 217 91% 45%;
+    --sidebar-foreground: 222 47% 11%;
+    --sidebar-primary: 125 50% 40%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 210 15% 92%;
-    --sidebar-accent-foreground: 220 15% 15%;
-    --sidebar-border: 210 15% 88%;
-    --sidebar-ring: 217 91% 45%;
+    --sidebar-accent: 215 15% 95%;
+    --sidebar-accent-foreground: 222 47% 11%;
+    --sidebar-border: 215 15% 88%;
+    --sidebar-ring: 125 50% 40%;
+    
+    --radius: 0.25rem;
   }
-
+  
   .dark {
-    --background: 220 20% 10%;
-    --foreground: 210 20% 95%;
-
-    --card: 220 20% 13%;
-    --card-foreground: 210 20% 95%;
-
-    --popover: 220 20% 13%;
-    --popover-foreground: 210 20% 95%;
-
-    --primary: 217 91% 55%;
-    --primary-foreground: 0 0% 100%;
-
-    --secondary: 220 15% 20%;
-    --secondary-foreground: 210 20% 95%;
-
-    --muted: 220 15% 20%;
-    --muted-foreground: 220 10% 60%;
-
-    --accent: 27 95% 58%;
-    --accent-foreground: 0 0% 100%;
-
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 0 0% 100%;
-
-    --success: 142 71% 45%;
-    --success-foreground: 0 0% 100%;
-
-    --warning: 45 93% 58%;
-    --warning-foreground: 220 15% 15%;
-
-    --border: 220 15% 25%;
-    --input: 220 15% 25%;
-    --ring: 217 91% 55%;
-
-    --sidebar-background: 220 20% 13%;
-    --sidebar-foreground: 210 20% 95%;
-    --sidebar-primary: 217 91% 55%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 15% 20%;
-    --sidebar-accent-foreground: 210 20% 95%;
-    --sidebar-border: 220 15% 25%;
-    --sidebar-ring: 217 91% 55%;
+    /* Jet Black base */
+    --background: 222 47% 11%;
+    --foreground: 0 0% 98%;
+    
+    /* Rhosonics Green maintains visibility */
+    --primary: 125 50% 45%;
+    --primary-foreground: 222 47% 11%;
+    
+    /* Lime Accent for dark mode */
+    --accent: 81 60% 50%;
+    --accent-foreground: 222 47% 11%;
+    
+    /* Dark industrial surfaces */
+    --card: 222 40% 15%;
+    --card-foreground: 0 0% 98%;
+    --popover: 222 40% 15%;
+    --popover-foreground: 0 0% 98%;
+    
+    /* Secondary dark gray */
+    --secondary: 215 20% 25%;
+    --secondary-foreground: 0 0% 98%;
+    
+    /* Muted dark backgrounds */
+    --muted: 215 20% 20%;
+    --muted-foreground: 215 20% 65%;
+    
+    /* Status colors adjusted for dark */
+    --destructive: 0 63% 50%;
+    --destructive-foreground: 0 0% 98%;
+    
+    --success: 125 50% 45%;
+    --success-foreground: 0 0% 98%;
+    
+    --warning: 38 92% 55%;
+    --warning-foreground: 222 47% 11%;
+    
+    /* Dark borders and inputs */
+    --border: 215 20% 25%;
+    --input: 215 20% 25%;
+    --ring: 125 50% 45%;
+    
+    /* Status indicators for dark mode */
+    --status-planned: 215 20% 40%;
+    --status-in-progress: 81 60% 50%;
+    --status-completed: 125 50% 45%;
+    --status-on-hold: 38 92% 55%;
+    --status-cancelled: 0 63% 50%;
+    
+    /* Dark sidebar */
+    --sidebar-background: 222 40% 15%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 125 50% 45%;
+    --sidebar-primary-foreground: 222 47% 11%;
+    --sidebar-accent: 215 20% 25%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 215 20% 25%;
+    --sidebar-ring: 125 50% 45%;
   }
 }
 
@@ -123,6 +139,27 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    font-family: 'Instrument Sans', system-ui, sans-serif;
+  }
+  
+  /* Technical data styling */
+  .data-display {
+    font-family: 'JetBrains Mono', monospace;
+    font-feature-settings: "ss01", "ss02";
+    letter-spacing: 0.05em;
+  }
+  
+  /* Gradient button style */
+  .btn-gradient {
+    background: var(--gradient-primary);
+    color: white;
+  }
+  
+  /* Industrial card styling */
+  .card-industrial {
+    background: linear-gradient(to bottom, hsl(var(--card)), hsl(var(--muted)));
+    border: 1px solid hsl(var(--border));
   }
 }
