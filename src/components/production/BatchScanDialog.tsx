@@ -137,25 +137,25 @@ const BatchScanDialog: React.FC<BatchScanDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[700px] max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Scan Material Batches</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="text-2xl font-logo">Scan Material Batches</DialogTitle>
+          <DialogDescription className="text-base">
             Scan or enter batch numbers for materials used in this production step
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
-          <div className="space-y-3 p-4 border rounded-lg bg-accent/20">
-            <div className="space-y-2">
-              <Label htmlFor="materialType">Material Type *</Label>
+        <div className="space-y-5 py-4">
+          <div className="space-y-4 p-5 border-2 rounded-lg bg-accent/20">
+            <div className="space-y-3">
+              <Label htmlFor="materialType" className="text-base font-data uppercase tracking-wider">Material Type *</Label>
               <Select value={materialType} onValueChange={setMaterialType}>
-                <SelectTrigger>
+                <SelectTrigger className="h-12 text-base border-2">
                   <SelectValue placeholder="Select material type" />
                 </SelectTrigger>
                 <SelectContent>
                   {materialTypes.map(type => (
-                    <SelectItem key={type.value} value={type.value}>
+                    <SelectItem key={type.value} value={type.value} className="h-12 text-base">
                       {type.label}
                     </SelectItem>
                   ))}
@@ -163,8 +163,8 @@ const BatchScanDialog: React.FC<BatchScanDialogProps> = ({
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="batchNumber">Batch Number *</Label>
+            <div className="space-y-3">
+              <Label htmlFor="batchNumber" className="text-base font-data uppercase tracking-wider">Batch Number *</Label>
               <div className="flex gap-2">
                 <Input
                   id="batchNumber"
@@ -178,15 +178,15 @@ const BatchScanDialog: React.FC<BatchScanDialogProps> = ({
                     }
                   }}
                 />
-                <Button type="button" onClick={handleScanBatch} size="icon">
-                  <Plus className="h-4 w-4" />
+                <Button type="button" onClick={handleScanBatch} size="icon" className="h-12 w-12">
+                  <Plus className="h-5 w-5" />
                 </Button>
               </div>
             </div>
 
             {selectedMaterial?.requiresDate && (
-              <div className="space-y-2">
-                <Label htmlFor="openingDate">Opening Date *</Label>
+              <div className="space-y-3">
+                <Label htmlFor="openingDate" className="text-base font-data uppercase tracking-wider">Opening Date *</Label>
                 <Input
                   id="openingDate"
                   type="date"
@@ -197,31 +197,31 @@ const BatchScanDialog: React.FC<BatchScanDialogProps> = ({
             )}
           </div>
 
-          <div className="space-y-2">
-            <Label>Scanned Batches ({scannedBatches.length})</Label>
+          <div className="space-y-3">
+            <Label className="text-base font-data uppercase tracking-wider">Scanned Batches ({scannedBatches.length})</Label>
             {loading ? (
-              <div className="text-center py-4 text-muted-foreground">Loading...</div>
+              <div className="text-center py-8 text-muted-foreground text-base">Loading...</div>
             ) : scannedBatches.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground border rounded-lg">
-                <ScanBarcode className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                <p>No batches scanned yet</p>
+              <div className="text-center py-12 text-muted-foreground border-2 rounded-lg bg-muted/20">
+                <ScanBarcode className="h-16 w-16 mx-auto mb-4 opacity-50" />
+                <p className="text-base">No batches scanned yet</p>
               </div>
             ) : (
-              <div className="space-y-2 max-h-[300px] overflow-y-auto">
+              <div className="space-y-3 max-h-[300px] overflow-y-auto">
                 {scannedBatches.map((batch) => {
                   const materialLabel = materialTypes.find(m => m.value === batch.material_type)?.label || batch.material_type;
                   return (
                     <div
                       key={batch.id}
-                      className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent/50 transition-colors"
+                      className="flex items-center justify-between p-4 border-2 rounded-lg hover:bg-accent/50 transition-all"
                     >
                       <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline">{materialLabel}</Badge>
-                          <span className="font-mono font-medium">{batch.batch_number}</span>
+                        <div className="flex items-center gap-3">
+                          <Badge variant="outline" className="h-8 px-3">{materialLabel}</Badge>
+                          <span className="font-data font-medium text-base">{batch.batch_number}</span>
                         </div>
                         {batch.opening_date && (
-                          <p className="text-xs text-muted-foreground mt-1">
+                          <p className="text-sm text-muted-foreground mt-2">
                             Opened: {new Date(batch.opening_date).toLocaleDateString()}
                           </p>
                         )}
@@ -229,9 +229,10 @@ const BatchScanDialog: React.FC<BatchScanDialogProps> = ({
                       <Button
                         variant="ghost"
                         size="icon"
+                        className="h-10 w-10"
                         onClick={() => handleRemoveBatch(batch.id)}
                       >
-                        <X className="h-4 w-4" />
+                        <X className="h-5 w-5" />
                       </Button>
                     </div>
                   );
@@ -242,7 +243,7 @@ const BatchScanDialog: React.FC<BatchScanDialogProps> = ({
         </div>
 
         <DialogFooter>
-          <Button onClick={() => onOpenChange(false)}>
+          <Button onClick={() => onOpenChange(false)} variant="rhosonics" size="lg" className="w-full">
             Done
           </Button>
         </DialogFooter>
