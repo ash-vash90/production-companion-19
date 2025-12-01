@@ -33,14 +33,11 @@ All colors MUST be HSL.
     --primary: var(--c-green-main);
     --primary-foreground: 0 0% 100%;
     
-    --accent: var(--c-green-accent);
-    --accent-foreground: 0 0% 100%;
+    --accent: var(--c-slate-100);
+    --accent-foreground: var(--c-obsidian);
     
     --card: 0 0% 100%;
     --card-foreground: var(--c-obsidian);
-    
-    --card-eco: var(--c-eco-surface);
-    --card-eco-border: var(--c-eco-border);
     
     --popover: 0 0% 100%;
     --popover-foreground: var(--c-obsidian);
@@ -62,14 +59,11 @@ All colors MUST be HSL.
     
     --border: var(--c-slate-200);
     --input: var(--c-slate-200);
-    --ring: var(--c-green-main);
-    
-    /* Gradients */
-    --gradient-brand: linear-gradient(135deg, hsl(var(--c-green-accent)) 0%, hsl(var(--c-green-main)) 100%);
+    --ring: var(--c-slate-400);
     
     /* Status colors */
     --status-planned: var(--c-slate-400);
-    --status-in-progress: var(--c-green-accent);
+    --status-in-progress: 217 91% 60%;
     --status-completed: var(--c-green-main);
     --status-on-hold: 38 92% 50%;
     --status-cancelled: 0 84% 60%;
@@ -173,18 +167,7 @@ All colors MUST be HSL.
     text-transform: uppercase;
     letter-spacing: 0.05em;
     font-weight: 500;
-    color: hsl(var(--c-green-main));
-  }
-  
-  /* Brand Gradient */
-  .bg-brand-gradient {
-    background: var(--gradient-brand);
-  }
-  
-  /* Card Variants */
-  .card-eco {
-    background: hsl(var(--card-eco));
-    border: 1px solid hsl(var(--card-eco-border));
+    color: hsl(var(--c-slate-500));
   }
   
   /* Chamfered Buttons */

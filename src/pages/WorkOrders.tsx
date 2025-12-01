@@ -122,11 +122,11 @@ const WorkOrders = () => {
 
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
-      planned: 'bg-slate-400 text-white',
-      in_progress: 'bg-[hsl(var(--c-green-accent))] text-white',
-      completed: 'bg-[hsl(var(--c-green-main))] text-white',
-      on_hold: 'bg-warning text-white',
-      cancelled: 'bg-destructive text-white',
+      planned: 'bg-status-planned text-white',
+      in_progress: 'bg-status-in-progress text-white',
+      completed: 'bg-status-completed text-white',
+      on_hold: 'bg-status-on-hold text-white',
+      cancelled: 'bg-status-cancelled text-white',
     };
     return colors[status] || 'bg-muted';
   };
@@ -139,7 +139,7 @@ const WorkOrders = () => {
         <div className="space-y-6 md:space-y-8">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="space-y-2">
-              <h1 className="text-3xl md:text-4xl font-bold tracking-tight font-logo">{t('workOrders')}</h1>
+              <h1 className="text-3xl md:text-4xl font-bold tracking-tight">{t('workOrders')}</h1>
               <p className="text-base md:text-lg text-muted-foreground">Manage production work orders</p>
             </div>
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -151,7 +151,7 @@ const WorkOrders = () => {
               </DialogTrigger>
               <DialogContent className="max-w-md">
                 <DialogHeader>
-                  <DialogTitle className="text-2xl font-logo">{t('createWorkOrder')}</DialogTitle>
+                  <DialogTitle className="text-2xl">{t('createWorkOrder')}</DialogTitle>
                   <DialogDescription className="text-base">Create a new production work order</DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleCreate} className="space-y-5">
@@ -214,10 +214,10 @@ const WorkOrders = () => {
               <Loader2 className="h-12 w-12 md:h-10 md:w-10 animate-spin text-primary" />
             </div>
           ) : workOrders.length === 0 ? (
-            <Card className="card-eco">
+            <Card>
               <CardContent className="py-16 text-center">
                 <Package className="h-20 w-20 md:h-16 md:w-16 mx-auto mb-6 text-muted-foreground/50" />
-                <h3 className="text-2xl md:text-xl font-semibold mb-3 font-logo">No work orders yet</h3>
+                <h3 className="text-2xl md:text-xl font-semibold mb-3">No work orders yet</h3>
                 <p className="text-base md:text-sm text-muted-foreground mb-6">Create your first work order to get started</p>
                 <Button onClick={() => setDialogOpen(true)} variant="rhosonics" size="lg">
                   <Plus className="mr-2" />

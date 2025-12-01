@@ -28,10 +28,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               onClick={() => navigate('/')}
               className="flex items-center gap-3 hover:opacity-80 transition-opacity"
             >
-              <div className="h-11 w-11 md:h-9 md:w-9 rounded-lg bg-brand-gradient flex items-center justify-center shadow-lg">
+              <div className="h-11 w-11 md:h-9 md:w-9 rounded-lg bg-primary flex items-center justify-center shadow-sm">
                 <Factory className="h-6 w-6 md:h-5 md:w-5 text-white" />
               </div>
-              <span className="font-logo text-xl md:text-lg text-[hsl(var(--c-obsidian))]">RHOSONICS</span>
+              <span className="font-logo text-xl md:text-lg text-[hsl(var(--c-obsidian))] lowercase">rhosonics</span>
             </button>
             
             <nav className="hidden md:flex gap-2">
@@ -39,7 +39,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 variant="ghost" 
                 size="sm"
                 onClick={() => navigate('/')}
-                className="font-data text-xs uppercase tracking-wider"
+                className="font-sans"
               >
                 {t('dashboard')}
               </Button>
@@ -47,7 +47,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 variant="ghost" 
                 size="sm"
                 onClick={() => navigate('/work-orders')}
-                className="font-data text-xs uppercase tracking-wider"
+                className="font-sans"
               >
                 <Package className="mr-2 h-4 w-4" />
                 {t('workOrders')}
