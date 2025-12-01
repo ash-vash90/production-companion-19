@@ -21,8 +21,12 @@ const WorkOrders = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [workOrders, setWorkOrders] = useState<any[]>([]);
+  const [filteredOrders, setFilteredOrders] = useState<any[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [productFilter, setProductFilter] = useState<string>('all');
   
   const [formData, setFormData] = useState({
     woNumber: '',
@@ -48,6 +52,7 @@ const WorkOrders = () => {
 
       if (error) throw error;
       setWorkOrders(data || []);
+      setFilteredOrders(data || []);
     } catch (error) {
       console.error('Error fetching work orders:', error);
       toast.error(t('error'), { description: t('failedLoadWorkOrders') });
@@ -55,6 +60,31 @@ const WorkOrders = () => {
       setLoading(false);
     }
   };
+
+  // Filter work orders based on search and filters
+  useEffect(() => {
+    let filtered = [...workOrders];
+
+    // Search filter
+    if (searchTerm) {
+      filtered = filtered.filter(wo =>
+        wo.wo_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        wo.product_type.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    // Status filter
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(wo => wo.status === statusFilter);
+    }
+
+    // Product type filter
+    if (productFilter !== 'all') {
+      filtered = filtered.filter(wo => wo.product_type === productFilter);
+    }
+
+    setFilteredOrders(filtered);
+  }, [searchTerm, statusFilter, productFilter, workOrders]);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -219,11 +249,53 @@ const WorkOrders = () => {
             </Dialog>
           </div>
 
+          {/* Search and Filter Bar */}
+          <Card>
+            <CardContent className="pt-6">
+              <div className="grid gap-4 md:grid-cols-4">
+                <div className="md:col-span-2">
+                  <Input
+                    placeholder={t('searchWorkOrders')}
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full"
+                  />
+                </div>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={t('filterByStatus')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{t('allStatuses')}</SelectItem>
+                    <SelectItem value="planned">{t('planned')}</SelectItem>
+                    <SelectItem value="in_progress">{t('inProgressStatus')}</SelectItem>
+                    <SelectItem value="completed">{t('completed')}</SelectItem>
+                    <SelectItem value="on_hold">{t('onHold')}</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={productFilter} onValueChange={setProductFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={t('filterByProduct')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{t('allProducts')}</SelectItem>
+                    <SelectItem value="SDM_ECO">SDM-ECO</SelectItem>
+                    <SelectItem value="SENSOR">Sensor</SelectItem>
+                    <SelectItem value="MLA">MLA</SelectItem>
+                    <SelectItem value="HMI">HMI</SelectItem>
+                    <SelectItem value="TRANSMITTER">Transmitter</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardContent>
+          </Card>
+
           {loading ? (
             <div className="flex justify-center py-16">
               <Loader2 className="h-12 w-12 md:h-10 md:w-10 animate-spin text-primary" />
             </div>
-          ) : workOrders.length === 0 ? (
+          ) : filteredOrders.length === 0 ? (
+            workOrders.length === 0 ? (
             <Card>
               <CardContent className="py-16 text-center">
                 <Package className="h-20 w-20 md:h-16 md:w-16 mx-auto mb-6 text-muted-foreground/50" />
@@ -235,9 +307,21 @@ const WorkOrders = () => {
                 </Button>
               </CardContent>
             </Card>
+            ) : (
+              <Card>
+                <CardContent className="py-16 text-center">
+                  <Filter className="h-16 w-16 mx-auto mb-6 text-muted-foreground/50" />
+                  <h3 className="text-xl font-semibold mb-3">{t('noMatchingOrders')}</h3>
+                  <p className="text-sm text-muted-foreground mb-6">{t('tryDifferentFilters')}</p>
+                  <Button onClick={() => { setSearchTerm(''); setStatusFilter('all'); setProductFilter('all'); }} variant="outline">
+                    {t('clearFilters')}
+                  </Button>
+                </CardContent>
+              </Card>
+            )
           ) : (
             <div className="grid gap-4 md:gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {workOrders.map((wo) => (
+              {filteredOrders.map((wo) => (
                 <Card
                   key={wo.id}
                   className="cursor-pointer hover:shadow-xl hover:border-primary transition-all"

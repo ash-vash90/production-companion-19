@@ -11,6 +11,8 @@ import WorkOrders from "./pages/WorkOrders";
 import Production from "./pages/Production";
 import ProductionStep from "./pages/ProductionStep";
 import Settings from "./pages/Settings";
+import Analytics from "./pages/Analytics";
+import RoleManagement from "./pages/RoleManagement";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -29,6 +31,8 @@ const App = () => (
               <Route path="/work-orders" element={<WorkOrders />} />
               <Route path="/production/:itemId" element={<Production />} />
               <Route path="/production/step/:itemId" element={<ProductionStep />} />
+              <Route path="/analytics" element={<Analytics />} />
+              <Route path="/role-management" element={<RoleManagement />} />
               <Route path="/settings" element={<Settings />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />

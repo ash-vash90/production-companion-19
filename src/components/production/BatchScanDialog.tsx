@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { ScanBarcode, Plus, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
@@ -26,6 +27,7 @@ const BatchScanDialog: React.FC<BatchScanDialogProps> = ({
   onComplete,
 }) => {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [materialType, setMaterialType] = useState<string>('');
   const [batchNumber, setBatchNumber] = useState<string>('');
   const [openingDate, setOpeningDate] = useState<string>('');
@@ -165,12 +167,15 @@ const BatchScanDialog: React.FC<BatchScanDialogProps> = ({
 
             <div className="space-y-3">
               <Label htmlFor="batchNumber" className="text-base font-data uppercase tracking-wider">Batch Number *</Label>
+              <p className="text-sm text-muted-foreground mb-2">
+                📷 {t('hidScannerSupport')} • ⌨️ {t('manualEntrySupport')}
+              </p>
               <div className="flex gap-2">
                 <Input
                   id="batchNumber"
                   value={batchNumber}
                   onChange={(e) => setBatchNumber(e.target.value)}
-                  placeholder="Scan or enter batch number"
+                  placeholder={t('scanOrEnterBatch')}
                   autoFocus
                   onKeyPress={(e) => {
                     if (e.key === 'Enter') {
@@ -182,6 +187,9 @@ const BatchScanDialog: React.FC<BatchScanDialogProps> = ({
                   <Plus className="h-5 w-5" />
                 </Button>
               </div>
+              <p className="text-xs text-muted-foreground">
+                {t('batchInputHelp')}
+              </p>
             </div>
 
             {selectedMaterial?.requiresDate && (
