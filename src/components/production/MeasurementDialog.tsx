@@ -200,6 +200,27 @@ const MeasurementDialog: React.FC<MeasurementDialogProps> = ({
         details: { measurements, validation: validation.passed, operator: operatorInitials },
       });
 
+      // Trigger webhook for quality check
+      const { triggerWebhook } = await import('@/lib/webhooks');
+      if (validation.passed) {
+        await triggerWebhook('quality_check_passed', {
+          serial_number: workOrderItem.serial_number,
+          step_number: productionStep.step_number,
+          step_name: productionStep.title_en,
+          measurements,
+          operator: operatorInitials,
+        });
+      } else {
+        await triggerWebhook('quality_check_failed', {
+          serial_number: workOrderItem.serial_number,
+          step_number: productionStep.step_number,
+          step_name: productionStep.title_en,
+          measurements,
+          validation_message: validation.message,
+          operator: operatorInitials,
+        });
+      }
+
       toast.success('Success', { 
         description: validation.message
       });
@@ -295,7 +316,7 @@ const MeasurementDialog: React.FC<MeasurementDialogProps> = ({
           <Button variant="outline" onClick={() => onOpenChange(false)} size="lg" className="flex-1">
             Cancel
           </Button>
-          <Button onClick={handleSave} disabled={saving} variant="rhosonics" size="lg" className="flex-1">
+          <Button onClick={handleSave} disabled={saving} variant="default" size="lg" className="flex-1">
             {saving ? 'Saving...' : 'Save Measurements'}
           </Button>
         </DialogFooter>

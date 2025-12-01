@@ -108,6 +108,15 @@ const BatchScanDialog: React.FC<BatchScanDialogProps> = ({
         details: { material_type: materialType, batch_number: batchNumber, serial_number: workOrderItem.serial_number },
       });
 
+      // Trigger webhook for batch scan
+      const { triggerWebhook } = await import('@/lib/webhooks');
+      await triggerWebhook('material_batch_scanned', {
+        serial_number: workOrderItem.serial_number,
+        material_type: materialType,
+        batch_number: batchNumber,
+        opening_date: openingDate,
+      });
+
       setScannedBatches(prev => [data, ...prev]);
       setBatchNumber('');
       setOpeningDate('');
@@ -251,7 +260,7 @@ const BatchScanDialog: React.FC<BatchScanDialogProps> = ({
         </div>
 
         <DialogFooter>
-          <Button onClick={() => onOpenChange(false)} variant="rhosonics" size="lg" className="w-full">
+          <Button onClick={() => onOpenChange(false)} variant="default" size="lg" className="w-full">
             Done
           </Button>
         </DialogFooter>

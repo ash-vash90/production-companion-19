@@ -2,134 +2,102 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* Design system using oklch color space for better perceptual uniformity */
 
 @layer base {
   :root {
-    /* Rhosonics Brand Colors */
-    --c-green-main: 125 50% 40%;      /* #33993c - Primary Solid */
-    --c-green-accent: 81 60% 45%;     /* #73B82E - Gradient Highlight */
+    /* Base colors in oklch format */
+    --background: 100% 0 0;                /* Pure white */
+    --foreground: 14.5% 0 0;               /* Near black */
     
-    /* Neutrals - Exact from design system */
-    --c-obsidian: 226 33% 10%;        /* #111522 */
-    --c-slate-50: 210 40% 98%;        /* #F8FAFC */
-    --c-slate-100: 214 32% 97%;       /* #F1F5F9 */
-    --c-slate-200: 214 32% 91%;       /* #E2E8F0 */
-    --c-slate-400: 215 16% 65%;       /* #94A3B8 */
-    --c-slate-500: 215 16% 47%;       /* #64748B */
-    --c-slate-800: 217 33% 17%;       /* #1E293B */
-    --c-slate-900: 222 47% 11%;       /* #0F172A */
+    --card: 100% 0 0;
+    --card-foreground: 14.5% 0 0;
     
-    /* Eco Tints (Sustainability) */
-    --c-eco-surface: 125 39% 94%;     /* #ecf8ed - Card Backgrounds */
-    --c-eco-border: 125 48% 90%;      /* #d9f2db - Borders */
+    --popover: 100% 0 0;
+    --popover-foreground: 14.5% 0 0;
     
-    /* Design System Mappings */
-    --background: var(--c-slate-50);
-    --foreground: var(--c-obsidian);
+    --primary: 20.5% 0 0;                  /* Dark gray */
+    --primary-foreground: 98.5% 0 0;       /* Off white */
     
-    --primary: var(--c-green-main);
-    --primary-foreground: 0 0% 100%;
+    --secondary: 97% 0 0;                  /* Light gray */
+    --secondary-foreground: 20.5% 0 0;
     
-    --accent: var(--c-slate-100);
-    --accent-foreground: var(--c-obsidian);
+    --muted: 97% 0 0;
+    --muted-foreground: 55.6% 0 0;         /* Mid gray */
     
-    --card: 0 0% 100%;
-    --card-foreground: var(--c-obsidian);
+    --accent: 97% 0 0;
+    --accent-foreground: 20.5% 0 0;
     
-    --popover: 0 0% 100%;
-    --popover-foreground: var(--c-obsidian);
+    --destructive: 57.7% 24.5% 27.325;     /* Red */
+    --destructive-foreground: 98.5% 0 0;
     
-    --secondary: var(--c-slate-100);
-    --secondary-foreground: var(--c-obsidian);
+    --border: 92.2% 0 0;                   /* Light border */
+    --input: 92.2% 0 0;
+    --ring: 70.8% 0 0;                     /* Focus ring */
     
-    --muted: var(--c-slate-100);
-    --muted-foreground: var(--c-slate-500);
+    /* Chart colors */
+    --chart-1: 64.6% 22.2% 41.116;
+    --chart-2: 60% 11.8% 184.704;
+    --chart-3: 39.8% 7% 227.392;
+    --chart-4: 82.8% 18.9% 84.429;
+    --chart-5: 76.9% 18.8% 70.08;
     
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
+    /* Sidebar specific */
+    --sidebar: 98.5% 0 0;
+    --sidebar-foreground: 14.5% 0 0;
+    --sidebar-primary: 20.5% 0 0;
+    --sidebar-primary-foreground: 98.5% 0 0;
+    --sidebar-accent: 97% 0 0;
+    --sidebar-accent-foreground: 20.5% 0 0;
+    --sidebar-border: 92.2% 0 0;
+    --sidebar-ring: 70.8% 0 0;
     
-    --success: var(--c-green-main);
-    --success-foreground: 0 0% 100%;
-    
-    --warning: 38 92% 50%;
-    --warning-foreground: 0 0% 100%;
-    
-    --border: var(--c-slate-200);
-    --input: var(--c-slate-200);
-    --ring: var(--c-slate-400);
-    
-    /* Status colors */
-    --status-planned: var(--c-slate-400);
-    --status-in-progress: 217 91% 60%;
-    --status-completed: var(--c-green-main);
-    --status-on-hold: 38 92% 50%;
-    --status-cancelled: 0 84% 60%;
-    
-    /* Sidebar */
-    --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: var(--c-obsidian);
-    --sidebar-primary: var(--c-green-main);
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: var(--c-slate-100);
-    --sidebar-accent-foreground: var(--c-obsidian);
-    --sidebar-border: var(--c-slate-200);
-    --sidebar-ring: var(--c-green-main);
-    
-    /* Shapes */
-    --radius: 6px;
-    --chamfer-btn: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
-    
-    /* Shadows */
-    --shadow-card: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+    --radius: 0.625rem;
   }
   
   .dark {
-    /* Dark mode with Obsidian base */
-    --background: var(--c-obsidian);
-    --foreground: var(--c-slate-50);
+    --background: 14.5% 0 0;              /* Dark background */
+    --foreground: 98.5% 0 0;              /* Light text */
     
-    --primary: var(--c-green-main);
-    --primary-foreground: 0 0% 100%;
+    --card: 14.5% 0 0;
+    --card-foreground: 98.5% 0 0;
     
-    --accent: var(--c-green-accent);
-    --accent-foreground: 0 0% 100%;
+    --popover: 14.5% 0 0;
+    --popover-foreground: 98.5% 0 0;
     
-    --card: var(--c-slate-900);
-    --card-foreground: var(--c-slate-50);
+    --primary: 98.5% 0 0;                 /* Light in dark mode */
+    --primary-foreground: 20.5% 0 0;      /* Dark in dark mode */
     
-    --popover: var(--c-slate-900);
-    --popover-foreground: var(--c-slate-50);
+    --secondary: 26.9% 0 0;
+    --secondary-foreground: 98.5% 0 0;
     
-    --secondary: var(--c-slate-800);
-    --secondary-foreground: var(--c-slate-50);
+    --muted: 26.9% 0 0;
+    --muted-foreground: 70.8% 0 0;
     
-    --muted: var(--c-slate-800);
-    --muted-foreground: var(--c-slate-400);
+    --accent: 26.9% 0 0;
+    --accent-foreground: 98.5% 0 0;
     
-    --destructive: 0 63% 50%;
-    --destructive-foreground: 0 0% 100%;
+    --destructive: 39.6% 14.1% 25.723;
+    --destructive-foreground: 63.7% 23.7% 25.331;
     
-    --success: var(--c-green-main);
-    --success-foreground: 0 0% 100%;
+    --border: 26.9% 0 0;
+    --input: 26.9% 0 0;
+    --ring: 43.9% 0 0;
     
-    --warning: 38 92% 55%;
-    --warning-foreground: 0 0% 100%;
+    --chart-1: 48.8% 24.3% 264.376;
+    --chart-2: 69.6% 17% 162.48;
+    --chart-3: 76.9% 18.8% 70.08;
+    --chart-4: 62.7% 26.5% 303.9;
+    --chart-5: 64.5% 24.6% 16.439;
     
-    --border: var(--c-slate-800);
-    --input: var(--c-slate-800);
-    --ring: var(--c-green-main);
-    
-    --sidebar-background: var(--c-slate-900);
-    --sidebar-foreground: var(--c-slate-50);
-    --sidebar-primary: var(--c-green-main);
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: var(--c-slate-800);
-    --sidebar-accent-foreground: var(--c-slate-50);
-    --sidebar-border: var(--c-slate-800);
-    --sidebar-ring: var(--c-green-main);
+    --sidebar: 20.5% 0 0;
+    --sidebar-foreground: 98.5% 0 0;
+    --sidebar-primary: 48.8% 24.3% 264.376;
+    --sidebar-primary-foreground: 98.5% 0 0;
+    --sidebar-accent: 26.9% 0 0;
+    --sidebar-accent-foreground: 98.5% 0 0;
+    --sidebar-border: 26.9% 0 0;
+    --sidebar-ring: 43.9% 0 0;
   }
 }
 
@@ -144,7 +112,7 @@ All colors MUST be HSL.
     line-height: 1.5;
   }
   
-  /* Typography Classes */
+  /* Typography */
   .font-logo {
     font-family: 'Unbounded', sans-serif;
     font-weight: 500;
@@ -158,36 +126,5 @@ All colors MUST be HSL.
     font-family: 'JetBrains Mono', monospace;
     font-weight: 500;
     letter-spacing: 0.02em;
-  }
-  
-  /* Label Tech Style */
-  .label-tech {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    font-weight: 500;
-    color: hsl(var(--c-slate-500));
-  }
-  
-  /* Chamfered Buttons */
-  .btn-chamfer {
-    clip-path: var(--chamfer-btn);
-  }
-  
-  /* Button Styles */
-  .btn-rhosonics {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.75rem;
-    font-weight: 500;
-    letter-spacing: 0.02em;
-    text-transform: uppercase;
-    padding: 0.6rem 1.2rem;
-    clip-path: var(--chamfer-btn);
-    transition: all 0.2s;
-  }
-  
-  .btn-rhosonics:hover {
-    transform: translateY(-1px);
   }
 }

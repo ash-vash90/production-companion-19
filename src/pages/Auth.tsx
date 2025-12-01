@@ -115,7 +115,7 @@ const Auth = () => {
                     required
                   />
                 </div>
-                <Button type="submit" className="w-full" variant="rhosonics" size="lg" disabled={loading}>
+                <Button type="submit" className="w-full" variant="default" size="lg" disabled={loading}>
                   {loading && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
                   {t('login')}
                 </Button>
@@ -168,7 +168,7 @@ const Auth = () => {
                     </SelectContent>
                   </Select>
                 </div>
-                <Button type="submit" className="w-full" variant="rhosonics" size="lg" disabled={loading}>
+                <Button type="submit" className="w-full" variant="default" size="lg" disabled={loading}>
                   {loading && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
                   {t('signup')}
                 </Button>

@@ -58,11 +58,11 @@ const Index = () => {
 
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
-      planned: 'bg-status-planned text-white',
-      in_progress: 'bg-status-in-progress text-white',
-      completed: 'bg-status-completed text-white',
-      on_hold: 'bg-status-on-hold text-white',
-      cancelled: 'bg-status-cancelled text-white',
+      planned: 'bg-secondary text-secondary-foreground',
+      in_progress: 'bg-primary text-primary-foreground',
+      completed: 'bg-accent text-accent-foreground',
+      on_hold: 'bg-muted text-muted-foreground',
+      cancelled: 'bg-destructive text-destructive-foreground',
     };
     return colors[status] || 'bg-muted';
   };
@@ -137,7 +137,7 @@ const Index = () => {
                   <CardTitle>Recent Work Orders</CardTitle>
                   <CardDescription>Latest production orders in the system</CardDescription>
                 </div>
-                <Button variant="rhosonics" onClick={() => navigate('/work-orders')}>
+                <Button variant="default" onClick={() => navigate('/work-orders')}>
                   {t('createWorkOrder')}
                 </Button>
               </div>

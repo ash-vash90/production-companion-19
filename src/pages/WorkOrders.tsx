@@ -142,6 +142,14 @@ const WorkOrders = () => {
         details: { wo_number: formData.woNumber, product_type: formData.productType, batch_size: formData.batchSize },
       });
 
+      // Trigger webhook for work order creation
+      const { triggerWebhook } = await import('@/lib/webhooks');
+      await triggerWebhook('work_order_created', {
+        work_order: workOrder,
+        batch_size: formData.batchSize,
+        product_type: formData.productType,
+      });
+
       toast.success(t('success'), { description: `${t('workOrderNumber')} ${formData.woNumber} ${t('workOrderCreated')}` });
       setDialogOpen(false);
       setFormData({ woNumber: '', productType: 'SDM_ECO', batchSize: 1 });
@@ -162,11 +170,11 @@ const WorkOrders = () => {
 
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
-      planned: 'bg-status-planned text-white',
-      in_progress: 'bg-status-in-progress text-white',
-      completed: 'bg-status-completed text-white',
-      on_hold: 'bg-status-on-hold text-white',
-      cancelled: 'bg-status-cancelled text-white',
+      planned: 'bg-secondary text-secondary-foreground',
+      in_progress: 'bg-primary text-primary-foreground',
+      completed: 'bg-accent text-accent-foreground',
+      on_hold: 'bg-muted text-muted-foreground',
+      cancelled: 'bg-destructive text-destructive-foreground',
     };
     return colors[status] || 'bg-muted';
   };
@@ -184,7 +192,7 @@ const WorkOrders = () => {
             </div>
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
-                <Button variant="rhosonics" size="lg" className="w-full sm:w-auto">
+                <Button variant="default" size="lg" className="w-full sm:w-auto">
                   <Plus className="mr-2" />
                   {t('createWorkOrder')}
                 </Button>
@@ -239,7 +247,7 @@ const WorkOrders = () => {
                     <Button type="button" variant="outline" onClick={() => setDialogOpen(false)} size="lg" className="flex-1">
                       {t('cancel')}
                     </Button>
-                    <Button type="submit" disabled={creating} variant="rhosonics" size="lg" className="flex-1">
+                    <Button type="submit" disabled={creating} variant="default" size="lg" className="flex-1">
                       {creating && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
                       {t('create')}
                     </Button>
@@ -301,7 +309,7 @@ const WorkOrders = () => {
                 <Package className="h-20 w-20 md:h-16 md:w-16 mx-auto mb-6 text-muted-foreground/50" />
                 <h3 className="text-2xl md:text-xl font-semibold mb-3">{t('noWorkOrdersYet')}</h3>
                 <p className="text-base md:text-sm text-muted-foreground mb-6">{t('createFirstWorkOrder')}</p>
-                <Button onClick={() => setDialogOpen(true)} variant="rhosonics" size="lg">
+                <Button onClick={() => setDialogOpen(true)} variant="default" size="lg">
                   <Plus className="mr-2" />
                   {t('createWorkOrder')}
                 </Button>

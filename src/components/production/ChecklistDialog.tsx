@@ -208,7 +208,7 @@ const ChecklistDialog: React.FC<ChecklistDialogProps> = ({
           <Button variant="outline" onClick={() => onOpenChange(false)} size="lg" className="flex-1">
             Cancel
           </Button>
-          <Button onClick={handleSave} disabled={saving || loading} variant="rhosonics" size="lg" className="flex-1">
+          <Button onClick={handleSave} disabled={saving || loading} variant="default" size="lg" className="flex-1">
             {saving ? 'Saving...' : 'Save Checklist'}
           </Button>
         </DialogFooter>
