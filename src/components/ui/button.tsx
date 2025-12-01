@@ -5,25 +5,25 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 active:scale-95",
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary/90",
-        destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
-        outline: "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
+        default: "bg-primary text-primary-foreground hover:bg-primary/90 shadow-md hover:shadow-lg",
+        destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-md",
+        outline: "border-2 border-input bg-background hover:bg-accent hover:text-accent-foreground hover:border-primary",
         secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
-        rhosonics: "bg-primary text-primary-foreground hover:brightness-110 hover:-translate-y-0.5 font-mono text-xs uppercase tracking-wider btn-chamfer",
-        eco: "bg-primary/10 text-primary border border-[hsl(var(--c-eco-border))] hover:bg-primary hover:text-primary-foreground font-mono text-xs uppercase tracking-wider btn-chamfer",
+        rhosonics: "bg-brand-gradient text-white hover:brightness-110 hover:-translate-y-0.5 font-data text-xs uppercase tracking-wider btn-chamfer shadow-lg [&_svg]:size-5",
+        eco: "bg-[hsl(var(--c-eco-surface))] text-primary border-2 border-[hsl(var(--c-eco-border))] hover:bg-primary hover:text-white font-data text-xs uppercase tracking-wider btn-chamfer transition-all duration-200 [&_svg]:size-5",
       },
       size: {
-        default: "h-10 px-4 py-2",
-        sm: "h-9 rounded-md px-3",
-        lg: "h-11 rounded-md px-8",
-        icon: "h-10 w-10",
-        rhosonics: "h-auto px-5 py-2.5",
+        default: "h-12 px-6 py-3 text-base [&_svg]:size-5",
+        sm: "h-10 rounded-md px-4 text-sm [&_svg]:size-4",
+        lg: "h-14 rounded-md px-8 text-lg [&_svg]:size-6",
+        icon: "h-12 w-12 [&_svg]:size-6",
+        rhosonics: "h-auto px-6 py-3",
       },
     },
     defaultVariants: {

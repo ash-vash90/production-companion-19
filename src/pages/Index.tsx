@@ -73,94 +73,103 @@ const Index = () => {
   return (
     <ProtectedRoute>
       <Layout>
-        <div className="space-y-6">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">
+        <div className="space-y-6 md:space-y-8">
+          <div className="space-y-2">
+            <h1 className="text-3xl md:text-4xl font-bold tracking-tight font-logo">
               {t('dashboard')}
             </h1>
-            <p className="text-muted-foreground">
+            <p className="text-base md:text-lg text-muted-foreground">
               Production overview and statistics
             </p>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Work Orders</CardTitle>
-                <Package className="h-4 w-4 text-muted-foreground" />
+          <div className="grid gap-4 md:gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            <Card className="card-eco">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+                <CardTitle className="text-base md:text-sm font-medium font-data uppercase tracking-wider">Total Orders</CardTitle>
+                <div className="h-12 w-12 md:h-10 md:w-10 rounded-lg bg-primary/20 flex items-center justify-center">
+                  <Package className="h-6 w-6 md:h-5 md:w-5 text-primary" />
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats.totalWorkOrders}</div>
-                <p className="text-xs text-muted-foreground">Active production orders</p>
+                <div className="text-4xl md:text-3xl font-bold font-data">{stats.totalWorkOrders}</div>
+                <p className="text-sm md:text-xs text-muted-foreground mt-2">Active production orders</p>
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">{t('inProgress')}</CardTitle>
-                <Clock className="h-4 w-4 text-warning" />
+            <Card className="card-eco">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+                <CardTitle className="text-base md:text-sm font-medium font-data uppercase tracking-wider">{t('inProgress')}</CardTitle>
+                <div className="h-12 w-12 md:h-10 md:w-10 rounded-lg bg-warning/20 flex items-center justify-center">
+                  <Clock className="h-6 w-6 md:h-5 md:w-5 text-warning" />
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats.inProgress}</div>
-                <p className="text-xs text-muted-foreground">Currently being processed</p>
+                <div className="text-4xl md:text-3xl font-bold font-data">{stats.inProgress}</div>
+                <p className="text-sm md:text-xs text-muted-foreground mt-2">Currently processing</p>
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">{t('completed')}</CardTitle>
-                <CheckCircle className="h-4 w-4 text-success" />
+            <Card className="card-eco">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+                <CardTitle className="text-base md:text-sm font-medium font-data uppercase tracking-wider">{t('completed')}</CardTitle>
+                <div className="h-12 w-12 md:h-10 md:w-10 rounded-lg bg-success/20 flex items-center justify-center">
+                  <CheckCircle className="h-6 w-6 md:h-5 md:w-5 text-success" />
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats.completed}</div>
-                <p className="text-xs text-muted-foreground">Finished today</p>
+                <div className="text-4xl md:text-3xl font-bold font-data">{stats.completed}</div>
+                <p className="text-sm md:text-xs text-muted-foreground mt-2">Finished today</p>
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">{t('onHold')}</CardTitle>
-                <AlertCircle className="h-4 w-4 text-destructive" />
+            <Card className="card-eco">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+                <CardTitle className="text-base md:text-sm font-medium font-data uppercase tracking-wider">{t('onHold')}</CardTitle>
+                <div className="h-12 w-12 md:h-10 md:w-10 rounded-lg bg-destructive/20 flex items-center justify-center">
+                  <AlertCircle className="h-6 w-6 md:h-5 md:w-5 text-destructive" />
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats.onHold}</div>
-                <p className="text-xs text-muted-foreground">Awaiting action</p>
+                <div className="text-4xl md:text-3xl font-bold font-data">{stats.onHold}</div>
+                <p className="text-sm md:text-xs text-muted-foreground mt-2">Awaiting action</p>
               </CardContent>
             </Card>
           </div>
 
           <Card>
             <CardHeader>
-              <CardTitle>Recent Work Orders</CardTitle>
+              <CardTitle className="font-logo">Recent Work Orders</CardTitle>
               <CardDescription>Latest production orders in the system</CardDescription>
             </CardHeader>
             <CardContent>
               {loading ? (
-                <div className="flex justify-center py-8">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <div className="flex justify-center py-12">
+                  <Loader2 className="h-10 w-10 md:h-8 md:w-8 animate-spin text-primary" />
                 </div>
               ) : recentWorkOrders.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <p>No work orders found</p>
-                  <Button className="mt-4" onClick={() => navigate('/work-orders')}>
+                <div className="text-center py-12 text-muted-foreground">
+                  <Package className="h-16 w-16 mx-auto mb-4 text-muted-foreground/50" />
+                  <p className="text-lg mb-4">No work orders found</p>
+                  <Button variant="rhosonics" size="lg" onClick={() => navigate('/work-orders')}>
                     {t('createWorkOrder')}
                   </Button>
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-3 md:space-y-4">
                   {recentWorkOrders.map((wo) => (
                     <div
                       key={wo.id}
-                      className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 cursor-pointer transition-colors"
+                      className="flex items-center justify-between p-5 md:p-4 border-2 rounded-lg hover:bg-accent/50 hover:border-primary cursor-pointer transition-all active:scale-98"
                       onClick={() => navigate(`/production/${wo.id}`)}
                     >
-                      <div className="space-y-1">
-                        <p className="font-medium">{wo.wo_number}</p>
-                        <p className="text-sm text-muted-foreground">
+                      <div className="space-y-1.5 md:space-y-1">
+                        <p className="font-medium text-lg md:text-base font-data">{wo.wo_number}</p>
+                        <p className="text-base md:text-sm text-muted-foreground">
                           {wo.product_type} • Batch: {wo.batch_size}
                         </p>
                       </div>
-                      <Badge className={`${getStatusColor(wo.status)} text-white`}>
+                      <Badge className={`${getStatusColor(wo.status)} text-white h-8 px-4 text-sm md:h-auto md:px-3 md:text-xs`}>
                         {t(wo.status as any)}
                       </Badge>
                     </div>

@@ -136,27 +136,27 @@ const WorkOrders = () => {
   return (
     <ProtectedRoute>
       <Layout>
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight">{t('workOrders')}</h1>
-              <p className="text-muted-foreground">Manage production work orders</p>
+        <div className="space-y-6 md:space-y-8">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="space-y-2">
+              <h1 className="text-3xl md:text-4xl font-bold tracking-tight font-logo">{t('workOrders')}</h1>
+              <p className="text-base md:text-lg text-muted-foreground">Manage production work orders</p>
             </div>
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
-                <Button>
-                  <Plus className="mr-2 h-4 w-4" />
+                <Button variant="rhosonics" size="lg" className="w-full sm:w-auto">
+                  <Plus className="mr-2" />
                   {t('createWorkOrder')}
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="max-w-md">
                 <DialogHeader>
-                  <DialogTitle>{t('createWorkOrder')}</DialogTitle>
-                  <DialogDescription>Create a new production work order</DialogDescription>
+                  <DialogTitle className="text-2xl font-logo">{t('createWorkOrder')}</DialogTitle>
+                  <DialogDescription className="text-base">Create a new production work order</DialogDescription>
                 </DialogHeader>
-                <form onSubmit={handleCreate} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="woNumber">{t('workOrderNumber')}</Label>
+                <form onSubmit={handleCreate} className="space-y-5">
+                  <div className="space-y-3">
+                    <Label htmlFor="woNumber" className="text-base font-data uppercase tracking-wider">{t('workOrderNumber')}</Label>
                     <Input
                       id="woNumber"
                       value={formData.woNumber}
@@ -165,26 +165,26 @@ const WorkOrders = () => {
                       required
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="productType">{t('productType')}</Label>
+                  <div className="space-y-3">
+                    <Label htmlFor="productType" className="text-base font-data uppercase tracking-wider">{t('productType')}</Label>
                     <Select
                       value={formData.productType}
                       onValueChange={(value: any) => setFormData({ ...formData, productType: value })}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="h-12 text-base border-2">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="SDM_ECO">SDM-ECO</SelectItem>
-                        <SelectItem value="SENSOR">Sensor</SelectItem>
-                        <SelectItem value="MLA">MLA</SelectItem>
-                        <SelectItem value="HMI">HMI</SelectItem>
-                        <SelectItem value="TRANSMITTER">Transmitter</SelectItem>
+                        <SelectItem value="SDM_ECO" className="h-12 text-base">SDM-ECO</SelectItem>
+                        <SelectItem value="SENSOR" className="h-12 text-base">Sensor</SelectItem>
+                        <SelectItem value="MLA" className="h-12 text-base">MLA</SelectItem>
+                        <SelectItem value="HMI" className="h-12 text-base">HMI</SelectItem>
+                        <SelectItem value="TRANSMITTER" className="h-12 text-base">Transmitter</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="batchSize">{t('batchSize')}</Label>
+                  <div className="space-y-3">
+                    <Label htmlFor="batchSize" className="text-base font-data uppercase tracking-wider">{t('batchSize')}</Label>
                     <Input
                       id="batchSize"
                       type="number"
@@ -195,12 +195,12 @@ const WorkOrders = () => {
                       required
                     />
                   </div>
-                  <DialogFooter>
-                    <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
+                  <DialogFooter className="gap-3">
+                    <Button type="button" variant="outline" onClick={() => setDialogOpen(false)} size="lg" className="flex-1">
                       {t('cancel')}
                     </Button>
-                    <Button type="submit" disabled={creating}>
-                      {creating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    <Button type="submit" disabled={creating} variant="rhosonics" size="lg" className="flex-1">
+                      {creating && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
                       {t('create')}
                     </Button>
                   </DialogFooter>
@@ -210,47 +210,47 @@ const WorkOrders = () => {
           </div>
 
           {loading ? (
-            <div className="flex justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <div className="flex justify-center py-16">
+              <Loader2 className="h-12 w-12 md:h-10 md:w-10 animate-spin text-primary" />
             </div>
           ) : workOrders.length === 0 ? (
-            <Card>
-              <CardContent className="py-12 text-center">
-                <Package className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                <h3 className="text-lg font-semibold mb-2">No work orders yet</h3>
-                <p className="text-muted-foreground mb-4">Create your first work order to get started</p>
-                <Button onClick={() => setDialogOpen(true)}>
-                  <Plus className="mr-2 h-4 w-4" />
+            <Card className="card-eco">
+              <CardContent className="py-16 text-center">
+                <Package className="h-20 w-20 md:h-16 md:w-16 mx-auto mb-6 text-muted-foreground/50" />
+                <h3 className="text-2xl md:text-xl font-semibold mb-3 font-logo">No work orders yet</h3>
+                <p className="text-base md:text-sm text-muted-foreground mb-6">Create your first work order to get started</p>
+                <Button onClick={() => setDialogOpen(true)} variant="rhosonics" size="lg">
+                  <Plus className="mr-2" />
                   {t('createWorkOrder')}
                 </Button>
               </CardContent>
             </Card>
           ) : (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 md:gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {workOrders.map((wo) => (
                 <Card
                   key={wo.id}
-                  className="cursor-pointer hover:shadow-lg transition-shadow"
+                  className="cursor-pointer hover:shadow-xl hover:border-primary transition-all active:scale-98"
                   onClick={() => navigate(`/production/${wo.id}`)}
                 >
                   <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-lg">{wo.wo_number}</CardTitle>
-                      <Badge className={`${getStatusColor(wo.status)} text-white`}>
+                    <div className="flex items-center justify-between mb-2">
+                      <CardTitle className="text-xl md:text-lg font-data">{wo.wo_number}</CardTitle>
+                      <Badge className={`${getStatusColor(wo.status)} text-white h-8 px-4 text-sm md:h-auto md:px-3 md:text-xs`}>
                         {t(wo.status as any)}
                       </Badge>
                     </div>
-                    <CardDescription>{wo.product_type}</CardDescription>
+                    <CardDescription className="text-base md:text-sm">{wo.product_type}</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">{t('batchSize')}:</span>
-                        <span className="font-medium">{wo.batch_size}</span>
+                    <div className="space-y-3 text-base md:text-sm">
+                      <div className="flex justify-between items-center p-3 rounded-lg bg-muted/50">
+                        <span className="text-muted-foreground font-data">{t('batchSize')}:</span>
+                        <span className="font-bold font-data text-lg md:text-base">{wo.batch_size}</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Created:</span>
-                        <span className="font-medium">
+                      <div className="flex justify-between items-center p-3 rounded-lg bg-muted/50">
+                        <span className="text-muted-foreground font-data">Created:</span>
+                        <span className="font-medium font-data">
                           {new Date(wo.created_at).toLocaleDateString()}
                         </span>
                       </div>
