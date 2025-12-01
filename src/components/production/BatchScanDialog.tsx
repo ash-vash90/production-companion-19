@@ -139,7 +139,7 @@ const BatchScanDialog: React.FC<BatchScanDialogProps> = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[700px] max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-logo">Scan Material Batches</DialogTitle>
+          <DialogTitle className="text-2xl font-ui">Scan Material Batches</DialogTitle>
           <DialogDescription className="text-base">
             Scan or enter batch numbers for materials used in this production step
           </DialogDescription>

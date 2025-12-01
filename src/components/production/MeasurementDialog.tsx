@@ -187,7 +187,7 @@ const MeasurementDialog: React.FC<MeasurementDialogProps> = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-logo">Record Measurements</DialogTitle>
+          <DialogTitle className="text-2xl font-ui">Record Measurements</DialogTitle>
           <DialogDescription className="text-base">
             {productionStep.description_en || 'Enter required measurement values'}
           </DialogDescription>

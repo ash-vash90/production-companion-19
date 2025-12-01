@@ -214,7 +214,7 @@ const ProductionStep = () => {
         <Card>
           <CardHeader>
             <CardTitle className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <span className="text-2xl md:text-xl font-logo">{currentStep.title_en}</span>
+              <span className="text-2xl md:text-xl font-ui">{currentStep.title_en}</span>
               <Badge variant={stepExecution ? 'default' : 'outline'} className="h-10 px-5 text-base md:h-auto md:px-3 md:text-sm self-start">
                 {stepExecution ? 'In Progress' : 'Not Started'}
               </Badge>
@@ -268,7 +268,7 @@ const ProductionStep = () => {
         {/* Progress indicator */}
         <Card>
           <CardHeader>
-            <CardTitle className="font-logo">Progress</CardTitle>
+            <CardTitle className="font-ui">Progress</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3 md:space-y-2">
