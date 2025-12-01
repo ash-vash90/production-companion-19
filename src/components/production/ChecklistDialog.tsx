@@ -146,52 +146,53 @@ const ChecklistDialog: React.FC<ChecklistDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[600px] max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Complete Checklist</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="text-2xl font-logo">Complete Checklist</DialogTitle>
+          <DialogDescription className="text-base">
             Review and check all items in the production checklist
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
-          <div className="space-y-2">
-            <Label htmlFor="operator">Operator Initials *</Label>
+        <div className="space-y-5 py-4">
+          <div className="space-y-3">
+            <Label htmlFor="operator" className="text-base font-data uppercase tracking-wider">Operator Initials *</Label>
             <Select value={operatorInitials} onValueChange={setOperatorInitials}>
-              <SelectTrigger>
+              <SelectTrigger className="h-12 text-base border-2">
                 <SelectValue placeholder="Select operator" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="MB">MB</SelectItem>
-                <SelectItem value="HL">HL</SelectItem>
-                <SelectItem value="AB">AB</SelectItem>
-                <SelectItem value="EV">EV</SelectItem>
+                <SelectItem value="MB" className="h-12 text-base">MB</SelectItem>
+                <SelectItem value="HL" className="h-12 text-base">HL</SelectItem>
+                <SelectItem value="AB" className="h-12 text-base">AB</SelectItem>
+                <SelectItem value="EV" className="h-12 text-base">EV</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           {loading ? (
-            <div className="text-center py-8 text-muted-foreground">Loading checklist...</div>
+            <div className="text-center py-8 text-muted-foreground text-base">Loading checklist...</div>
           ) : checklistItems.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">No checklist items found</div>
+            <div className="text-center py-8 text-muted-foreground text-base border rounded-lg">No checklist items found</div>
           ) : (
             <div className="space-y-3">
               {checklistItems.map((item) => (
                 <div
                   key={item.id}
-                  className={`flex items-start gap-3 p-3 rounded-lg border ${
-                    responses[item.id] ? 'bg-accent/50 border-primary' : 'border-border'
+                  className={`flex items-start gap-4 p-4 rounded-lg border-2 transition-all ${
+                    responses[item.id] ? 'bg-accent/50 border-primary' : 'border-border hover:border-primary/50'
                   }`}
                 >
                   <Checkbox
                     id={item.id}
                     checked={responses[item.id] || false}
                     onCheckedChange={(checked) => handleCheckItem(item.id, checked as boolean)}
+                    className="mt-1 h-6 w-6"
                   />
                   <div className="flex-1">
                     <Label
                       htmlFor={item.id}
-                      className="cursor-pointer text-sm font-medium leading-relaxed"
+                      className="cursor-pointer text-base font-medium leading-relaxed"
                     >
                       {language === 'nl' ? item.item_text_nl : item.item_text_en}
                       {item.required && <span className="text-destructive ml-1">*</span>}
@@ -203,11 +204,11 @@ const ChecklistDialog: React.FC<ChecklistDialogProps> = ({
           )}
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+        <DialogFooter className="gap-3">
+          <Button variant="outline" onClick={() => onOpenChange(false)} size="lg" className="flex-1">
             Cancel
           </Button>
-          <Button onClick={handleSave} disabled={saving || loading}>
+          <Button onClick={handleSave} disabled={saving || loading} variant="rhosonics" size="lg" className="flex-1">
             {saving ? 'Saving...' : 'Save Checklist'}
           </Button>
         </DialogFooter>

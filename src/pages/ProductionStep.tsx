@@ -198,14 +198,14 @@ const ProductionStep = () => {
 
   return (
     <Layout>
-      <div className="space-y-6">
+      <div className="space-y-6 md:space-y-8">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate(`/production/${item.work_order_id}`)}>
-            <ArrowLeft className="h-5 w-5" />
+          <Button variant="ghost" size="icon" onClick={() => navigate(`/production/${item.work_order_id}`)} className="h-12 w-12 md:h-10 md:w-10">
+            <ArrowLeft className="h-6 w-6 md:h-5 md:w-5" />
           </Button>
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">{item.serial_number}</h1>
-            <p className="text-muted-foreground">
+          <div className="space-y-1">
+            <h1 className="text-3xl md:text-4xl font-bold tracking-tight font-data">{item.serial_number}</h1>
+            <p className="text-base md:text-lg text-muted-foreground font-data">
               {workOrder.product_type} • Step {item.current_step} of {productionSteps.length}
             </p>
           </div>
@@ -213,51 +213,51 @@ const ProductionStep = () => {
 
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <span>{t(currentStep.title_en.toLowerCase())}</span>
-              <Badge variant={stepExecution ? 'default' : 'outline'}>
+            <CardTitle className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <span className="text-2xl md:text-xl font-logo">{currentStep.title_en}</span>
+              <Badge variant={stepExecution ? 'default' : 'outline'} className="h-10 px-5 text-base md:h-auto md:px-3 md:text-sm self-start">
                 {stepExecution ? 'In Progress' : 'Not Started'}
               </Badge>
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-base md:text-sm">
               {currentStep.description_en || 'Follow the instructions to complete this step'}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {currentStep.requires_barcode_scan && (
-              <div className="flex items-center gap-2 p-3 bg-accent/50 rounded-lg">
-                <ScanBarcode className="h-5 w-5 text-primary" />
-                <span className="text-sm">This step requires barcode scanning</span>
+              <div className="flex items-center gap-3 p-4 bg-accent/50 rounded-lg border-2">
+                <ScanBarcode className="h-6 w-6 text-primary" />
+                <span className="text-base font-medium">This step requires barcode scanning</span>
               </div>
             )}
 
             {!stepExecution ? (
-              <Button onClick={handleStartStep} className="w-full">
+              <Button onClick={handleStartStep} variant="rhosonics" size="lg" className="w-full">
                 Start Step
               </Button>
             ) : (
               <div className="space-y-4">
                 {currentStep.requires_batch_number && (
-                  <Button onClick={() => setShowBatchScanDialog(true)} variant="outline" className="w-full">
-                    <ScanBarcode className="mr-2 h-4 w-4" />
+                  <Button onClick={() => setShowBatchScanDialog(true)} variant="outline" size="lg" className="w-full">
+                    <ScanBarcode className="mr-2" />
                     Scan Materials
                   </Button>
                 )}
                 
                 {(currentStep.requires_value_input || currentStep.measurement_fields) && (
-                  <Button onClick={() => setShowMeasurementDialog(true)} variant="outline" className="w-full">
+                  <Button onClick={() => setShowMeasurementDialog(true)} variant="outline" size="lg" className="w-full">
                     Enter Measurements
                   </Button>
                 )}
 
                 {currentStep.has_checklist && (
-                  <Button onClick={() => setShowChecklistDialog(true)} variant="outline" className="w-full">
+                  <Button onClick={() => setShowChecklistDialog(true)} variant="outline" size="lg" className="w-full">
                     Complete Checklist
                   </Button>
                 )}
 
-                <Button onClick={handleCompleteStep} className="w-full">
-                  <CheckCircle2 className="mr-2 h-4 w-4" />
+                <Button onClick={handleCompleteStep} variant="rhosonics" size="lg" className="w-full">
+                  <CheckCircle2 className="mr-2" />
                   Complete Step
                 </Button>
               </div>
@@ -268,35 +268,35 @@ const ProductionStep = () => {
         {/* Progress indicator */}
         <Card>
           <CardHeader>
-            <CardTitle>Progress</CardTitle>
+            <CardTitle className="font-logo">Progress</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-2">
+            <div className="space-y-3 md:space-y-2">
               {productionSteps.map((step, idx) => (
                 <div
                   key={step.id}
-                  className={`flex items-center gap-3 p-2 rounded-lg ${
+                  className={`flex items-center gap-4 md:gap-3 p-4 md:p-3 rounded-lg transition-all ${
                     step.step_number === item.current_step
-                      ? 'bg-primary/10 border border-primary'
+                      ? 'bg-primary/10 border-2 border-primary'
                       : step.step_number < item.current_step
-                      ? 'bg-accent/50'
-                      : 'bg-muted/30'
+                      ? 'bg-accent/50 border border-border'
+                      : 'bg-muted/30 border border-border'
                   }`}
                 >
-                  <div className={`flex items-center justify-center h-8 w-8 rounded-full ${
+                  <div className={`flex items-center justify-center h-10 w-10 md:h-8 md:w-8 rounded-full ${
                     step.step_number < item.current_step
-                      ? 'bg-primary text-primary-foreground'
+                      ? 'bg-primary text-primary-foreground shadow-lg'
                       : step.step_number === item.current_step
-                      ? 'bg-primary/20 text-primary'
+                      ? 'bg-primary/20 text-primary border-2 border-primary'
                       : 'bg-muted text-muted-foreground'
                   }`}>
                     {step.step_number < item.current_step ? (
-                      <CheckCircle2 className="h-4 w-4" />
+                      <CheckCircle2 className="h-5 w-5 md:h-4 md:w-4" />
                     ) : (
-                      <span className="text-sm font-medium">{step.step_number}</span>
+                      <span className="text-base md:text-sm font-bold font-data">{step.step_number}</span>
                     )}
                   </div>
-                  <span className="text-sm font-medium">{step.title_en}</span>
+                  <span className="text-base md:text-sm font-medium font-data">{step.title_en}</span>
                 </div>
               ))}
             </div>

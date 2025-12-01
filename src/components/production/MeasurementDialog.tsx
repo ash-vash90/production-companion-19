@@ -30,7 +30,10 @@ const MeasurementDialog: React.FC<MeasurementDialogProps> = ({
   const [validationResult, setValidationResult] = useState<{ passed: boolean; message: string } | null>(null);
   const [saving, setSaving] = useState(false);
 
-  const measurementFields = productionStep.measurement_fields || {};
+  // Parse measurement fields from JSON
+  const measurementFields = Array.isArray(productionStep.measurement_fields) 
+    ? productionStep.measurement_fields 
+    : [];
   const validationRules = productionStep.validation_rules || {};
 
   const handleMeasurementChange = (fieldName: string, value: any) => {
@@ -39,61 +42,74 @@ const MeasurementDialog: React.FC<MeasurementDialogProps> = ({
   };
 
   const validateMeasurements = () => {
-    if (!validationRules) return { passed: true, message: '' };
-
-    // Check for pass/fail type
-    if (validationRules.type === 'pass_fail') {
-      const passed = measurements.pressure_test === true;
-      return {
-        passed,
-        message: passed ? 'Test passed' : 'Test failed - mark as NO PASS',
-      };
+    if (!validationRules || Object.keys(validationRules).length === 0) {
+      return { passed: true, message: 'Measurements recorded successfully' };
     }
 
-    // Check for min/max value validations
-    if (validationRules.min_value !== undefined || validationRules.max_value !== undefined) {
-      const firstField = Object.keys(measurementFields)[0];
-      const value = parseFloat(measurements[firstField]);
+    // Check pass/fail type
+    if (validationRules.pass_fail) {
+      const passFailField = measurementFields.find((f: any) => f.type === 'pass_fail');
+      if (passFailField) {
+        const passed = measurements[passFailField.name] === true || measurements[passFailField.name] === 'true';
+        return {
+          passed,
+          message: passed ? 'Test PASSED ✓' : 'Test FAILED - Item marked for review',
+        };
+      }
+    }
 
+    // Check min/max validation for range
+    if (validationRules.min !== undefined && validationRules.max !== undefined) {
+      const field = measurementFields[0];
+      const value = parseFloat(measurements[field.name]);
+      
       if (isNaN(value)) {
         return { passed: false, message: 'Invalid value entered' };
       }
 
-      if (validationRules.min_value !== undefined && validationRules.max_value !== undefined) {
-        // Range check (e.g., PT100 resistance)
-        const passed = value >= validationRules.min_value && value <= validationRules.max_value;
-        return {
-          passed,
-          message: passed 
-            ? 'Value within acceptable range - OK' 
-            : `Value outside acceptable range (${validationRules.min_value}-${validationRules.max_value}${validationRules.unit || ''}) - NOK`,
-        };
-      }
-
-      if (validationRules.min_value !== undefined) {
-        const operator = validationRules.operator || '>=';
-        const passed = operator === '>=' ? value >= validationRules.min_value : value > validationRules.min_value;
-        return {
-          passed,
-          message: passed
-            ? 'Measurement passed validation'
-            : `Value must be ${operator} ${validationRules.min_value}. ${validationRules.fail_action || 'Please retry.'}`,
-        };
-      }
-
-      if (validationRules.max_value !== undefined) {
-        const operator = validationRules.operator || '<';
-        const passed = operator === '<' ? value < validationRules.max_value : value <= validationRules.max_value;
-        return {
-          passed,
-          message: passed
-            ? 'Measurement passed validation'
-            : `Value must be ${operator} ${validationRules.max_value}. ${validationRules.fail_action === 'reject' ? 'Item marked as REJECT' : ''}`,
-        };
-      }
+      const passed = value >= validationRules.min && value <= validationRules.max;
+      return {
+        passed,
+        message: passed 
+          ? `Value OK (${validationRules.min}-${validationRules.max})` 
+          : `Value out of range (${validationRules.min}-${validationRules.max}). NOK - ${validationRules.restart ? `Restart from Step ${validationRules.restart}` : 'REJECT'}`,
+      };
     }
 
-    return { passed: true, message: 'Measurements recorded' };
+    // Check min validation
+    if (validationRules.min !== undefined) {
+      const field = measurementFields[0];
+      const value = parseFloat(measurements[field.name]);
+      
+      if (isNaN(value)) {
+        return { passed: false, message: 'Invalid value entered' };
+      }
+
+      const passed = value >= validationRules.min;
+      return {
+        passed,
+        message: passed
+          ? `Value OK (≥ ${validationRules.min})`
+          : `Value must be ≥ ${validationRules.min}. ${validationRules.restart ? `Restart from Step ${validationRules.restart}` : 'REJECT'}`,
+      };
+    }
+
+    // Check max validation
+    if (validationRules.max !== undefined) {
+      // Check all fields if multiple (like RE and IE)
+      for (const field of measurementFields) {
+        const value = parseFloat(measurements[field.name]);
+        if (!isNaN(value) && value >= validationRules.max) {
+          return {
+            passed: false,
+            message: `${field.label} must be < ${validationRules.max}. REJECT`,
+          };
+        }
+      }
+      return { passed: true, message: 'All values OK' };
+    }
+
+    return { passed: true, message: 'Measurements recorded successfully' };
   };
 
   const handleSave = async () => {
@@ -102,7 +118,12 @@ const MeasurementDialog: React.FC<MeasurementDialogProps> = ({
       return;
     }
 
-    if (Object.keys(measurements).length === 0) {
+    // Check if all required fields are filled
+    const allFieldsFilled = measurementFields.every((field: any) => 
+      measurements[field.name] !== undefined && measurements[field.name] !== ''
+    );
+
+    if (!allFieldsFilled) {
       toast.error('Error', { description: 'Please enter all required measurements' });
       return;
     }
@@ -111,7 +132,14 @@ const MeasurementDialog: React.FC<MeasurementDialogProps> = ({
     setValidationResult(validation);
 
     if (!validation.passed && productionStep.blocks_on_failure) {
-      toast.error('Validation Failed', { description: validation.message });
+      // Check if we need to restart from a specific step
+      if (validationRules.restart) {
+        toast.error('Validation Failed', { 
+          description: `${validation.message}. You must restart from Step ${validationRules.restart}` 
+        });
+      } else {
+        toast.error('Validation Failed', { description: validation.message });
+      }
       return;
     }
 
@@ -124,13 +152,11 @@ const MeasurementDialog: React.FC<MeasurementDialogProps> = ({
           measurement_values: measurements,
           validation_status: validation.passed ? 'passed' : 'failed',
           validation_message: validation.message,
-          value_recorded: JSON.stringify(measurements),
         })
         .eq('id', stepExecution.id);
 
       if (error) throw error;
 
-      // Log activity
       await supabase.from('activity_logs').insert({
         user_id: user?.id,
         action: 'record_measurement',
@@ -140,13 +166,12 @@ const MeasurementDialog: React.FC<MeasurementDialogProps> = ({
       });
 
       toast.success('Success', { 
-        description: validation.passed ? 'Measurements saved successfully' : validation.message 
+        description: validation.message
       });
       
       onComplete();
       onOpenChange(false);
       
-      // Reset form
       setMeasurements({});
       setOperatorInitials('');
       setValidationResult(null);
@@ -162,78 +187,80 @@ const MeasurementDialog: React.FC<MeasurementDialogProps> = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Record Measurements</DialogTitle>
-          <DialogDescription>
-            Enter the required measurement values for this production step
+          <DialogTitle className="text-2xl font-logo">Record Measurements</DialogTitle>
+          <DialogDescription className="text-base">
+            {productionStep.description_en || 'Enter required measurement values'}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
-          <div className="space-y-2">
-            <Label htmlFor="operator">Operator Initials *</Label>
+        <div className="space-y-5 py-4">
+          <div className="space-y-3">
+            <Label htmlFor="operator" className="text-base font-data uppercase tracking-wider">Operator Initials *</Label>
             <Select value={operatorInitials} onValueChange={setOperatorInitials}>
-              <SelectTrigger>
+              <SelectTrigger className="h-12 text-base border-2">
                 <SelectValue placeholder="Select operator" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="MB">MB</SelectItem>
-                <SelectItem value="HL">HL</SelectItem>
-                <SelectItem value="AB">AB</SelectItem>
-                <SelectItem value="EV">EV</SelectItem>
+                <SelectItem value="MB" className="h-12 text-base">MB</SelectItem>
+                <SelectItem value="HL" className="h-12 text-base">HL</SelectItem>
+                <SelectItem value="AB" className="h-12 text-base">AB</SelectItem>
+                <SelectItem value="EV" className="h-12 text-base">EV</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
-          {Object.entries(measurementFields).map(([fieldName, fieldConfig]: [string, any]) => (
-            <div key={fieldName} className="space-y-2">
-              <Label htmlFor={fieldName}>
-                {fieldConfig.label} {fieldConfig.unit ? `(${fieldConfig.unit})` : ''} *
+          {measurementFields.map((field: any) => (
+            <div key={field.name} className="space-y-3">
+              <Label htmlFor={field.name} className="text-base font-data uppercase tracking-wider">
+                {field.label} {field.unit ? `(${field.unit})` : ''} *
               </Label>
-              {fieldConfig.type === 'boolean' ? (
+              {field.type === 'pass_fail' ? (
                 <Select
-                  value={measurements[fieldName]?.toString()}
-                  onValueChange={(val) => handleMeasurementChange(fieldName, val === 'true')}
+                  value={measurements[field.name]?.toString()}
+                  onValueChange={(val) => handleMeasurementChange(field.name, val === 'true')}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="h-12 text-base border-2">
                     <SelectValue placeholder="Select result" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="true">PASS</SelectItem>
-                    <SelectItem value="false">NO PASS</SelectItem>
+                    <SelectItem value="true" className="h-12 text-base">✓ PASS</SelectItem>
+                    <SelectItem value="false" className="h-12 text-base">✗ NO PASS</SelectItem>
                   </SelectContent>
                 </Select>
               ) : (
                 <Input
-                  id={fieldName}
+                  id={field.name}
                   type="number"
                   step="0.01"
-                  value={measurements[fieldName] || ''}
-                  onChange={(e) => handleMeasurementChange(fieldName, e.target.value)}
-                  placeholder={`Enter ${fieldConfig.label.toLowerCase()}`}
+                  value={measurements[field.name] || ''}
+                  onChange={(e) => handleMeasurementChange(field.name, e.target.value)}
+                  placeholder={`Enter ${field.label.toLowerCase()}`}
                 />
               )}
             </div>
           ))}
 
           {validationResult && (
-            <div className={`flex items-start gap-2 p-3 rounded-lg ${
-              validationResult.passed ? 'bg-green-500/10 text-green-700 dark:text-green-400' : 'bg-red-500/10 text-red-700 dark:text-red-400'
+            <div className={`flex items-start gap-3 p-4 rounded-lg border-2 ${
+              validationResult.passed 
+                ? 'bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20' 
+                : 'bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/20'
             }`}>
               {validationResult.passed ? (
-                <CheckCircle2 className="h-5 w-5 mt-0.5 flex-shrink-0" />
+                <CheckCircle2 className="h-6 w-6 mt-0.5 flex-shrink-0" />
               ) : (
-                <AlertCircle className="h-5 w-5 mt-0.5 flex-shrink-0" />
+                <AlertCircle className="h-6 w-6 mt-0.5 flex-shrink-0" />
               )}
-              <span className="text-sm">{validationResult.message}</span>
+              <span className="text-base font-medium">{validationResult.message}</span>
             </div>
           )}
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+        <DialogFooter className="gap-3">
+          <Button variant="outline" onClick={() => onOpenChange(false)} size="lg" className="flex-1">
             Cancel
           </Button>
-          <Button onClick={handleSave} disabled={saving}>
+          <Button onClick={handleSave} disabled={saving} variant="rhosonics" size="lg" className="flex-1">
             {saving ? 'Saving...' : 'Save Measurements'}
           </Button>
         </DialogFooter>

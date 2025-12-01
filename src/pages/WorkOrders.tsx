@@ -75,10 +75,19 @@ const WorkOrders = () => {
 
       if (woError) throw woError;
 
-      // Create work order items with serial numbers
+      // Generate serial numbers with proper prefixes
+      const prefixes: Record<string, string> = {
+        'SENSOR': 'Q',
+        'MLA': 'W',
+        'HMI': 'X',
+        'TRANSMITTER': 'T',
+        'SDM_ECO': 'SDM'
+      };
+      const prefix = prefixes[formData.productType] || formData.productType;
+
       const items = [];
       for (let i = 1; i <= formData.batchSize; i++) {
-        const serialNumber = `${formData.productType}-${formData.woNumber}-${String(i).padStart(3, '0')}`;
+        const serialNumber = `${prefix}-${String(i).padStart(4, '0')}`;
         items.push({
           work_order_id: workOrder.id,
           serial_number: serialNumber,
@@ -93,7 +102,6 @@ const WorkOrders = () => {
 
       if (itemsError) throw itemsError;
 
-      // Log activity
       await supabase.from('activity_logs').insert({
         user_id: user.id,
         action: 'create_work_order',
