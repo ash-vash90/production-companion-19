@@ -9,6 +9,8 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import WorkOrders from "./pages/WorkOrders";
 import Production from "./pages/Production";
+import ProductionStep from "./pages/ProductionStep";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,6 +28,8 @@ const App = () => (
               <Route path="/auth" element={<Auth />} />
               <Route path="/work-orders" element={<WorkOrders />} />
               <Route path="/production/:itemId" element={<Production />} />
+              <Route path="/production/step/:itemId" element={<ProductionStep />} />
+              <Route path="/settings" element={<Settings />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

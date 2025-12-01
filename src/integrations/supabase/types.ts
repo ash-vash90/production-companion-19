@@ -50,6 +50,57 @@ export type Database = {
         }
         Relationships: []
       }
+      batch_materials: {
+        Row: {
+          batch_number: string
+          created_at: string | null
+          id: string
+          material_type: string
+          opening_date: string | null
+          production_step_id: string | null
+          scanned_at: string | null
+          scanned_by: string | null
+          work_order_item_id: string
+        }
+        Insert: {
+          batch_number: string
+          created_at?: string | null
+          id?: string
+          material_type: string
+          opening_date?: string | null
+          production_step_id?: string | null
+          scanned_at?: string | null
+          scanned_by?: string | null
+          work_order_item_id: string
+        }
+        Update: {
+          batch_number?: string
+          created_at?: string | null
+          id?: string
+          material_type?: string
+          opening_date?: string | null
+          production_step_id?: string | null
+          scanned_at?: string | null
+          scanned_by?: string | null
+          work_order_item_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "batch_materials_production_step_id_fkey"
+            columns: ["production_step_id"]
+            isOneToOne: false
+            referencedRelation: "production_steps"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "batch_materials_work_order_item_id_fkey"
+            columns: ["work_order_item_id"]
+            isOneToOne: false
+            referencedRelation: "work_order_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       checklist_items: {
         Row: {
           created_at: string
@@ -136,6 +187,7 @@ export type Database = {
       production_steps: {
         Row: {
           batch_type: string | null
+          blocks_on_failure: boolean | null
           conditional_on_step: number | null
           conditional_value: string | null
           created_at: string
@@ -143,20 +195,24 @@ export type Database = {
           description_nl: string | null
           has_checklist: boolean
           id: string
+          measurement_fields: Json | null
           product_type: Database["public"]["Enums"]["product_type"]
           requires_barcode_scan: boolean
           requires_batch_number: boolean
           requires_value_input: boolean
+          restart_from_step: number | null
           sort_order: number
           step_number: number
           title_en: string
           title_nl: string
+          validation_rules: Json | null
           value_label_en: string | null
           value_label_nl: string | null
           value_unit: string | null
         }
         Insert: {
           batch_type?: string | null
+          blocks_on_failure?: boolean | null
           conditional_on_step?: number | null
           conditional_value?: string | null
           created_at?: string
@@ -164,20 +220,24 @@ export type Database = {
           description_nl?: string | null
           has_checklist?: boolean
           id?: string
+          measurement_fields?: Json | null
           product_type: Database["public"]["Enums"]["product_type"]
           requires_barcode_scan?: boolean
           requires_batch_number?: boolean
           requires_value_input?: boolean
+          restart_from_step?: number | null
           sort_order: number
           step_number: number
           title_en: string
           title_nl: string
+          validation_rules?: Json | null
           value_label_en?: string | null
           value_label_nl?: string | null
           value_unit?: string | null
         }
         Update: {
           batch_type?: string | null
+          blocks_on_failure?: boolean | null
           conditional_on_step?: number | null
           conditional_value?: string | null
           created_at?: string
@@ -185,14 +245,17 @@ export type Database = {
           description_nl?: string | null
           has_checklist?: boolean
           id?: string
+          measurement_fields?: Json | null
           product_type?: Database["public"]["Enums"]["product_type"]
           requires_barcode_scan?: boolean
           requires_batch_number?: boolean
           requires_value_input?: boolean
+          restart_from_step?: number | null
           sort_order?: number
           step_number?: number
           title_en?: string
           title_nl?: string
+          validation_rules?: Json | null
           value_label_en?: string | null
           value_label_nl?: string | null
           value_unit?: string | null
@@ -226,6 +289,44 @@ export type Database = {
         }
         Relationships: []
       }
+      quality_certificates: {
+        Row: {
+          certificate_data: Json
+          created_at: string | null
+          generated_at: string | null
+          generated_by: string | null
+          id: string
+          pdf_url: string | null
+          work_order_item_id: string
+        }
+        Insert: {
+          certificate_data: Json
+          created_at?: string | null
+          generated_at?: string | null
+          generated_by?: string | null
+          id?: string
+          pdf_url?: string | null
+          work_order_item_id: string
+        }
+        Update: {
+          certificate_data?: Json
+          created_at?: string | null
+          generated_at?: string | null
+          generated_by?: string | null
+          id?: string
+          pdf_url?: string | null
+          work_order_item_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quality_certificates_work_order_item_id_fkey"
+            columns: ["work_order_item_id"]
+            isOneToOne: false
+            referencedRelation: "work_order_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       step_executions: {
         Row: {
           barcode_scanned: string | null
@@ -234,10 +335,17 @@ export type Database = {
           created_at: string
           executed_by: string | null
           id: string
+          measurement_values: Json | null
           notes: string | null
+          operator_initials:
+            | Database["public"]["Enums"]["operator_initials"]
+            | null
           production_step_id: string
+          retry_count: number | null
           started_at: string | null
           status: Database["public"]["Enums"]["step_status"]
+          validation_message: string | null
+          validation_status: string | null
           value_recorded: string | null
           work_order_item_id: string
         }
@@ -248,10 +356,17 @@ export type Database = {
           created_at?: string
           executed_by?: string | null
           id?: string
+          measurement_values?: Json | null
           notes?: string | null
+          operator_initials?:
+            | Database["public"]["Enums"]["operator_initials"]
+            | null
           production_step_id: string
+          retry_count?: number | null
           started_at?: string | null
           status?: Database["public"]["Enums"]["step_status"]
+          validation_message?: string | null
+          validation_status?: string | null
           value_recorded?: string | null
           work_order_item_id: string
         }
@@ -262,10 +377,17 @@ export type Database = {
           created_at?: string
           executed_by?: string | null
           id?: string
+          measurement_values?: Json | null
           notes?: string | null
+          operator_initials?:
+            | Database["public"]["Enums"]["operator_initials"]
+            | null
           production_step_id?: string
+          retry_count?: number | null
           started_at?: string | null
           status?: Database["public"]["Enums"]["step_status"]
+          validation_message?: string | null
+          validation_status?: string | null
           value_recorded?: string | null
           work_order_item_id?: string
         }
@@ -361,6 +483,11 @@ export type Database = {
           current_step: number
           id: string
           label_printed: boolean
+          label_printed_at: string | null
+          label_printed_by: string | null
+          operator_initials:
+            | Database["public"]["Enums"]["operator_initials"]
+            | null
           position_in_batch: number
           quality_approved: boolean
           serial_number: string
@@ -376,6 +503,11 @@ export type Database = {
           current_step?: number
           id?: string
           label_printed?: boolean
+          label_printed_at?: string | null
+          label_printed_by?: string | null
+          operator_initials?:
+            | Database["public"]["Enums"]["operator_initials"]
+            | null
           position_in_batch: number
           quality_approved?: boolean
           serial_number: string
@@ -391,6 +523,11 @@ export type Database = {
           current_step?: number
           id?: string
           label_printed?: boolean
+          label_printed_at?: string | null
+          label_printed_by?: string | null
+          operator_initials?:
+            | Database["public"]["Enums"]["operator_initials"]
+            | null
           position_in_batch?: number
           quality_approved?: boolean
           serial_number?: string
@@ -506,6 +643,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "supervisor" | "operator" | "logistics"
+      operator_initials: "MB" | "HL" | "AB" | "EV"
       product_type: "SDM_ECO" | "SENSOR" | "MLA" | "HMI" | "TRANSMITTER"
       step_status: "pending" | "in_progress" | "completed" | "skipped"
       work_order_status:
@@ -642,6 +780,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "supervisor", "operator", "logistics"],
+      operator_initials: ["MB", "HL", "AB", "EV"],
       product_type: ["SDM_ECO", "SENSOR", "MLA", "HMI", "TRANSMITTER"],
       step_status: ["pending", "in_progress", "completed", "skipped"],
       work_order_status: [
