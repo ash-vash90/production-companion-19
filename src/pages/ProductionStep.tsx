@@ -191,6 +191,25 @@ const ProductionStep = () => {
         details: { step_number: item.current_step, serial_number: item.serial_number },
       });
 
+      // Trigger webhook for step completion
+      const { triggerWebhook } = await import('@/lib/webhooks');
+      await triggerWebhook('production_step_completed', {
+        serial_number: item.serial_number,
+        step_number: item.current_step,
+        step_name: currentStep.title_en,
+        work_order_id: item.work_order_id,
+        product_type: workOrder.product_type,
+      });
+
+      // If all steps completed, trigger work order completion webhook
+      if (nextStepNumber > productionSteps.length) {
+        await triggerWebhook('work_order_item_completed', {
+          serial_number: item.serial_number,
+          work_order_id: item.work_order_id,
+          product_type: workOrder.product_type,
+        });
+      }
+
       toast.success(t('success'), { description: t('stepCompleted') });
       navigate(`/production/${item.work_order_id}`);
     } catch (error: any) {
@@ -281,7 +300,7 @@ const ProductionStep = () => {
             )}
 
             {!stepExecution ? (
-              <Button onClick={handleStartStep} variant="rhosonics" size="lg" className="w-full">
+              <Button onClick={handleStartStep} variant="default" size="lg" className="w-full">
                 {t('startStep')}
               </Button>
             ) : (
@@ -305,7 +324,7 @@ const ProductionStep = () => {
                   </Button>
                 )}
 
-                <Button onClick={handleCompleteStep} variant="rhosonics" size="lg" className="w-full">
+                <Button onClick={handleCompleteStep} variant="default" size="lg" className="w-full">
                   <CheckCircle2 className="mr-2" />
                   {t('completeStep')}
                 </Button>

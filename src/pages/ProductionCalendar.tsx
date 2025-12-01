@@ -96,10 +96,10 @@ const ProductionCalendar = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'planned': return 'bg-blue-500/10 text-blue-500 border-blue-500/20';
-      case 'in_progress': return 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20';
-      case 'completed': return 'bg-green-500/10 text-green-500 border-green-500/20';
-      default: return 'bg-muted text-muted-foreground';
+      case 'planned': return 'bg-secondary text-secondary-foreground border-secondary';
+      case 'in_progress': return 'bg-primary text-primary-foreground border-primary';
+      case 'completed': return 'bg-accent text-accent-foreground border-accent';
+      default: return 'bg-muted text-muted-foreground border-border';
     }
   };
 
