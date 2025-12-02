@@ -33,13 +33,15 @@ const RoleManagement = () => {
     if (!user) return;
     
     try {
+      // Check user_roles table for admin status (authoritative source)
       const { data } = await supabase
-        .from('profiles')
+        .from('user_roles')
         .select('role')
-        .eq('id', user.id)
-        .single();
+        .eq('user_id', user.id)
+        .eq('role', 'admin')
+        .maybeSingle();
       
-      setUserRole(data?.role || null);
+      setUserRole(data ? 'admin' : null);
     } catch (error) {
       console.error('Error fetching user role:', error);
     }
@@ -64,12 +66,31 @@ const RoleManagement = () => {
 
   const handleRoleChange = async (userId: string, newRole: 'admin' | 'supervisor' | 'operator' | 'logistics') => {
     try {
-      const { error } = await supabase
+      // Update profiles table for display
+      const { error: profileError } = await supabase
         .from('profiles')
         .update({ role: newRole })
         .eq('id', userId);
 
-      if (error) throw error;
+      if (profileError) throw profileError;
+
+      // Update user_roles table (authoritative source)
+      // First delete existing role
+      await supabase
+        .from('user_roles')
+        .delete()
+        .eq('user_id', userId);
+
+      // Then insert new role
+      const { error: roleError } = await supabase
+        .from('user_roles')
+        .insert({
+          user_id: userId,
+          role: newRole,
+          assigned_by: user?.id,
+        });
+
+      if (roleError) throw roleError;
 
       // Log activity
       await supabase.from('activity_logs').insert({
