@@ -234,6 +234,10 @@ export const translations = {
     // Menu
     mainMenu: 'Main Menu',
     administration: 'Administration',
+    
+    // Presence
+    alsoViewing: 'Also viewing this item',
+    itemCompleted: 'All steps completed - item is now complete',
   },
   nl: {
     // Navigation
@@ -467,6 +471,10 @@ export const translations = {
     // Menu
     mainMenu: 'Hoofdmenu',
     administration: 'Administratie',
+    
+    // Presence
+    alsoViewing: 'Ook dit item aan het bekijken',
+    itemCompleted: 'Alle stappen voltooid - item is nu compleet',
   },
 };
 
