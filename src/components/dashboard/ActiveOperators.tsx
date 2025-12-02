@@ -3,9 +3,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { supabase } from '@/integrations/supabase/client';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { Loader2, User } from 'lucide-react';
 
 export function ActiveOperators() {
+  const { t } = useLanguage();
   const [operators, setOperators] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -34,8 +36,8 @@ export function ActiveOperators() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Active Operators</CardTitle>
-          <CardDescription>Current shift</CardDescription>
+          <CardTitle>{t('activeOperatorsTitle')}</CardTitle>
+          <CardDescription>{t('operatorsCurrentlyWorking')}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex justify-center py-8">
@@ -49,8 +51,8 @@ export function ActiveOperators() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Active Operators</CardTitle>
-        <CardDescription>Current shift</CardDescription>
+        <CardTitle>{t('activeOperatorsTitle')}</CardTitle>
+        <CardDescription>{t('operatorsCurrentlyWorking')}</CardDescription>
       </CardHeader>
       <CardContent>
         {operators.length > 0 ? (
@@ -70,14 +72,14 @@ export function ActiveOperators() {
                   <div className="text-xs text-muted-foreground capitalize">{operator.role}</div>
                 </div>
                 <Badge variant="outline" className="bg-accent text-accent-foreground">
-                  Active
+                  {t('active')}
                 </Badge>
               </div>
             ))}
           </div>
         ) : (
           <div className="py-8 text-center text-sm text-muted-foreground">
-            No operators found
+            {t('noOperatorsFound')}
           </div>
         )}
       </CardContent>

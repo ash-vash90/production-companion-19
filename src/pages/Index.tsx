@@ -30,7 +30,7 @@ const Index = () => {
           <div>
             <h1 className="text-4xl font-bold tracking-tight">{t('dashboard')}</h1>
             <p className="text-lg text-muted-foreground mt-2">
-              Real-time production monitoring and quality control
+              {t('realTimeMonitoring')}
             </p>
           </div>
 
