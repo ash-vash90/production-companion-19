@@ -3,10 +3,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { ExternalLink, Loader2 } from 'lucide-react';
 
 export function ProductionOverview() {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [workOrders, setWorkOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -37,12 +39,21 @@ export function ProductionOverview() {
     return 'bg-secondary text-secondary-foreground';
   };
 
+  const getStatusLabel = (status: string) => {
+    if (status === 'in_progress') return t('inProgressStatus');
+    if (status === 'planned') return t('planned');
+    if (status === 'completed') return t('completed');
+    if (status === 'on_hold') return t('onHold');
+    if (status === 'cancelled') return t('cancelled');
+    return status;
+  };
+
   if (loading) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Active Work Orders</CardTitle>
-          <CardDescription>Current production queue</CardDescription>
+          <CardTitle>{t('activeWorkOrdersTitle')}</CardTitle>
+          <CardDescription>{t('currentProductionQueue')}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex justify-center py-8">
@@ -56,8 +67,8 @@ export function ProductionOverview() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Active Work Orders</CardTitle>
-        <CardDescription>Current production queue</CardDescription>
+        <CardTitle>{t('activeWorkOrdersTitle')}</CardTitle>
+        <CardDescription>{t('currentProductionQueue')}</CardDescription>
       </CardHeader>
       <CardContent>
         {workOrders.length > 0 ? (
@@ -72,11 +83,11 @@ export function ProductionOverview() {
                   <div className="flex items-center gap-2">
                     <span className="font-mono text-sm font-semibold">{wo.wo_number}</span>
                     <Badge className={getStatusBadgeClass(wo.status)}>
-                      {wo.status}
+                      {getStatusLabel(wo.status)}
                     </Badge>
                   </div>
                   <div className="mt-1 text-xs text-muted-foreground">
-                    {wo.product_type} • Batch: {wo.batch_size}
+                    {wo.product_type} • {t('batch')}: {wo.batch_size}
                   </div>
                 </div>
                 <ExternalLink className="h-4 w-4 text-muted-foreground" />
@@ -85,7 +96,7 @@ export function ProductionOverview() {
           </div>
         ) : (
           <div className="py-8 text-center text-sm text-muted-foreground">
-            No active work orders
+            {t('noActiveWorkOrders')}
           </div>
         )}
       </CardContent>

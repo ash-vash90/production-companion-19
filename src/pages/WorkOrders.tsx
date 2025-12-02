@@ -106,7 +106,7 @@ const WorkOrders = () => {
 
       if (woError) throw woError;
 
-      // Generate serial numbers with proper prefixes
+      // Generate serial numbers with proper prefixes and unique timestamp
       const prefixes: Record<string, string> = {
         'SENSOR': 'Q',
         'MLA': 'W',
@@ -115,10 +115,13 @@ const WorkOrders = () => {
         'SDM_ECO': 'SDM'
       };
       const prefix = prefixes[formData.productType] || formData.productType;
+      
+      // Use WO number to make serial numbers unique per work order
+      const woSuffix = formData.woNumber.replace(/[^a-zA-Z0-9]/g, '').slice(-6);
 
       const items = [];
       for (let i = 1; i <= formData.batchSize; i++) {
-        const serialNumber = `${prefix}-${String(i).padStart(4, '0')}`;
+        const serialNumber = `${prefix}-${woSuffix}-${String(i).padStart(3, '0')}`;
         items.push({
           work_order_id: workOrder.id,
           serial_number: serialNumber,

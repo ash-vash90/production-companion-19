@@ -12,12 +12,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Loader2, BarChart3, Download, Search, Filter } from 'lucide-react';
+import { Loader2, BarChart3, Search } from 'lucide-react';
 import { format } from 'date-fns';
+import { nl, enUS } from 'date-fns/locale';
 
 const ProductionReports = () => {
   const { user } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const navigate = useNavigate();
   
   const [loading, setLoading] = useState(true);
@@ -48,7 +49,7 @@ const ProductionReports = () => {
       setWorkOrders(data || []);
     } catch (error) {
       console.error('Error fetching work orders:', error);
-      toast.error(t('error'), { description: 'Failed to load production reports' });
+      toast.error(t('error'), { description: t('failedLoadWorkOrders') });
     } finally {
       setLoading(false);
     }
@@ -73,6 +74,15 @@ const ProductionReports = () => {
     return classes[status] || 'bg-muted';
   };
 
+  const getStatusLabel = (status: string) => {
+    if (status === 'in_progress') return t('inProgressStatus');
+    if (status === 'planned') return t('planned');
+    if (status === 'completed') return t('completed');
+    if (status === 'on_hold') return t('onHold');
+    if (status === 'cancelled') return t('cancelled');
+    return status;
+  };
+
   if (!user) return null;
 
   return (
@@ -81,24 +91,24 @@ const ProductionReports = () => {
         <div className="space-y-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
-              <h1 className="text-4xl font-bold tracking-tight">Production Reports</h1>
+              <h1 className="text-4xl font-bold tracking-tight">{t('productionReports')}</h1>
               <p className="text-lg text-muted-foreground mt-2">
-                View and analyze production performance
+                {t('viewAnalyzeProduction')}
               </p>
             </div>
           </div>
 
           <Card>
             <CardHeader>
-              <CardTitle>Filter Reports</CardTitle>
-              <CardDescription>Search and filter production data</CardDescription>
+              <CardTitle>{t('filterReports')}</CardTitle>
+              <CardDescription>{t('searchFilterData')}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid gap-4 md:grid-cols-3">
                 <div className="relative">
                   <Search className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
                   <Input
-                    placeholder="Search work orders..."
+                    placeholder={t('searchWorkOrdersPlaceholder')}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="pl-10"
@@ -106,23 +116,23 @@ const ProductionReports = () => {
                 </div>
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Filter by status" />
+                    <SelectValue placeholder={t('filterByStatus')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Statuses</SelectItem>
-                    <SelectItem value="planned">Planned</SelectItem>
-                    <SelectItem value="in_progress">In Progress</SelectItem>
-                    <SelectItem value="completed">Completed</SelectItem>
-                    <SelectItem value="on_hold">On Hold</SelectItem>
-                    <SelectItem value="cancelled">Cancelled</SelectItem>
+                    <SelectItem value="all">{t('allStatuses')}</SelectItem>
+                    <SelectItem value="planned">{t('planned')}</SelectItem>
+                    <SelectItem value="in_progress">{t('inProgressStatus')}</SelectItem>
+                    <SelectItem value="completed">{t('completed')}</SelectItem>
+                    <SelectItem value="on_hold">{t('onHold')}</SelectItem>
+                    <SelectItem value="cancelled">{t('cancelled')}</SelectItem>
                   </SelectContent>
                 </Select>
                 <Select value={productFilter} onValueChange={setProductFilter}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Filter by product" />
+                    <SelectValue placeholder={t('filterByProduct')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Products</SelectItem>
+                    <SelectItem value="all">{t('allProducts')}</SelectItem>
                     <SelectItem value="SDM_ECO">SDM-ECO</SelectItem>
                     <SelectItem value="SENSOR">Sensor</SelectItem>
                     <SelectItem value="MLA">MLA</SelectItem>
@@ -143,10 +153,10 @@ const ProductionReports = () => {
               <CardContent className="py-16 text-center">
                 <BarChart3 className="h-16 w-16 mx-auto mb-6 text-muted-foreground/50" />
                 <h3 className="text-xl font-semibold mb-3">
-                  No matching reports found
+                  {t('noMatchingReports')}
                 </h3>
                 <p className="text-sm text-muted-foreground mb-6">
-                  Try adjusting your filters
+                  {t('tryAdjustingFilters')}
                 </p>
                 <Button
                   onClick={() => {
@@ -156,7 +166,7 @@ const ProductionReports = () => {
                   }}
                   variant="outline"
                 >
-                  Clear Filters
+                  {t('clearFilters')}
                 </Button>
               </CardContent>
             </Card>
@@ -166,13 +176,13 @@ const ProductionReports = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>WO Number</TableHead>
-                      <TableHead>Product Type</TableHead>
-                      <TableHead>Batch Size</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Created</TableHead>
-                      <TableHead>Completed</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
+                      <TableHead>{t('woNumber')}</TableHead>
+                      <TableHead>{t('productType')}</TableHead>
+                      <TableHead>{t('batchSize')}</TableHead>
+                      <TableHead>{t('status')}</TableHead>
+                      <TableHead>{t('created')}</TableHead>
+                      <TableHead>{t('completed')}</TableHead>
+                      <TableHead className="text-right">{t('actions')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -187,14 +197,14 @@ const ProductionReports = () => {
                         <TableCell className="font-mono">{wo.batch_size}</TableCell>
                         <TableCell>
                           <Badge className={getStatusBadgeClass(wo.status)}>
-                            {wo.status}
+                            {getStatusLabel(wo.status)}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-sm">
-                          {format(new Date(wo.created_at), 'MMM dd, yyyy')}
+                          {format(new Date(wo.created_at), 'MMM dd, yyyy', { locale: language === 'nl' ? nl : enUS })}
                         </TableCell>
                         <TableCell className="text-sm">
-                          {wo.completed_at ? format(new Date(wo.completed_at), 'MMM dd, yyyy') : '-'}
+                          {wo.completed_at ? format(new Date(wo.completed_at), 'MMM dd, yyyy', { locale: language === 'nl' ? nl : enUS }) : '-'}
                         </TableCell>
                         <TableCell className="text-right">
                           <Button
@@ -202,7 +212,7 @@ const ProductionReports = () => {
                             variant="outline"
                             onClick={() => navigate(`/production/${wo.id}`)}
                           >
-                            View Details
+                            {t('viewDetails')}
                           </Button>
                         </TableCell>
                       </TableRow>

@@ -2,10 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { Loader2, Activity } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import { nl, enUS } from 'date-fns/locale';
 
 export function RecentActivity() {
+  const { t, language } = useLanguage();
   const [activities, setActivities] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -32,11 +35,11 @@ export function RecentActivity() {
 
   const getActionLabel = (action: string) => {
     const labels: Record<string, string> = {
-      create_work_order: 'Work Order Created',
-      complete_step: 'Step Completed',
-      record_measurement: 'Measurement Recorded',
-      scan_batch: 'Batch Scanned',
-      print_label: 'Label Printed',
+      create_work_order: t('workOrderCreatedAction'),
+      complete_step: t('stepCompletedAction'),
+      record_measurement: t('measurementRecordedAction'),
+      scan_batch: t('batchScannedAction'),
+      print_label: t('labelPrintedAction'),
     };
     return labels[action] || action.replace(/_/g, ' ');
   };
@@ -55,8 +58,8 @@ export function RecentActivity() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Recent Activity</CardTitle>
-          <CardDescription>Latest production events</CardDescription>
+          <CardTitle>{t('recentActivityTitle')}</CardTitle>
+          <CardDescription>{t('latestProductionEvents')}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex justify-center py-8">
@@ -70,8 +73,8 @@ export function RecentActivity() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Recent Activity</CardTitle>
-        <CardDescription>Latest production events</CardDescription>
+        <CardTitle>{t('recentActivityTitle')}</CardTitle>
+        <CardDescription>{t('latestProductionEvents')}</CardDescription>
       </CardHeader>
       <CardContent>
         {activities.length > 0 ? (
@@ -89,7 +92,10 @@ export function RecentActivity() {
                     </Badge>
                   </div>
                   <div className="mt-1 text-xs text-muted-foreground">
-                    {formatDistanceToNow(new Date(activity.created_at), { addSuffix: true })}
+                    {formatDistanceToNow(new Date(activity.created_at), { 
+                      addSuffix: true,
+                      locale: language === 'nl' ? nl : enUS
+                    })}
                   </div>
                 </div>
               </div>
@@ -97,7 +103,7 @@ export function RecentActivity() {
           </div>
         ) : (
           <div className="py-8 text-center text-sm text-muted-foreground">
-            No recent activity
+            {t('noRecentActivity')}
           </div>
         )}
       </CardContent>
