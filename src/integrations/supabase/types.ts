@@ -50,6 +50,53 @@ export type Database = {
         }
         Relationships: []
       }
+      automation_rules: {
+        Row: {
+          action_type: Database["public"]["Enums"]["automation_action_type"]
+          conditions: Json | null
+          created_at: string
+          enabled: boolean
+          field_mappings: Json
+          id: string
+          incoming_webhook_id: string
+          name: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          action_type: Database["public"]["Enums"]["automation_action_type"]
+          conditions?: Json | null
+          created_at?: string
+          enabled?: boolean
+          field_mappings?: Json
+          id?: string
+          incoming_webhook_id: string
+          name: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          action_type?: Database["public"]["Enums"]["automation_action_type"]
+          conditions?: Json | null
+          created_at?: string
+          enabled?: boolean
+          field_mappings?: Json
+          id?: string
+          incoming_webhook_id?: string
+          name?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "automation_rules_incoming_webhook_id_fkey"
+            columns: ["incoming_webhook_id"]
+            isOneToOne: false
+            referencedRelation: "incoming_webhooks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       batch_materials: {
         Row: {
           batch_number: string
@@ -183,6 +230,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      incoming_webhooks: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string | null
+          enabled: boolean
+          endpoint_key: string
+          id: string
+          last_triggered_at: string | null
+          name: string
+          secret_key: string
+          trigger_count: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          description?: string | null
+          enabled?: boolean
+          endpoint_key?: string
+          id?: string
+          last_triggered_at?: string | null
+          name: string
+          secret_key?: string
+          trigger_count?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          enabled?: boolean
+          endpoint_key?: string
+          id?: string
+          last_triggered_at?: string | null
+          name?: string
+          secret_key?: string
+          trigger_count?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       production_steps: {
         Row: {
@@ -474,6 +563,50 @@ export type Database = {
         }
         Relationships: []
       }
+      webhook_logs: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          executed_rules: Json | null
+          id: string
+          incoming_webhook_id: string
+          request_body: Json | null
+          request_headers: Json | null
+          response_body: Json | null
+          response_status: number | null
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          executed_rules?: Json | null
+          id?: string
+          incoming_webhook_id: string
+          request_body?: Json | null
+          request_headers?: Json | null
+          response_body?: Json | null
+          response_status?: number | null
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          executed_rules?: Json | null
+          id?: string
+          incoming_webhook_id?: string
+          request_body?: Json | null
+          request_headers?: Json | null
+          response_body?: Json | null
+          response_status?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "webhook_logs_incoming_webhook_id_fkey"
+            columns: ["incoming_webhook_id"]
+            isOneToOne: false
+            referencedRelation: "incoming_webhooks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       work_order_items: {
         Row: {
           assigned_to: string | null
@@ -646,6 +779,12 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "supervisor" | "operator" | "logistics"
+      automation_action_type:
+        | "create_work_order"
+        | "update_work_order_status"
+        | "update_item_status"
+        | "log_activity"
+        | "trigger_outgoing_webhook"
       operator_initials: "MB" | "HL" | "AB" | "EV"
       product_type: "SDM_ECO" | "SENSOR" | "MLA" | "HMI" | "TRANSMITTER"
       step_status: "pending" | "in_progress" | "completed" | "skipped"
@@ -783,6 +922,13 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "supervisor", "operator", "logistics"],
+      automation_action_type: [
+        "create_work_order",
+        "update_work_order_status",
+        "update_item_status",
+        "log_activity",
+        "trigger_outgoing_webhook",
+      ],
       operator_initials: ["MB", "HL", "AB", "EV"],
       product_type: ["SDM_ECO", "SENSOR", "MLA", "HMI", "TRANSMITTER"],
       step_status: ["pending", "in_progress", "completed", "skipped"],
