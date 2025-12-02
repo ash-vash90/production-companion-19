@@ -55,13 +55,15 @@ const Settings = () => {
     if (!user) return;
     
     try {
+      // Check user_roles table for admin status (authoritative source)
       const { data } = await supabase
-        .from('profiles')
+        .from('user_roles')
         .select('role')
-        .eq('id', user.id)
-        .single();
+        .eq('user_id', user.id)
+        .eq('role', 'admin')
+        .maybeSingle();
       
-      setUserRole(data?.role || null);
+      setUserRole(data ? 'admin' : null);
     } catch (error) {
       console.error('Error fetching user role:', error);
     }
