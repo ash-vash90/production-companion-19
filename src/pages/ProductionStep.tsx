@@ -6,13 +6,28 @@ import Layout from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Loader2, ArrowLeft, CheckCircle2, AlertCircle, ScanBarcode, History, XCircle } from 'lucide-react';
+import { Loader2, ArrowLeft, CheckCircle2, AlertCircle, ScanBarcode, History, XCircle, Users } from 'lucide-react';
 import MeasurementDialog from '@/components/production/MeasurementDialog';
 import ChecklistDialog from '@/components/production/ChecklistDialog';
 import BatchScanDialog from '@/components/production/BatchScanDialog';
 import ValidationHistoryDialog from '@/components/production/ValidationHistoryDialog';
+
+interface PresenceUser {
+  id: string;
+  name: string;
+  online_at: string;
+}
+
+interface StepCompletionInfo {
+  step_number: number;
+  completed_by_name: string;
+  completed_at: string;
+  operator_initials: string | null;
+}
 
 const ProductionStep = () => {
   const { itemId } = useParams();
@@ -32,6 +47,57 @@ const ProductionStep = () => {
   const [showBatchScanDialog, setShowBatchScanDialog] = useState(false);
   const [showValidationHistory, setShowValidationHistory] = useState(false);
   const [failedSteps, setFailedSteps] = useState<Set<number>>(new Set());
+  const [stepCompletions, setStepCompletions] = useState<Map<number, StepCompletionInfo>>(new Map());
+  const [presentUsers, setPresentUsers] = useState<PresenceUser[]>([]);
+  const [currentUserProfile, setCurrentUserProfile] = useState<any>(null);
+
+  // Fetch current user profile
+  useEffect(() => {
+    if (user) {
+      supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single()
+        .then(({ data }) => {
+          setCurrentUserProfile(data);
+        });
+    }
+  }, [user]);
+
+  // Set up real-time presence
+  useEffect(() => {
+    if (!user || !itemId || !currentUserProfile) return;
+
+    const channel = supabase.channel(`item-presence-${itemId}`);
+
+    channel
+      .on('presence', { event: 'sync' }, () => {
+        const state = channel.presenceState();
+        const users: PresenceUser[] = [];
+        Object.values(state).forEach((presences: any) => {
+          presences.forEach((presence: any) => {
+            if (presence.id !== user.id) {
+              users.push(presence);
+            }
+          });
+        });
+        setPresentUsers(users);
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await channel.track({
+            id: user.id,
+            name: currentUserProfile.full_name,
+            online_at: new Date().toISOString(),
+          });
+        }
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, itemId, currentUserProfile]);
 
   useEffect(() => {
     if (user && itemId) {
@@ -94,6 +160,47 @@ const ProductionStep = () => {
           .maybeSingle();
 
         setStepExecution(execData);
+      } else {
+        setStepExecution(null);
+      }
+
+      // Fetch completed step executions
+      const { data: completedExecs } = await supabase
+        .from('step_executions')
+        .select(`
+          *,
+          production_step:production_steps(step_number)
+        `)
+        .eq('work_order_item_id', itemId)
+        .eq('status', 'completed');
+
+      if (completedExecs && completedExecs.length > 0) {
+        // Fetch profiles for executors
+        const executorIds = [...new Set(completedExecs.map((e: any) => e.executed_by).filter(Boolean))];
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, full_name')
+          .in('id', executorIds);
+        
+        const profileMap = new Map(profiles?.map(p => [p.id, p.full_name]) || []);
+        
+        const completionsMap = new Map<number, StepCompletionInfo>();
+        completedExecs.forEach((exec: any) => {
+          const stepNumber = exec.production_step?.step_number;
+          if (stepNumber) {
+            // Keep the most recent completion for each step
+            const existing = completionsMap.get(stepNumber);
+            if (!existing || new Date(exec.completed_at) > new Date(existing.completed_at)) {
+              completionsMap.set(stepNumber, {
+                step_number: stepNumber,
+                completed_by_name: profileMap.get(exec.executed_by) || 'Unknown',
+                completed_at: exec.completed_at,
+                operator_initials: exec.operator_initials,
+              });
+            }
+          }
+        });
+        setStepCompletions(completionsMap);
       }
 
       // Fetch failed steps for visual indicators
@@ -172,11 +279,13 @@ const ProductionStep = () => {
 
       // Move to next step
       const nextStepNumber = item.current_step + 1;
+      const isCompleted = nextStepNumber > productionSteps.length;
+      
       const { error: itemError } = await supabase
         .from('work_order_items')
         .update({
           current_step: nextStepNumber,
-          status: nextStepNumber > productionSteps.length ? 'completed' : 'in_progress',
+          status: isCompleted ? 'completed' : 'in_progress',
         })
         .eq('id', itemId);
 
@@ -201,21 +310,34 @@ const ProductionStep = () => {
         product_type: workOrder.product_type,
       });
 
-      // If all steps completed, trigger work order completion webhook
-      if (nextStepNumber > productionSteps.length) {
+      // If all steps completed, trigger work order completion webhook and navigate
+      if (isCompleted) {
         await triggerWebhook('work_order_item_completed', {
           serial_number: item.serial_number,
           work_order_id: item.work_order_id,
           product_type: workOrder.product_type,
         });
+        toast.success(t('success'), { description: t('itemCompleted') });
+        navigate(`/production/${item.work_order_id}`);
+      } else {
+        // Stay on the page and refresh data to show next step
+        toast.success(t('success'), { description: t('stepCompleted') });
+        setLoading(true);
+        await fetchData();
       }
-
-      toast.success(t('success'), { description: t('stepCompleted') });
-      navigate(`/production/${item.work_order_id}`);
     } catch (error: any) {
       console.error('Error completing step:', error);
       toast.error(t('error'), { description: error.message });
     }
+  };
+
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(n => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
   };
 
   if (loading) {
@@ -257,10 +379,48 @@ const ProductionStep = () => {
               </p>
             </div>
           </div>
-          <Button variant="outline" size="lg" onClick={() => setShowValidationHistory(true)} className="gap-2">
-            <History className="h-5 w-5" />
-            <span className="hidden sm:inline">{t('history')}</span>
-          </Button>
+          
+          <div className="flex items-center gap-3">
+            {/* Active users indicator */}
+            {presentUsers.length > 0 && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex items-center gap-2 px-3 py-2 bg-accent/50 rounded-lg border">
+                      <Users className="h-4 w-4 text-muted-foreground" />
+                      <div className="flex -space-x-2">
+                        {presentUsers.slice(0, 3).map((pUser) => (
+                          <Avatar key={pUser.id} className="h-8 w-8 border-2 border-background">
+                            <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                              {getInitials(pUser.name)}
+                            </AvatarFallback>
+                          </Avatar>
+                        ))}
+                        {presentUsers.length > 3 && (
+                          <div className="h-8 w-8 rounded-full bg-muted border-2 border-background flex items-center justify-center text-xs font-medium">
+                            +{presentUsers.length - 3}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="max-w-xs">
+                    <p className="font-semibold mb-1">{t('alsoViewing')}</p>
+                    <ul className="text-sm">
+                      {presentUsers.map((pUser) => (
+                        <li key={pUser.id}>{pUser.name}</li>
+                      ))}
+                    </ul>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+            
+            <Button variant="outline" size="lg" onClick={() => setShowValidationHistory(true)} className="gap-2">
+              <History className="h-5 w-5" />
+              <span className="hidden sm:inline">{t('history')}</span>
+            </Button>
+          </div>
         </div>
 
         <Card>
@@ -340,15 +500,19 @@ const ProductionStep = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-3 md:space-y-2">
-              {productionSteps.map((step, idx) => {
+              {productionSteps.map((step) => {
                 const hasFailed = failedSteps.has(step.step_number);
+                const completion = stepCompletions.get(step.step_number);
+                const isCompleted = step.step_number < item.current_step;
+                const isCurrent = step.step_number === item.current_step;
+                
                 return (
                   <div
                     key={step.id}
                     className={`flex items-center gap-4 md:gap-3 p-4 md:p-3 rounded-lg transition-all ${
-                      step.step_number === item.current_step
+                      isCurrent
                         ? 'bg-primary/10 border-2 border-primary'
-                        : step.step_number < item.current_step
+                        : isCompleted
                         ? hasFailed
                           ? 'bg-destructive/10 border border-destructive/30'
                           : 'bg-accent/50 border border-border'
@@ -356,15 +520,15 @@ const ProductionStep = () => {
                     }`}
                   >
                     <div className={`flex items-center justify-center h-10 w-10 md:h-8 md:w-8 rounded-full ${
-                      step.step_number < item.current_step
+                      isCompleted
                         ? hasFailed
                           ? 'bg-destructive text-destructive-foreground shadow-lg'
                           : 'bg-primary text-primary-foreground shadow-lg'
-                        : step.step_number === item.current_step
+                        : isCurrent
                         ? 'bg-primary/20 text-primary border-2 border-primary'
                         : 'bg-muted text-muted-foreground'
                     }`}>
-                      {step.step_number < item.current_step ? (
+                      {isCompleted ? (
                         hasFailed ? (
                           <XCircle className="h-5 w-5 md:h-4 md:w-4" />
                         ) : (
@@ -374,11 +538,36 @@ const ProductionStep = () => {
                         <span className="text-base md:text-sm font-bold font-data">{step.step_number}</span>
                       )}
                     </div>
-                    <div className="flex-1 flex items-center justify-between">
-                      <span className="text-base md:text-sm font-medium font-data">{step.title_en}</span>
-                      {hasFailed && (
-                        <Badge variant="destructive" className="ml-2">{t('failed')}</Badge>
-                      )}
+                    <div className="flex-1 flex items-center justify-between gap-2">
+                      <div className="flex-1">
+                        <span className="text-base md:text-sm font-medium font-data">{step.title_en}</span>
+                        {isCompleted && completion && (
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {completion.operator_initials || completion.completed_by_name} • {new Date(completion.completed_at).toLocaleString()}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {isCompleted && completion && (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Avatar className="h-7 w-7">
+                                  <AvatarFallback className="bg-muted text-xs">
+                                    {completion.operator_initials || getInitials(completion.completed_by_name)}
+                                  </AvatarFallback>
+                                </Avatar>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>{completion.completed_by_name}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        )}
+                        {hasFailed && (
+                          <Badge variant="destructive" className="ml-2">{t('failed')}</Badge>
+                        )}
+                      </div>
                     </div>
                   </div>
                 );
