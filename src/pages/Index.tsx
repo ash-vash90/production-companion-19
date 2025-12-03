@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -8,11 +8,15 @@ import { DashboardStats } from '@/components/dashboard/DashboardStats';
 import { ProductionOverview } from '@/components/dashboard/ProductionOverview';
 import { RecentActivity } from '@/components/dashboard/RecentActivity';
 import { ActiveOperators } from '@/components/dashboard/ActiveOperators';
+import { CreateWorkOrderDialog } from '@/components/CreateWorkOrderDialog';
+import { Button } from '@/components/ui/button';
+import { Plus } from 'lucide-react';
 
 const Index = () => {
   const { user } = useAuth();
   const { t } = useLanguage();
   const navigate = useNavigate();
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -27,11 +31,17 @@ const Index = () => {
       <Layout>
         <div className="space-y-6">
           {/* Header */}
-          <div>
-            <h1 className="text-4xl font-bold tracking-tight">{t('dashboard')}</h1>
-            <p className="text-lg text-muted-foreground mt-2">
-              {t('realTimeMonitoring')}
-            </p>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+              <h1 className="text-4xl font-bold tracking-tight">{t('dashboard')}</h1>
+              <p className="text-lg text-muted-foreground mt-2">
+                {t('realTimeMonitoring')}
+              </p>
+            </div>
+            <Button variant="default" size="lg" onClick={() => setDialogOpen(true)}>
+              <Plus className="mr-2" />
+              {t('createWorkOrder')}
+            </Button>
           </div>
 
           {/* Stats Grid */}
@@ -48,6 +58,14 @@ const Index = () => {
             </div>
           </div>
         </div>
+
+        <CreateWorkOrderDialog
+          open={dialogOpen}
+          onOpenChange={setDialogOpen}
+          onSuccess={() => {
+            // Optionally refresh data or navigate
+          }}
+        />
       </Layout>
     </ProtectedRoute>
   );
