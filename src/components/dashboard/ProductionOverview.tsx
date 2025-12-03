@@ -4,12 +4,23 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { formatProductType } from '@/lib/utils';
 import { ExternalLink, Loader2 } from 'lucide-react';
+
+interface WorkOrderWithProfile {
+  id: string;
+  wo_number: string;
+  product_type: string;
+  batch_size: number;
+  status: string;
+  created_at: string;
+  profiles: { full_name: string } | null;
+}
 
 export function ProductionOverview() {
   const navigate = useNavigate();
   const { t } = useLanguage();
-  const [workOrders, setWorkOrders] = useState<any[]>([]);
+  const [workOrders, setWorkOrders] = useState<WorkOrderWithProfile[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -20,13 +31,13 @@ export function ProductionOverview() {
     try {
       const { data, error } = await supabase
         .from('work_orders')
-        .select('*')
+        .select('id, wo_number, product_type, batch_size, status, created_at, profiles:created_by(full_name)')
         .in('status', ['planned', 'in_progress'])
         .order('created_at', { ascending: false })
         .limit(5);
 
       if (error) throw error;
-      setWorkOrders(data || []);
+      setWorkOrders((data as any) || []);
     } catch (error) {
       console.error('Error fetching work orders:', error);
     } finally {
@@ -34,9 +45,12 @@ export function ProductionOverview() {
     }
   };
 
-  const getStatusBadgeClass = (status: string) => {
-    if (status === 'in_progress') return 'bg-primary text-primary-foreground';
-    return 'bg-secondary text-secondary-foreground';
+  const getStatusBadgeVariant = (status: string) => {
+    if (status === 'in_progress') return 'warning';
+    if (status === 'planned') return 'info';
+    if (status === 'completed') return 'success';
+    if (status === 'cancelled') return 'destructive';
+    return 'secondary';
   };
 
   const getStatusLabel = (status: string) => {
@@ -82,13 +96,18 @@ export function ProductionOverview() {
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     <span className="font-mono text-sm font-semibold">{wo.wo_number}</span>
-                    <Badge className={getStatusBadgeClass(wo.status)}>
+                    <Badge variant={getStatusBadgeVariant(wo.status)}>
                       {getStatusLabel(wo.status)}
                     </Badge>
                   </div>
                   <div className="mt-1 text-xs text-muted-foreground">
-                    {wo.product_type} • {t('batch')}: {wo.batch_size}
+                    {formatProductType(wo.product_type)} • {t('batch')}: {wo.batch_size}
                   </div>
+                  {wo.profiles?.full_name && (
+                    <div className="mt-1 text-xs text-muted-foreground">
+                      {t('createdBy')}: {wo.profiles.full_name}
+                    </div>
+                  )}
                 </div>
                 <ExternalLink className="h-4 w-4 text-muted-foreground" />
               </div>

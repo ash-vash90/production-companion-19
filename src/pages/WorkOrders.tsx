@@ -7,24 +7,33 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { CreateWorkOrderDialog } from '@/components/CreateWorkOrderDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { formatProductType } from '@/lib/utils';
 import { Loader2, Plus, Package, Filter } from 'lucide-react';
 import { SerializationService, type ProductType } from '@/services/serializationService';
+
+interface WorkOrderWithProfile {
+  id: string;
+  wo_number: string;
+  product_type: string;
+  batch_size: number;
+  status: string;
+  created_at: string;
+  profiles: { full_name: string } | null;
+}
 
 const WorkOrders = () => {
   const { user } = useAuth();
   const { t } = useLanguage();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
-  const [workOrders, setWorkOrders] = useState<any[]>([]);
-  const [filteredOrders, setFilteredOrders] = useState<any[]>([]);
+  const [workOrders, setWorkOrders] = useState<WorkOrderWithProfile[]>([]);
+  const [filteredOrders, setFilteredOrders] = useState<WorkOrderWithProfile[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [creating, setCreating] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [productFilter, setProductFilter] = useState<string>('all');
@@ -46,13 +55,13 @@ const WorkOrders = () => {
     try {
       const { data, error } = await supabase
         .from('work_orders')
-        .select('*')
+        .select('id, wo_number, product_type, batch_size, status, created_at, profiles:created_by(full_name)')
         .neq('status', 'cancelled')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setWorkOrders(data || []);
-      setFilteredOrders(data || []);
+      setWorkOrders((data as any) || []);
+      setFilteredOrders((data as any) || []);
     } catch (error) {
       console.error('Error fetching work orders:', error);
       toast.error(t('error'), { description: t('failedLoadWorkOrders') });
@@ -188,7 +197,7 @@ const WorkOrders = () => {
       on_hold: 'bg-muted text-muted-foreground',
       cancelled: 'bg-destructive text-destructive-foreground',
     };
-    return colors[status] || 'bg-muted';
+    return variants[status] || 'secondary';
   };
 
   if (!user) return null;
@@ -376,6 +385,14 @@ const WorkOrders = () => {
                           {new Date(wo.created_at).toLocaleDateString()}
                         </span>
                       </div>
+                      {wo.profiles?.full_name && (
+                        <div className="flex justify-between items-center p-3 rounded-lg bg-muted/50">
+                          <span className="text-muted-foreground font-data">{t('createdBy')}:</span>
+                          <span className="font-medium">
+                            {wo.profiles.full_name}
+                          </span>
+                        </div>
+                      )}
                     </div>
                     <Button
                       variant="outline"
@@ -407,6 +424,12 @@ const WorkOrders = () => {
             </div>
           )}
         </div>
+
+        <CreateWorkOrderDialog
+          open={dialogOpen}
+          onOpenChange={setDialogOpen}
+          onSuccess={fetchWorkOrders}
+        />
       </Layout>
     </ProtectedRoute>
   );
