@@ -29,15 +29,41 @@ export function ProductionOverview() {
 
   const fetchWorkOrders = async () => {
     try {
-      const { data, error } = await supabase
+      // Fetch work orders
+      const { data: workOrdersData, error: woError } = await supabase
         .from('work_orders')
-        .select('id, wo_number, product_type, batch_size, status, created_at, profiles:created_by(full_name)')
+        .select('id, wo_number, product_type, batch_size, status, created_at, created_by')
         .in('status', ['planned', 'in_progress'])
         .order('created_at', { ascending: false })
         .limit(5);
 
-      if (error) throw error;
-      setWorkOrders((data as any) || []);
+      if (woError) throw woError;
+
+      // Fetch profiles for creators
+      const creatorIds = [...new Set(workOrdersData?.map(wo => wo.created_by).filter(Boolean) || [])];
+      let profilesMap: Record<string, string> = {};
+      
+      if (creatorIds.length > 0) {
+        const { data: profilesData } = await supabase
+          .from('profiles')
+          .select('id, full_name')
+          .in('id', creatorIds);
+        
+        profilesMap = (profilesData || []).reduce((acc, p) => {
+          acc[p.id] = p.full_name;
+          return acc;
+        }, {} as Record<string, string>);
+      }
+
+      // Merge data
+      const enrichedData = (workOrdersData || []).map(wo => ({
+        ...wo,
+        profiles: wo.created_by && profilesMap[wo.created_by] 
+          ? { full_name: profilesMap[wo.created_by] } 
+          : null
+      }));
+
+      setWorkOrders(enrichedData as any);
     } catch (error) {
       console.error('Error fetching work orders:', error);
     } finally {
