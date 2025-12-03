@@ -196,29 +196,29 @@ const WorkOrders = () => {
   return (
     <ProtectedRoute>
       <Layout>
-        <div className="space-y-6 md:space-y-8">
+        <div className="space-y-6 lg:space-y-8 p-2 md:p-4">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="space-y-2">
-              <h1 className="text-3xl md:text-4xl font-bold tracking-tight">{t('workOrders')}</h1>
-              <p className="text-base md:text-lg text-muted-foreground">{t('manageWorkOrders')}</p>
+              <h1 className="text-4xl lg:text-5xl font-bold tracking-tight">{t('workOrders')}</h1>
+              <p className="text-lg lg:text-xl text-muted-foreground">{t('manageWorkOrders')}</p>
             </div>
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
-                <Button variant="default" size="lg" className="w-full sm:w-auto">
-                  <Plus className="mr-2" />
+                <Button variant="default" size="lg" className="w-full sm:w-auto h-14 text-lg px-8 min-w-[200px]">
+                  <Plus className="mr-2 h-6 w-6" />
                   {t('createWorkOrder')}
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-md">
+              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
-                  <DialogTitle className="text-2xl">{t('createWorkOrder')}</DialogTitle>
-                  <DialogDescription className="text-base">
+                  <DialogTitle className="text-3xl mb-2">{t('createWorkOrder')}</DialogTitle>
+                  <DialogDescription className="text-lg leading-relaxed">
                     Work order number will be auto-generated. Batch size is set automatically based on product type.
                   </DialogDescription>
                 </DialogHeader>
-                <form onSubmit={handleCreate} className="space-y-5">
-                  <div className="space-y-3">
-                    <Label htmlFor="productType" className="text-base font-data uppercase tracking-wider">{t('productType')}</Label>
+                <form onSubmit={handleCreate} className="space-y-6 mt-4">
+                  <div className="space-y-4">
+                    <Label htmlFor="productType" className="text-xl font-data uppercase tracking-wider">{t('productType')}</Label>
                     <Select
                       value={formData.productType}
                       onValueChange={(value: any) => {
@@ -237,21 +237,21 @@ const WorkOrders = () => {
                         });
                       }}
                     >
-                      <SelectTrigger className="h-12 text-base border-2">
+                      <SelectTrigger className="h-16 text-xl border-2 font-semibold">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="SDM_ECO" className="h-12 text-base">SDM-ECO</SelectItem>
-                        <SelectItem value="SENSOR" className="h-12 text-base">Sensor</SelectItem>
-                        <SelectItem value="MLA" className="h-12 text-base">MLA</SelectItem>
-                        <SelectItem value="HMI" className="h-12 text-base">HMI</SelectItem>
-                        <SelectItem value="TRANSMITTER" className="h-12 text-base">Transmitter</SelectItem>
+                        <SelectItem value="SDM_ECO" className="h-16 text-xl py-4">SDM-ECO</SelectItem>
+                        <SelectItem value="SENSOR" className="h-16 text-xl py-4">Sensor</SelectItem>
+                        <SelectItem value="MLA" className="h-16 text-xl py-4">MLA</SelectItem>
+                        <SelectItem value="HMI" className="h-16 text-xl py-4">HMI</SelectItem>
+                        <SelectItem value="TRANSMITTER" className="h-16 text-xl py-4">Transmitter</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-3">
-                    <Label htmlFor="batchSize" className="text-base font-data uppercase tracking-wider">
-                      {t('batchSize')} <span className="text-xs text-muted-foreground font-normal">(auto-set, adjustable)</span>
+                  <div className="space-y-4">
+                    <Label htmlFor="batchSize" className="text-xl font-data uppercase tracking-wider">
+                      {t('batchSize')} <span className="text-sm text-muted-foreground font-normal normal-case">(auto-set, adjustable)</span>
                     </Label>
                     <Input
                       id="batchSize"
@@ -261,14 +261,15 @@ const WorkOrders = () => {
                       value={formData.batchSize}
                       onChange={(e) => setFormData({ ...formData, batchSize: parseInt(e.target.value) })}
                       required
+                      className="h-16 text-2xl font-bold text-center border-2"
                     />
                   </div>
-                  <DialogFooter className="gap-3">
-                    <Button type="button" variant="outline" onClick={() => setDialogOpen(false)} size="lg" className="flex-1">
+                  <DialogFooter className="gap-4 pt-4">
+                    <Button type="button" variant="outline" onClick={() => setDialogOpen(false)} size="lg" className="flex-1 h-14 text-lg">
                       {t('cancel')}
                     </Button>
-                    <Button type="submit" disabled={creating} variant="default" size="lg" className="flex-1">
-                      {creating && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
+                    <Button type="submit" disabled={creating} variant="default" size="lg" className="flex-1 h-14 text-lg">
+                      {creating && <Loader2 className="mr-2 h-6 w-6 animate-spin" />}
                       {t('create')}
                     </Button>
                   </DialogFooter>
@@ -277,41 +278,41 @@ const WorkOrders = () => {
             </Dialog>
           </div>
 
-          {/* Search and Filter Bar */}
-          <Card>
-            <CardContent className="pt-6">
+          {/* Search and Filter Bar - Tablet Optimized */}
+          <Card className="shadow-lg">
+            <CardContent className="pt-6 pb-6">
               <div className="grid gap-4 md:grid-cols-4">
                 <div className="md:col-span-2">
                   <Input
                     placeholder={t('searchWorkOrders')}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full"
+                    className="w-full h-14 text-lg border-2 px-4"
                   />
                 </div>
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger>
+                  <SelectTrigger className="h-14 text-lg border-2">
                     <SelectValue placeholder={t('filterByStatus')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">{t('allStatuses')}</SelectItem>
-                    <SelectItem value="planned">{t('planned')}</SelectItem>
-                    <SelectItem value="in_progress">{t('inProgressStatus')}</SelectItem>
-                    <SelectItem value="completed">{t('completed')}</SelectItem>
-                    <SelectItem value="on_hold">{t('onHold')}</SelectItem>
+                    <SelectItem value="all" className="h-12 text-lg">{t('allStatuses')}</SelectItem>
+                    <SelectItem value="planned" className="h-12 text-lg">{t('planned')}</SelectItem>
+                    <SelectItem value="in_progress" className="h-12 text-lg">{t('inProgressStatus')}</SelectItem>
+                    <SelectItem value="completed" className="h-12 text-lg">{t('completed')}</SelectItem>
+                    <SelectItem value="on_hold" className="h-12 text-lg">{t('onHold')}</SelectItem>
                   </SelectContent>
                 </Select>
                 <Select value={productFilter} onValueChange={setProductFilter}>
-                  <SelectTrigger>
+                  <SelectTrigger className="h-14 text-lg border-2">
                     <SelectValue placeholder={t('filterByProduct')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">{t('allProducts')}</SelectItem>
-                    <SelectItem value="SDM_ECO">SDM-ECO</SelectItem>
-                    <SelectItem value="SENSOR">Sensor</SelectItem>
-                    <SelectItem value="MLA">MLA</SelectItem>
-                    <SelectItem value="HMI">HMI</SelectItem>
-                    <SelectItem value="TRANSMITTER">Transmitter</SelectItem>
+                    <SelectItem value="all" className="h-12 text-lg">{t('allProducts')}</SelectItem>
+                    <SelectItem value="SDM_ECO" className="h-12 text-lg">SDM-ECO</SelectItem>
+                    <SelectItem value="SENSOR" className="h-12 text-lg">Sensor</SelectItem>
+                    <SelectItem value="MLA" className="h-12 text-lg">MLA</SelectItem>
+                    <SelectItem value="HMI" className="h-12 text-lg">HMI</SelectItem>
+                    <SelectItem value="TRANSMITTER" className="h-12 text-lg">Transmitter</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -320,56 +321,56 @@ const WorkOrders = () => {
 
           {loading ? (
             <div className="flex justify-center py-16">
-              <Loader2 className="h-12 w-12 md:h-10 md:w-10 animate-spin text-primary" />
+              <Loader2 className="h-16 w-16 animate-spin text-primary" />
             </div>
           ) : filteredOrders.length === 0 ? (
             workOrders.length === 0 ? (
-            <Card>
-              <CardContent className="py-16 text-center">
-                <Package className="h-20 w-20 md:h-16 md:w-16 mx-auto mb-6 text-muted-foreground/50" />
-                <h3 className="text-2xl md:text-xl font-semibold mb-3">{t('noWorkOrdersYet')}</h3>
-                <p className="text-base md:text-sm text-muted-foreground mb-6">{t('createFirstWorkOrder')}</p>
-                <Button onClick={() => setDialogOpen(true)} variant="default" size="lg">
-                  <Plus className="mr-2" />
+            <Card className="shadow-lg">
+              <CardContent className="py-20 text-center">
+                <Package className="h-24 w-24 mx-auto mb-8 text-muted-foreground/50" />
+                <h3 className="text-3xl font-semibold mb-4">{t('noWorkOrdersYet')}</h3>
+                <p className="text-xl text-muted-foreground mb-8">{t('createFirstWorkOrder')}</p>
+                <Button onClick={() => setDialogOpen(true)} variant="default" size="lg" className="h-14 text-lg px-8">
+                  <Plus className="mr-2 h-6 w-6" />
                   {t('createWorkOrder')}
                 </Button>
               </CardContent>
             </Card>
             ) : (
-              <Card>
-                <CardContent className="py-16 text-center">
-                  <Filter className="h-16 w-16 mx-auto mb-6 text-muted-foreground/50" />
-                  <h3 className="text-xl font-semibold mb-3">{t('noMatchingOrders')}</h3>
-                  <p className="text-sm text-muted-foreground mb-6">{t('tryDifferentFilters')}</p>
-                  <Button onClick={() => { setSearchTerm(''); setStatusFilter('all'); setProductFilter('all'); }} variant="outline">
+              <Card className="shadow-lg">
+                <CardContent className="py-20 text-center">
+                  <Filter className="h-20 w-20 mx-auto mb-8 text-muted-foreground/50" />
+                  <h3 className="text-2xl font-semibold mb-4">{t('noMatchingOrders')}</h3>
+                  <p className="text-lg text-muted-foreground mb-8">{t('tryDifferentFilters')}</p>
+                  <Button onClick={() => { setSearchTerm(''); setStatusFilter('all'); setProductFilter('all'); }} variant="outline" size="lg" className="h-14 text-lg px-8">
                     {t('clearFilters')}
                   </Button>
                 </CardContent>
               </Card>
             )
           ) : (
-            <div className="grid gap-4 md:gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
               {filteredOrders.map((wo) => (
                 <Card
                   key={wo.id}
-                  className="cursor-pointer hover:shadow-xl hover:border-primary transition-all"
+                  className="cursor-pointer hover:shadow-2xl hover:border-primary transition-all border-2 active:scale-[0.98]"
                 >
-                  <CardHeader onClick={() => navigate(`/production/${wo.id}`)}>
-                    <div className="flex items-center justify-between mb-2">
-                      <CardTitle className="text-xl md:text-lg font-data">{wo.wo_number}</CardTitle>
-                      <Badge className={`${getStatusColor(wo.status)} text-white h-8 px-4 text-sm md:h-auto md:px-3 md:text-xs`}>
+                  <CardHeader onClick={() => navigate(`/production/${wo.id}`)} className="pb-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <CardTitle className="text-2xl font-data">{wo.wo_number}</CardTitle>
+                      <Badge className={`${getStatusColor(wo.status)} text-white h-10 px-5 text-base font-semibold`}>
                         {t(wo.status as any)}
                       </Badge>
                     </div>
-                    <CardDescription className="text-base md:text-sm">{wo.product_type}</CardDescription>
+                    <CardDescription className="text-xl font-semibold">{wo.product_type}</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-3 text-base md:text-sm" onClick={() => navigate(`/production/${wo.id}`)}>
-                      <div className="flex justify-between items-center p-3 rounded-lg bg-muted/50">
+                    <div className="space-y-4 text-lg" onClick={() => navigate(`/production/${wo.id}`)}>
+                      <div className="flex justify-between items-center p-4 rounded-lg bg-muted/50">
                         <span className="text-muted-foreground font-data">{t('batchSize')}:</span>
-                        <span className="font-bold font-data text-lg md:text-base">{wo.batch_size}</span>
+                        <span className="font-bold font-data text-2xl">{wo.batch_size}</span>
                       </div>
-                      <div className="flex justify-between items-center p-3 rounded-lg bg-muted/50">
+                      <div className="flex justify-between items-center p-4 rounded-lg bg-muted/50">
                         <span className="text-muted-foreground font-data">{t('created')}:</span>
                         <span className="font-medium font-data">
                           {new Date(wo.created_at).toLocaleDateString()}

@@ -241,33 +241,33 @@ const MeasurementDialog: React.FC<MeasurementDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-ui">Record Measurements</DialogTitle>
-          <DialogDescription className="text-base">
+          <DialogTitle className="text-3xl font-ui mb-2">Record Measurements</DialogTitle>
+          <DialogDescription className="text-lg leading-relaxed">
             {productionStep.description_en || 'Enter required measurement values'}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-5 py-4">
-          <div className="space-y-3">
-            <Label htmlFor="operator" className="text-base font-data uppercase tracking-wider">Operator Initials *</Label>
+        <div className="space-y-6 py-4">
+          <div className="space-y-4">
+            <Label htmlFor="operator" className="text-xl font-data uppercase tracking-wider">Operator Initials *</Label>
             <Select value={operatorInitials} onValueChange={setOperatorInitials}>
-              <SelectTrigger className="h-12 text-base border-2">
+              <SelectTrigger className="h-16 text-xl border-2 font-semibold">
                 <SelectValue placeholder="Select operator" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="MB" className="h-12 text-base">MB</SelectItem>
-                <SelectItem value="HL" className="h-12 text-base">HL</SelectItem>
-                <SelectItem value="AB" className="h-12 text-base">AB</SelectItem>
-                <SelectItem value="EV" className="h-12 text-base">EV</SelectItem>
+                <SelectItem value="MB" className="h-16 text-xl py-4">MB</SelectItem>
+                <SelectItem value="HL" className="h-16 text-xl py-4">HL</SelectItem>
+                <SelectItem value="AB" className="h-16 text-xl py-4">AB</SelectItem>
+                <SelectItem value="EV" className="h-16 text-xl py-4">EV</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           {measurementFields.map((field: any) => (
-            <div key={field.name} className="space-y-3">
-              <Label htmlFor={field.name} className="text-base font-data uppercase tracking-wider">
+            <div key={field.name} className="space-y-4">
+              <Label htmlFor={field.name} className="text-xl font-data uppercase tracking-wider">
                 {field.label} {field.unit ? `(${field.unit})` : ''} *
               </Label>
               {field.type === 'pass_fail' ? (
@@ -275,12 +275,12 @@ const MeasurementDialog: React.FC<MeasurementDialogProps> = ({
                   value={measurements[field.name]?.toString()}
                   onValueChange={(val) => handleMeasurementChange(field.name, val === 'true')}
                 >
-                  <SelectTrigger className="h-12 text-base border-2">
+                  <SelectTrigger className="h-16 text-xl border-2 font-semibold">
                     <SelectValue placeholder="Select result" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="true" className="h-12 text-base">✓ PASS</SelectItem>
-                    <SelectItem value="false" className="h-12 text-base">✗ NO PASS</SelectItem>
+                    <SelectItem value="true" className="h-16 text-xl py-4">✓ PASS</SelectItem>
+                    <SelectItem value="false" className="h-16 text-xl py-4">✗ NO PASS</SelectItem>
                   </SelectContent>
                 </Select>
               ) : (
@@ -291,32 +291,33 @@ const MeasurementDialog: React.FC<MeasurementDialogProps> = ({
                   value={measurements[field.name] || ''}
                   onChange={(e) => handleMeasurementChange(field.name, e.target.value)}
                   placeholder={`Enter ${field.label.toLowerCase()}`}
+                  className="h-16 text-2xl font-bold text-center border-2"
                 />
               )}
             </div>
           ))}
 
           {validationResult && (
-            <div className={`flex items-start gap-3 p-4 rounded-lg border-2 ${
-              validationResult.passed 
-                ? 'bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20' 
+            <div className={`flex items-start gap-4 p-5 rounded-lg border-2 ${
+              validationResult.passed
+                ? 'bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20'
                 : 'bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/20'
             }`}>
               {validationResult.passed ? (
-                <CheckCircle2 className="h-6 w-6 mt-0.5 flex-shrink-0" />
+                <CheckCircle2 className="h-8 w-8 mt-0.5 flex-shrink-0" />
               ) : (
-                <AlertCircle className="h-6 w-6 mt-0.5 flex-shrink-0" />
+                <AlertCircle className="h-8 w-8 mt-0.5 flex-shrink-0" />
               )}
-              <span className="text-base font-medium">{validationResult.message}</span>
+              <span className="text-lg font-semibold">{validationResult.message}</span>
             </div>
           )}
         </div>
 
-        <DialogFooter className="gap-3">
-          <Button variant="outline" onClick={() => onOpenChange(false)} size="lg" className="flex-1">
+        <DialogFooter className="gap-4 pt-4">
+          <Button variant="outline" onClick={() => onOpenChange(false)} size="lg" className="flex-1 h-14 text-lg">
             Cancel
           </Button>
-          <Button onClick={handleSave} disabled={saving} variant="default" size="lg" className="flex-1">
+          <Button onClick={handleSave} disabled={saving} variant="default" size="lg" className="flex-1 h-14 text-lg">
             {saving ? 'Saving...' : 'Save Measurements'}
           </Button>
         </DialogFooter>
