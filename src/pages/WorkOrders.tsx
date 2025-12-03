@@ -14,6 +14,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { formatProductType } from '@/lib/utils';
 import { Loader2, Plus, Package, Filter } from 'lucide-react';
+import { SerializationService, type ProductType } from '@/services/serializationService';
 
 interface WorkOrderWithProfile {
   id: string;
@@ -89,13 +90,87 @@ const WorkOrders = () => {
     setFilteredOrders(filtered);
   }, [searchTerm, statusFilter, productFilter, workOrders]);
 
-  const getStatusVariant = (status: string) => {
-    const variants: Record<string, 'info' | 'warning' | 'success' | 'secondary' | 'destructive'> = {
-      planned: 'info',
-      in_progress: 'warning',
-      completed: 'success',
-      on_hold: 'secondary',
-      cancelled: 'destructive',
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+
+    setCreating(true);
+    try {
+      const { data: workOrder, error: woError } = await supabase
+        .from('work_orders')
+        .insert({
+          wo_number: formData.woNumber,
+          product_type: formData.productType,
+          batch_size: formData.batchSize,
+          created_by: user.id,
+          status: 'planned',
+        })
+        .select()
+        .single();
+
+      if (woError) throw woError;
+
+      // Generate serial numbers using centralized service (format: Q-0001, W-0001, etc.)
+      const serialNumbers = await SerializationService.generateSerials(
+        formData.productType as ProductType,
+        formData.batchSize
+      );
+
+      const items = serialNumbers.map((serialNumber, index) => ({
+        work_order_id: workOrder.id,
+        serial_number: serialNumber,
+        position_in_batch: index + 1,
+        status: 'planned' as const,
+        assigned_to: user.id,
+      }));
+
+      const { error: itemsError } = await supabase
+        .from('work_order_items')
+        .insert(items);
+
+      if (itemsError) throw itemsError;
+
+      await supabase.from('activity_logs').insert({
+        user_id: user.id,
+        action: 'create_work_order',
+        entity_type: 'work_order',
+        entity_id: workOrder.id,
+        details: { wo_number: formData.woNumber, product_type: formData.productType, batch_size: formData.batchSize },
+      });
+
+      // Trigger webhook for work order creation
+      const { triggerWebhook } = await import('@/lib/webhooks');
+      await triggerWebhook('work_order_created', {
+        work_order: workOrder,
+        batch_size: formData.batchSize,
+        product_type: formData.productType,
+      });
+
+      toast.success(t('success'), { description: `${t('workOrderNumber')} ${formData.woNumber} ${t('workOrderCreated')}` });
+      setDialogOpen(false);
+      setFormData({ woNumber: '', productType: 'SDM_ECO', batchSize: 1 });
+      fetchWorkOrders();
+    } catch (error: any) {
+      console.error('Error creating work order:', error);
+      
+      let errorMessage = error.message;
+      if (error.code === '23505') {
+        errorMessage = `${t('workOrderNumber')} ${formData.woNumber} ${t('workOrderExists')}`;
+      }
+      
+      toast.error(t('error'), { description: errorMessage });
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    const colors: Record<string, string> = {
+      planned: 'bg-secondary text-secondary-foreground',
+      in_progress: 'bg-primary text-primary-foreground',
+      completed: 'bg-accent text-accent-foreground',
+      on_hold: 'bg-muted text-muted-foreground',
+      cancelled: 'bg-destructive text-destructive-foreground',
     };
     return variants[status] || 'secondary';
   };

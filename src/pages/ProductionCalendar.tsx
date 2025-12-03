@@ -192,6 +192,7 @@ const ProductionCalendar = () => {
                       workOrders={getWorkOrdersForDate(date)}
                       getStatusColor={getStatusColor}
                       navigate={navigate}
+                      onRefetch={fetchWorkOrders}
                     />
                   ))}
                 </div>
@@ -256,7 +257,8 @@ const CalendarDay: React.FC<{
   workOrders: WorkOrder[];
   getStatusColor: (status: string) => string;
   navigate: (path: string) => void;
-}> = ({ date, workOrders, getStatusColor, navigate }) => {
+  onRefetch: () => void;
+}> = ({ date, workOrders, getStatusColor, navigate, onRefetch }) => {
   const [isDragOver, setIsDragOver] = useState(false);
   const dateString = format(date, 'yyyy-MM-dd');
   const isToday = isSameDay(date, new Date());
@@ -284,9 +286,12 @@ const CalendarDay: React.FC<{
           .eq('id', workOrderId);
 
         if (error) throw error;
-        window.location.reload(); // Refresh to show updated schedule
+
+        toast.success(t('success'), { description: t('workOrderScheduled') || 'Work order scheduled' });
+        onRefetch(); // Refetch to show updated schedule (SPA-friendly)
       } catch (error) {
         console.error('Error scheduling work order:', error);
+        toast.error(t('error'), { description: t('errorSchedulingWorkOrder') || 'Failed to schedule work order' });
       }
     }
   };
