@@ -264,6 +264,10 @@ export const translations = {
     noOperatorsFound: 'No operators found',
     active: 'Active',
     batch: 'Batch',
+    productBatches: 'Product Batches',
+    addProductBatch: 'Add Product Batch',
+    sessionExpired: 'Session Expired',
+    sessionExpiredDesc: 'You have been logged out after 12 hours. Please sign in again.',
     
     // Quality Certificates
     qualityCertificates: 'Quality Certificates',
@@ -556,6 +560,10 @@ export const translations = {
     noOperatorsFound: 'Geen operators gevonden',
     active: 'Actief',
     batch: 'Batch',
+    productBatches: 'Productbatches',
+    addProductBatch: 'Productbatch Toevoegen',
+    sessionExpired: 'Sessie Verlopen',
+    sessionExpiredDesc: 'U bent uitgelogd na 12 uur. Log opnieuw in.',
     
     // Quality Certificates
     qualityCertificates: 'Kwaliteitscertificaten',
