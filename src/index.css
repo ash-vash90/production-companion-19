@@ -39,6 +39,14 @@
   --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 100%;
   
+  /* Semantic status colors */
+  --success: 142 76% 36%;
+  --success-foreground: 0 0% 100%;
+  --warning: 45 93% 47%;
+  --warning-foreground: 0 0% 9%;
+  --info: 200 70% 50%;
+  --info-foreground: 0 0% 100%;
+  
   /* Borders and inputs */
   --border: 0 0% 90%;
   --input: 0 0% 90%;
@@ -82,6 +90,12 @@
   --accent-foreground: 0 0% 95%;
   --destructive: 0 62% 50%;
   --destructive-foreground: 0 0% 95%;
+  --success: 142 76% 45%;
+  --success-foreground: 0 0% 9%;
+  --warning: 45 93% 55%;
+  --warning-foreground: 0 0% 9%;
+  --info: 200 70% 60%;
+  --info-foreground: 0 0% 9%;
   --border: 0 0% 20%;
   --input: 0 0% 20%;
   --ring: 142 76% 45%;
