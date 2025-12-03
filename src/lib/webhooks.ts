@@ -10,34 +10,6 @@ interface WebhookConfig {
   id: string;
   name: string;
   webhook_url: string;
-  secret_key?: string;
-}
-
-/**
- * Generate HMAC signature for webhook authentication
- * Uses Web Crypto API (available in modern browsers)
- */
-async function generateHMACSignature(
-  payload: string,
-  secret: string
-): Promise<string> {
-  const encoder = new TextEncoder();
-  const keyData = encoder.encode(secret);
-  const messageData = encoder.encode(payload);
-
-  const cryptoKey = await crypto.subtle.importKey(
-    'raw',
-    keyData,
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign']
-  );
-
-  const signature = await crypto.subtle.sign('HMAC', cryptoKey, messageData);
-  const hashArray = Array.from(new Uint8Array(signature));
-  const hashHex = hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
-
-  return `sha256=${hashHex}`;
 }
 
 /**
@@ -50,16 +22,6 @@ async function sendWebhookWithRetry(
 ): Promise<{ success: boolean; error?: string }> {
   const payloadString = JSON.stringify(payload);
 
-  // Generate HMAC signature if secret key exists
-  let signature: string | undefined;
-  if (webhook.secret_key) {
-    try {
-      signature = await generateHMACSignature(payloadString, webhook.secret_key);
-    } catch (err) {
-      console.error(`Failed to generate HMAC signature for ${webhook.name}:`, err);
-    }
-  }
-
   // Retry with exponential backoff: 2s, 4s, 8s
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
@@ -69,16 +31,10 @@ async function sendWebhookWithRetry(
         'X-Webhook-Timestamp': payload.timestamp,
       };
 
-      // Add signature if available
-      if (signature) {
-        headers['X-Webhook-Signature'] = signature;
-      }
-
       const response = await fetch(webhook.webhook_url, {
         method: 'POST',
         headers,
         body: payloadString,
-        // Remove 'no-cors' to properly catch errors
         signal: AbortSignal.timeout(10000), // 10 second timeout
       });
 
@@ -87,16 +43,7 @@ async function sendWebhookWithRetry(
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      // Success! Update webhook stats
-      await supabase
-        .from('zapier_webhooks')
-        .update({
-          last_triggered_at: new Date().toISOString(),
-          last_error: null,
-          success_count: supabase.sql`success_count + 1`,
-        })
-        .eq('id', webhook.id);
-
+      console.log(`Webhook ${webhook.name} sent successfully`);
       return { success: true };
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
@@ -106,17 +53,8 @@ async function sendWebhookWithRetry(
         errorMessage
       );
 
-      // If this was the last attempt, log the failure
+      // If this was the last attempt, return failure
       if (attempt === maxAttempts) {
-        await supabase
-          .from('zapier_webhooks')
-          .update({
-            last_triggered_at: new Date().toISOString(),
-            last_error: errorMessage,
-            failure_count: supabase.sql`failure_count + 1`,
-          })
-          .eq('id', webhook.id);
-
         return { success: false, error: errorMessage };
       }
 
@@ -143,7 +81,7 @@ export async function triggerWebhook(
     // Fetch active webhooks for this event type
     const { data: webhooks, error } = await supabase
       .from('zapier_webhooks')
-      .select('id, name, webhook_url, secret_key')
+      .select('id, name, webhook_url')
       .eq('event_type', eventType)
       .eq('enabled', true);
 
