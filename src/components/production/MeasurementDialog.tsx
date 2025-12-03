@@ -143,7 +143,7 @@ const MeasurementDialog: React.FC<MeasurementDialogProps> = ({
           measurement_values: measurements,
           validation_status: validation.passed ? 'passed' : 'failed',
           validation_message: validation.message,
-          status: validation.passed ? 'completed' : 'completed', // Mark as completed even on failure
+          status: validation.passed ? 'completed' : 'failed',
           completed_at: new Date().toISOString(),
         })
         .eq('id', stepExecution.id);
