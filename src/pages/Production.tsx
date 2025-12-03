@@ -9,7 +9,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Loader2, ArrowLeft, Package, QrCode, Printer } from 'lucide-react';
+import { Loader2, ArrowLeft, Package, QrCode, Printer, FileText } from 'lucide-react';
+import { generateQualityCertificate } from '@/services/certificateService';
 
 const Production = () => {
   const { itemId } = useParams();
@@ -196,6 +197,33 @@ const Production = () => {
     }
   };
 
+  const handleGenerateCertificate = async (itemId: string, serialNumber: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+
+    try {
+      toast.loading(t('generatingCertificate') || 'Generating certificate...', { id: 'cert-gen' });
+
+      const { certificateId, pdfUrl } = await generateQualityCertificate(itemId);
+
+      toast.success(t('certificateGenerated') || 'Certificate generated!', {
+        id: 'cert-gen',
+        description: t('certificateReady') || 'Certificate is ready for download',
+        action: {
+          label: t('download') || 'Download',
+          onClick: () => window.open(pdfUrl, '_blank'),
+        },
+      });
+
+      fetchProductionData();
+    } catch (error: any) {
+      console.error('Error generating certificate:', error);
+      toast.error(t('error'), {
+        id: 'cert-gen',
+        description: error.message || t('failedGenerateCertificate') || 'Failed to generate certificate',
+      });
+    }
+  };
+
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
       planned: 'bg-secondary text-secondary-foreground',
@@ -289,17 +317,28 @@ const Production = () => {
                       {t(item.status as any)}
                     </Badge>
                      {item.status === 'completed' && (
-                      <Button
-                        size="icon"
-                        variant="outline"
-                        className="h-12 w-12 md:h-9 md:w-9"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handlePrintLabel(item.serial_number, item.operator_initials);
-                        }}
-                      >
-                        <Printer className="h-6 w-6 md:h-4 md:w-4" />
-                      </Button>
+                      <>
+                        <Button
+                          size="icon"
+                          variant="outline"
+                          className="h-12 w-12 md:h-9 md:w-9"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handlePrintLabel(item.serial_number, item.operator_initials);
+                          }}
+                        >
+                          <Printer className="h-6 w-6 md:h-4 md:w-4" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant={item.certificate_generated ? "default" : "outline"}
+                          className="h-12 w-12 md:h-9 md:w-9"
+                          onClick={(e) => handleGenerateCertificate(item.id, item.serial_number, e)}
+                          disabled={item.certificate_generated}
+                        >
+                          <FileText className="h-6 w-6 md:h-4 md:w-4" />
+                        </Button>
+                      </>
                      )}
                      {workOrder.product_type === 'SENSOR' && item.status === 'in_progress' && (
                       <Button

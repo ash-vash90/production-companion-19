@@ -15,6 +15,7 @@ import MeasurementDialog from '@/components/production/MeasurementDialog';
 import ChecklistDialog from '@/components/production/ChecklistDialog';
 import BatchScanDialog from '@/components/production/BatchScanDialog';
 import ValidationHistoryDialog from '@/components/production/ValidationHistoryDialog';
+import { generateQualityCertificate } from '@/services/certificateService';
 
 interface PresenceUser {
   id: string;
@@ -317,6 +318,31 @@ const ProductionStep = () => {
           work_order_id: item.work_order_id,
           product_type: workOrder.product_type,
         });
+
+        // Auto-generate quality certificate for completed items
+        try {
+          toast.loading(t('generatingCertificate') || 'Generating quality certificate...', { id: 'cert-gen' });
+
+          const { pdfUrl } = await generateQualityCertificate(itemId as string);
+
+          toast.success(t('certificateGenerated') || 'Certificate generated!', {
+            id: 'cert-gen',
+            description: t('certificateReady') || 'Quality certificate is ready',
+            action: {
+              label: t('download') || 'Download',
+              onClick: () => window.open(pdfUrl, '_blank'),
+            },
+            duration: 10000,
+          });
+        } catch (certError) {
+          console.error('Auto-generate certificate failed:', certError);
+          // Don't block navigation if certificate generation fails
+          toast.error(t('certificateGenerationFailed') || 'Certificate generation failed', {
+            id: 'cert-gen',
+            description: t('canGenerateLater') || 'You can generate it later from the production page',
+          });
+        }
+
         toast.success(t('success'), { description: t('itemCompleted') });
         navigate(`/production/${item.work_order_id}`);
       } else {
