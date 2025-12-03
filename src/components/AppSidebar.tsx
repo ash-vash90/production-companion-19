@@ -1,4 +1,4 @@
-import { LayoutDashboard, Package, Settings, LogOut, Factory, CalendarDays, BarChart3, Users, FileText, ClipboardList } from 'lucide-react';
+import { LayoutDashboard, Package, Settings, LogOut, Factory, CalendarDays, BarChart3, Users, FileText, ClipboardList, GitBranch } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -46,6 +46,11 @@ export function AppSidebar() {
       title: 'Production Reports', 
       url: '/production-reports', 
       icon: ClipboardList 
+    },
+    { 
+      title: 'Genealogy', 
+      url: '/genealogy', 
+      icon: GitBranch 
     },
   ];
 

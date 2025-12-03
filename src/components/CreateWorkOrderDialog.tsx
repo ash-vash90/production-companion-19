@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
@@ -9,8 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Loader2, Plus, Trash2 } from 'lucide-react';
+import { Loader2, Plus, Trash2, RefreshCw } from 'lucide-react';
 import { formatProductType } from '@/lib/utils';
+import { SettingsService, SerialPrefixes } from '@/services/settingsService';
 
 type ProductType = 'SDM_ECO' | 'SENSOR' | 'MLA' | 'HMI' | 'TRANSMITTER';
 
@@ -29,22 +30,44 @@ interface CreateWorkOrderDialogProps {
 
 const PRODUCT_TYPES: ProductType[] = ['SDM_ECO', 'SENSOR', 'MLA', 'HMI', 'TRANSMITTER'];
 
-const PREFIXES: Record<ProductType, string> = {
-  'SENSOR': 'Q',
-  'MLA': 'W',
-  'HMI': 'X',
-  'TRANSMITTER': 'T',
-  'SDM_ECO': 'SDM'
-};
-
 export function CreateWorkOrderDialog({ open, onOpenChange, onSuccess, trigger }: CreateWorkOrderDialogProps) {
   const { user } = useAuth();
   const { t } = useLanguage();
   const [creating, setCreating] = useState(false);
   const [woNumber, setWoNumber] = useState('');
+  const [generatingWO, setGeneratingWO] = useState(false);
+  const [serialPrefixes, setSerialPrefixes] = useState<SerialPrefixes | null>(null);
   const [productBatches, setProductBatches] = useState<ProductBatch[]>([
     { id: crypto.randomUUID(), productType: 'SDM_ECO', quantity: 1 }
   ]);
+
+  // Generate WO number when dialog opens
+  useEffect(() => {
+    if (open) {
+      generateWONumber();
+      loadSerialPrefixes();
+    }
+  }, [open]);
+
+  const generateWONumber = async () => {
+    setGeneratingWO(true);
+    try {
+      const generatedNumber = await SettingsService.generateWorkOrderNumber();
+      setWoNumber(generatedNumber);
+    } catch (error) {
+      console.error('Error generating WO number:', error);
+      // Fallback to simple format
+      const fallback = `WO-${Date.now()}`;
+      setWoNumber(fallback);
+    } finally {
+      setGeneratingWO(false);
+    }
+  };
+
+  const loadSerialPrefixes = async () => {
+    const prefixes = await SettingsService.getSerialPrefixes();
+    setSerialPrefixes(prefixes);
+  };
 
   const addProductBatch = () => {
     setProductBatches([
@@ -91,15 +114,17 @@ export function CreateWorkOrderDialog({ open, onOpenChange, onSuccess, trigger }
 
       if (woError) throw woError;
 
-      // Generate serial numbers for each product batch
-      const woSuffix = woNumber.replace(/[^a-zA-Z0-9]/g, '').slice(-6);
+      // Generate serial numbers for each product batch using configured prefixes
+      const prefixes = serialPrefixes || { SENSOR: 'Q', MLA: 'W', HMI: 'X', TRANSMITTER: 'T', SDM_ECO: 'SDM' };
+      const serialFormat = await SettingsService.getSerialFormat();
       const items: any[] = [];
       let position = 1;
 
       for (const batch of productBatches) {
-        const prefix = PREFIXES[batch.productType];
+        const prefix = prefixes[batch.productType] || batch.productType.charAt(0);
         for (let i = 1; i <= batch.quantity; i++) {
-          const serialNumber = `${prefix}-${woSuffix}-${String(position).padStart(3, '0')}`;
+          const paddedPosition = String(position).padStart(serialFormat.padLength, '0');
+          const serialNumber = `${prefix}${serialFormat.separator}${paddedPosition}`;
           items.push({
             work_order_id: workOrder.id,
             serial_number: serialNumber,
@@ -166,14 +191,30 @@ export function CreateWorkOrderDialog({ open, onOpenChange, onSuccess, trigger }
         </DialogHeader>
         <form onSubmit={handleCreate} className="space-y-5">
           <div className="space-y-3">
-            <Label htmlFor="woNumber" className="text-base font-data uppercase tracking-wider">{t('workOrderNumber')}</Label>
-            <Input
-              id="woNumber"
-              value={woNumber}
-              onChange={(e) => setWoNumber(e.target.value)}
-              placeholder="WO-2024-001"
-              required
-            />
+            <Label className="text-base font-data uppercase tracking-wider">{t('workOrderNumber')}</Label>
+            <div className="flex items-center gap-2">
+              <div className="flex-1 p-3 rounded-lg border bg-muted/50 font-mono font-semibold">
+                {generatingWO ? (
+                  <span className="flex items-center gap-2 text-muted-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Generating...
+                  </span>
+                ) : (
+                  woNumber
+                )}
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={generateWONumber}
+                disabled={generatingWO}
+                title="Regenerate"
+              >
+                <RefreshCw className={`h-4 w-4 ${generatingWO ? 'animate-spin' : ''}`} />
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">Auto-generated based on settings format</p>
           </div>
 
           <div className="space-y-3">
