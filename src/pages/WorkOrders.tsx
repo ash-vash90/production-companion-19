@@ -30,7 +30,6 @@ const WorkOrders = () => {
   const [productFilter, setProductFilter] = useState<string>('all');
   
   const [formData, setFormData] = useState({
-    woNumber: '',
     productType: 'SDM_ECO' as const,
     batchSize: 1,
   });
@@ -60,6 +59,29 @@ const WorkOrders = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Auto-generate unique WO number
+  const generateWONumber = async (): Promise<string> => {
+    const now = new Date();
+    const dateStr = now.toISOString().split('T')[0].replace(/-/g, ''); // YYYYMMDD
+
+    // Get existing WOs for today to find next sequence number
+    const { data: todayWOs } = await supabase
+      .from('work_orders')
+      .select('wo_number')
+      .like('wo_number', `WO-${dateStr}-%`)
+      .order('wo_number', { ascending: false })
+      .limit(1);
+
+    let sequence = 1;
+    if (todayWOs && todayWOs.length > 0) {
+      const lastWO = todayWOs[0].wo_number;
+      const lastSeq = parseInt(lastWO.split('-')[2]);
+      sequence = lastSeq + 1;
+    }
+
+    return `WO-${dateStr}-${String(sequence).padStart(3, '0')}`;
   };
 
   // Filter work orders based on search and filters
@@ -93,10 +115,13 @@ const WorkOrders = () => {
 
     setCreating(true);
     try {
+      // Auto-generate unique WO number
+      const woNumber = await generateWONumber();
+
       const { data: workOrder, error: woError } = await supabase
         .from('work_orders')
         .insert({
-          wo_number: formData.woNumber,
+          wo_number: woNumber,
           product_type: formData.productType,
           batch_size: formData.batchSize,
           created_by: user.id,
@@ -132,7 +157,7 @@ const WorkOrders = () => {
         action: 'create_work_order',
         entity_type: 'work_order',
         entity_id: workOrder.id,
-        details: { wo_number: formData.woNumber, product_type: formData.productType, batch_size: formData.batchSize },
+        details: { wo_number: woNumber, product_type: formData.productType, batch_size: formData.batchSize },
       });
 
       // Trigger webhook for work order creation
@@ -143,19 +168,13 @@ const WorkOrders = () => {
         product_type: formData.productType,
       });
 
-      toast.success(t('success'), { description: `${t('workOrderNumber')} ${formData.woNumber} ${t('workOrderCreated')}` });
+      toast.success(t('success'), { description: `${t('workOrderNumber')} ${woNumber} ${t('workOrderCreated')}` });
       setDialogOpen(false);
-      setFormData({ woNumber: '', productType: 'SDM_ECO', batchSize: 1 });
+      setFormData({ productType: 'SDM_ECO', batchSize: 1 });
       fetchWorkOrders();
     } catch (error: any) {
       console.error('Error creating work order:', error);
-      
-      let errorMessage = error.message;
-      if (error.code === '23505') {
-        errorMessage = `${t('workOrderNumber')} ${formData.woNumber} ${t('workOrderExists')}`;
-      }
-      
-      toast.error(t('error'), { description: errorMessage });
+      toast.error(t('error'), { description: error.message });
     } finally {
       setCreating(false);
     }
@@ -193,24 +212,30 @@ const WorkOrders = () => {
               <DialogContent className="max-w-md">
                 <DialogHeader>
                   <DialogTitle className="text-2xl">{t('createWorkOrder')}</DialogTitle>
-                  <DialogDescription className="text-base">{t('createWorkOrderDesc')}</DialogDescription>
+                  <DialogDescription className="text-base">
+                    Work order number will be auto-generated. Batch size is set automatically based on product type.
+                  </DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleCreate} className="space-y-5">
-                  <div className="space-y-3">
-                    <Label htmlFor="woNumber" className="text-base font-data uppercase tracking-wider">{t('workOrderNumber')}</Label>
-                    <Input
-                      id="woNumber"
-                      value={formData.woNumber}
-                      onChange={(e) => setFormData({ ...formData, woNumber: e.target.value })}
-                      placeholder="WO-2024-001"
-                      required
-                    />
-                  </div>
                   <div className="space-y-3">
                     <Label htmlFor="productType" className="text-base font-data uppercase tracking-wider">{t('productType')}</Label>
                     <Select
                       value={formData.productType}
-                      onValueChange={(value: any) => setFormData({ ...formData, productType: value })}
+                      onValueChange={(value: any) => {
+                        // Auto-set batch size based on product type
+                        const batchSizes: Record<string, number> = {
+                          'SENSOR': 20,
+                          'TRANSMITTER': 10,
+                          'MLA': 10,
+                          'HMI': 10,
+                          'SDM_ECO': 1,
+                        };
+                        setFormData({
+                          ...formData,
+                          productType: value,
+                          batchSize: batchSizes[value] || 1
+                        });
+                      }}
                     >
                       <SelectTrigger className="h-12 text-base border-2">
                         <SelectValue />
@@ -225,7 +250,9 @@ const WorkOrders = () => {
                     </Select>
                   </div>
                   <div className="space-y-3">
-                    <Label htmlFor="batchSize" className="text-base font-data uppercase tracking-wider">{t('batchSize')}</Label>
+                    <Label htmlFor="batchSize" className="text-base font-data uppercase tracking-wider">
+                      {t('batchSize')} <span className="text-xs text-muted-foreground font-normal">(auto-set, adjustable)</span>
+                    </Label>
                     <Input
                       id="batchSize"
                       type="number"
