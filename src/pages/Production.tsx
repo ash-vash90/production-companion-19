@@ -292,52 +292,52 @@ const Production = () => {
   return (
     <ProtectedRoute>
       <Layout>
-        <div className="space-y-6 md:space-y-8">
+        <div className="space-y-6 lg:space-y-8 p-2 md:p-4">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/work-orders')} className="h-12 w-12 md:h-10 md:w-10">
-              <ArrowLeft className="h-6 w-6 md:h-5 md:w-5" />
+            <Button variant="ghost" size="icon" onClick={() => navigate('/work-orders')} className="h-14 w-14">
+              <ArrowLeft className="h-8 w-8" />
             </Button>
             <div className="space-y-1">
-              <h1 className="text-3xl md:text-4xl font-bold tracking-tight">{workOrder.wo_number}</h1>
-              <p className="text-base md:text-lg text-muted-foreground font-data">
+              <h1 className="text-4xl lg:text-5xl font-bold tracking-tight">{workOrder.wo_number}</h1>
+              <p className="text-xl lg:text-2xl text-muted-foreground font-data">
                 {workOrder.product_type} • Batch: {workOrder.batch_size}
               </p>
             </div>
           </div>
 
-          <Card>
-            <CardHeader>
+          <Card className="shadow-lg">
+            <CardHeader className="pb-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                  <CardTitle className="text-2xl md:text-xl">{t('production')} {t('items')}</CardTitle>
-                  <CardDescription className="text-base md:text-sm">{t('trackItems')}</CardDescription>
+                  <CardTitle className="text-3xl">{t('production')} {t('items')}</CardTitle>
+                  <CardDescription className="text-lg mt-2">{t('trackItems')}</CardDescription>
                 </div>
-                <Badge className={`${getStatusColor(workOrder.status)} text-white h-10 px-5 text-base md:h-auto md:px-3 md:text-sm self-start`}>
+                <Badge className={`${getStatusColor(workOrder.status)} text-white h-12 px-6 text-lg font-semibold self-start`}>
                   {t(workOrder.status as any)}
                 </Badge>
               </div>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4 md:space-y-3">
+              <div className="space-y-4">
                 {items.map((item) => (
                   <div
                     key={item.id}
-                    className="flex items-center justify-between p-5 md:p-4 border-2 rounded-lg hover:bg-accent/50 transition-all cursor-pointer active:scale-98"
+                    className="flex items-center justify-between p-6 border-2 rounded-lg hover:bg-accent/50 transition-all cursor-pointer active:scale-[0.98] hover:shadow-md"
                   onClick={() => navigate(`/production/step/${item.id}`)}
                 >
-                  <div className="flex items-center gap-4 md:gap-3">
-                    <div className="flex flex-col items-center justify-center h-14 w-14 md:h-12 md:w-12 rounded-lg bg-primary text-white font-bold text-xl md:text-base shadow-sm">
+                  <div className="flex items-center gap-5">
+                    <div className="flex flex-col items-center justify-center h-16 w-16 rounded-lg bg-primary text-white font-bold text-2xl shadow-md">
                       {item.position_in_batch}
                     </div>
                     <div>
-                      <p className="font-data text-base md:text-sm font-medium">{item.serial_number}</p>
-                      <p className="text-sm md:text-xs text-muted-foreground font-data">
-                        {t('step')} {item.current_step} 
+                      <p className="font-data text-xl font-semibold">{item.serial_number}</p>
+                      <p className="text-lg text-muted-foreground font-data mt-1">
+                        {t('step')} {item.current_step}
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3 md:gap-2">
-                    <Badge className={`${getStatusColor(item.status)} text-white h-9 px-4 text-sm md:h-auto md:px-3 md:text-xs`}>
+                  <div className="flex items-center gap-3">
+                    <Badge className={`${getStatusColor(item.status)} text-white h-11 px-5 text-base font-semibold`}>
                       {t(item.status as any)}
                     </Badge>
                      {item.status === 'completed' && (
@@ -345,29 +345,30 @@ const Production = () => {
                         <Button
                           size="icon"
                           variant="outline"
-                          className="h-12 w-12 md:h-9 md:w-9"
+                          className="h-14 w-14 border-2"
                           onClick={(e) => {
                             e.stopPropagation();
                             handlePrintLabel(item.serial_number, item.operator_initials);
                           }}
                         >
-                          <Printer className="h-6 w-6 md:h-4 md:w-4" />
+                          <Printer className="h-7 w-7" />
                         </Button>
                         <Button
                           size="icon"
                           variant={item.certificate_generated ? "default" : "outline"}
-                          className="h-12 w-12 md:h-9 md:w-9"
+                          className="h-14 w-14 border-2"
                           onClick={(e) => handleGenerateCertificate(item.id, item.serial_number, e)}
                           disabled={item.certificate_generated}
                         >
-                          <FileText className="h-6 w-6 md:h-4 md:w-4" />
+                          <FileText className="h-7 w-7" />
                         </Button>
                       </>
                      )}
                      {workOrder.product_type === 'SENSOR' && item.status === 'in_progress' && (
                       <Button
-                        size="sm"
+                        size="lg"
                         variant="outline"
+                        className="h-14 px-6 text-base border-2"
                         onClick={(e) => {
                           e.stopPropagation();
                           navigate(`/production/sensor/${item.id}`);

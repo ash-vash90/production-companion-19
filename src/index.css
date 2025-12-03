@@ -151,3 +151,76 @@
     text-wrap: balance;
   }
 }
+
+/* Tablet and Touch Optimizations */
+@layer base {
+  /* Improve touch target sizes for better usability on tablets */
+  @media (hover: none) and (pointer: coarse) {
+    /* Touch device detected - optimize for finger taps */
+    button, a, [role="button"], input[type="checkbox"], input[type="radio"] {
+      min-height: 44px;
+      min-width: 44px;
+    }
+
+    /* Larger tap areas for interactive elements */
+    .cursor-pointer {
+      cursor: pointer;
+      -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
+    }
+
+    /* Remove hover effects on touch devices */
+    .hover\:shadow-xl:hover {
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    }
+  }
+
+  /* Tablet-specific breakpoint optimizations */
+  @media (min-width: 768px) and (max-width: 1024px) {
+    /* Better spacing on tablets */
+    body {
+      font-size: 18px;
+      line-height: 1.6;
+    }
+
+    /* Ensure dialogs don't take full screen */
+    [role="dialog"] {
+      max-width: min(90vw, 700px);
+    }
+  }
+
+  /* Prevent text selection on buttons for better UX */
+  button, .cursor-pointer {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+  }
+
+  /* Smooth scrolling for better tablet experience */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Better focus indicators for accessibility */
+  button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible {
+    outline: 3px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
+
+  /* Optimize number inputs for tablets */
+  input[type="number"] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
+
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  /* Active states for better feedback on touch */
+  .active\:scale-\[0\.98\]:active {
+    transform: scale(0.98);
+  }
+}
