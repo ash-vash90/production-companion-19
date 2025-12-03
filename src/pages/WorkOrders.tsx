@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Loader2, Plus, Package, Filter } from 'lucide-react';
+import { SerializationService, type ProductType } from '@/services/serializationService';
 
 const WorkOrders = () => {
   const { user } = useAuth();
@@ -106,30 +107,19 @@ const WorkOrders = () => {
 
       if (woError) throw woError;
 
-      // Generate serial numbers with proper prefixes and unique timestamp
-      const prefixes: Record<string, string> = {
-        'SENSOR': 'Q',
-        'MLA': 'W',
-        'HMI': 'X',
-        'TRANSMITTER': 'T',
-        'SDM_ECO': 'SDM'
-      };
-      const prefix = prefixes[formData.productType] || formData.productType;
-      
-      // Use WO number to make serial numbers unique per work order
-      const woSuffix = formData.woNumber.replace(/[^a-zA-Z0-9]/g, '').slice(-6);
+      // Generate serial numbers using centralized service (format: Q-0001, W-0001, etc.)
+      const serialNumbers = await SerializationService.generateSerials(
+        formData.productType as ProductType,
+        formData.batchSize
+      );
 
-      const items = [];
-      for (let i = 1; i <= formData.batchSize; i++) {
-        const serialNumber = `${prefix}-${woSuffix}-${String(i).padStart(3, '0')}`;
-        items.push({
-          work_order_id: workOrder.id,
-          serial_number: serialNumber,
-          position_in_batch: i,
-          status: 'planned',
-          assigned_to: user.id,
-        });
-      }
+      const items = serialNumbers.map((serialNumber, index) => ({
+        work_order_id: workOrder.id,
+        serial_number: serialNumber,
+        position_in_batch: index + 1,
+        status: 'planned' as const,
+        assigned_to: user.id,
+      }));
 
       const { error: itemsError } = await supabase
         .from('work_order_items')
