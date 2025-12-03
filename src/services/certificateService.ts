@@ -439,6 +439,7 @@ export async function generateQualityCertificate(
     const pdfUrl = await generatePDFFromHTML(html, data.workOrderItem.serial_number);
 
     // 4. Save certificate record to database
+    const userId = (await supabase.auth.getUser()).data.user?.id;
     const { data: certificate, error: certError } = await supabase
       .from('quality_certificates')
       .insert({
@@ -447,10 +448,10 @@ export async function generateQualityCertificate(
           measurements: data.measurements,
           batch_materials: data.batchMaterials,
           sub_assemblies: data.subAssemblies,
-        },
+        } as any,
         pdf_url: pdfUrl,
-        generated_by: (await supabase.auth.getUser()).data.user?.id,
-      })
+        generated_by: userId,
+      } as any)
       .select()
       .single();
 

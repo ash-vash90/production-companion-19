@@ -4,30 +4,64 @@ export type ProductType = 'SENSOR' | 'MLA' | 'HMI' | 'TRANSMITTER' | 'SDM_ECO';
 
 /**
  * Centralized serialization service
- * Generates unique serial numbers using database sequences
+ * Generates unique serial numbers based on existing items in database
  *
  * Format:
  * - SENSOR: Q-0001, Q-0002, ...
  * - MLA: W-0001, W-0002, ...
  * - HMI: X-0001, X-0002, ...
  * - TRANSMITTER: T-0001, T-0002, ...
- * - SDM_ECO: SDM-0001, SDM-0002, ...
+ * - SDM_ECO: S-0001, S-0002, ...
  */
 export class SerializationService {
+  private static prefixes: Record<ProductType, string> = {
+    SENSOR: 'Q',
+    MLA: 'W',
+    HMI: 'X',
+    TRANSMITTER: 'T',
+    SDM_ECO: 'S',
+  };
+
+  /**
+   * Get the next available serial number by checking existing items
+   */
+  private static async getNextSequence(productType: ProductType): Promise<number> {
+    const prefix = this.prefixes[productType];
+    
+    // Query for the highest existing serial number with this prefix
+    const { data, error } = await supabase
+      .from('work_order_items')
+      .select('serial_number')
+      .like('serial_number', `${prefix}-%`)
+      .order('serial_number', { ascending: false })
+      .limit(1);
+
+    if (error) {
+      console.error('Error fetching max serial:', error);
+      // Fall back to timestamp-based if query fails
+      return Date.now() % 10000;
+    }
+
+    if (!data || data.length === 0) {
+      return 1;
+    }
+
+    // Extract number from serial (e.g., "Q-0042" -> 42)
+    const match = data[0].serial_number.match(/^[A-Z]+-(\d+)$/);
+    if (match) {
+      return parseInt(match[1], 10) + 1;
+    }
+
+    return 1;
+  }
+
   /**
    * Generate a single serial number
    */
   static async generateSerial(productType: ProductType): Promise<string> {
-    const { data, error } = await supabase.rpc('generate_serial_number', {
-      p_product_type: productType,
-    });
-
-    if (error) {
-      console.error('Failed to generate serial number:', error);
-      throw new Error(`Failed to generate serial number: ${error.message}`);
-    }
-
-    return data as string;
+    const prefix = this.prefixes[productType];
+    const sequence = await this.getNextSequence(productType);
+    return `${prefix}-${String(sequence).padStart(4, '0')}`;
   }
 
   /**
@@ -45,31 +79,22 @@ export class SerializationService {
       throw new Error('Cannot generate more than 1000 serials at once');
     }
 
-    const { data, error } = await supabase.rpc('generate_serial_numbers', {
-      p_product_type: productType,
-      p_count: count,
-    });
-
-    if (error) {
-      console.error('Failed to generate serial numbers:', error);
-      throw new Error(`Failed to generate serial numbers: ${error.message}`);
+    const prefix = this.prefixes[productType];
+    const startSequence = await this.getNextSequence(productType);
+    
+    const serials: string[] = [];
+    for (let i = 0; i < count; i++) {
+      serials.push(`${prefix}-${String(startSequence + i).padStart(4, '0')}`);
     }
 
-    return data as string[];
+    return serials;
   }
 
   /**
    * Get the prefix for a product type
    */
   static getPrefix(productType: ProductType): string {
-    const prefixes: Record<ProductType, string> = {
-      SENSOR: 'Q',
-      MLA: 'W',
-      HMI: 'X',
-      TRANSMITTER: 'T',
-      SDM_ECO: 'SDM',
-    };
-    return prefixes[productType];
+    return this.prefixes[productType];
   }
 
   /**
@@ -81,7 +106,7 @@ export class SerializationService {
       MLA: /^W-\d{4}$/,
       HMI: /^X-\d{4}$/,
       TRANSMITTER: /^T-\d{4}$/,
-      SDM_ECO: /^SDM-\d{4}$/,
+      SDM_ECO: /^S-\d{4}$/,
     };
 
     if (productType) {
@@ -96,7 +121,7 @@ export class SerializationService {
    * Extract number from serial (e.g., "Q-0042" -> 42)
    */
   static extractNumber(serialNumber: string): number | null {
-    const match = serialNumber.match(/^(?:Q|W|X|T|SDM)-(\d{4})$/);
+    const match = serialNumber.match(/^[A-Z]+-(\d{4})$/);
     if (!match) return null;
     return parseInt(match[1], 10);
   }
@@ -114,7 +139,7 @@ export class SerializationService {
       { type: 'MLA', pattern: /^W-(\d{4})$/, prefix: 'W' },
       { type: 'HMI', pattern: /^X-(\d{4})$/, prefix: 'X' },
       { type: 'TRANSMITTER', pattern: /^T-(\d{4})$/, prefix: 'T' },
-      { type: 'SDM_ECO', pattern: /^SDM-(\d{4})$/, prefix: 'SDM' },
+      { type: 'SDM_ECO', pattern: /^S-(\d{4})$/, prefix: 'S' },
     ];
 
     for (const { type, pattern, prefix } of patterns) {

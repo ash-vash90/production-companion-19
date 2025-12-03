@@ -259,6 +259,7 @@ const CalendarDay: React.FC<{
   navigate: (path: string) => void;
   onRefetch: () => void;
 }> = ({ date, workOrders, getStatusColor, navigate, onRefetch }) => {
+  const { t } = useLanguage();
   const [isDragOver, setIsDragOver] = useState(false);
   const dateString = format(date, 'yyyy-MM-dd');
   const isToday = isSameDay(date, new Date());
