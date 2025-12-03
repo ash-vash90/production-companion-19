@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Loader2, ArrowLeft, Package, QrCode, Printer, FileText } from 'lucide-react';
 import { generateQualityCertificate } from '@/services/certificateService';
+import QRCodeLib from 'qrcode';
 
 const Production = () => {
   const { itemId } = useParams();
@@ -66,13 +67,22 @@ const Production = () => {
     }
   };
 
-  const handlePrintLabel = (serialNumber: string, operatorInitials?: string) => {
+  const handlePrintLabel = async (serialNumber: string, operatorInitials?: string) => {
     const now = new Date();
     const year = now.getFullYear();
     const month = now.toLocaleString('en', { month: 'short' }).toUpperCase();
     const day = String(now.getDate()).padStart(2, '0');
     const dateStr = `${year} / ${month} / ${day}`;
-    
+
+    // Generate QR code containing serial number and work order info
+    const qrData = JSON.stringify({
+      serial: serialNumber,
+      wo: workOrder?.wo_number,
+      product: workOrder?.product_type,
+      date: now.toISOString().split('T')[0]
+    });
+    const qrCodeDataUrl = await QRCodeLib.toDataURL(qrData, { width: 120, margin: 1 });
+
     const printWindow = window.open('', '_blank');
     if (printWindow) {
       printWindow.document.write(`
@@ -136,6 +146,17 @@ const Production = () => {
                 letter-spacing: 0;
                 margin: 4px 0;
               }
+              .codes-container {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                gap: 12px;
+                margin: 8px 0;
+              }
+              .qr-code {
+                width: 80px;
+                height: 80px;
+              }
               .info {
                 display: flex;
                 justify-content: space-between;
@@ -152,7 +173,10 @@ const Production = () => {
               <div class="date">${dateStr}</div>
               <div class="product">${workOrder?.product_type || ''}</div>
               <div class="serial">${serialNumber}</div>
-              <div class="barcode">${serialNumber}</div>
+              <div class="codes-container">
+                <img src="${qrCodeDataUrl}" alt="QR Code" class="qr-code" />
+                <div class="barcode">${serialNumber}</div>
+              </div>
               <div class="info">
                 <span>WO: ${workOrder?.wo_number || ''}</span>
                 ${operatorInitials ? `<span>OP: ${operatorInitials}</span>` : '<span></span>'}

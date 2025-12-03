@@ -17,6 +17,7 @@ import Settings from "./pages/Settings";
 import Analytics from "./pages/Analytics";
 import RoleManagement from "./pages/RoleManagement";
 import ProductionCalendar from "./pages/ProductionCalendar";
+import Genealogy from "./pages/Genealogy";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -41,6 +42,7 @@ const App = () => (
               <Route path="/analytics" element={<Analytics />} />
               <Route path="/role-management" element={<RoleManagement />} />
               <Route path="/calendar" element={<ProductionCalendar />} />
+              <Route path="/genealogy/:serialNumber" element={<Genealogy />} />
               <Route path="/settings" element={<Settings />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />

@@ -1,6 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { triggerWebhook } from '@/lib/webhooks';
 
 interface CertificateData {
   workOrderItem: {
@@ -473,6 +474,17 @@ export async function generateQualityCertificate(
         serial_number: data.workOrderItem.serial_number,
         wo_number: data.workOrderItem.work_order.wo_number,
       },
+    });
+
+    // 7. Trigger webhook for certificate generation
+    await triggerWebhook('certificate_generated', {
+      certificate_id: certificate.id,
+      work_order_item_id: itemId,
+      serial_number: data.workOrderItem.serial_number,
+      wo_number: data.workOrderItem.work_order.wo_number,
+      product_type: data.workOrderItem.work_order.product_type,
+      pdf_url: pdfUrl,
+      generated_at: new Date().toISOString(),
     });
 
     return {

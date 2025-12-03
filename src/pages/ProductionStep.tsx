@@ -319,6 +319,27 @@ const ProductionStep = () => {
           product_type: workOrder.product_type,
         });
 
+        // Check if all items in the batch are completed
+        const { data: allItems, error: allItemsError } = await supabase
+          .from('work_order_items')
+          .select('id, status')
+          .eq('work_order_id', item.work_order_id);
+
+        if (!allItemsError && allItems) {
+          const allCompleted = allItems.every(i => i.status === 'completed');
+
+          if (allCompleted) {
+            // Trigger batch_completed webhook
+            await triggerWebhook('batch_completed', {
+              work_order_id: item.work_order_id,
+              wo_number: workOrder.wo_number,
+              product_type: workOrder.product_type,
+              batch_size: allItems.length,
+              completed_at: new Date().toISOString(),
+            });
+          }
+        }
+
         // Auto-generate quality certificate for completed items
         try {
           toast.loading(t('generatingCertificate') || 'Generating quality certificate...', { id: 'cert-gen' });
