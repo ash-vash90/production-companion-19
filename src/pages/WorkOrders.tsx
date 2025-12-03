@@ -239,51 +239,53 @@ const WorkOrders = () => {
               </Card>
             )
           ) : (
-            <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {filteredOrders.map((wo) => (
                 <Card
                   key={wo.id}
-                  className="cursor-pointer hover:shadow-2xl hover:border-primary transition-all border-2 active:scale-[0.98]"
+                  className="cursor-pointer hover:shadow-xl hover:border-primary transition-all border active:scale-[0.98]"
                 >
-                  <CardHeader onClick={() => navigate(`/production/${wo.id}`)} className="pb-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <CardTitle className="text-2xl font-data">{wo.wo_number}</CardTitle>
-                      <Badge variant={getStatusVariant(wo.status)} className="h-10 px-5 text-base font-semibold">
+                  <CardHeader onClick={() => navigate(`/production/${wo.id}`)} className="pb-2 p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <CardTitle className="text-lg font-data">{wo.wo_number}</CardTitle>
+                      <Badge variant={getStatusVariant(wo.status)} className="h-7 px-3 text-sm font-medium">
                         {t(wo.status as any)}
                       </Badge>
                     </div>
-                    <CardDescription className="text-lg">
+                    <div className="flex flex-wrap gap-1.5">
                       {wo.productBreakdown.length > 0 
-                        ? formatProductBreakdownText(wo.productBreakdown)
-                        : `${wo.batch_size} items`
+                        ? wo.productBreakdown.map((item, idx) => (
+                            <Badge key={idx} variant="secondary" className="text-sm font-semibold">
+                              {item.count}× {item.type}
+                            </Badge>
+                          ))
+                        : <span className="text-sm text-muted-foreground">{wo.batch_size} items</span>
                       }
-                    </CardDescription>
+                    </div>
                   </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4 text-lg" onClick={() => navigate(`/production/${wo.id}`)}>
-                      <div className="flex justify-between items-center p-4 rounded-lg bg-muted/50">
-                        <span className="text-muted-foreground font-data">{t('batchSize')}:</span>
-                        <span className="font-bold font-data text-2xl">{wo.batch_size}</span>
+                  <CardContent className="p-4 pt-0">
+                    <div className="space-y-2 text-sm" onClick={() => navigate(`/production/${wo.id}`)}>
+                      <div className="flex justify-between items-center p-2 rounded bg-muted/50">
+                        <span className="text-muted-foreground">{t('batchSize')}:</span>
+                        <span className="font-bold text-base">{wo.batch_size}</span>
                       </div>
-                      <div className="flex justify-between items-center p-4 rounded-lg bg-muted/50">
-                        <span className="text-muted-foreground font-data">{t('created')}:</span>
-                        <span className="font-medium font-data">
+                      <div className="flex justify-between items-center p-2 rounded bg-muted/50">
+                        <span className="text-muted-foreground">{t('created')}:</span>
+                        <span className="font-medium">
                           {new Date(wo.created_at).toLocaleDateString()}
                         </span>
                       </div>
                       {wo.profiles?.full_name && (
-                        <div className="flex justify-between items-center p-3 rounded-lg bg-muted/50">
-                          <span className="text-muted-foreground font-data">{t('createdBy')}:</span>
-                          <span className="font-medium">
-                            {wo.profiles.full_name}
-                          </span>
+                        <div className="flex justify-between items-center p-2 rounded bg-muted/50">
+                          <span className="text-muted-foreground">{t('createdBy')}:</span>
+                          <span className="font-medium">{wo.profiles.full_name}</span>
                         </div>
                       )}
                     </div>
                     <Button
-                      variant="outline"
+                      variant="destructive"
                       size="sm"
-                      className="w-full mt-4"
+                      className="w-full mt-3"
                       onClick={async (e) => {
                         e.stopPropagation();
                         if (confirm(t('confirmCancelWorkOrder'))) {
@@ -301,7 +303,7 @@ const WorkOrders = () => {
                         }
                       }}
                     >
-                      {t('cancelWorkOrder')}
+                      Cancel Work Order
                     </Button>
                   </CardContent>
                 </Card>
