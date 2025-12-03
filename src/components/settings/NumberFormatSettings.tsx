@@ -151,8 +151,8 @@ const NumberFormatSettings = () => {
             <div className="space-y-2">
               <Label htmlFor="woSeparator">Separator</Label>
               <Select
-                value={woFormat.separator}
-                onValueChange={(value) => setWoFormat({ ...woFormat, separator: value })}
+                value={woFormat.separator || 'none'}
+                onValueChange={(value) => setWoFormat({ ...woFormat, separator: value === 'none' ? '' : value })}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -160,7 +160,7 @@ const NumberFormatSettings = () => {
                 <SelectContent>
                   <SelectItem value="-">Dash (-)</SelectItem>
                   <SelectItem value="_">Underscore (_)</SelectItem>
-                  <SelectItem value="">None</SelectItem>
+                  <SelectItem value="none">None</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -229,8 +229,8 @@ const NumberFormatSettings = () => {
             <div className="space-y-2">
               <Label htmlFor="serialSeparator">Separator</Label>
               <Select
-                value={serialFormat.separator}
-                onValueChange={(value) => setSerialFormat({ ...serialFormat, separator: value })}
+                value={serialFormat.separator || 'none'}
+                onValueChange={(value) => setSerialFormat({ ...serialFormat, separator: value === 'none' ? '' : value })}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -238,7 +238,7 @@ const NumberFormatSettings = () => {
                 <SelectContent>
                   <SelectItem value="-">Dash (-)</SelectItem>
                   <SelectItem value="_">Underscore (_)</SelectItem>
-                  <SelectItem value="">None</SelectItem>
+                  <SelectItem value="none">None</SelectItem>
                 </SelectContent>
               </Select>
             </div>
