@@ -13,10 +13,11 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Plus, Trash2, Webhook, Loader2, Zap } from 'lucide-react';
+import { Plus, Trash2, Webhook, Loader2, Zap, Hash } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import AutomationManager from '@/components/settings/AutomationManager';
+import NumberFormatSettings from '@/components/settings/NumberFormatSettings';
 
 const Settings = () => {
   const { user } = useAuth();
@@ -173,8 +174,12 @@ const Settings = () => {
           )}
 
           {isAdmin && (
-            <Tabs defaultValue="automations" className="space-y-6">
+            <Tabs defaultValue="numbering" className="space-y-6">
               <TabsList>
+                <TabsTrigger value="numbering" className="gap-2">
+                  <Hash className="h-4 w-4" />
+                  Number Formats
+                </TabsTrigger>
                 <TabsTrigger value="automations" className="gap-2">
                   <Zap className="h-4 w-4" />
                   {t('automations') || 'Automations'}
@@ -184,6 +189,10 @@ const Settings = () => {
                   {t('outgoingWebhooks') || 'Outgoing Webhooks'}
                 </TabsTrigger>
               </TabsList>
+              
+              <TabsContent value="numbering">
+                <NumberFormatSettings />
+              </TabsContent>
               
               <TabsContent value="automations">
                 <AutomationManager />
