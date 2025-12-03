@@ -7,32 +7,35 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { CreateWorkOrderDialog } from '@/components/CreateWorkOrderDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { formatProductType } from '@/lib/utils';
 import { Loader2, Plus, Package, Filter } from 'lucide-react';
+
+interface WorkOrderWithProfile {
+  id: string;
+  wo_number: string;
+  product_type: string;
+  batch_size: number;
+  status: string;
+  created_at: string;
+  profiles: { full_name: string } | null;
+}
 
 const WorkOrders = () => {
   const { user } = useAuth();
   const { t } = useLanguage();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
-  const [workOrders, setWorkOrders] = useState<any[]>([]);
-  const [filteredOrders, setFilteredOrders] = useState<any[]>([]);
+  const [workOrders, setWorkOrders] = useState<WorkOrderWithProfile[]>([]);
+  const [filteredOrders, setFilteredOrders] = useState<WorkOrderWithProfile[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [creating, setCreating] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [productFilter, setProductFilter] = useState<string>('all');
-  
-  const [formData, setFormData] = useState({
-    woNumber: '',
-    productType: 'SDM_ECO' as const,
-    batchSize: 1,
-  });
 
   useEffect(() => {
     if (!user) {
@@ -46,13 +49,13 @@ const WorkOrders = () => {
     try {
       const { data, error } = await supabase
         .from('work_orders')
-        .select('*')
+        .select('id, wo_number, product_type, batch_size, status, created_at, profiles:created_by(full_name)')
         .neq('status', 'cancelled')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setWorkOrders(data || []);
-      setFilteredOrders(data || []);
+      setWorkOrders((data as any) || []);
+      setFilteredOrders((data as any) || []);
     } catch (error) {
       console.error('Error fetching work orders:', error);
       toast.error(t('error'), { description: t('failedLoadWorkOrders') });
@@ -86,100 +89,15 @@ const WorkOrders = () => {
     setFilteredOrders(filtered);
   }, [searchTerm, statusFilter, productFilter, workOrders]);
 
-  const handleCreate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user) return;
-
-    setCreating(true);
-    try {
-      const { data: workOrder, error: woError } = await supabase
-        .from('work_orders')
-        .insert({
-          wo_number: formData.woNumber,
-          product_type: formData.productType,
-          batch_size: formData.batchSize,
-          created_by: user.id,
-          status: 'planned',
-        })
-        .select()
-        .single();
-
-      if (woError) throw woError;
-
-      // Generate serial numbers with proper prefixes and unique timestamp
-      const prefixes: Record<string, string> = {
-        'SENSOR': 'Q',
-        'MLA': 'W',
-        'HMI': 'X',
-        'TRANSMITTER': 'T',
-        'SDM_ECO': 'SDM'
-      };
-      const prefix = prefixes[formData.productType] || formData.productType;
-      
-      // Use WO number to make serial numbers unique per work order
-      const woSuffix = formData.woNumber.replace(/[^a-zA-Z0-9]/g, '').slice(-6);
-
-      const items = [];
-      for (let i = 1; i <= formData.batchSize; i++) {
-        const serialNumber = `${prefix}-${woSuffix}-${String(i).padStart(3, '0')}`;
-        items.push({
-          work_order_id: workOrder.id,
-          serial_number: serialNumber,
-          position_in_batch: i,
-          status: 'planned',
-          assigned_to: user.id,
-        });
-      }
-
-      const { error: itemsError } = await supabase
-        .from('work_order_items')
-        .insert(items);
-
-      if (itemsError) throw itemsError;
-
-      await supabase.from('activity_logs').insert({
-        user_id: user.id,
-        action: 'create_work_order',
-        entity_type: 'work_order',
-        entity_id: workOrder.id,
-        details: { wo_number: formData.woNumber, product_type: formData.productType, batch_size: formData.batchSize },
-      });
-
-      // Trigger webhook for work order creation
-      const { triggerWebhook } = await import('@/lib/webhooks');
-      await triggerWebhook('work_order_created', {
-        work_order: workOrder,
-        batch_size: formData.batchSize,
-        product_type: formData.productType,
-      });
-
-      toast.success(t('success'), { description: `${t('workOrderNumber')} ${formData.woNumber} ${t('workOrderCreated')}` });
-      setDialogOpen(false);
-      setFormData({ woNumber: '', productType: 'SDM_ECO', batchSize: 1 });
-      fetchWorkOrders();
-    } catch (error: any) {
-      console.error('Error creating work order:', error);
-      
-      let errorMessage = error.message;
-      if (error.code === '23505') {
-        errorMessage = `${t('workOrderNumber')} ${formData.woNumber} ${t('workOrderExists')}`;
-      }
-      
-      toast.error(t('error'), { description: errorMessage });
-    } finally {
-      setCreating(false);
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    const colors: Record<string, string> = {
-      planned: 'bg-secondary text-secondary-foreground',
-      in_progress: 'bg-primary text-primary-foreground',
-      completed: 'bg-accent text-accent-foreground',
-      on_hold: 'bg-muted text-muted-foreground',
-      cancelled: 'bg-destructive text-destructive-foreground',
+  const getStatusVariant = (status: string) => {
+    const variants: Record<string, 'info' | 'warning' | 'success' | 'secondary' | 'destructive'> = {
+      planned: 'info',
+      in_progress: 'warning',
+      completed: 'success',
+      on_hold: 'secondary',
+      cancelled: 'destructive',
     };
-    return colors[status] || 'bg-muted';
+    return variants[status] || 'secondary';
   };
 
   if (!user) return null;
@@ -193,71 +111,10 @@ const WorkOrders = () => {
               <h1 className="text-3xl md:text-4xl font-bold tracking-tight">{t('workOrders')}</h1>
               <p className="text-base md:text-lg text-muted-foreground">{t('manageWorkOrders')}</p>
             </div>
-            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-              <DialogTrigger asChild>
-                <Button variant="default" size="lg" className="w-full sm:w-auto">
-                  <Plus className="mr-2" />
-                  {t('createWorkOrder')}
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-md">
-                <DialogHeader>
-                  <DialogTitle className="text-2xl">{t('createWorkOrder')}</DialogTitle>
-                  <DialogDescription className="text-base">{t('createWorkOrderDesc')}</DialogDescription>
-                </DialogHeader>
-                <form onSubmit={handleCreate} className="space-y-5">
-                  <div className="space-y-3">
-                    <Label htmlFor="woNumber" className="text-base font-data uppercase tracking-wider">{t('workOrderNumber')}</Label>
-                    <Input
-                      id="woNumber"
-                      value={formData.woNumber}
-                      onChange={(e) => setFormData({ ...formData, woNumber: e.target.value })}
-                      placeholder="WO-2024-001"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-3">
-                    <Label htmlFor="productType" className="text-base font-data uppercase tracking-wider">{t('productType')}</Label>
-                    <Select
-                      value={formData.productType}
-                      onValueChange={(value: any) => setFormData({ ...formData, productType: value })}
-                    >
-                      <SelectTrigger className="h-12 text-base border-2">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="SDM_ECO" className="h-12 text-base">SDM-ECO</SelectItem>
-                        <SelectItem value="SENSOR" className="h-12 text-base">Sensor</SelectItem>
-                        <SelectItem value="MLA" className="h-12 text-base">MLA</SelectItem>
-                        <SelectItem value="HMI" className="h-12 text-base">HMI</SelectItem>
-                        <SelectItem value="TRANSMITTER" className="h-12 text-base">Transmitter</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-3">
-                    <Label htmlFor="batchSize" className="text-base font-data uppercase tracking-wider">{t('batchSize')}</Label>
-                    <Input
-                      id="batchSize"
-                      type="number"
-                      min="1"
-                      max="20"
-                      value={formData.batchSize}
-                      onChange={(e) => setFormData({ ...formData, batchSize: parseInt(e.target.value) })}
-                      required
-                    />
-                  </div>
-                  <DialogFooter className="gap-3">
-                    <Button type="button" variant="outline" onClick={() => setDialogOpen(false)} size="lg" className="flex-1">
-                      {t('cancel')}
-                    </Button>
-                    <Button type="submit" disabled={creating} variant="default" size="lg" className="flex-1">
-                      {creating && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
-                      {t('create')}
-                    </Button>
-                  </DialogFooter>
-                </form>
-              </DialogContent>
-            </Dialog>
+            <Button variant="default" size="lg" className="w-full sm:w-auto" onClick={() => setDialogOpen(true)}>
+              <Plus className="mr-2" />
+              {t('createWorkOrder')}
+            </Button>
           </div>
 
           {/* Search and Filter Bar */}
@@ -290,7 +147,7 @@ const WorkOrders = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">{t('allProducts')}</SelectItem>
-                    <SelectItem value="SDM_ECO">SDM-ECO</SelectItem>
+                    <SelectItem value="SDM_ECO">SDM ECO</SelectItem>
                     <SelectItem value="SENSOR">Sensor</SelectItem>
                     <SelectItem value="MLA">MLA</SelectItem>
                     <SelectItem value="HMI">HMI</SelectItem>
@@ -340,11 +197,11 @@ const WorkOrders = () => {
                   <CardHeader onClick={() => navigate(`/production/${wo.id}`)}>
                     <div className="flex items-center justify-between mb-2">
                       <CardTitle className="text-xl md:text-lg font-data">{wo.wo_number}</CardTitle>
-                      <Badge className={`${getStatusColor(wo.status)} text-white h-8 px-4 text-sm md:h-auto md:px-3 md:text-xs`}>
+                      <Badge variant={getStatusVariant(wo.status)}>
                         {t(wo.status as any)}
                       </Badge>
                     </div>
-                    <CardDescription className="text-base md:text-sm">{wo.product_type}</CardDescription>
+                    <CardDescription className="text-base md:text-sm">{formatProductType(wo.product_type)}</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3 text-base md:text-sm" onClick={() => navigate(`/production/${wo.id}`)}>
@@ -358,6 +215,14 @@ const WorkOrders = () => {
                           {new Date(wo.created_at).toLocaleDateString()}
                         </span>
                       </div>
+                      {wo.profiles?.full_name && (
+                        <div className="flex justify-between items-center p-3 rounded-lg bg-muted/50">
+                          <span className="text-muted-foreground font-data">{t('createdBy')}:</span>
+                          <span className="font-medium">
+                            {wo.profiles.full_name}
+                          </span>
+                        </div>
+                      )}
                     </div>
                     <Button
                       variant="outline"
@@ -389,6 +254,12 @@ const WorkOrders = () => {
             </div>
           )}
         </div>
+
+        <CreateWorkOrderDialog
+          open={dialogOpen}
+          onOpenChange={setDialogOpen}
+          onSuccess={fetchWorkOrders}
+        />
       </Layout>
     </ProtectedRoute>
   );
