@@ -8,6 +8,7 @@ import { DashboardStats } from '@/components/dashboard/DashboardStats';
 import { ProductionOverview } from '@/components/dashboard/ProductionOverview';
 import { RecentActivity } from '@/components/dashboard/RecentActivity';
 import { ActiveOperators } from '@/components/dashboard/ActiveOperators';
+import { TodaysSchedule } from '@/components/dashboard/TodaysSchedule';
 import { CreateWorkOrderDialog } from '@/components/CreateWorkOrderDialog';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
@@ -53,7 +54,8 @@ const Index = () => {
               <ProductionOverview />
               <RecentActivity />
             </div>
-            <div>
+            <div className="space-y-6">
+              <TodaysSchedule />
               <ActiveOperators />
             </div>
           </div>

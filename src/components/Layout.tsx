@@ -2,6 +2,7 @@ import React from 'react';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/AppSidebar';
 import { Separator } from '@/components/ui/separator';
+import { NotificationCenter } from '@/components/notifications/NotificationCenter';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -17,6 +18,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             <div className="flex flex-1 items-center gap-2 px-3">
               <SidebarTrigger />
               <Separator orientation="vertical" className="h-4" />
+            </div>
+            <div className="flex items-center gap-2 px-3">
+              <NotificationCenter />
             </div>
           </header>
           <main className="flex-1 p-4 md:p-6 lg:p-8">
