@@ -12,10 +12,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { CreateWorkOrderDialog } from '@/components/CreateWorkOrderDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { formatProductType } from '@/lib/utils';
+import { getProductBreakdown, formatProductBreakdownText, ProductBreakdown } from '@/lib/utils';
 import { Loader2, Plus, Package, Filter } from 'lucide-react';
 
-interface WorkOrderWithProfile {
+interface WorkOrderWithItems {
   id: string;
   wo_number: string;
   product_type: string;
@@ -23,6 +23,7 @@ interface WorkOrderWithProfile {
   status: string;
   created_at: string;
   profiles: { full_name: string } | null;
+  productBreakdown: ProductBreakdown[];
 }
 
 const WorkOrders = () => {
@@ -30,8 +31,8 @@ const WorkOrders = () => {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
-  const [workOrders, setWorkOrders] = useState<WorkOrderWithProfile[]>([]);
-  const [filteredOrders, setFilteredOrders] = useState<WorkOrderWithProfile[]>([]);
+  const [workOrders, setWorkOrders] = useState<WorkOrderWithItems[]>([]);
+  const [filteredOrders, setFilteredOrders] = useState<WorkOrderWithItems[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -56,6 +57,24 @@ const WorkOrders = () => {
 
       if (woError) throw woError;
 
+      const woIds = workOrdersData?.map(wo => wo.id) || [];
+      
+      // Fetch items for all work orders to get product breakdown
+      let itemsMap: Record<string, Array<{ serial_number: string }>> = {};
+      if (woIds.length > 0) {
+        const { data: itemsData } = await supabase
+          .from('work_order_items')
+          .select('work_order_id, serial_number')
+          .in('work_order_id', woIds);
+        
+        for (const item of itemsData || []) {
+          if (!itemsMap[item.work_order_id]) {
+            itemsMap[item.work_order_id] = [];
+          }
+          itemsMap[item.work_order_id].push({ serial_number: item.serial_number });
+        }
+      }
+
       // Fetch profiles for creators
       const creatorIds = [...new Set(workOrdersData?.map(wo => wo.created_by).filter(Boolean) || [])];
       let profilesMap: Record<string, string> = {};
@@ -72,16 +91,17 @@ const WorkOrders = () => {
         }, {} as Record<string, string>);
       }
 
-      // Merge data
+      // Merge data with product breakdown
       const enrichedData = (workOrdersData || []).map(wo => ({
         ...wo,
         profiles: wo.created_by && profilesMap[wo.created_by] 
           ? { full_name: profilesMap[wo.created_by] } 
-          : null
+          : null,
+        productBreakdown: getProductBreakdown(itemsMap[wo.id] || [])
       }));
 
-      setWorkOrders(enrichedData as any);
-      setFilteredOrders(enrichedData as any);
+      setWorkOrders(enrichedData as WorkOrderWithItems[]);
+      setFilteredOrders(enrichedData as WorkOrderWithItems[]);
     } catch (error) {
       console.error('Error fetching work orders:', error);
       toast.error(t('error'), { description: t('failedLoadWorkOrders') });
@@ -232,7 +252,12 @@ const WorkOrders = () => {
                         {t(wo.status as any)}
                       </Badge>
                     </div>
-                    <CardDescription className="text-xl font-semibold">{formatProductType(wo.product_type)}</CardDescription>
+                    <CardDescription className="text-lg">
+                      {wo.productBreakdown.length > 0 
+                        ? formatProductBreakdownText(wo.productBreakdown)
+                        : `${wo.batch_size} items`
+                      }
+                    </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4 text-lg" onClick={() => navigate(`/production/${wo.id}`)}>

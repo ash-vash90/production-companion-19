@@ -4,10 +4,10 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { formatProductType } from '@/lib/utils';
+import { getProductBreakdown, formatProductBreakdownText, ProductBreakdown } from '@/lib/utils';
 import { ExternalLink, Loader2 } from 'lucide-react';
 
-interface WorkOrderWithProfile {
+interface WorkOrderWithItems {
   id: string;
   wo_number: string;
   product_type: string;
@@ -15,12 +15,13 @@ interface WorkOrderWithProfile {
   status: string;
   created_at: string;
   profiles: { full_name: string } | null;
+  productBreakdown: ProductBreakdown[];
 }
 
 export function ProductionOverview() {
   const navigate = useNavigate();
   const { t } = useLanguage();
-  const [workOrders, setWorkOrders] = useState<WorkOrderWithProfile[]>([]);
+  const [workOrders, setWorkOrders] = useState<WorkOrderWithItems[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -29,7 +30,7 @@ export function ProductionOverview() {
 
   const fetchWorkOrders = async () => {
     try {
-      // Fetch work orders
+      // Fetch work orders with their items
       const { data: workOrdersData, error: woError } = await supabase
         .from('work_orders')
         .select('id, wo_number, product_type, batch_size, status, created_at, created_by')
@@ -38,6 +39,24 @@ export function ProductionOverview() {
         .limit(5);
 
       if (woError) throw woError;
+
+      const woIds = workOrdersData?.map(wo => wo.id) || [];
+      
+      // Fetch items for all work orders to get product breakdown
+      let itemsMap: Record<string, Array<{ serial_number: string }>> = {};
+      if (woIds.length > 0) {
+        const { data: itemsData } = await supabase
+          .from('work_order_items')
+          .select('work_order_id, serial_number')
+          .in('work_order_id', woIds);
+        
+        for (const item of itemsData || []) {
+          if (!itemsMap[item.work_order_id]) {
+            itemsMap[item.work_order_id] = [];
+          }
+          itemsMap[item.work_order_id].push({ serial_number: item.serial_number });
+        }
+      }
 
       // Fetch profiles for creators
       const creatorIds = [...new Set(workOrdersData?.map(wo => wo.created_by).filter(Boolean) || [])];
@@ -55,15 +74,16 @@ export function ProductionOverview() {
         }, {} as Record<string, string>);
       }
 
-      // Merge data
+      // Merge data with product breakdown
       const enrichedData = (workOrdersData || []).map(wo => ({
         ...wo,
         profiles: wo.created_by && profilesMap[wo.created_by] 
           ? { full_name: profilesMap[wo.created_by] } 
-          : null
+          : null,
+        productBreakdown: getProductBreakdown(itemsMap[wo.id] || [])
       }));
 
-      setWorkOrders(enrichedData as any);
+      setWorkOrders(enrichedData as WorkOrderWithItems[]);
     } catch (error) {
       console.error('Error fetching work orders:', error);
     } finally {
@@ -127,7 +147,10 @@ export function ProductionOverview() {
                     </Badge>
                   </div>
                   <div className="mt-1 text-xs text-muted-foreground">
-                    {formatProductType(wo.product_type)} • {t('batch')}: {wo.batch_size}
+                    {wo.productBreakdown.length > 0 
+                      ? formatProductBreakdownText(wo.productBreakdown)
+                      : `${wo.batch_size} items`
+                    }
                   </div>
                   {wo.profiles?.full_name && (
                     <div className="mt-1 text-xs text-muted-foreground">

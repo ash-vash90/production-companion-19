@@ -15,6 +15,18 @@ import { toast } from 'sonner';
 import { Loader2, BarChart3, Search } from 'lucide-react';
 import { format } from 'date-fns';
 import { nl, enUS } from 'date-fns/locale';
+import { getProductBreakdown, formatProductBreakdownText, ProductBreakdown } from '@/lib/utils';
+
+interface WorkOrderWithItems {
+  id: string;
+  wo_number: string;
+  product_type: string;
+  batch_size: number;
+  status: string;
+  created_at: string;
+  completed_at: string | null;
+  productBreakdown: ProductBreakdown[];
+}
 
 const ProductionReports = () => {
   const { user } = useAuth();
@@ -22,7 +34,7 @@ const ProductionReports = () => {
   const navigate = useNavigate();
   
   const [loading, setLoading] = useState(true);
-  const [workOrders, setWorkOrders] = useState<any[]>([]);
+  const [workOrders, setWorkOrders] = useState<WorkOrderWithItems[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [productFilter, setProductFilter] = useState<string>('all');
@@ -37,16 +49,38 @@ const ProductionReports = () => {
 
   const fetchWorkOrders = async () => {
     try {
-      const { data, error } = await supabase
+      const { data: workOrdersData, error } = await supabase
         .from('work_orders')
-        .select(`
-          *,
-          work_order_items(count)
-        `)
+        .select('id, wo_number, product_type, batch_size, status, created_at, completed_at')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setWorkOrders(data || []);
+
+      const woIds = workOrdersData?.map(wo => wo.id) || [];
+      
+      // Fetch items for all work orders to get product breakdown
+      let itemsMap: Record<string, Array<{ serial_number: string }>> = {};
+      if (woIds.length > 0) {
+        const { data: itemsData } = await supabase
+          .from('work_order_items')
+          .select('work_order_id, serial_number')
+          .in('work_order_id', woIds);
+        
+        for (const item of itemsData || []) {
+          if (!itemsMap[item.work_order_id]) {
+            itemsMap[item.work_order_id] = [];
+          }
+          itemsMap[item.work_order_id].push({ serial_number: item.serial_number });
+        }
+      }
+
+      // Enrich with product breakdown
+      const enrichedData = (workOrdersData || []).map(wo => ({
+        ...wo,
+        productBreakdown: getProductBreakdown(itemsMap[wo.id] || [])
+      }));
+
+      setWorkOrders(enrichedData as WorkOrderWithItems[]);
     } catch (error) {
       console.error('Error fetching work orders:', error);
       toast.error(t('error'), { description: t('failedLoadWorkOrders') });
@@ -192,7 +226,17 @@ const ProductionReports = () => {
                           {wo.wo_number}
                         </TableCell>
                         <TableCell>
-                          <Badge variant="outline">{wo.product_type}</Badge>
+                          {wo.productBreakdown.length > 0 ? (
+                            <div className="flex flex-wrap gap-1">
+                              {wo.productBreakdown.map((b) => (
+                                <Badge key={b.type} variant="outline">
+                                  {b.count}× {b.label}
+                                </Badge>
+                              ))}
+                            </div>
+                          ) : (
+                            <Badge variant="outline">{wo.batch_size} items</Badge>
+                          )}
                         </TableCell>
                         <TableCell className="font-mono">{wo.batch_size}</TableCell>
                         <TableCell>
