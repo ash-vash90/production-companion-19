@@ -12,6 +12,16 @@ export const translations = {
     logout: 'Logout',
     navigation: 'Navigation',
     productionCalendar: 'Production Calendar',
+    traceability: 'Traceability',
+    
+    // Greetings
+    goodMorning: 'Good morning',
+    goodAfternoon: 'Good afternoon',
+    goodEvening: 'Good evening',
+    adminDashboardHint: 'Full system overview and management',
+    supervisorDashboardHint: 'Team performance and work order status',
+    operatorDashboardHint: 'Your tasks and production queue',
+    logisticsDashboardHint: 'Shipments and inventory status',
     
     // Auth
     login: 'Login',
@@ -345,6 +355,22 @@ export const translations = {
     imageTooLarge: 'Image must be less than 2MB',
     quality: 'Quality',
     genealogy: 'Genealogy',
+    
+    // Traceability
+    traceabilityDescription: 'View complete production history for any serial number',
+    searchSerialNumber: 'Search Serial Number',
+    searchSerialNumberDescription: 'Enter a product serial number to view its complete production history',
+    recentSearches: 'Recent searches',
+    notFound: 'Not Found',
+    wasNotFound: 'was not found',
+    searchFailed: 'Failed to search for serial number',
+    whatIsTraceability: 'What is Traceability?',
+    traceabilityExplanation: 'Product traceability provides complete history for manufactured items, including:',
+    traceabilityPoint1: 'Production history with timestamps and operator information',
+    traceabilityPoint2: 'Linked sub-assemblies and component serial numbers',
+    traceabilityPoint3: 'Material batch numbers used during production',
+    traceabilityPoint4: 'Quality test results and measurement values',
+    traceabilityPoint5: 'Quality certificates and compliance documentation',
   },
   nl: {
     // Navigation
@@ -356,6 +382,16 @@ export const translations = {
     logout: 'Uitloggen',
     navigation: 'Navigatie',
     productionCalendar: 'Productiekalender',
+    traceability: 'Traceerbaarheid',
+    
+    // Greetings
+    goodMorning: 'Goedemorgen',
+    goodAfternoon: 'Goedemiddag',
+    goodEvening: 'Goedenavond',
+    adminDashboardHint: 'Volledig systeemoverzicht en beheer',
+    supervisorDashboardHint: 'Teamprestaties en werkorderstatus',
+    operatorDashboardHint: 'Jouw taken en productiewachtrij',
+    logisticsDashboardHint: 'Verzendingen en voorraadstatus',
     
     // Auth
     login: 'Inloggen',
@@ -689,6 +725,22 @@ export const translations = {
     imageTooLarge: 'Afbeelding moet kleiner zijn dan 2MB',
     quality: 'Kwaliteit',
     genealogy: 'Genealogie',
+    
+    // Traceability
+    traceabilityDescription: 'Bekijk volledige productiegeschiedenis voor elk serienummer',
+    searchSerialNumber: 'Zoek Serienummer',
+    searchSerialNumberDescription: 'Voer een productserienummer in om de volledige productiegeschiedenis te bekijken',
+    recentSearches: 'Recente zoekopdrachten',
+    notFound: 'Niet Gevonden',
+    wasNotFound: 'is niet gevonden',
+    searchFailed: 'Zoeken naar serienummer mislukt',
+    whatIsTraceability: 'Wat is Traceerbaarheid?',
+    traceabilityExplanation: 'Producttraceerbaarheid biedt volledige geschiedenis voor gefabriceerde items, inclusief:',
+    traceabilityPoint1: 'Productiegeschiedenis met tijdstempels en operatorinformatie',
+    traceabilityPoint2: 'Gekoppelde subassemblages en componentserienummers',
+    traceabilityPoint3: 'Materiaalbatchnummers gebruikt tijdens productie',
+    traceabilityPoint4: 'Kwaliteitstestresultaten en meetwaarden',
+    traceabilityPoint5: 'Kwaliteitscertificaten en nalevingsdocumentatie',
   },
 };
 
