@@ -99,92 +99,114 @@ export function CreateWorkOrderDialog({ open, onOpenChange, onSuccess, trigger }
     if (!user) return;
 
     setCreating(true);
-    try {
-      // Get the primary product type (first in list) for the work order
-      const primaryProductType = productBatches[0].productType;
-      const totalBatchSize = getTotalItems();
-
-      const { data: workOrder, error: woError } = await supabase
-        .from('work_orders')
-        .insert({
-          wo_number: woNumber,
-          product_type: primaryProductType,
-          batch_size: totalBatchSize,
-          created_by: user.id,
-          status: 'planned',
-          scheduled_date: scheduledDate ? format(scheduledDate, 'yyyy-MM-dd') : null,
-        })
-        .select()
-        .single();
-
-      if (woError) throw woError;
-
-      // Generate serial numbers for each product batch using configured prefixes
-      const prefixes = serialPrefixes || { SENSOR: 'Q', MLA: 'W', HMI: 'X', TRANSMITTER: 'T', SDM_ECO: 'SDM' };
-      const serialFormat = await SettingsService.getSerialFormat();
-      const items: any[] = [];
-      let position = 1;
-
-      for (const batch of productBatches) {
-        const prefix = prefixes[batch.productType] || batch.productType.charAt(0);
-        for (let i = 1; i <= batch.quantity; i++) {
-          const paddedPosition = String(position).padStart(serialFormat.padLength, '0');
-          const serialNumber = `${prefix}${serialFormat.separator}${paddedPosition}`;
-          items.push({
-            work_order_id: workOrder.id,
-            serial_number: serialNumber,
-            position_in_batch: position,
-            status: 'planned',
-            assigned_to: user.id,
-          });
-          position++;
+    
+    // Retry logic for duplicate WO numbers
+    let attempts = 0;
+    const maxAttempts = 3;
+    
+    while (attempts < maxAttempts) {
+      try {
+        // Regenerate WO number on retry
+        let currentWoNumber = woNumber;
+        if (attempts > 0) {
+          currentWoNumber = await SettingsService.generateWorkOrderNumber();
+          setWoNumber(currentWoNumber);
         }
+        
+        // Get the primary product type (first in list) for the work order
+        const primaryProductType = productBatches[0].productType;
+        const totalBatchSize = getTotalItems();
+
+        const { data: workOrder, error: woError } = await supabase
+          .from('work_orders')
+          .insert({
+            wo_number: currentWoNumber,
+            product_type: primaryProductType,
+            batch_size: totalBatchSize,
+            created_by: user.id,
+            status: 'planned',
+            scheduled_date: scheduledDate ? format(scheduledDate, 'yyyy-MM-dd') : null,
+          })
+          .select()
+          .single();
+
+        if (woError) {
+          if (woError.code === '23505' && attempts < maxAttempts - 1) {
+            attempts++;
+            continue; // Retry with new WO number
+          }
+          throw woError;
+        }
+
+        // Generate serial numbers for each product batch using configured prefixes
+        const prefixes = serialPrefixes || { SENSOR: 'Q', MLA: 'W', HMI: 'X', TRANSMITTER: 'T', SDM_ECO: 'SDM' };
+        const serialFormat = await SettingsService.getSerialFormat();
+        const items: any[] = [];
+        let position = 1;
+
+        for (const batch of productBatches) {
+          const prefix = prefixes[batch.productType] || batch.productType.charAt(0);
+          for (let i = 1; i <= batch.quantity; i++) {
+            const paddedPosition = String(position).padStart(serialFormat.padLength, '0');
+            const serialNumber = `${prefix}${serialFormat.separator}${paddedPosition}`;
+            items.push({
+              work_order_id: workOrder.id,
+              serial_number: serialNumber,
+              position_in_batch: position,
+              status: 'planned',
+              assigned_to: user.id,
+            });
+            position++;
+          }
+        }
+
+        const { error: itemsError } = await supabase
+          .from('work_order_items')
+          .insert(items);
+
+        if (itemsError) throw itemsError;
+
+        await supabase.from('activity_logs').insert({
+          user_id: user.id,
+          action: 'create_work_order',
+          entity_type: 'work_order',
+          entity_id: workOrder.id,
+          details: { 
+            wo_number: currentWoNumber, 
+            product_batches: productBatches.map(b => ({ type: b.productType, quantity: b.quantity })),
+            total_items: totalBatchSize 
+          },
+        });
+
+        // Trigger webhook for work order creation
+        const { triggerWebhook } = await import('@/lib/webhooks');
+        await triggerWebhook('work_order_created', {
+          work_order: workOrder,
+          batch_size: totalBatchSize,
+          product_batches: productBatches,
+        });
+
+        toast.success(t('success'), { description: `${t('workOrderNumber')} ${currentWoNumber} ${t('workOrderCreated')}` });
+        onOpenChange(false);
+        setWoNumber('');
+        setScheduledDate(undefined);
+        setProductBatches([{ id: crypto.randomUUID(), productType: 'SDM_ECO', quantity: 1 }]);
+        onSuccess();
+        return; // Success, exit loop
+        
+      } catch (error: any) {
+        if (error.code === '23505' && attempts < maxAttempts - 1) {
+          attempts++;
+          continue;
+        }
+        
+        console.error('Error creating work order:', error);
+        toast.error(t('error'), { description: error.message });
+        break;
       }
-
-      const { error: itemsError } = await supabase
-        .from('work_order_items')
-        .insert(items);
-
-      if (itemsError) throw itemsError;
-
-      await supabase.from('activity_logs').insert({
-        user_id: user.id,
-        action: 'create_work_order',
-        entity_type: 'work_order',
-        entity_id: workOrder.id,
-        details: { 
-          wo_number: woNumber, 
-          product_batches: productBatches.map(b => ({ type: b.productType, quantity: b.quantity })),
-          total_items: totalBatchSize 
-        },
-      });
-
-      // Trigger webhook for work order creation
-      const { triggerWebhook } = await import('@/lib/webhooks');
-      await triggerWebhook('work_order_created', {
-        work_order: workOrder,
-        batch_size: totalBatchSize,
-        product_batches: productBatches,
-      });
-
-      toast.success(t('success'), { description: `${t('workOrderNumber')} ${woNumber} ${t('workOrderCreated')}` });
-      onOpenChange(false);
-      setWoNumber('');
-      setScheduledDate(undefined);
-      setProductBatches([{ id: crypto.randomUUID(), productType: 'SDM_ECO', quantity: 1 }]);
-      onSuccess();
-    } catch (error: any) {
-      console.error('Error creating work order:', error);
-      
-      let errorMessage = error.message;
-      if (error.code === '23505') {
-        errorMessage = `${t('workOrderNumber')} ${woNumber} ${t('workOrderExists')}`;
-      }
-      
-      toast.error(t('error'), { description: errorMessage });
-    } finally {
-      setCreating(false);
     }
+    
+    setCreating(false);
   };
 
   return (

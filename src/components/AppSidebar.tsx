@@ -1,4 +1,4 @@
-import { LayoutDashboard, Package, Settings, Factory, CalendarDays, BarChart3, Users, FileText, ClipboardList, GitBranch } from 'lucide-react';
+import { LayoutDashboard, Package, Settings, Factory, CalendarDays, BarChart3, Users, FileText, ClipboardList, Search } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import {
@@ -33,7 +33,7 @@ export function AppSidebar() {
   const qualityItems = [
     { title: t('qualityCertificates'), url: '/quality-certificates', icon: FileText },
     { title: t('productionReports'), url: '/production-reports', icon: ClipboardList },
-    { title: t('genealogy'), url: '/genealogy', icon: GitBranch },
+    { title: t('traceability'), url: '/genealogy', icon: Search },
   ];
 
   const adminItems = [
@@ -46,15 +46,15 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarHeader className="border-b border-sidebar-border">
+      <SidebarHeader className="border-b border-sidebar-border bg-primary">
         <div className="flex items-center gap-3 p-2">
-          <div className="h-9 w-9 rounded-lg bg-primary flex items-center justify-center shadow-sm shrink-0">
-            <Factory className="h-5 w-5 text-primary-foreground" />
+          <div className="h-9 w-9 rounded-lg bg-white/20 flex items-center justify-center shadow-sm shrink-0">
+            <Factory className="h-5 w-5 text-white" />
           </div>
           {!isCollapsed && (
             <div className="flex flex-col">
-              <span className="font-logo text-base text-foreground lowercase leading-tight">rhosonics</span>
-              <span className="text-[10px] text-muted-foreground font-medium tracking-wider uppercase">PMS</span>
+              <span className="font-display text-base text-white leading-tight">Rhosonics</span>
+              <span className="font-display text-sm text-white/90 tracking-wide">PMS</span>
             </div>
           )}
         </div>
