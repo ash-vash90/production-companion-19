@@ -152,58 +152,58 @@ const WorkOrders = () => {
   return (
     <ProtectedRoute>
       <Layout>
-        <div className="space-y-6 lg:space-y-8 p-2 md:p-4">
+        <div className="space-y-4 lg:space-y-6 p-2 md:p-4">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="space-y-2">
-              <h1 className="text-4xl lg:text-5xl font-bold tracking-tight">{t('workOrders')}</h1>
-              <p className="text-lg lg:text-xl text-muted-foreground">{t('manageWorkOrders')}</p>
+            <div className="space-y-1">
+              <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold tracking-tight">{t('workOrders')}</h1>
+              <p className="text-sm md:text-base lg:text-lg text-muted-foreground">{t('manageWorkOrders')}</p>
             </div>
             <Button 
               variant="default" 
-              size="lg" 
-              className="w-full sm:w-auto h-14 text-lg px-8 min-w-[200px]"
+              size="default" 
+              className="w-full sm:w-auto h-10 md:h-12 text-sm md:text-base px-4 md:px-6"
               onClick={() => setDialogOpen(true)}
             >
-              <Plus className="mr-2 h-6 w-6" />
+              <Plus className="mr-2 h-4 w-4 md:h-5 md:w-5" />
               {t('createWorkOrder')}
             </Button>
           </div>
 
-          {/* Search and Filter Bar - Tablet Optimized */}
-          <Card className="shadow-lg">
-            <CardContent className="pt-6 pb-6">
-              <div className="grid gap-4 md:grid-cols-4">
+          {/* Search and Filter Bar */}
+          <Card className="shadow-sm">
+            <CardContent className="pt-4 pb-4">
+              <div className="grid gap-3 md:grid-cols-4">
                 <div className="md:col-span-2">
                   <Input
                     placeholder={t('searchWorkOrders')}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full h-14 text-lg border-2 px-4"
+                    className="w-full h-10 md:h-12 text-sm md:text-base border px-3"
                   />
                 </div>
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="h-14 text-lg border-2">
+                  <SelectTrigger className="h-10 md:h-12 text-sm md:text-base">
                     <SelectValue placeholder={t('filterByStatus')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all" className="h-12 text-lg">{t('allStatuses')}</SelectItem>
-                    <SelectItem value="planned" className="h-12 text-lg">{t('planned')}</SelectItem>
-                    <SelectItem value="in_progress" className="h-12 text-lg">{t('inProgressStatus')}</SelectItem>
-                    <SelectItem value="completed" className="h-12 text-lg">{t('completed')}</SelectItem>
-                    <SelectItem value="on_hold" className="h-12 text-lg">{t('onHold')}</SelectItem>
+                    <SelectItem value="all" className="h-9 md:h-10 text-sm md:text-base">{t('allStatuses')}</SelectItem>
+                    <SelectItem value="planned" className="h-9 md:h-10 text-sm md:text-base">{t('planned')}</SelectItem>
+                    <SelectItem value="in_progress" className="h-9 md:h-10 text-sm md:text-base">{t('inProgressStatus')}</SelectItem>
+                    <SelectItem value="completed" className="h-9 md:h-10 text-sm md:text-base">{t('completed')}</SelectItem>
+                    <SelectItem value="on_hold" className="h-9 md:h-10 text-sm md:text-base">{t('onHold')}</SelectItem>
                   </SelectContent>
                 </Select>
                 <Select value={productFilter} onValueChange={setProductFilter}>
-                  <SelectTrigger className="h-14 text-lg border-2">
+                  <SelectTrigger className="h-10 md:h-12 text-sm md:text-base">
                     <SelectValue placeholder={t('filterByProduct')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all" className="h-12 text-lg">{t('allProducts')}</SelectItem>
-                    <SelectItem value="SDM_ECO" className="h-12 text-lg">SDM ECO</SelectItem>
-                    <SelectItem value="SENSOR" className="h-12 text-lg">Sensor</SelectItem>
-                    <SelectItem value="MLA" className="h-12 text-lg">MLA</SelectItem>
-                    <SelectItem value="HMI" className="h-12 text-lg">HMI</SelectItem>
-                    <SelectItem value="TRANSMITTER" className="h-12 text-lg">Transmitter</SelectItem>
+                    <SelectItem value="all" className="h-9 md:h-10 text-sm md:text-base">{t('allProducts')}</SelectItem>
+                    <SelectItem value="SDM_ECO" className="h-9 md:h-10 text-sm md:text-base">SDM ECO</SelectItem>
+                    <SelectItem value="SENSOR" className="h-9 md:h-10 text-sm md:text-base">Sensor</SelectItem>
+                    <SelectItem value="MLA" className="h-9 md:h-10 text-sm md:text-base">MLA</SelectItem>
+                    <SelectItem value="HMI" className="h-9 md:h-10 text-sm md:text-base">HMI</SelectItem>
+                    <SelectItem value="TRANSMITTER" className="h-9 md:h-10 text-sm md:text-base">Transmitter</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -211,82 +211,82 @@ const WorkOrders = () => {
           </Card>
 
           {loading ? (
-            <div className="flex justify-center py-16">
-              <Loader2 className="h-16 w-16 animate-spin text-primary" />
+            <div className="flex justify-center py-12">
+              <Loader2 className="h-10 w-10 md:h-12 md:w-12 animate-spin text-primary" />
             </div>
           ) : filteredOrders.length === 0 ? (
             workOrders.length === 0 ? (
-            <Card className="shadow-lg">
-              <CardContent className="py-20 text-center">
-                <Package className="h-24 w-24 mx-auto mb-8 text-muted-foreground/50" />
-                <h3 className="text-3xl font-semibold mb-4">{t('noWorkOrdersYet')}</h3>
-                <p className="text-xl text-muted-foreground mb-8">{t('createFirstWorkOrder')}</p>
-                <Button onClick={() => setDialogOpen(true)} variant="default" size="lg" className="h-14 text-lg px-8">
-                  <Plus className="mr-2 h-6 w-6" />
+            <Card className="shadow-sm">
+              <CardContent className="py-12 md:py-16 text-center">
+                <Package className="h-16 w-16 md:h-20 md:w-20 mx-auto mb-6 text-muted-foreground/50" />
+                <h3 className="text-xl md:text-2xl font-semibold mb-3">{t('noWorkOrdersYet')}</h3>
+                <p className="text-sm md:text-base text-muted-foreground mb-6">{t('createFirstWorkOrder')}</p>
+                <Button onClick={() => setDialogOpen(true)} variant="default" size="default" className="h-10 md:h-12 text-sm md:text-base px-6">
+                  <Plus className="mr-2 h-4 w-4 md:h-5 md:w-5" />
                   {t('createWorkOrder')}
                 </Button>
               </CardContent>
             </Card>
             ) : (
-              <Card className="shadow-lg">
-                <CardContent className="py-20 text-center">
-                  <Filter className="h-20 w-20 mx-auto mb-8 text-muted-foreground/50" />
-                  <h3 className="text-2xl font-semibold mb-4">{t('noMatchingOrders')}</h3>
-                  <p className="text-lg text-muted-foreground mb-8">{t('tryDifferentFilters')}</p>
-                  <Button onClick={() => { setSearchTerm(''); setStatusFilter('all'); setProductFilter('all'); }} variant="outline" size="lg" className="h-14 text-lg px-8">
+              <Card className="shadow-sm">
+                <CardContent className="py-12 md:py-16 text-center">
+                  <Filter className="h-14 w-14 md:h-16 md:w-16 mx-auto mb-6 text-muted-foreground/50" />
+                  <h3 className="text-lg md:text-xl font-semibold mb-3">{t('noMatchingOrders')}</h3>
+                  <p className="text-sm md:text-base text-muted-foreground mb-6">{t('tryDifferentFilters')}</p>
+                  <Button onClick={() => { setSearchTerm(''); setStatusFilter('all'); setProductFilter('all'); }} variant="outline" size="default" className="h-10 md:h-12 text-sm md:text-base px-6">
                     {t('clearFilters')}
                   </Button>
                 </CardContent>
               </Card>
             )
           ) : (
-            <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
               {filteredOrders.map((wo) => (
                 <Card
                   key={wo.id}
-                  className="cursor-pointer hover:shadow-xl hover:border-primary transition-all border active:scale-[0.98]"
+                  className="cursor-pointer hover:shadow-md hover:border-primary transition-all border active:scale-[0.99]"
                 >
-                  <CardHeader onClick={() => navigate(`/production/${wo.id}`)} className="pb-2 p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <CardTitle className="text-lg font-data">{wo.wo_number}</CardTitle>
-                      <Badge variant={getStatusVariant(wo.status)} className="h-7 px-3 text-sm font-medium">
+                  <CardHeader onClick={() => navigate(`/production/${wo.id}`)} className="pb-2 p-3 lg:p-4">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <CardTitle className="text-sm lg:text-base font-data truncate">{wo.wo_number}</CardTitle>
+                      <Badge variant={getStatusVariant(wo.status)} className="h-5 lg:h-6 px-2 text-xs font-medium shrink-0 ml-2">
                         {t(wo.status as any)}
                       </Badge>
                     </div>
-                    <div className="flex flex-wrap gap-1.5">
+                    <div className="flex flex-wrap gap-1">
                       {wo.productBreakdown.length > 0 
                         ? wo.productBreakdown.map((item, idx) => (
-                            <Badge key={idx} variant="secondary" className="text-sm font-semibold">
-                              {item.count}× {item.type}
+                            <Badge key={idx} variant="secondary" className="text-xs font-medium">
+                              {item.count}× {item.label}
                             </Badge>
                           ))
-                        : <span className="text-sm text-muted-foreground">{wo.batch_size} items</span>
+                        : <span className="text-xs text-muted-foreground">{wo.batch_size} items</span>
                       }
                     </div>
                   </CardHeader>
-                  <CardContent className="p-4 pt-0">
-                    <div className="space-y-2 text-sm" onClick={() => navigate(`/production/${wo.id}`)}>
-                      <div className="flex justify-between items-center p-2 rounded bg-muted/50">
+                  <CardContent className="p-3 lg:p-4 pt-0">
+                    <div className="space-y-1.5 text-xs lg:text-sm" onClick={() => navigate(`/production/${wo.id}`)}>
+                      <div className="flex justify-between items-center p-1.5 lg:p-2 rounded bg-muted/50">
                         <span className="text-muted-foreground">{t('batchSize')}:</span>
-                        <span className="font-bold text-base">{wo.batch_size}</span>
+                        <span className="font-semibold">{wo.batch_size}</span>
                       </div>
-                      <div className="flex justify-between items-center p-2 rounded bg-muted/50">
+                      <div className="flex justify-between items-center p-1.5 lg:p-2 rounded bg-muted/50">
                         <span className="text-muted-foreground">{t('created')}:</span>
                         <span className="font-medium">
                           {new Date(wo.created_at).toLocaleDateString()}
                         </span>
                       </div>
                       {wo.profiles?.full_name && (
-                        <div className="flex justify-between items-center p-2 rounded bg-muted/50">
+                        <div className="flex justify-between items-center p-1.5 lg:p-2 rounded bg-muted/50">
                           <span className="text-muted-foreground">{t('createdBy')}:</span>
-                          <span className="font-medium">{wo.profiles.full_name}</span>
+                          <span className="font-medium truncate ml-2">{wo.profiles.full_name}</span>
                         </div>
                       )}
                     </div>
                     <Button
                       variant="destructive"
                       size="sm"
-                      className="w-full mt-3"
+                      className="w-full mt-2 h-8 text-xs lg:text-sm"
                       onClick={async (e) => {
                         e.stopPropagation();
                         if (confirm(t('confirmCancelWorkOrder'))) {

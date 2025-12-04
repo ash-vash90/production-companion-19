@@ -107,6 +107,10 @@ export const translations = {
     scheduledDate: 'Scheduled Date',
     selectDate: 'Select a date',
     scheduledDateHint: 'Optional - Will appear on production calendar',
+    notScheduled: 'Not scheduled',
+    setDate: 'Set Date',
+    changeDate: 'Change Date',
+    scheduledDateUpdated: 'Scheduled date updated',
     
     // Production Page
     failedLoadProduction: 'Failed to load production data',
@@ -412,6 +416,10 @@ export const translations = {
     scheduledDate: 'Geplande Datum',
     selectDate: 'Selecteer een datum',
     scheduledDateHint: 'Optioneel - Verschijnt op productiekalender',
+    notScheduled: 'Niet gepland',
+    setDate: 'Datum Instellen',
+    changeDate: 'Datum Wijzigen',
+    scheduledDateUpdated: 'Geplande datum bijgewerkt',
     
     // Production Page
     failedLoadProduction: 'Kan productiegegevens niet laden',
