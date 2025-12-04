@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useUserProfile } from '@/contexts/UserProfileContext';
 import { useNavigate } from 'react-router-dom';
 import Layout from '@/components/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
@@ -20,29 +21,15 @@ import { ImageCropDialog } from '@/components/ImageCropDialog';
 const PersonalSettings = () => {
   const { user } = useAuth();
   const { t, language, setLanguage } = useLanguage();
+  const { profile: contextProfile, refreshProfile } = useUserProfile();
   const navigate = useNavigate();
   const { theme, setTheme } = useTheme();
   const { permission, isEnabled, isSupported, enableNotifications, disableNotifications } = usePushNotifications();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
-  const [profile, setProfile] = useState<{ full_name: string; avatar_url: string | null } | null>(null);
   const [uploading, setUploading] = useState(false);
   const [cropDialogOpen, setCropDialogOpen] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (user) fetchProfile();
-  }, [user]);
-
-  const fetchProfile = async () => {
-    if (!user) return;
-    const { data } = await supabase
-      .from('profiles')
-      .select('full_name, avatar_url')
-      .eq('id', user.id)
-      .single();
-    if (data) setProfile(data);
-  };
 
   const getInitials = (name: string) => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
@@ -99,7 +86,8 @@ const PersonalSettings = () => {
 
       if (updateError) throw updateError;
 
-      setProfile(prev => prev ? { ...prev, avatar_url: avatarUrl } : null);
+      // Refresh the context to update sidebar and other components
+      await refreshProfile();
       toast.success(t('success'), { description: t('avatarUpdated') });
     } catch (error: any) {
       toast.error(t('error'), { description: error.message });
@@ -131,7 +119,7 @@ const PersonalSettings = () => {
     }
   };
 
-  const displayName = profile?.full_name || user.email || 'User';
+  const displayName = contextProfile?.full_name || user.email || 'User';
 
   return (
     <ProtectedRoute>
@@ -149,8 +137,8 @@ const PersonalSettings = () => {
               <div className="flex items-center gap-4">
                 <div className="relative">
                   <Avatar className="h-20 w-20">
-                    {profile?.avatar_url && (
-                      <AvatarImage src={profile.avatar_url} alt={displayName} />
+                    {contextProfile?.avatar_url && (
+                      <AvatarImage src={contextProfile.avatar_url} alt={displayName} />
                     )}
                     <AvatarFallback className="bg-primary text-primary-foreground text-xl font-medium">
                       {getInitials(displayName)}

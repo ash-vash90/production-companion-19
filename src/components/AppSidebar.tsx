@@ -1,6 +1,7 @@
 import { LayoutDashboard, Package, Settings, CalendarDays, BarChart3, Users, FileText, ClipboardList, Search } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useUserProfile } from '@/contexts/UserProfileContext';
 import {
   Sidebar,
   SidebarContent,
@@ -21,6 +22,7 @@ export function AppSidebar() {
   const navigate = useNavigate();
   const location = useLocation();
   const { t, language, setLanguage } = useLanguage();
+  const { isAdmin, loading } = useUserProfile();
   const { state } = useSidebar();
   
   const isCollapsed = state === 'collapsed';
@@ -37,10 +39,13 @@ export function AppSidebar() {
     { title: t('traceability'), url: '/genealogy', icon: Search },
   ];
 
+  // Only show admin items if user is admin (and not still loading)
   const adminItems = [
     { title: t('analytics'), url: '/analytics', icon: BarChart3 },
-    { title: t('roleManagement'), url: '/role-management', icon: Users },
-    { title: t('settingsPage'), url: '/settings', icon: Settings },
+    ...(isAdmin && !loading ? [
+      { title: t('roleManagement'), url: '/role-management', icon: Users },
+      { title: t('settingsPage'), url: '/settings', icon: Settings },
+    ] : []),
   ];
 
   const isActive = (url: string) => location.pathname === url;
