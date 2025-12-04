@@ -11,6 +11,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useUserProfile } from '@/contexts/UserProfileContext';
 import { toast } from 'sonner';
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, parseISO, addWeeks, subWeeks } from 'date-fns';
 import { ChevronLeft, ChevronRight, Package, CalendarIcon, LayoutGrid, List } from 'lucide-react';
@@ -28,6 +29,7 @@ interface WorkOrder {
 const ProductionCalendar = () => {
   const { user } = useAuth();
   const { t } = useLanguage();
+  const { isAdmin } = useUserProfile();
   const navigate = useNavigate();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<'month' | 'week'>('month');
@@ -129,6 +131,11 @@ const ProductionCalendar = () => {
   };
 
   const handleOrderClick = (order: WorkOrder) => {
+    // Non-admins can only view, not edit
+    if (!isAdmin) {
+      navigate(`/production/${order.id}`);
+      return;
+    }
     // Don't allow date changes for completed orders
     if (order.status === 'completed') {
       navigate(`/production/${order.id}`);
@@ -216,7 +223,8 @@ const ProductionCalendar = () => {
         </Card>
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Unscheduled Work Orders */}
+          {/* Unscheduled Work Orders - Admin only */}
+          {isAdmin && (
           <Card className="lg:col-span-1">
             <CardHeader>
               <CardTitle>{t('unscheduledOrders')}</CardTitle>
@@ -254,9 +262,10 @@ const ProductionCalendar = () => {
               )}
             </CardContent>
           </Card>
+          )}
 
           {/* Calendar Grid */}
-          <Card className="lg:col-span-3">
+          <Card className={isAdmin ? "lg:col-span-3" : "lg:col-span-4"}>
             <CardHeader>
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <CardTitle>
