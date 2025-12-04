@@ -41,6 +41,9 @@ export function CreateWorkOrderDialog({ open, onOpenChange, onSuccess, trigger }
   const [generatingWO, setGeneratingWO] = useState(false);
   const [serialPrefixes, setSerialPrefixes] = useState<SerialPrefixes | null>(null);
   const [scheduledDate, setScheduledDate] = useState<Date | undefined>(undefined);
+  const [customerName, setCustomerName] = useState('');
+  const [externalOrderNumber, setExternalOrderNumber] = useState('');
+  const [orderValue, setOrderValue] = useState('');
   const [productBatches, setProductBatches] = useState<ProductBatch[]>([
     { id: crypto.randomUUID(), productType: 'SDM_ECO', quantity: 1 }
   ]);
@@ -126,6 +129,9 @@ export function CreateWorkOrderDialog({ open, onOpenChange, onSuccess, trigger }
             created_by: user.id,
             status: 'planned',
             scheduled_date: scheduledDate ? format(scheduledDate, 'yyyy-MM-dd') : null,
+            customer_name: customerName || null,
+            external_order_number: externalOrderNumber || null,
+            order_value: orderValue ? parseFloat(orderValue) : null,
           })
           .select()
           .single();
@@ -195,6 +201,9 @@ export function CreateWorkOrderDialog({ open, onOpenChange, onSuccess, trigger }
         onOpenChange(false);
         setWoNumber('');
         setScheduledDate(undefined);
+        setCustomerName('');
+        setExternalOrderNumber('');
+        setOrderValue('');
         setProductBatches([{ id: crypto.randomUUID(), productType: 'SDM_ECO', quantity: 1 }]);
         onSuccess();
         return; // Success, exit loop
@@ -275,7 +284,37 @@ export function CreateWorkOrderDialog({ open, onOpenChange, onSuccess, trigger }
                 />
               </PopoverContent>
             </Popover>
-            <p className="text-xs text-muted-foreground">{t('scheduledDateHint')}</p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label className="text-sm">{t('customer')}</Label>
+              <Input
+                value={customerName}
+                onChange={(e) => setCustomerName(e.target.value)}
+                placeholder={t('customerPlaceholder')}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm">{t('orderNumber')}</Label>
+              <Input
+                value={externalOrderNumber}
+                onChange={(e) => setExternalOrderNumber(e.target.value)}
+                placeholder={t('orderNumberPlaceholder')}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label className="text-sm">{t('value')} (€)</Label>
+            <Input
+              type="number"
+              step="0.01"
+              min="0"
+              value={orderValue}
+              onChange={(e) => setOrderValue(e.target.value)}
+              placeholder="0.00"
+            />
           </div>
 
           <div className="space-y-3">

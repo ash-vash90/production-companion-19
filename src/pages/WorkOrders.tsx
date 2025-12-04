@@ -9,6 +9,8 @@ import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { CreateWorkOrderDialog } from '@/components/CreateWorkOrderDialog';
@@ -27,9 +29,13 @@ interface WorkOrderWithItems {
   customer_name: string | null;
   external_order_number: string | null;
   order_value: number | null;
-  profiles: { full_name: string } | null;
+  profiles: { full_name: string; avatar_url: string | null } | null;
   productBreakdown: ProductBreakdown[];
 }
+
+const getInitials = (name: string) => {
+  return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+};
 
 const WorkOrders = () => {
   const { user } = useAuth();
@@ -81,27 +87,27 @@ const WorkOrders = () => {
         }
       }
 
-      // Fetch profiles for creators
+      // Fetch profiles for creators (include avatar_url)
       const creatorIds = [...new Set(workOrdersData?.map(wo => wo.created_by).filter(Boolean) || [])];
-      let profilesMap: Record<string, string> = {};
+      let profilesMap: Record<string, { full_name: string; avatar_url: string | null }> = {};
       
       if (creatorIds.length > 0) {
         const { data: profilesData } = await supabase
           .from('profiles')
-          .select('id, full_name')
+          .select('id, full_name, avatar_url')
           .in('id', creatorIds);
         
         profilesMap = (profilesData || []).reduce((acc, p) => {
-          acc[p.id] = p.full_name;
+          acc[p.id] = { full_name: p.full_name, avatar_url: p.avatar_url };
           return acc;
-        }, {} as Record<string, string>);
+        }, {} as Record<string, { full_name: string; avatar_url: string | null }>);
       }
 
       // Merge data with product breakdown
       const enrichedData = (workOrdersData || []).map(wo => ({
         ...wo,
         profiles: wo.created_by && profilesMap[wo.created_by] 
-          ? { full_name: profilesMap[wo.created_by] } 
+          ? profilesMap[wo.created_by] 
           : null,
         productBreakdown: getProductBreakdown(itemsMap[wo.id] || [])
       }));
@@ -296,14 +302,28 @@ const WorkOrders = () => {
                         <span className="text-muted-foreground">{t('created')}:</span>
                         <span className="font-medium">{formatDate(wo.created_at)}</span>
                       </div>
-                      {wo.profiles?.full_name && (
+                      {wo.profiles && (
                         <div className="flex justify-between items-center p-1.5 lg:p-2 rounded bg-muted/50">
                           <span className="text-muted-foreground">{t('createdBy')}:</span>
-                          <span className="font-medium truncate ml-2 max-w-[100px]">{wo.profiles.full_name}</span>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger>
+                                <Avatar className="h-6 w-6">
+                                  <AvatarImage src={wo.profiles.avatar_url || undefined} />
+                                  <AvatarFallback className="text-[10px] bg-primary/10">
+                                    {getInitials(wo.profiles.full_name)}
+                                  </AvatarFallback>
+                                </Avatar>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>{wo.profiles.full_name}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
                         </div>
                       )}
                     </div>
-                    <div className={`flex gap-2 mt-3 ${isAdmin ? '' : ''}`}>
+                    <div className="flex gap-2 mt-3">
                       <Button
                         variant="outline"
                         size="sm"
