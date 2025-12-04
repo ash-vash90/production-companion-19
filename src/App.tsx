@@ -14,6 +14,7 @@ import ProductionSensor from "./pages/ProductionSensor";
 import QualityCertificates from "./pages/QualityCertificates";
 import ProductionReports from "./pages/ProductionReports";
 import Settings from "./pages/Settings";
+import PersonalSettings from "./pages/PersonalSettings";
 import Analytics from "./pages/Analytics";
 import RoleManagement from "./pages/RoleManagement";
 import ProductionCalendar from "./pages/ProductionCalendar";
@@ -46,6 +47,7 @@ const App = () => (
               <Route path="/genealogy" element={<GenealogySearch />} />
               <Route path="/genealogy/:serialNumber" element={<Genealogy />} />
               <Route path="/settings" element={<Settings />} />
+              <Route path="/personal-settings" element={<PersonalSettings />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
