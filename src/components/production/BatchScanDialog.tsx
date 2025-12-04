@@ -261,7 +261,7 @@ const BatchScanDialog: React.FC<BatchScanDialogProps> = ({
 
         <DialogFooter>
           <Button onClick={() => onOpenChange(false)} variant="default" size="lg" className="w-full">
-            Done
+            {t('save')}
           </Button>
         </DialogFooter>
       </DialogContent>

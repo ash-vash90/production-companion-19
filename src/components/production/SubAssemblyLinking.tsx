@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { Link2, X, ScanBarcode } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
@@ -24,6 +25,7 @@ const SubAssemblyLinking: React.FC<SubAssemblyLinkingProps> = ({
   onComplete,
 }) => {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [componentType, setComponentType] = useState<string>('');
   const [serialNumber, setSerialNumber] = useState<string>('');
   const [linkedComponents, setLinkedComponents] = useState<any[]>([]);
@@ -253,7 +255,7 @@ const SubAssemblyLinking: React.FC<SubAssemblyLinkingProps> = ({
 
         <DialogFooter>
           <Button onClick={() => onOpenChange(false)}>
-            Done
+            {t('save')}
           </Button>
         </DialogFooter>
       </DialogContent>

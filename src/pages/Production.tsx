@@ -253,9 +253,9 @@ const Production = () => {
 
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
-      planned: 'bg-secondary text-secondary-foreground',
-      in_progress: 'bg-primary text-primary-foreground',
-      completed: 'bg-accent text-accent-foreground',
+      planned: 'bg-info text-info-foreground',
+      in_progress: 'bg-warning text-warning-foreground',
+      completed: 'bg-success text-success-foreground',
       on_hold: 'bg-muted text-muted-foreground',
       cancelled: 'bg-destructive text-destructive-foreground',
     };
@@ -365,7 +365,7 @@ const Production = () => {
                   <CardTitle className="text-xl md:text-2xl">{t('production')} {t('items')}</CardTitle>
                   <CardDescription className="text-sm mt-1">{t('trackItems')}</CardDescription>
                 </div>
-                <Badge className={`${getStatusColor(workOrder.status)} text-white h-8 md:h-10 px-4 text-sm md:text-base font-semibold self-start`}>
+                <Badge className={`${getStatusColor(workOrder.status)} h-8 md:h-10 px-4 text-sm md:text-base font-semibold self-start`}>
                   {t(workOrder.status as any)}
                 </Badge>
               </div>
@@ -390,7 +390,7 @@ const Production = () => {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Badge className={`${getStatusColor(item.status)} text-white h-6 md:h-8 px-2 md:px-3 text-xs md:text-sm font-medium`}>
+                    <Badge className={`${getStatusColor(item.status)} h-6 md:h-8 px-2 md:px-3 text-xs md:text-sm font-medium`}>
                       {t(item.status as any)}
                     </Badge>
                      {item.status === 'completed' && (
