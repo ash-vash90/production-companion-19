@@ -15,7 +15,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { getProductBreakdown, formatProductBreakdownText, ProductBreakdown } from '@/lib/utils';
 import { Loader2, Plus, Package, Filter } from 'lucide-react';
-import { notifyWorkOrderCancelled } from '@/services/notificationService';
 
 interface WorkOrderWithItems {
   id: string;
@@ -297,11 +296,7 @@ const WorkOrders = () => {
                               .eq('id', wo.id);
                             if (error) throw error;
                             
-                            // Create notification for cancellation
-                            if (user) {
-                              notifyWorkOrderCancelled(user.id, wo.wo_number, wo.id);
-                            }
-                            
+                            // Don't create notification for own cancellation - user already knows
                             toast.success(t('success'), { description: t('workOrderCancelled') });
                             fetchWorkOrders();
                           } catch (error: any) {

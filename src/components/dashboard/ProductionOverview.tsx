@@ -29,6 +29,26 @@ export function ProductionOverview() {
 
   useEffect(() => {
     fetchWorkOrders();
+
+    // Real-time subscription for work order changes
+    const channel = supabase
+      .channel('production-overview-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'work_orders',
+        },
+        () => {
+          fetchWorkOrders();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const fetchWorkOrders = async () => {
