@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { formatDateTime } from '@/lib/utils';
 import { Plus, Trash2, Copy, Eye, EyeOff, Loader2, Webhook, Zap, History, RefreshCw } from 'lucide-react';
 
 interface IncomingWebhook {
@@ -411,7 +412,7 @@ const AutomationManager = () => {
                       <div className="flex gap-4 text-sm text-muted-foreground">
                         <span>{t('triggerCount') || 'Triggers'}: {webhook.trigger_count}</span>
                         {webhook.last_triggered_at && (
-                          <span>{t('lastTriggered') || 'Last triggered'}: {new Date(webhook.last_triggered_at).toLocaleString()}</span>
+                          <span>{t('lastTriggered') || 'Last triggered'}: {formatDateTime(webhook.last_triggered_at)}</span>
                         )}
                       </div>
                     </div>
@@ -568,7 +569,7 @@ const AutomationManager = () => {
                 <div key={log.id} className="p-3 border rounded-lg space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">
-                      {new Date(log.created_at).toLocaleString()}
+                      {formatDateTime(log.created_at)}
                     </span>
                     <Badge variant={log.response_status === 200 ? 'default' : log.response_status === 207 ? 'secondary' : 'destructive'}>
                       {log.response_status}

@@ -10,6 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { ScanBarcode, Plus, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { formatDate } from '@/lib/utils';
 
 interface BatchScanDialogProps {
   open: boolean;
@@ -239,7 +240,7 @@ const BatchScanDialog: React.FC<BatchScanDialogProps> = ({
                         </div>
                         {batch.opening_date && (
                           <p className="text-sm text-muted-foreground mt-2">
-                            Opened: {new Date(batch.opening_date).toLocaleDateString()}
+                            Opened: {formatDate(batch.opening_date)}
                           </p>
                         )}
                       </div>
