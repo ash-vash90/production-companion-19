@@ -15,7 +15,7 @@ import { CreateWorkOrderDialog } from '@/components/CreateWorkOrderDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { getProductBreakdown, formatProductBreakdownText, ProductBreakdown, formatDate } from '@/lib/utils';
-import { Loader2, Plus, Package, Filter } from 'lucide-react';
+import { Loader2, Plus, Package, Filter, Eye } from 'lucide-react';
 
 interface WorkOrderWithItems {
   id: string;
@@ -24,6 +24,9 @@ interface WorkOrderWithItems {
   batch_size: number;
   status: string;
   created_at: string;
+  customer_name: string | null;
+  external_order_number: string | null;
+  order_value: number | null;
   profiles: { full_name: string } | null;
   productBreakdown: ProductBreakdown[];
 }
@@ -54,7 +57,7 @@ const WorkOrders = () => {
       // Fetch work orders
       const { data: workOrdersData, error: woError } = await supabase
         .from('work_orders')
-        .select('id, wo_number, product_type, batch_size, status, created_at, created_by')
+        .select('id, wo_number, product_type, batch_size, status, created_at, created_by, customer_name, external_order_number, order_value')
         .neq('status', 'cancelled')
         .order('created_at', { ascending: false });
 
@@ -241,76 +244,102 @@ const WorkOrders = () => {
               </Card>
             )
           ) : (
-            <div className="grid gap-2 sm:gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+            <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {filteredOrders.map((wo) => (
                 <Card
                   key={wo.id}
-                  className="cursor-pointer hover:shadow-md hover:border-primary transition-all border active:scale-[0.99] flex flex-col"
+                  className="hover:shadow-md hover:border-primary transition-all border flex flex-col"
                 >
-                  <CardHeader onClick={() => navigate(`/production/${wo.id}`)} className="pb-1.5 p-2 lg:p-3">
-                    <div className="flex items-center justify-between mb-1">
-                      <CardTitle className="text-xs lg:text-sm font-data truncate">{wo.wo_number}</CardTitle>
-                      <Badge variant={getStatusVariant(wo.status)} className="h-4 lg:h-5 px-1.5 text-[10px] lg:text-xs font-medium shrink-0 ml-2">
+                  <CardHeader className="pb-2 p-3 lg:p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <CardTitle className="text-sm lg:text-base font-data truncate">{wo.wo_number}</CardTitle>
+                      <Badge variant={getStatusVariant(wo.status)} className="h-5 lg:h-6 px-2 text-xs font-medium shrink-0 ml-2">
                         {t(wo.status as any)}
                       </Badge>
                     </div>
-                    <div className="flex flex-wrap gap-0.5 lg:gap-1">
+                    <div className="flex flex-wrap gap-1 lg:gap-1.5">
                       {wo.productBreakdown.length > 0 
                         ? wo.productBreakdown.map((item, idx) => (
-                            <Badge key={idx} variant="secondary" className="text-[10px] lg:text-xs font-medium h-4 lg:h-5 px-1.5">
+                            <Badge key={idx} variant="secondary" className="text-xs font-medium h-5 lg:h-6 px-2">
                               {item.count}× {item.label}
                             </Badge>
                           ))
-                        : <span className="text-[10px] lg:text-xs text-muted-foreground">{wo.batch_size} items</span>
+                        : <span className="text-xs text-muted-foreground">{wo.batch_size} items</span>
                       }
                     </div>
                   </CardHeader>
-                  <CardContent className="p-2 lg:p-3 pt-0 flex-1 flex flex-col">
-                    <div className="space-y-1 text-[10px] lg:text-xs flex-1" onClick={() => navigate(`/production/${wo.id}`)}>
-                      <div className="flex justify-between items-center p-1 lg:p-1.5 rounded bg-muted/50">
+                  <CardContent className="p-3 lg:p-4 pt-0 flex-1 flex flex-col">
+                    <div className="space-y-1.5 text-xs lg:text-sm flex-1">
+                      {wo.customer_name && (
+                        <div className="flex justify-between items-center p-1.5 lg:p-2 rounded bg-muted/50">
+                          <span className="text-muted-foreground">{t('customer')}:</span>
+                          <span className="font-semibold truncate ml-2 max-w-[120px]">{wo.customer_name}</span>
+                        </div>
+                      )}
+                      {wo.external_order_number && (
+                        <div className="flex justify-between items-center p-1.5 lg:p-2 rounded bg-muted/50">
+                          <span className="text-muted-foreground">{t('orderNumber')}:</span>
+                          <span className="font-medium font-data">{wo.external_order_number}</span>
+                        </div>
+                      )}
+                      {wo.order_value && (
+                        <div className="flex justify-between items-center p-1.5 lg:p-2 rounded bg-muted/50">
+                          <span className="text-muted-foreground">{t('value')}:</span>
+                          <span className="font-semibold">€{wo.order_value.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between items-center p-1.5 lg:p-2 rounded bg-muted/50">
                         <span className="text-muted-foreground">{t('batchSize')}:</span>
                         <span className="font-semibold">{wo.batch_size}</span>
                       </div>
-                      <div className="flex justify-between items-center p-1 lg:p-1.5 rounded bg-muted/50">
+                      <div className="flex justify-between items-center p-1.5 lg:p-2 rounded bg-muted/50">
                         <span className="text-muted-foreground">{t('created')}:</span>
-                        <span className="font-medium">
-                          {formatDate(wo.created_at)}
-                        </span>
+                        <span className="font-medium">{formatDate(wo.created_at)}</span>
                       </div>
                       {wo.profiles?.full_name && (
-                        <div className="flex justify-between items-center p-1 lg:p-1.5 rounded bg-muted/50">
+                        <div className="flex justify-between items-center p-1.5 lg:p-2 rounded bg-muted/50">
                           <span className="text-muted-foreground">{t('createdBy')}:</span>
-                          <span className="font-medium truncate ml-2 max-w-[80px] lg:max-w-[100px]">{wo.profiles.full_name}</span>
+                          <span className="font-medium truncate ml-2 max-w-[100px]">{wo.profiles.full_name}</span>
                         </div>
                       )}
                     </div>
-                    {isAdmin && (
+                    <div className={`flex gap-2 mt-3 ${isAdmin ? '' : ''}`}>
                       <Button
-                        variant="destructive"
+                        variant="outline"
                         size="sm"
-                        className="w-full mt-1.5 h-6 lg:h-7 text-[10px] lg:text-xs"
-                        onClick={async (e) => {
-                          e.stopPropagation();
-                          if (confirm(t('confirmCancelWorkOrder'))) {
-                            try {
-                              const { error } = await supabase
-                                .from('work_orders')
-                                .update({ status: 'cancelled' })
-                                .eq('id', wo.id);
-                              if (error) throw error;
-                              
-                              // Don't create notification for own cancellation - user already knows
-                              toast.success(t('success'), { description: t('workOrderCancelled') });
-                              fetchWorkOrders();
-                            } catch (error: any) {
-                              toast.error(t('error'), { description: error.message });
-                            }
-                          }
-                        }}
+                        className="flex-1 h-8 text-xs"
+                        onClick={() => navigate(`/production/${wo.id}`)}
                       >
-                        {t('cancelWorkOrder')}
+                        <Eye className="h-3.5 w-3.5 mr-1.5" />
+                        {t('view')}
                       </Button>
-                    )}
+                      {isAdmin && (
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          className="flex-1 h-8 text-xs"
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            if (confirm(t('confirmCancelWorkOrder'))) {
+                              try {
+                                const { error } = await supabase
+                                  .from('work_orders')
+                                  .update({ status: 'cancelled' })
+                                  .eq('id', wo.id);
+                                if (error) throw error;
+                                
+                                toast.success(t('success'), { description: t('workOrderCancelled') });
+                                fetchWorkOrders();
+                              } catch (error: any) {
+                                toast.error(t('error'), { description: error.message });
+                              }
+                            }
+                          }}
+                        >
+                          {t('cancel')}
+                        </Button>
+                      )}
+                    </div>
                   </CardContent>
                 </Card>
               ))}

@@ -751,8 +751,11 @@ export type Database = {
           completed_at: string | null
           created_at: string
           created_by: string
+          customer_name: string | null
+          external_order_number: string | null
           id: string
           notes: string | null
+          order_value: number | null
           parent_wo_id: string | null
           product_type: Database["public"]["Enums"]["product_type"]
           scheduled_date: string | null
@@ -767,8 +770,11 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           created_by: string
+          customer_name?: string | null
+          external_order_number?: string | null
           id?: string
           notes?: string | null
+          order_value?: number | null
           parent_wo_id?: string | null
           product_type: Database["public"]["Enums"]["product_type"]
           scheduled_date?: string | null
@@ -783,8 +789,11 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           created_by?: string
+          customer_name?: string | null
+          external_order_number?: string | null
           id?: string
           notes?: string | null
+          order_value?: number | null
           parent_wo_id?: string | null
           product_type?: Database["public"]["Enums"]["product_type"]
           scheduled_date?: string | null
