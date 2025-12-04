@@ -353,6 +353,8 @@ export const translations = {
     avatarUpdated: 'Profile photo updated',
     invalidImageType: 'Please upload an image file',
     imageTooLarge: 'Image must be less than 2MB',
+    cropImage: 'Crop Image',
+    zoom: 'Zoom',
     quality: 'Quality',
     genealogy: 'Genealogy',
     
@@ -723,6 +725,8 @@ export const translations = {
     avatarUpdated: 'Profielfoto bijgewerkt',
     invalidImageType: 'Upload een afbeeldingsbestand',
     imageTooLarge: 'Afbeelding moet kleiner zijn dan 2MB',
+    cropImage: 'Afbeelding Bijsnijden',
+    zoom: 'Zoomen',
     quality: 'Kwaliteit',
     genealogy: 'Genealogie',
     
