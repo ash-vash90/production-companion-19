@@ -91,15 +91,22 @@ export const translations = {
     deleteButton: 'Delete',
     
     // Calendar
-    productionCalendarDescription: 'Schedule and manage work orders with drag-and-drop',
+    productionCalendarDescription: 'Schedule and manage work orders',
     unscheduledOrders: 'Unscheduled Orders',
-    dragToSchedule: 'Drag orders to calendar to schedule',
+    clickToSchedule: 'Click to schedule',
     noUnscheduledOrders: 'All orders scheduled',
     workOrderRescheduled: 'Work order rescheduled successfully',
+    workOrderScheduled: 'Work order scheduled',
     errorUpdatingWorkOrder: 'Error updating work order',
     errorFetchingData: 'Error fetching data',
     loading: 'Loading...',
-    recentWorkOrders: 'Recent Work Orders',
+    scheduleWorkOrder: 'Schedule Work Order',
+    clearSchedule: 'Clear Schedule',
+    scheduleCleared: 'Schedule cleared',
+    legend: 'Legend',
+    scheduledDate: 'Scheduled Date',
+    selectDate: 'Select a date',
+    scheduledDateHint: 'Optional - Will appear on production calendar',
     
     // Production Page
     failedLoadProduction: 'Failed to load production data',
@@ -389,15 +396,22 @@ export const translations = {
     deleteButton: 'Verwijderen',
     
     // Calendar
-    productionCalendarDescription: 'Plan en beheer werkorders met slepen en neerzetten',
+    productionCalendarDescription: 'Plan en beheer werkorders',
     unscheduledOrders: 'Ongeplande Orders',
-    dragToSchedule: 'Sleep orders naar kalender om in te plannen',
+    clickToSchedule: 'Klik om in te plannen',
     noUnscheduledOrders: 'Alle orders ingepland',
     workOrderRescheduled: 'Werkorder succesvol opnieuw ingepland',
+    workOrderScheduled: 'Werkorder ingepland',
     errorUpdatingWorkOrder: 'Fout bij bijwerken werkorder',
     errorFetchingData: 'Fout bij ophalen gegevens',
     loading: 'Laden...',
-    recentWorkOrders: 'Recente Werkorders',
+    scheduleWorkOrder: 'Werkorder Inplannen',
+    clearSchedule: 'Planning Wissen',
+    scheduleCleared: 'Planning gewist',
+    legend: 'Legenda',
+    scheduledDate: 'Geplande Datum',
+    selectDate: 'Selecteer een datum',
+    scheduledDateHint: 'Optioneel - Verschijnt op productiekalender',
     
     // Production Page
     failedLoadProduction: 'Kan productiegegevens niet laden',

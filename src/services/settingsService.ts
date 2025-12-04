@@ -91,17 +91,24 @@ export class SettingsService {
       dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     }
 
-    // Get today's count
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
-    const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).toISOString();
-
-    const { count } = await supabase
+    // Find the highest sequence number for today's prefix pattern
+    const todayPrefix = `${format.prefix}${format.separator}${dateStr}${format.separator}`;
+    
+    const { data } = await supabase
       .from('work_orders')
-      .select('*', { count: 'exact', head: true })
-      .gte('created_at', todayStart)
-      .lt('created_at', todayEnd);
+      .select('wo_number')
+      .like('wo_number', `${todayPrefix}%`)
+      .order('wo_number', { ascending: false })
+      .limit(1);
 
-    const sequence = String((count || 0) + 1).padStart(3, '0');
+    let nextSequence = 1;
+    if (data && data.length > 0) {
+      const lastWoNumber = data[0].wo_number;
+      const lastSequence = parseInt(lastWoNumber.split(format.separator).pop() || '0', 10);
+      nextSequence = lastSequence + 1;
+    }
+
+    const sequence = String(nextSequence).padStart(3, '0');
     
     return `${format.prefix}${format.separator}${dateStr}${format.separator}${sequence}`;
   }
