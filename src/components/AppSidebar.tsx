@@ -1,4 +1,4 @@
-import { LayoutDashboard, Package, Settings, Factory, CalendarDays, BarChart3, Users, FileText, ClipboardList, Search } from 'lucide-react';
+import { LayoutDashboard, Package, Settings, CalendarDays, BarChart3, Users, FileText, ClipboardList, Search } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import {
@@ -15,6 +15,7 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 import { UserProfile } from '@/components/sidebar/UserProfile';
+import { RhosonicsLogo } from '@/components/RhosonicsLogo';
 
 export function AppSidebar() {
   const navigate = useNavigate();
@@ -46,15 +47,13 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarHeader className="border-b border-sidebar-border bg-primary">
+      <SidebarHeader className="border-b border-sidebar-border bg-sidebar">
         <div className="flex items-center gap-3 p-2">
-          <div className="h-9 w-9 rounded-lg bg-white/20 flex items-center justify-center shadow-sm shrink-0">
-            <Factory className="h-5 w-5 text-white" />
-          </div>
+          <RhosonicsLogo size={32} className="shrink-0" />
           {!isCollapsed && (
             <div className="flex flex-col">
-              <span className="font-display text-base text-white leading-tight">Rhosonics</span>
-              <span className="font-display text-sm text-white/90 tracking-wide">PMS</span>
+              <span className="font-display text-base text-sidebar-foreground leading-tight">Rhosonics</span>
+              <span className="font-display text-lg text-sidebar-foreground tracking-wide font-medium">PMS</span>
             </div>
           )}
         </div>

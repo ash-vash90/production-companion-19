@@ -13,6 +13,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { formatDistanceToNow } from 'date-fns';
 import { nl, enUS } from 'date-fns/locale';
+import { toast } from '@/hooks/use-toast';
 
 interface Notification {
   id: string;
@@ -51,12 +52,17 @@ export function NotificationCenter() {
     setLoading(false);
   };
 
+  const getToastVariant = (type: string): 'default' | 'destructive' => {
+    if (type === 'exact_sync_error') return 'destructive';
+    return 'default';
+  };
+
   useEffect(() => {
     fetchNotifications();
 
-    // Subscribe to new notifications
+    // Subscribe to new notifications with real-time toast
     const channel = supabase
-      .channel('notifications')
+      .channel('notifications-realtime')
       .on(
         'postgres_changes',
         {
@@ -66,7 +72,17 @@ export function NotificationCenter() {
           filter: `user_id=eq.${user?.id}`,
         },
         (payload) => {
-          setNotifications(prev => [payload.new as Notification, ...prev]);
+          const newNotification = payload.new as Notification;
+          setNotifications(prev => [newNotification, ...prev]);
+          
+          // Show instant toast for non-cancelled notifications
+          if (newNotification.type !== 'work_order_cancelled') {
+            toast({
+              title: newNotification.title,
+              description: newNotification.message,
+              variant: getToastVariant(newNotification.type),
+            });
+          }
         }
       )
       .subscribe();
