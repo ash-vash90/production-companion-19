@@ -139,16 +139,21 @@ export function CreateWorkOrderDialog({ open, onOpenChange, onSuccess, trigger }
         }
 
         // Generate serial numbers for each product batch using configured prefixes
+        // Include WO number to ensure uniqueness across work orders
         const prefixes = serialPrefixes || { SENSOR: 'Q', MLA: 'W', HMI: 'X', TRANSMITTER: 'T', SDM_ECO: 'SDM' };
         const serialFormat = await SettingsService.getSerialFormat();
         const items: any[] = [];
         let position = 1;
+        
+        // Extract just the sequence part from WO number for shorter serial numbers
+        const woSuffix = currentWoNumber.replace(/[^0-9]/g, '').slice(-6) || Date.now().toString().slice(-6);
 
         for (const batch of productBatches) {
           const prefix = prefixes[batch.productType] || batch.productType.charAt(0);
           for (let i = 1; i <= batch.quantity; i++) {
             const paddedPosition = String(position).padStart(serialFormat.padLength, '0');
-            const serialNumber = `${prefix}${serialFormat.separator}${paddedPosition}`;
+            // Format: PREFIX-WOSEQUENCE-POSITION (e.g., Q-241204001-01)
+            const serialNumber = `${prefix}${serialFormat.separator}${woSuffix}${serialFormat.separator}${paddedPosition}`;
             items.push({
               work_order_id: workOrder.id,
               serial_number: serialNumber,
