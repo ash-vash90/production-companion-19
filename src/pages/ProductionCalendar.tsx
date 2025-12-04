@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '@/components/Layout';
+import { PageHeader } from '@/components/PageHeader';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -169,10 +170,7 @@ const ProductionCalendar = () => {
   return (
     <Layout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">{t('productionCalendar')}</h1>
-          <p className="text-muted-foreground mt-2">{t('productionCalendarDescription')}</p>
-        </div>
+        <PageHeader title={t('productionCalendar')} description={t('productionCalendarDescription')} />
 
         {/* Status Legend */}
         <Card>

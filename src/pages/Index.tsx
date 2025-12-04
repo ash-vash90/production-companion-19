@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import Layout from '@/components/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import { PageHeader } from '@/components/PageHeader';
 import { DashboardStats } from '@/components/dashboard/DashboardStats';
 import { ProductionOverview } from '@/components/dashboard/ProductionOverview';
 import { RecentActivity } from '@/components/dashboard/RecentActivity';
@@ -31,19 +32,16 @@ const Index = () => {
     <ProtectedRoute>
       <Layout>
         <div className="space-y-6">
-          {/* Header */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div>
-              <h1 className="text-4xl font-bold tracking-tight">{t('dashboard')}</h1>
-              <p className="text-lg text-muted-foreground mt-2">
-                {t('realTimeMonitoring')}
-              </p>
-            </div>
-            <Button variant="default" size="lg" onClick={() => setDialogOpen(true)}>
-              <Plus className="mr-2" />
-              {t('createWorkOrder')}
-            </Button>
-          </div>
+          <PageHeader
+            title={t('dashboard')}
+            description={t('realTimeMonitoring')}
+            actions={
+              <Button variant="default" size="default" onClick={() => setDialogOpen(true)}>
+                <Plus className="mr-2 h-4 w-4" />
+                {t('createWorkOrder')}
+              </Button>
+            }
+          />
 
           {/* Stats Grid */}
           <DashboardStats />

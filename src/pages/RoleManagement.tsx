@@ -4,13 +4,13 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import Layout from '@/components/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import { PageHeader } from '@/components/PageHeader';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Loader2, Shield, Users, AlertCircle } from 'lucide-react';
+import { Loader2, Users, AlertCircle } from 'lucide-react';
 
 const RoleManagement = () => {
   const { user } = useAuth();
@@ -137,15 +137,7 @@ const RoleManagement = () => {
     <ProtectedRoute>
       <Layout>
         <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-                <Shield className="h-8 w-8" />
-                {t('roleManagement')}
-              </h1>
-              <p className="text-muted-foreground">{t('manageUserRoles')}</p>
-            </div>
-          </div>
+          <PageHeader title={t('roleManagement')} description={t('manageUserRoles')} />
 
           {!isAdmin && (
             <Card className="border-destructive/50 bg-destructive/10">
