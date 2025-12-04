@@ -1,4 +1,5 @@
 import { LayoutDashboard, Package, Settings, CalendarDays, BarChart3, Users, FileText, ClipboardList, PanelLeft, Globe } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useUserProfile } from '@/contexts/UserProfileContext';
@@ -52,13 +53,16 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarHeader className="border-b border-sidebar-border bg-sidebar h-12 lg:h-14 flex items-center">
-        <div className="flex items-center w-full px-3 gap-2">
+      <SidebarHeader className="border-b border-sidebar-border bg-sidebar h-12 lg:h-14 flex items-center justify-center">
+        <div className={cn(
+          "flex items-center w-full gap-2",
+          isCollapsed ? "justify-center px-0" : "px-3"
+        )}>
           {isCollapsed ? (
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 mx-auto"
+              className="h-8 w-8"
               onClick={toggleSidebar}
             >
               <PanelLeft className="h-4 w-4" />
