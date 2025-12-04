@@ -52,39 +52,25 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarHeader className="border-b border-sidebar-border bg-sidebar">
-        <div className={`flex items-center ${isCollapsed ? 'justify-center p-3' : 'justify-between p-2'}`}>
-          <div className={`flex items-center ${isCollapsed ? '' : 'gap-2'}`}>
-            <RhosonicsLogo size={isCollapsed ? 24 : 28} className="shrink-0" />
+      <SidebarHeader className="border-b border-sidebar-border bg-sidebar h-12 lg:h-14 flex items-center">
+        <div className="flex items-center justify-between w-full px-3">
+          <div className="flex items-center gap-2 min-w-0">
+            <RhosonicsLogo size={24} className="shrink-0" />
             {!isCollapsed && (
               <span className="font-display text-sm text-sidebar-foreground whitespace-nowrap">
                 Rhosonics <span className="font-medium">PMS</span>
               </span>
             )}
           </div>
-          {!isCollapsed && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 shrink-0"
-              onClick={toggleSidebar}
-            >
-              <PanelLeft className="h-4 w-4" />
-            </Button>
-          )}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 shrink-0"
+            onClick={toggleSidebar}
+          >
+            <PanelLeft className="h-4 w-4" />
+          </Button>
         </div>
-        {isCollapsed && (
-          <div className="flex justify-center pb-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7"
-              onClick={toggleSidebar}
-            >
-              <PanelLeft className="h-4 w-4" />
-            </Button>
-          </div>
-        )}
       </SidebarHeader>
 
       <SidebarContent>
