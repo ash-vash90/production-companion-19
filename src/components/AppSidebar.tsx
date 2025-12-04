@@ -1,4 +1,4 @@
-import { LayoutDashboard, Package, Settings, CalendarDays, BarChart3, Users, FileText, ClipboardList } from 'lucide-react';
+import { LayoutDashboard, Package, Settings, CalendarDays, BarChart3, Users, FileText, ClipboardList, PanelLeft } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useUserProfile } from '@/contexts/UserProfileContext';
@@ -17,14 +17,14 @@ import {
 } from '@/components/ui/sidebar';
 import { UserProfile } from '@/components/sidebar/UserProfile';
 import { RhosonicsLogo } from '@/components/RhosonicsLogo';
-import { SidebarSearch } from '@/components/sidebar/SidebarSearch';
+import { Button } from '@/components/ui/button';
 
 export function AppSidebar() {
   const navigate = useNavigate();
   const location = useLocation();
   const { t, language, setLanguage } = useLanguage();
   const { isAdmin, loading } = useUserProfile();
-  const { state } = useSidebar();
+  const { state, toggleSidebar } = useSidebar();
   
   const isCollapsed = state === 'collapsed';
 
@@ -52,21 +52,39 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarHeader className="border-b border-sidebar-border bg-sidebar p-2">
-        <div className="flex items-center gap-2">
-          <RhosonicsLogo size={28} className="shrink-0" />
-          {!isCollapsed && (
-            <>
+      <SidebarHeader className="border-b border-sidebar-border bg-sidebar">
+        <div className={`flex items-center ${isCollapsed ? 'justify-center p-3' : 'justify-between p-2'}`}>
+          <div className={`flex items-center ${isCollapsed ? '' : 'gap-2'}`}>
+            <RhosonicsLogo size={isCollapsed ? 24 : 28} className="shrink-0" />
+            {!isCollapsed && (
               <span className="font-display text-sm text-sidebar-foreground whitespace-nowrap">
                 Rhosonics <span className="font-medium">PMS</span>
               </span>
-              <div className="flex-1">
-                <SidebarSearch isCollapsed={isCollapsed} />
-              </div>
-            </>
+            )}
+          </div>
+          {!isCollapsed && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 shrink-0"
+              onClick={toggleSidebar}
+            >
+              <PanelLeft className="h-4 w-4" />
+            </Button>
           )}
-          {isCollapsed && <SidebarSearch isCollapsed={isCollapsed} />}
         </div>
+        {isCollapsed && (
+          <div className="flex justify-center pb-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={toggleSidebar}
+            >
+              <PanelLeft className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
       </SidebarHeader>
 
       <SidebarContent>

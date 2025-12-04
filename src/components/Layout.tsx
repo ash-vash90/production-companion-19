@@ -1,9 +1,9 @@
 import React from 'react';
-import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
+import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/AppSidebar';
-import { Separator } from '@/components/ui/separator';
 import { NotificationCenter } from '@/components/notifications/NotificationCenter';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { GlobalSearch } from '@/components/GlobalSearch';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -15,10 +15,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       <div className="flex min-h-screen w-full bg-background">
         <AppSidebar />
         <SidebarInset>
-          <header className="sticky top-0 z-40 flex h-12 lg:h-14 shrink-0 items-center gap-2 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-            <div className="flex flex-1 items-center gap-2 px-3">
-              <SidebarTrigger />
-              <Separator orientation="vertical" className="h-4" />
+          <header className="sticky top-0 z-40 flex h-12 lg:h-14 shrink-0 items-center border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+            <div className="flex flex-1 items-center justify-center px-3">
+              <GlobalSearch />
             </div>
             <div className="flex items-center gap-1 px-3">
               <ThemeToggle />
