@@ -12,8 +12,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { toast } from 'sonner';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, parseISO } from 'date-fns';
-import { ChevronLeft, ChevronRight, Package, CalendarIcon } from 'lucide-react';
+import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, parseISO, addWeeks, subWeeks } from 'date-fns';
+import { ChevronLeft, ChevronRight, Package, CalendarIcon, LayoutGrid, List } from 'lucide-react';
 import { cn, formatProductType } from '@/lib/utils';
 
 interface WorkOrder {
@@ -30,6 +30,7 @@ const ProductionCalendar = () => {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [viewMode, setViewMode] = useState<'month' | 'week'>('month');
   const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<WorkOrder | null>(null);
@@ -41,13 +42,20 @@ const ProductionCalendar = () => {
     if (user) {
       fetchWorkOrders();
     }
-  }, [user, currentDate]);
+  }, [user, currentDate, viewMode]);
 
   const fetchWorkOrders = async () => {
     try {
       setLoading(true);
-      const start = startOfMonth(currentDate);
-      const end = endOfMonth(currentDate);
+      let start: Date, end: Date;
+      
+      if (viewMode === 'month') {
+        start = startOfMonth(currentDate);
+        end = endOfMonth(currentDate);
+      } else {
+        start = startOfWeek(currentDate, { weekStartsOn: 1 });
+        end = endOfWeek(currentDate, { weekStartsOn: 1 });
+      }
 
       const { data, error } = await supabase
         .from('work_orders')
@@ -84,10 +92,16 @@ const ProductionCalendar = () => {
     }
   };
 
-  const getDaysInMonth = () => {
-    const start = startOfMonth(currentDate);
-    const end = endOfMonth(currentDate);
-    return eachDayOfInterval({ start, end });
+  const getDaysInView = () => {
+    if (viewMode === 'month') {
+      const start = startOfMonth(currentDate);
+      const end = endOfMonth(currentDate);
+      return eachDayOfInterval({ start, end });
+    } else {
+      const start = startOfWeek(currentDate, { weekStartsOn: 1 });
+      const end = endOfWeek(currentDate, { weekStartsOn: 1 });
+      return eachDayOfInterval({ start, end });
+    }
   };
 
   const getWorkOrdersForDate = (date: Date) => {
@@ -98,12 +112,20 @@ const ProductionCalendar = () => {
 
   const unscheduledOrders = workOrders.filter(wo => !wo.scheduled_date && wo.status !== 'completed');
 
-  const goToPreviousMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1));
+  const goToPrevious = () => {
+    if (viewMode === 'month') {
+      setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1));
+    } else {
+      setCurrentDate(subWeeks(currentDate, 1));
+    }
   };
 
-  const goToNextMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1));
+  const goToNext = () => {
+    if (viewMode === 'month') {
+      setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1));
+    } else {
+      setCurrentDate(addWeeks(currentDate, 1));
+    }
   };
 
   const handleOrderClick = (order: WorkOrder) => {
@@ -236,13 +258,38 @@ const ProductionCalendar = () => {
           {/* Calendar Grid */}
           <Card className="lg:col-span-3">
             <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>{format(currentDate, 'MMMM yyyy')}</CardTitle>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="icon" onClick={goToPreviousMonth}>
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <CardTitle>
+                  {viewMode === 'month' 
+                    ? format(currentDate, 'MMMM yyyy')
+                    : `${format(startOfWeek(currentDate, { weekStartsOn: 1 }), 'MMM d')} - ${format(endOfWeek(currentDate, { weekStartsOn: 1 }), 'MMM d, yyyy')}`
+                  }
+                </CardTitle>
+                <div className="flex items-center gap-2">
+                  <div className="flex border rounded-md">
+                    <Button 
+                      variant={viewMode === 'week' ? 'secondary' : 'ghost'} 
+                      size="sm"
+                      className="rounded-r-none"
+                      onClick={() => setViewMode('week')}
+                    >
+                      <List className="h-4 w-4 mr-1" />
+                      {t('week')}
+                    </Button>
+                    <Button 
+                      variant={viewMode === 'month' ? 'secondary' : 'ghost'} 
+                      size="sm"
+                      className="rounded-l-none"
+                      onClick={() => setViewMode('month')}
+                    >
+                      <LayoutGrid className="h-4 w-4 mr-1" />
+                      {t('month')}
+                    </Button>
+                  </div>
+                  <Button variant="outline" size="icon" onClick={goToPrevious}>
                     <ChevronLeft className="h-4 w-4" />
                   </Button>
-                  <Button variant="outline" size="icon" onClick={goToNextMonth}>
+                  <Button variant="outline" size="icon" onClick={goToNext}>
                     <ChevronRight className="h-4 w-4" />
                   </Button>
                 </div>
@@ -255,7 +302,7 @@ const ProductionCalendar = () => {
                     {day}
                   </div>
                 ))}
-                {getDaysInMonth().map((date) => {
+                {getDaysInView().map((date) => {
                   const dayOrders = getWorkOrdersForDate(date);
                   const isToday = isSameDay(date, new Date());
                   

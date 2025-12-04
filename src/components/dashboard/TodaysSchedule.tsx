@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Calendar, Clock, Package } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -124,15 +125,25 @@ export function TodaysSchedule() {
   return (
     <Card>
       <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-base">
-          <Calendar className="h-4 w-4" />
-          {language === 'nl' ? 'Planning Vandaag' : "Today's Schedule"}
-          {workOrders.length > 0 && (
-            <Badge variant="secondary" className="ml-auto">
-              {workOrders.length}
-            </Badge>
-          )}
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Calendar className="h-4 w-4" />
+            <span className="truncate">{language === 'nl' ? 'Planning Vandaag' : "Today's Schedule"}</span>
+            {workOrders.length > 0 && (
+              <Badge variant="secondary" className="ml-1 shrink-0">
+                {workOrders.length}
+              </Badge>
+            )}
+          </CardTitle>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="text-xs text-muted-foreground shrink-0"
+            onClick={() => navigate('/calendar')}
+          >
+            {language === 'nl' ? 'Bekijk kalender' : 'View calendar'} →
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         {workOrders.length === 0 ? (
