@@ -338,7 +338,16 @@ const ProductionCalendar = () => {
                 </PopoverContent>
               </Popover>
             </div>
-            <DialogFooter className="gap-2">
+            <DialogFooter className="gap-2 sm:gap-2">
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setDialogOpen(false);
+                  navigate(`/production/${selectedOrder?.id}`);
+                }}
+              >
+                {t('viewWorkOrder')}
+              </Button>
               {selectedOrder?.scheduled_date && (
                 <Button variant="outline" onClick={handleClearDate} disabled={updating}>
                   {t('clearSchedule')}
