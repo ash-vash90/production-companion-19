@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import Layout from '@/components/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -152,22 +153,21 @@ const WorkOrders = () => {
   return (
     <ProtectedRoute>
       <Layout>
-        <div className="space-y-4 lg:space-y-6 p-2 md:p-4">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="space-y-1">
-              <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold tracking-tight">{t('workOrders')}</h1>
-              <p className="text-sm md:text-base lg:text-lg text-muted-foreground">{t('manageWorkOrders')}</p>
-            </div>
-            <Button 
-              variant="default" 
-              size="default" 
-              className="w-full sm:w-auto h-10 md:h-12 text-sm md:text-base px-4 md:px-6"
-              onClick={() => setDialogOpen(true)}
-            >
-              <Plus className="mr-2 h-4 w-4 md:h-5 md:w-5" />
-              {t('createWorkOrder')}
-            </Button>
-          </div>
+        <div className="space-y-4">
+          <PageHeader
+            title={t('workOrders')}
+            description={t('manageWorkOrders')}
+            actions={
+              <Button 
+                variant="default" 
+                size="default" 
+                onClick={() => setDialogOpen(true)}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                {t('createWorkOrder')}
+              </Button>
+            }
+          />
 
           {/* Search and Filter Bar */}
           <Card className="shadow-sm">

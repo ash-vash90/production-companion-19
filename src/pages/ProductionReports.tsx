@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import Layout from '@/components/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -123,14 +124,7 @@ const ProductionReports = () => {
     <ProtectedRoute>
       <Layout>
         <div className="space-y-6">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div>
-              <h1 className="text-4xl font-bold tracking-tight">{t('productionReports')}</h1>
-              <p className="text-lg text-muted-foreground mt-2">
-                {t('viewAnalyzeProduction')}
-              </p>
-            </div>
-          </div>
+          <PageHeader title={t('productionReports')} description={t('viewAnalyzeProduction')} />
 
           <Card>
             <CardHeader>

@@ -4,6 +4,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useNavigate } from 'react-router-dom';
 import Layout from '@/components/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import { PageHeader } from '@/components/PageHeader';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -158,10 +159,7 @@ const Settings = () => {
     <ProtectedRoute>
       <Layout>
         <div className="space-y-6">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">{t('settingsPage')}</h1>
-            <p className="text-muted-foreground">{t('configureWebhooks')}</p>
-          </div>
+          <PageHeader title={t('settingsPage')} description={t('configureWebhooks')} />
 
           {!isAdmin && (
             <Card className="border-destructive/50 bg-destructive/10">

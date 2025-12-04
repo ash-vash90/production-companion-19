@@ -335,6 +335,16 @@ export const translations = {
     languageDescription: 'Choose your preferred language',
     selectLanguage: 'Select Language',
     currentLanguage: 'Current',
+    
+    // Profile
+    profilePhoto: 'Profile Photo',
+    profilePhotoDescription: 'Upload a profile photo or use your initials',
+    uploadPhotoHint: 'JPG, PNG up to 2MB',
+    avatarUpdated: 'Profile photo updated',
+    invalidImageType: 'Please upload an image file',
+    imageTooLarge: 'Image must be less than 2MB',
+    quality: 'Quality',
+    genealogy: 'Genealogy',
   },
   nl: {
     // Navigation
@@ -669,6 +679,16 @@ export const translations = {
     languageDescription: 'Kies uw voorkeurstaal',
     selectLanguage: 'Selecteer Taal',
     currentLanguage: 'Huidig',
+    
+    // Profile
+    profilePhoto: 'Profielfoto',
+    profilePhotoDescription: 'Upload een profielfoto of gebruik uw initialen',
+    uploadPhotoHint: 'JPG, PNG tot 2MB',
+    avatarUpdated: 'Profielfoto bijgewerkt',
+    invalidImageType: 'Upload een afbeeldingsbestand',
+    imageTooLarge: 'Afbeelding moet kleiner zijn dan 2MB',
+    quality: 'Kwaliteit',
+    genealogy: 'Genealogie',
   },
 };
 

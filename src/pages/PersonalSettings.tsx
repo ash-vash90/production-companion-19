@@ -1,17 +1,20 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useNavigate } from 'react-router-dom';
 import Layout from '@/components/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import { PageHeader } from '@/components/PageHeader';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useTheme } from '@/hooks/useTheme';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Moon, Sun, Monitor, Bell, BellOff, Globe } from 'lucide-react';
+import { Moon, Sun, Monitor, Bell, Globe, Camera, Loader2 } from 'lucide-react';
 
 const PersonalSettings = () => {
   const { user } = useAuth();
@@ -19,6 +22,75 @@ const PersonalSettings = () => {
   const navigate = useNavigate();
   const { theme, setTheme } = useTheme();
   const { permission, isEnabled, isSupported, enableNotifications, disableNotifications } = usePushNotifications();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  const [profile, setProfile] = useState<{ full_name: string; avatar_url: string | null } | null>(null);
+  const [uploading, setUploading] = useState(false);
+
+  useEffect(() => {
+    if (user) fetchProfile();
+  }, [user]);
+
+  const fetchProfile = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from('profiles')
+      .select('full_name, avatar_url')
+      .eq('id', user.id)
+      .single();
+    if (data) setProfile(data);
+  };
+
+  const getInitials = (name: string) => {
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error(t('error'), { description: t('invalidImageType') });
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error(t('error'), { description: t('imageTooLarge') });
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const filePath = `${user.id}/avatar.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      const avatarUrl = `${publicUrl}?t=${Date.now()}`;
+
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: avatarUrl })
+        .eq('id', user.id);
+
+      if (updateError) throw updateError;
+
+      setProfile(prev => prev ? { ...prev, avatar_url: avatarUrl } : null);
+      toast.success(t('success'), { description: t('avatarUpdated') });
+    } catch (error: any) {
+      toast.error(t('error'), { description: error.message });
+    } finally {
+      setUploading(false);
+    }
+  };
 
   if (!user) {
     navigate('/auth');
@@ -39,14 +111,57 @@ const PersonalSettings = () => {
     }
   };
 
+  const displayName = profile?.full_name || user.email || 'User';
+
   return (
     <ProtectedRoute>
       <Layout>
-        <div className="space-y-6 max-w-2xl">
-          <div>
-            <h1 className="text-2xl lg:text-3xl font-bold tracking-tight">{t('personalSettings')}</h1>
-            <p className="text-sm text-muted-foreground">{t('personalSettingsDescription')}</p>
-          </div>
+        <PageHeader title={t('personalSettings')} description={t('personalSettingsDescription')} />
+
+        <div className="space-y-4 max-w-2xl">
+          {/* Profile Photo */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">{t('profilePhoto')}</CardTitle>
+              <CardDescription className="text-sm">{t('profilePhotoDescription')}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-4">
+                <div className="relative">
+                  <Avatar className="h-20 w-20">
+                    {profile?.avatar_url && (
+                      <AvatarImage src={profile.avatar_url} alt={displayName} />
+                    )}
+                    <AvatarFallback className="bg-primary text-primary-foreground text-xl font-medium">
+                      {getInitials(displayName)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading}
+                    className="absolute bottom-0 right-0 h-7 w-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-colors disabled:opacity-50"
+                  >
+                    {uploading ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Camera className="h-3.5 w-3.5" />
+                    )}
+                  </button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleAvatarUpload}
+                    className="hidden"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <p className="font-medium">{displayName}</p>
+                  <p className="text-xs text-muted-foreground">{t('uploadPhotoHint')}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Appearance */}
           <Card>
@@ -119,9 +234,7 @@ const PersonalSettings = () => {
                 />
               </div>
               {permission === 'denied' && (
-                <p className="text-xs text-destructive">
-                  {t('enableInBrowserSettings')}
-                </p>
+                <p className="text-xs text-destructive">{t('enableInBrowserSettings')}</p>
               )}
             </CardContent>
           </Card>
