@@ -53,6 +53,10 @@ export const translations = {
     completed: 'Completed',
     cancelled: 'Cancelled',
     
+    // Calendar
+    week: 'Week',
+    month: 'Month',
+    
     // Production
     serialNumber: 'Serial Number',
     currentStep: 'Current Step',
@@ -452,6 +456,10 @@ export const translations = {
     onHold: 'In de Wacht',
     completed: 'Voltooid',
     cancelled: 'Geannuleerd',
+    
+    // Calendar
+    week: 'Week',
+    month: 'Maand',
     
     // Production
     serialNumber: 'Serienummer',

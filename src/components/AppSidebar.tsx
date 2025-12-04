@@ -53,23 +53,32 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader className="border-b border-sidebar-border bg-sidebar h-12 lg:h-14 flex items-center">
-        <div className="flex items-center justify-between w-full px-3">
-          <div className="flex items-center gap-2 min-w-0">
-            <RhosonicsLogo size={24} className="shrink-0" />
-            {!isCollapsed && (
-              <span className="font-display text-sm text-sidebar-foreground whitespace-nowrap">
+        <div className="flex items-center w-full px-3 gap-2">
+          {isCollapsed ? (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 mx-auto"
+              onClick={toggleSidebar}
+            >
+              <PanelLeft className="h-4 w-4" />
+            </Button>
+          ) : (
+            <>
+              <RhosonicsLogo size={24} className="shrink-0" />
+              <span className="font-display text-sm text-sidebar-foreground whitespace-nowrap flex-1">
                 Rhosonics <span className="font-medium">PMS</span>
               </span>
-            )}
-          </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7 shrink-0"
-            onClick={toggleSidebar}
-          >
-            <PanelLeft className="h-4 w-4" />
-          </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 shrink-0"
+                onClick={toggleSidebar}
+              >
+                <PanelLeft className="h-4 w-4" />
+              </Button>
+            </>
+          )}
         </div>
       </SidebarHeader>
 
