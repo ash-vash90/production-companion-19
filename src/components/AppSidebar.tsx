@@ -1,4 +1,4 @@
-import { LayoutDashboard, Package, Settings, CalendarDays, BarChart3, Users, FileText, ClipboardList, PanelLeft } from 'lucide-react';
+import { LayoutDashboard, Package, Settings, CalendarDays, BarChart3, Users, FileText, ClipboardList, PanelLeft, Globe } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useUserProfile } from '@/contexts/UserProfileContext';
@@ -154,15 +154,19 @@ export function AppSidebar() {
           <SidebarMenuItem>
             <SidebarMenuButton
               onClick={() => setLanguage(language === 'en' ? 'nl' : 'en')}
-              tooltip={isCollapsed ? (language === 'en' ? 'NL' : 'EN') : undefined}
+              tooltip={isCollapsed ? (language === 'en' ? 'Switch to NL' : 'Switch to EN') : undefined}
+              className="group"
             >
-              <span className="font-data text-xs uppercase tracking-wider">
-                {language === 'en' ? '🇬🇧' : '🇳🇱'}
-              </span>
+              <Globe className="h-4 w-4" />
               {!isCollapsed && (
-                <span className="text-xs">
-                  {language === 'en' ? 'English' : 'Nederlands'}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="font-medium text-xs uppercase">
+                    {language === 'en' ? 'EN' : 'NL'}
+                  </span>
+                  <span className="text-xs text-muted-foreground group-hover:text-sidebar-accent-foreground">
+                    → {language === 'en' ? 'NL' : 'EN'}
+                  </span>
+                </div>
               )}
             </SidebarMenuButton>
           </SidebarMenuItem>
