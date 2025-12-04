@@ -11,6 +11,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Loader2, ArrowLeft, CheckCircle2, AlertCircle, ScanBarcode, History, XCircle, Users } from 'lucide-react';
+import { formatDateTime } from '@/lib/utils';
 import MeasurementDialog from '@/components/production/MeasurementDialog';
 import ChecklistDialog from '@/components/production/ChecklistDialog';
 import BatchScanDialog from '@/components/production/BatchScanDialog';
@@ -593,7 +594,7 @@ const ProductionStep = () => {
                         <span className="text-base md:text-sm font-medium font-data">{step.title_en}</span>
                         {isCompleted && completion && (
                           <p className="text-xs text-muted-foreground mt-0.5">
-                            {completion.operator_initials || completion.completed_by_name} • {new Date(completion.completed_at).toLocaleString()}
+                            {completion.operator_initials || completion.completed_by_name} • {formatDateTime(completion.completed_at)}
                           </p>
                         )}
                       </div>

@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Loader2, Users } from 'lucide-react';
+import { formatDate } from '@/lib/utils';
 
 const RoleManagement = () => {
   const { user } = useAuth();
@@ -175,7 +176,7 @@ const RoleManagement = () => {
                           <div>
                             <h4 className="font-medium">{profile.full_name}</h4>
                             <p className="text-sm text-muted-foreground">
-                              {t('joined')}: {new Date(profile.created_at).toLocaleDateString()}
+                              {t('joined')}: {formatDate(profile.created_at)}
                             </p>
                           </div>
                         </div>

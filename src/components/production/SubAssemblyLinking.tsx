@@ -10,6 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Link2, X, ScanBarcode } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { formatDateTime } from '@/lib/utils';
 
 interface SubAssemblyLinkingProps {
   open: boolean;
@@ -236,7 +237,7 @@ const SubAssemblyLinking: React.FC<SubAssemblyLinkingProps> = ({
                         <span className="font-mono font-medium">{link.child_item.serial_number}</span>
                       </div>
                       <p className="text-xs text-muted-foreground mt-1">
-                        Linked: {new Date(link.linked_at).toLocaleString()}
+                        Linked: {formatDateTime(link.linked_at)}
                       </p>
                     </div>
                     <Button

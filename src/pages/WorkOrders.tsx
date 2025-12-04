@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useUserProfile } from '@/contexts/UserProfileContext';
 import Layout from '@/components/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { PageHeader } from '@/components/PageHeader';
@@ -13,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { CreateWorkOrderDialog } from '@/components/CreateWorkOrderDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { getProductBreakdown, formatProductBreakdownText, ProductBreakdown } from '@/lib/utils';
+import { getProductBreakdown, formatProductBreakdownText, ProductBreakdown, formatDate } from '@/lib/utils';
 import { Loader2, Plus, Package, Filter } from 'lucide-react';
 
 interface WorkOrderWithItems {
@@ -30,6 +31,7 @@ interface WorkOrderWithItems {
 const WorkOrders = () => {
   const { user } = useAuth();
   const { t } = useLanguage();
+  const { isAdmin } = useUserProfile();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [workOrders, setWorkOrders] = useState<WorkOrderWithItems[]>([]);
@@ -243,7 +245,7 @@ const WorkOrders = () => {
               {filteredOrders.map((wo) => (
                 <Card
                   key={wo.id}
-                  className="cursor-pointer hover:shadow-md hover:border-primary transition-all border active:scale-[0.99]"
+                  className="cursor-pointer hover:shadow-md hover:border-primary transition-all border active:scale-[0.99] flex flex-col"
                 >
                   <CardHeader onClick={() => navigate(`/production/${wo.id}`)} className="pb-1.5 p-2 lg:p-3">
                     <div className="flex items-center justify-between mb-1">
@@ -263,8 +265,8 @@ const WorkOrders = () => {
                       }
                     </div>
                   </CardHeader>
-                  <CardContent className="p-2 lg:p-3 pt-0">
-                    <div className="space-y-1 text-[10px] lg:text-xs" onClick={() => navigate(`/production/${wo.id}`)}>
+                  <CardContent className="p-2 lg:p-3 pt-0 flex-1 flex flex-col">
+                    <div className="space-y-1 text-[10px] lg:text-xs flex-1" onClick={() => navigate(`/production/${wo.id}`)}>
                       <div className="flex justify-between items-center p-1 lg:p-1.5 rounded bg-muted/50">
                         <span className="text-muted-foreground">{t('batchSize')}:</span>
                         <span className="font-semibold">{wo.batch_size}</span>
@@ -272,7 +274,7 @@ const WorkOrders = () => {
                       <div className="flex justify-between items-center p-1 lg:p-1.5 rounded bg-muted/50">
                         <span className="text-muted-foreground">{t('created')}:</span>
                         <span className="font-medium">
-                          {new Date(wo.created_at).toLocaleDateString()}
+                          {formatDate(wo.created_at)}
                         </span>
                       </div>
                       {wo.profiles?.full_name && (
@@ -282,31 +284,33 @@ const WorkOrders = () => {
                         </div>
                       )}
                     </div>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      className="w-full mt-1.5 h-6 lg:h-7 text-[10px] lg:text-xs"
-                      onClick={async (e) => {
-                        e.stopPropagation();
-                        if (confirm(t('confirmCancelWorkOrder'))) {
-                          try {
-                            const { error } = await supabase
-                              .from('work_orders')
-                              .update({ status: 'cancelled' })
-                              .eq('id', wo.id);
-                            if (error) throw error;
-                            
-                            // Don't create notification for own cancellation - user already knows
-                            toast.success(t('success'), { description: t('workOrderCancelled') });
-                            fetchWorkOrders();
-                          } catch (error: any) {
-                            toast.error(t('error'), { description: error.message });
+                    {isAdmin && (
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        className="w-full mt-1.5 h-6 lg:h-7 text-[10px] lg:text-xs"
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          if (confirm(t('confirmCancelWorkOrder'))) {
+                            try {
+                              const { error } = await supabase
+                                .from('work_orders')
+                                .update({ status: 'cancelled' })
+                                .eq('id', wo.id);
+                              if (error) throw error;
+                              
+                              // Don't create notification for own cancellation - user already knows
+                              toast.success(t('success'), { description: t('workOrderCancelled') });
+                              fetchWorkOrders();
+                            } catch (error: any) {
+                              toast.error(t('error'), { description: error.message });
+                            }
                           }
-                        }
-                      }}
-                    >
-                      {t('cancelWorkOrder')}
-                    </Button>
+                        }}
+                      >
+                        {t('cancelWorkOrder')}
+                      </Button>
+                    )}
                   </CardContent>
                 </Card>
               ))}
