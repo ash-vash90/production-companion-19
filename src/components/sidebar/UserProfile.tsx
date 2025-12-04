@@ -44,7 +44,7 @@ export function UserProfile() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button className="flex items-center gap-2 p-2 w-full rounded-md hover:bg-sidebar-accent transition-colors text-left">
+        <button className={`flex items-center gap-2 p-2 w-full rounded-md hover:bg-sidebar-accent transition-colors text-left ${isCollapsed ? 'justify-center' : ''}`}>
           <Avatar className="h-8 w-8 shrink-0">
             {profile?.avatar_url && (
               <AvatarImage src={profile.avatar_url} alt={displayName} />

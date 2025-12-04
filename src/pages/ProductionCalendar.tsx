@@ -296,51 +296,104 @@ const ProductionCalendar = () => {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-7 gap-2">
-                {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
-                  <div key={day} className="text-center font-semibold text-sm py-2 text-muted-foreground">
-                    {day}
-                  </div>
-                ))}
-                {getDaysInView().map((date) => {
-                  const dayOrders = getWorkOrdersForDate(date);
-                  const isToday = isSameDay(date, new Date());
-                  
-                  return (
-                    <div
-                      key={date.toISOString()}
-                      className={cn(
-                        "min-h-[100px] p-2 border rounded-lg bg-card",
-                        isToday && "bg-primary/5 border-primary/20"
-                      )}
-                    >
-                      <div className={cn(
-                        "text-sm font-medium mb-2",
-                        isToday ? "text-primary" : "text-foreground"
-                      )}>
-                        {format(date, 'd')}
-                      </div>
-                      <div className="space-y-1">
-                        {dayOrders.map((order) => (
-                          <div
-                            key={order.id}
-                            onClick={() => handleOrderClick(order)}
-                            className={cn(
-                              "p-1.5 border-l-2 bg-background/50 rounded text-xs cursor-pointer hover:bg-background/80 transition-colors",
-                              getStatusBorderColor(order.status)
-                            )}
-                          >
-                            <div className="font-medium truncate">{order.wo_number}</div>
-                            <div className="text-muted-foreground truncate text-[10px]">
-                              {formatProductType(order.product_type)}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
+              {viewMode === 'month' ? (
+                <div className="grid grid-cols-7 gap-2">
+                  {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
+                    <div key={day} className="text-center font-semibold text-sm py-2 text-muted-foreground">
+                      {day}
                     </div>
-                  );
-                })}
-              </div>
+                  ))}
+                  {getDaysInView().map((date) => {
+                    const dayOrders = getWorkOrdersForDate(date);
+                    const isToday = isSameDay(date, new Date());
+                    
+                    return (
+                      <div
+                        key={date.toISOString()}
+                        className={cn(
+                          "min-h-[100px] p-2 border rounded-lg bg-card",
+                          isToday && "bg-primary/5 border-primary/20"
+                        )}
+                      >
+                        <div className={cn(
+                          "text-sm font-medium mb-2",
+                          isToday ? "text-primary" : "text-foreground"
+                        )}>
+                          {format(date, 'd')}
+                        </div>
+                        <div className="space-y-1">
+                          {dayOrders.map((order) => (
+                            <div
+                              key={order.id}
+                              onClick={() => handleOrderClick(order)}
+                              className={cn(
+                                "p-1.5 border-l-2 bg-background/50 rounded text-xs cursor-pointer hover:bg-background/80 transition-colors",
+                                getStatusBorderColor(order.status)
+                              )}
+                            >
+                              <div className="font-medium truncate">{order.wo_number}</div>
+                              <div className="text-muted-foreground truncate text-[10px]">
+                                {formatProductType(order.product_type)}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {getDaysInView().map((date) => {
+                    const dayOrders = getWorkOrdersForDate(date);
+                    const isToday = isSameDay(date, new Date());
+                    
+                    return (
+                      <div
+                        key={date.toISOString()}
+                        className={cn(
+                          "p-4 border rounded-lg bg-card",
+                          isToday && "bg-primary/5 border-primary/20"
+                        )}
+                      >
+                        <div className={cn(
+                          "text-sm font-semibold mb-3 pb-2 border-b",
+                          isToday ? "text-primary" : "text-foreground"
+                        )}>
+                          {format(date, 'EEEE, MMMM d')}
+                          {isToday && <span className="ml-2 text-xs font-normal text-muted-foreground">(Today)</span>}
+                        </div>
+                        {dayOrders.length === 0 ? (
+                          <p className="text-sm text-muted-foreground italic">No work orders scheduled</p>
+                        ) : (
+                          <div className="space-y-2">
+                            {dayOrders.map((order) => (
+                              <div
+                                key={order.id}
+                                onClick={() => handleOrderClick(order)}
+                                className={cn(
+                                  "p-3 border-l-4 bg-background/50 rounded-lg cursor-pointer hover:bg-background/80 transition-colors",
+                                  getStatusBorderColor(order.status)
+                                )}
+                              >
+                                <div className="flex items-center justify-between gap-2 mb-1">
+                                  <span className="font-semibold">{order.wo_number}</span>
+                                  <Badge className={getStatusColor(order.status)}>
+                                    {formatStatus(order.status)}
+                                  </Badge>
+                                </div>
+                                <div className="text-sm text-muted-foreground">
+                                  {formatProductType(order.product_type)} • {order.batch_size} units
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>

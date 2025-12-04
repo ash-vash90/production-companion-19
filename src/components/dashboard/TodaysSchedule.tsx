@@ -125,27 +125,29 @@ export function TodaysSchedule() {
   return (
     <Card>
       <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Calendar className="h-4 w-4" />
+        <div className="flex items-center justify-between gap-2">
+          <CardTitle className="flex items-center gap-2 text-base min-w-0">
+            <Calendar className="h-4 w-4 shrink-0" />
             <span className="truncate">{language === 'nl' ? 'Planning Vandaag' : "Today's Schedule"}</span>
             {workOrders.length > 0 && (
-              <Badge variant="secondary" className="ml-1 shrink-0">
+              <Badge variant="secondary" className="shrink-0">
                 {workOrders.length}
               </Badge>
             )}
           </CardTitle>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="flex justify-end mb-3">
           <Button 
-            variant="ghost" 
+            variant="outline" 
             size="sm" 
-            className="text-xs text-muted-foreground shrink-0"
+            className="text-xs"
             onClick={() => navigate('/calendar')}
           >
             {language === 'nl' ? 'Bekijk kalender' : 'View calendar'} →
           </Button>
         </div>
-      </CardHeader>
-      <CardContent>
         {workOrders.length === 0 ? (
           <div className="text-sm text-muted-foreground py-4 text-center">
             {language === 'nl' 
