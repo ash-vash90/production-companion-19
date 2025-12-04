@@ -154,14 +154,14 @@ export function AppSidebar() {
           <SidebarMenuItem>
             <SidebarMenuButton
               onClick={() => setLanguage(language === 'en' ? 'nl' : 'en')}
-              tooltip={isCollapsed ? (language === 'en' ? 'Switch to NL' : 'Switch to EN') : undefined}
+              tooltip={isCollapsed ? (language === 'en' ? 'Switch to Nederlands' : 'Switch to English') : undefined}
               className="group"
             >
               <Globe className="h-4 w-4" />
               {!isCollapsed && (
-                <div className="flex items-center gap-2">
-                  <span className="font-medium text-xs uppercase">
-                    {language === 'en' ? 'EN' : 'NL'}
+                <div className="flex items-center justify-between flex-1">
+                  <span className="text-sm">
+                    {language === 'en' ? 'English' : 'Nederlands'}
                   </span>
                   <span className="text-xs text-muted-foreground group-hover:text-sidebar-accent-foreground">
                     → {language === 'en' ? 'NL' : 'EN'}
