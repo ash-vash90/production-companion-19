@@ -1,4 +1,4 @@
-import { LayoutDashboard, Package, Settings, LogOut, Factory, CalendarDays, BarChart3, Users, FileText, ClipboardList, GitBranch } from 'lucide-react';
+import { LayoutDashboard, Package, Settings, LogOut, Factory, CalendarDays, BarChart3, Users, FileText, ClipboardList, GitBranch, UserCog } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -51,6 +51,11 @@ export function AppSidebar() {
       title: 'Genealogy', 
       url: '/genealogy', 
       icon: GitBranch 
+    },
+    { 
+      title: t('personalSettings'), 
+      url: '/personal-settings', 
+      icon: UserCog 
     },
   ];
 
