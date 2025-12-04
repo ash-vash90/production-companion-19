@@ -98,15 +98,15 @@ const ProductionReports = () => {
     return matchesSearch && matchesStatus && matchesProduct;
   });
 
-  const getStatusBadgeClass = (status: string) => {
-    const classes: Record<string, string> = {
-      planned: 'bg-secondary text-secondary-foreground',
-      in_progress: 'bg-primary text-primary-foreground',
-      completed: 'bg-accent text-accent-foreground',
-      on_hold: 'bg-muted text-muted-foreground',
-      cancelled: 'bg-destructive text-destructive-foreground',
-    };
-    return classes[status] || 'bg-muted';
+  const getStatusVariant = (status: string): 'info' | 'warning' | 'success' | 'secondary' | 'destructive' => {
+    switch (status) {
+      case 'planned': return 'info';
+      case 'in_progress': return 'warning';
+      case 'completed': return 'success';
+      case 'on_hold': return 'secondary';
+      case 'cancelled': return 'destructive';
+      default: return 'secondary';
+    }
   };
 
   const getStatusLabel = (status: string) => {
@@ -234,7 +234,7 @@ const ProductionReports = () => {
                         </TableCell>
                         <TableCell className="font-mono">{wo.batch_size}</TableCell>
                         <TableCell>
-                          <Badge className={getStatusBadgeClass(wo.status)}>
+                          <Badge variant={getStatusVariant(wo.status)}>
                             {getStatusLabel(wo.status)}
                           </Badge>
                         </TableCell>

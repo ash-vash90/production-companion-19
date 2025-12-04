@@ -68,8 +68,8 @@ const Index = () => {
               <RecentActivity />
             </div>
             <div className="space-y-6">
-              <TodaysSchedule />
               <ActiveOperators />
+              <TodaysSchedule />
             </div>
           </div>
         </div>
