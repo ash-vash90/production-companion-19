@@ -107,6 +107,8 @@ export const translations = {
     orderNumber: 'Order No.',
     value: 'Value',
     view: 'View',
+    customerPlaceholder: 'Customer name',
+    orderNumberPlaceholder: 'e.g. PO-12345',
     
     // Calendar
     productionCalendarDescription: 'Schedule and manage work orders',
@@ -515,6 +517,8 @@ export const translations = {
     orderNumber: 'Ordernr.',
     value: 'Waarde',
     view: 'Bekijken',
+    customerPlaceholder: 'Klantnaam',
+    orderNumberPlaceholder: 'bijv. PO-12345',
     
     // Calendar
     productionCalendarDescription: 'Plan en beheer werkorders',
