@@ -17,7 +17,7 @@ interface SearchResult {
   status: string;
 }
 
-export function SidebarSearch({ isCollapsed }: { isCollapsed: boolean }) {
+export function GlobalSearch() {
   const navigate = useNavigate();
   const { t } = useLanguage();
   const [query, setQuery] = useState('');
@@ -25,6 +25,7 @@ export function SidebarSearch({ isCollapsed }: { isCollapsed: boolean }) {
   const [results, setResults] = useState<SearchResult[]>([]);
   const [showResults, setShowResults] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -34,6 +35,22 @@ export function SidebarSearch({ isCollapsed }: { isCollapsed: boolean }) {
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Keyboard shortcut: Cmd/Ctrl + K
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key === 'k') {
+        event.preventDefault();
+        inputRef.current?.focus();
+      }
+      if (event.key === 'Escape') {
+        setShowResults(false);
+        inputRef.current?.blur();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
   const handleSearch = async (searchQuery: string) => {
@@ -123,72 +140,61 @@ export function SidebarSearch({ isCollapsed }: { isCollapsed: boolean }) {
     return status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
   };
 
-  if (isCollapsed) {
-    return (
-      <Button
-        variant="ghost"
-        size="icon"
-        className="h-8 w-8"
-        onClick={() => navigate('/search')}
-      >
-        <Search className="h-4 w-4" />
-      </Button>
-    );
-  }
-
   return (
-    <div ref={containerRef} className="relative flex-1">
+    <div ref={containerRef} className="relative w-full max-w-md">
       <div className="relative">
-        <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
+          ref={inputRef}
           value={query}
           onChange={(e) => {
             const val = e.target.value.toUpperCase();
             setQuery(val);
             handleSearch(val);
           }}
-          placeholder={t('search')}
-          className="h-8 pl-7 pr-7 text-xs bg-sidebar-accent/50 border-sidebar-border"
+          onFocus={() => query.length >= 2 && setShowResults(true)}
+          placeholder={`${t('search')}... (⌘K)`}
+          className="h-9 pl-9 pr-9 bg-muted/50 border-border"
         />
         {query && (
           <Button
             variant="ghost"
             size="icon"
-            className="absolute right-0 top-0 h-8 w-8"
+            className="absolute right-0 top-0 h-9 w-9"
             onClick={() => {
               setQuery('');
               setResults([]);
               setShowResults(false);
             }}
           >
-            <X className="h-3 w-3" />
+            <X className="h-3.5 w-3.5" />
           </Button>
         )}
         {searching && (
-          <Loader2 className="absolute right-2 top-1/2 -translate-y-1/2 h-3 w-3 animate-spin text-muted-foreground" />
+          <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
         )}
       </div>
 
       {showResults && results.length > 0 && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-popover border border-border rounded-md shadow-lg z-50 max-h-64 overflow-auto">
+        <div className="absolute top-full left-0 right-0 mt-2 bg-popover border border-border rounded-lg shadow-lg z-50 max-h-80 overflow-auto">
           {results.map((result, index) => (
             <div
               key={`${result.type}-${result.id}-${index}`}
               onClick={() => handleResultClick(result)}
-              className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-accent transition-colors"
+              className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-accent transition-colors first:rounded-t-lg last:rounded-b-lg"
             >
-              <div className="h-6 w-6 rounded bg-primary/10 flex items-center justify-center shrink-0">
+              <div className="h-8 w-8 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
                 {result.type === 'work_order' ? (
-                  <Package className="h-3 w-3 text-primary" />
+                  <Package className="h-4 w-4 text-primary" />
                 ) : (
-                  <FileText className="h-3 w-3 text-primary" />
+                  <FileText className="h-4 w-4 text-primary" />
                 )}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-mono text-xs font-medium truncate">{result.title}</p>
-                <p className="text-[10px] text-muted-foreground truncate">{result.subtitle}</p>
+                <p className="font-mono text-sm font-medium truncate">{result.title}</p>
+                <p className="text-xs text-muted-foreground truncate">{result.subtitle}</p>
               </div>
-              <Badge className={cn("text-[10px] px-1.5 py-0", getStatusColor(result.status))}>
+              <Badge className={cn("text-xs", getStatusColor(result.status))}>
                 {formatStatus(result.status)}
               </Badge>
             </div>
@@ -197,8 +203,8 @@ export function SidebarSearch({ isCollapsed }: { isCollapsed: boolean }) {
       )}
 
       {showResults && results.length === 0 && query.length >= 2 && !searching && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-popover border border-border rounded-md shadow-lg z-50 p-3 text-center">
-          <p className="text-xs text-muted-foreground">{t('noResultsFound')}</p>
+        <div className="absolute top-full left-0 right-0 mt-2 bg-popover border border-border rounded-lg shadow-lg z-50 p-4 text-center">
+          <p className="text-sm text-muted-foreground">{t('noResultsFound')}</p>
         </div>
       )}
     </div>
