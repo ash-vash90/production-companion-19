@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { supabase } from '@/integrations/supabase/client';
+import { useUserProfile } from '@/contexts/UserProfileContext';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   DropdownMenu,
@@ -14,34 +14,13 @@ import {
 import { Settings, LogOut, ChevronUp } from 'lucide-react';
 import { useSidebar } from '@/components/ui/sidebar';
 
-interface UserProfileData {
-  full_name: string;
-  avatar_url: string | null;
-}
-
 export function UserProfile() {
   const { user, signOut } = useAuth();
   const { t } = useLanguage();
+  const { profile } = useUserProfile();
   const navigate = useNavigate();
   const { state } = useSidebar();
   const isCollapsed = state === 'collapsed';
-  const [profile, setProfile] = useState<UserProfileData | null>(null);
-
-  useEffect(() => {
-    if (user) {
-      fetchProfile();
-    }
-  }, [user]);
-
-  const fetchProfile = async () => {
-    if (!user) return;
-    const { data } = await supabase
-      .from('profiles')
-      .select('full_name, avatar_url')
-      .eq('id', user.id)
-      .single();
-    if (data) setProfile(data);
-  };
 
   const getInitials = (name: string) => {
     return name
