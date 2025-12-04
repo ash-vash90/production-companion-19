@@ -103,6 +103,10 @@ export const translations = {
     cancelWorkOrderConfirm: 'This will hide it from the list but keep the history for traceability.',
     workOrderCancelled: 'Work order cancelled',
     deleteButton: 'Delete',
+    customer: 'Customer',
+    orderNumber: 'Order No.',
+    value: 'Value',
+    view: 'View',
     
     // Calendar
     productionCalendarDescription: 'Schedule and manage work orders',
@@ -507,6 +511,10 @@ export const translations = {
     cancelWorkOrderConfirm: 'Dit verbergt het uit de lijst maar behoudt de geschiedenis voor traceerbaarheid.',
     workOrderCancelled: 'Werkorder geannuleerd',
     deleteButton: 'Verwijderen',
+    customer: 'Klant',
+    orderNumber: 'Ordernr.',
+    value: 'Waarde',
+    view: 'Bekijken',
     
     // Calendar
     productionCalendarDescription: 'Plan en beheer werkorders',
