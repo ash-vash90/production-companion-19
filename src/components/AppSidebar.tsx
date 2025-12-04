@@ -1,4 +1,4 @@
-import { LayoutDashboard, Package, Settings, CalendarDays, BarChart3, Users, FileText, ClipboardList, Search } from 'lucide-react';
+import { LayoutDashboard, Package, Settings, CalendarDays, BarChart3, Users, FileText, ClipboardList } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useUserProfile } from '@/contexts/UserProfileContext';
@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/sidebar';
 import { UserProfile } from '@/components/sidebar/UserProfile';
 import { RhosonicsLogo } from '@/components/RhosonicsLogo';
+import { SidebarSearch } from '@/components/sidebar/SidebarSearch';
 
 export function AppSidebar() {
   const navigate = useNavigate();
@@ -36,7 +37,6 @@ export function AppSidebar() {
   const qualityItems = [
     { title: t('qualityCertificates'), url: '/quality-certificates', icon: FileText },
     { title: t('productionReports'), url: '/production-reports', icon: ClipboardList },
-    { title: t('search'), url: '/search', icon: Search },
   ];
 
   // Only show admin items if user is admin (and not still loading)
@@ -52,15 +52,20 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarHeader className="border-b border-sidebar-border bg-sidebar">
-        <div className="flex items-center gap-3 p-2">
-          <RhosonicsLogo size={32} className="shrink-0" />
+      <SidebarHeader className="border-b border-sidebar-border bg-sidebar p-2">
+        <div className="flex items-center gap-2">
+          <RhosonicsLogo size={28} className="shrink-0" />
           {!isCollapsed && (
-            <div className="flex flex-col">
-              <span className="font-display text-base text-sidebar-foreground leading-tight">Rhosonics</span>
-              <span className="font-display text-lg text-sidebar-foreground tracking-wide font-medium">PMS</span>
-            </div>
+            <>
+              <span className="font-display text-sm text-sidebar-foreground whitespace-nowrap">
+                Rhosonics <span className="font-medium">PMS</span>
+              </span>
+              <div className="flex-1">
+                <SidebarSearch isCollapsed={isCollapsed} />
+              </div>
+            </>
           )}
+          {isCollapsed && <SidebarSearch isCollapsed={isCollapsed} />}
         </div>
       </SidebarHeader>
 
