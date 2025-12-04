@@ -15,6 +15,7 @@ import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Moon, Sun, Monitor, Bell, Globe, Camera, Loader2 } from 'lucide-react';
+import { ImageCropDialog } from '@/components/ImageCropDialog';
 
 const PersonalSettings = () => {
   const { user } = useAuth();
@@ -26,6 +27,8 @@ const PersonalSettings = () => {
   
   const [profile, setProfile] = useState<{ full_name: string; avatar_url: string | null } | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [cropDialogOpen, setCropDialogOpen] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) fetchProfile();
@@ -45,7 +48,7 @@ const PersonalSettings = () => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };
 
-  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
 
@@ -54,19 +57,32 @@ const PersonalSettings = () => {
       return;
     }
 
-    if (file.size > 2 * 1024 * 1024) {
+    if (file.size > 5 * 1024 * 1024) {
       toast.error(t('error'), { description: t('imageTooLarge') });
       return;
     }
 
+    // Create object URL for cropping
+    const imageUrl = URL.createObjectURL(file);
+    setSelectedImage(imageUrl);
+    setCropDialogOpen(true);
+    
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleCropComplete = async (croppedBlob: Blob) => {
+    if (!user) return;
+
     setUploading(true);
     try {
-      const fileExt = file.name.split('.').pop();
-      const filePath = `${user.id}/avatar.${fileExt}`;
+      const filePath = `${user.id}/avatar.jpg`;
 
       const { error: uploadError } = await supabase.storage
         .from('avatars')
-        .upload(filePath, file, { upsert: true });
+        .upload(filePath, croppedBlob, { upsert: true, contentType: 'image/jpeg' });
 
       if (uploadError) throw uploadError;
 
@@ -89,6 +105,10 @@ const PersonalSettings = () => {
       toast.error(t('error'), { description: error.message });
     } finally {
       setUploading(false);
+      if (selectedImage) {
+        URL.revokeObjectURL(selectedImage);
+        setSelectedImage(null);
+      }
     }
   };
 
@@ -151,7 +171,7 @@ const PersonalSettings = () => {
                     ref={fileInputRef}
                     type="file"
                     accept="image/*"
-                    onChange={handleAvatarUpload}
+                    onChange={handleFileSelect}
                     className="hidden"
                   />
                 </div>
@@ -276,6 +296,15 @@ const PersonalSettings = () => {
             </CardContent>
           </Card>
         </div>
+
+        {selectedImage && (
+          <ImageCropDialog
+            open={cropDialogOpen}
+            onOpenChange={setCropDialogOpen}
+            imageSrc={selectedImage}
+            onCropComplete={handleCropComplete}
+          />
+        )}
       </Layout>
     </ProtectedRoute>
   );

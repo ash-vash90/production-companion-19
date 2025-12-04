@@ -15,11 +15,12 @@ import { Loader2, ArrowLeft, Package, QrCode, Printer, FileText, CalendarIcon } 
 import { generateQualityCertificate } from '@/services/certificateService';
 import { format } from 'date-fns';
 import QRCodeLib from 'qrcode';
+import { formatStatus } from '@/lib/utils';
 
 const Production = () => {
   const { itemId } = useParams();
   const { user } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [workOrder, setWorkOrder] = useState<any>(null);
@@ -366,7 +367,7 @@ const Production = () => {
                   <CardDescription className="text-sm mt-1">{t('trackItems')}</CardDescription>
                 </div>
                 <Badge className={`${getStatusColor(workOrder.status)} h-8 md:h-10 px-4 text-sm md:text-base font-semibold self-start`}>
-                  {t(workOrder.status as any)}
+                  {formatStatus(workOrder.status, language as 'en' | 'nl')}
                 </Badge>
               </div>
             </CardHeader>
@@ -391,7 +392,7 @@ const Production = () => {
                   </div>
                   <div className="flex items-center gap-2">
                     <Badge className={`${getStatusColor(item.status)} h-6 md:h-8 px-2 md:px-3 text-xs md:text-sm font-medium`}>
-                      {t(item.status as any)}
+                      {formatStatus(item.status, language as 'en' | 'nl')}
                     </Badge>
                      {item.status === 'completed' && (
                       <>

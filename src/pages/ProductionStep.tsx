@@ -28,6 +28,7 @@ interface StepCompletionInfo {
   completed_by_name: string;
   completed_at: string;
   operator_initials: string | null;
+  avatar_url: string | null;
 }
 
 const ProductionStep = () => {
@@ -180,10 +181,10 @@ const ProductionStep = () => {
         const executorIds = [...new Set(completedExecs.map((e: any) => e.executed_by).filter(Boolean))];
         const { data: profiles } = await supabase
           .from('profiles')
-          .select('id, full_name')
+          .select('id, full_name, avatar_url')
           .in('id', executorIds);
         
-        const profileMap = new Map(profiles?.map(p => [p.id, p.full_name]) || []);
+        const profileMap = new Map(profiles?.map(p => [p.id, { name: p.full_name, avatar_url: p.avatar_url }]) || []);
         
         const completionsMap = new Map<number, StepCompletionInfo>();
         completedExecs.forEach((exec: any) => {
@@ -192,11 +193,13 @@ const ProductionStep = () => {
             // Keep the most recent completion for each step
             const existing = completionsMap.get(stepNumber);
             if (!existing || new Date(exec.completed_at) > new Date(existing.completed_at)) {
+              const profile = profileMap.get(exec.executed_by);
               completionsMap.set(stepNumber, {
                 step_number: stepNumber,
-                completed_by_name: profileMap.get(exec.executed_by) || 'Unknown',
+                completed_by_name: profile?.name || 'Unknown',
                 completed_at: exec.completed_at,
                 operator_initials: exec.operator_initials,
+                avatar_url: profile?.avatar_url || null,
               });
             }
           }
@@ -600,6 +603,9 @@ const ProductionStep = () => {
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <Avatar className="h-7 w-7">
+                                  {completion.avatar_url && (
+                                    <AvatarImage src={completion.avatar_url} alt={completion.completed_by_name} />
+                                  )}
                                   <AvatarFallback className="bg-muted text-xs">
                                     {completion.operator_initials || getInitials(completion.completed_by_name)}
                                   </AvatarFallback>
