@@ -36,7 +36,7 @@ export function AppSidebar() {
   const qualityItems = [
     { title: t('qualityCertificates'), url: '/quality-certificates', icon: FileText },
     { title: t('productionReports'), url: '/production-reports', icon: ClipboardList },
-    { title: t('traceability'), url: '/genealogy', icon: Search },
+    { title: t('search'), url: '/search', icon: Search },
   ];
 
   // Only show admin items if user is admin (and not still loading)

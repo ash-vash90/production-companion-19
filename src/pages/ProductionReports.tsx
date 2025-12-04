@@ -248,9 +248,9 @@ const ProductionReports = () => {
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => navigate(`/production/${wo.id}`)}
+                            onClick={() => navigate(`/production-reports/${wo.id}`)}
                           >
-                            {t('viewDetails')}
+                            {t('viewReport')}
                           </Button>
                         </TableCell>
                       </TableRow>
