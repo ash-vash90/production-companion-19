@@ -29,48 +29,68 @@ export function TodaysSchedule() {
   const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchTodaysWorkOrders = async () => {
-      const today = format(new Date(), 'yyyy-MM-dd');
-      
-      // Fetch work orders scheduled for today
-      const { data: woData, error: woError } = await supabase
-        .from('work_orders')
-        .select('id, wo_number, status, product_type, batch_size, scheduled_date')
-        .eq('scheduled_date', today)
-        .neq('status', 'cancelled')
-        .order('wo_number', { ascending: true });
+  const fetchTodaysWorkOrders = async () => {
+    const today = format(new Date(), 'yyyy-MM-dd');
+    
+    // Fetch work orders scheduled for today
+    const { data: woData, error: woError } = await supabase
+      .from('work_orders')
+      .select('id, wo_number, status, product_type, batch_size, scheduled_date')
+      .eq('scheduled_date', today)
+      .neq('status', 'cancelled')
+      .order('wo_number', { ascending: true });
 
-      if (woError) {
-        console.error('Error fetching work orders:', woError);
-        setLoading(false);
-        return;
-      }
-
-      if (!woData || woData.length === 0) {
-        setWorkOrders([]);
-        setLoading(false);
-        return;
-      }
-
-      // Fetch items for these work orders
-      const woIds = woData.map(wo => wo.id);
-      const { data: itemsData } = await supabase
-        .from('work_order_items')
-        .select('id, serial_number, work_order_id')
-        .in('work_order_id', woIds);
-
-      // Merge items with work orders
-      const workOrdersWithItems = woData.map(wo => ({
-        ...wo,
-        items: itemsData?.filter(item => item.work_order_id === wo.id) || [],
-      }));
-
-      setWorkOrders(workOrdersWithItems);
+    if (woError) {
+      console.error('Error fetching work orders:', woError);
       setLoading(false);
-    };
+      return;
+    }
 
+    if (!woData || woData.length === 0) {
+      setWorkOrders([]);
+      setLoading(false);
+      return;
+    }
+
+    // Fetch items for these work orders
+    const woIds = woData.map(wo => wo.id);
+    const { data: itemsData } = await supabase
+      .from('work_order_items')
+      .select('id, serial_number, work_order_id')
+      .in('work_order_id', woIds);
+
+    // Merge items with work orders
+    const workOrdersWithItems = woData.map(wo => ({
+      ...wo,
+      items: itemsData?.filter(item => item.work_order_id === wo.id) || [],
+    }));
+
+    setWorkOrders(workOrdersWithItems);
+    setLoading(false);
+  };
+
+  useEffect(() => {
     fetchTodaysWorkOrders();
+
+    // Real-time subscription for work order changes
+    const channel = supabase
+      .channel('todays-schedule-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'work_orders',
+        },
+        () => {
+          fetchTodaysWorkOrders();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const getStatusVariant = (status: string) => {
