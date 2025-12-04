@@ -123,39 +123,27 @@ export function TodaysSchedule() {
   }
 
   return (
-    <Card>
+    <Card className="flex flex-col">
       <CardHeader className="pb-3">
-        <div className="flex items-center justify-between gap-2">
-          <CardTitle className="flex items-center gap-2 text-base min-w-0">
-            <Calendar className="h-4 w-4 shrink-0" />
-            <span className="truncate">{language === 'nl' ? 'Planning Vandaag' : "Today's Schedule"}</span>
-            {workOrders.length > 0 && (
-              <Badge variant="secondary" className="shrink-0">
-                {workOrders.length}
-              </Badge>
-            )}
-          </CardTitle>
-        </div>
+        <CardTitle className="flex items-center gap-2 text-base min-w-0">
+          <Calendar className="h-4 w-4 shrink-0" />
+          <span className="truncate">{language === 'nl' ? 'Planning Vandaag' : "Today's Schedule"}</span>
+          {workOrders.length > 0 && (
+            <Badge variant="secondary" className="shrink-0">
+              {workOrders.length}
+            </Badge>
+          )}
+        </CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="flex justify-end mb-3">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="text-xs"
-            onClick={() => navigate('/calendar')}
-          >
-            {language === 'nl' ? 'Bekijk kalender' : 'View calendar'} →
-          </Button>
-        </div>
+      <CardContent className="flex-1 flex flex-col">
         {workOrders.length === 0 ? (
-          <div className="text-sm text-muted-foreground py-4 text-center">
+          <div className="text-sm text-muted-foreground py-4 text-center flex-1 flex items-center justify-center">
             {language === 'nl' 
               ? 'Geen werkorders gepland voor vandaag' 
               : 'No work orders scheduled for today'}
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-3 flex-1">
             {workOrders.map((wo) => {
               const productBreakdown = wo.items ? getProductBreakdown(wo.items) : [];
               const breakdownText = formatProductBreakdownText(productBreakdown);
@@ -183,6 +171,17 @@ export function TodaysSchedule() {
             })}
           </div>
         )}
+        <div className="pt-4 mt-auto border-t">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="w-full text-xs"
+            onClick={() => navigate('/calendar')}
+          >
+            <Calendar className="h-3 w-3 mr-2" />
+            {language === 'nl' ? 'Bekijk volledige kalender' : 'View full calendar'}
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );
