@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getProductBreakdown, formatProductBreakdownText, ProductBreakdown } from '@/lib/utils';
-import { ExternalLink, Loader2 } from 'lucide-react';
+import { ExternalLink, Loader2, Plus } from 'lucide-react';
+import { CreateWorkOrderDialog } from '@/components/CreateWorkOrderDialog';
 
 interface WorkOrderWithItems {
   id: string;
@@ -23,6 +25,7 @@ export function ProductionOverview() {
   const { t } = useLanguage();
   const [workOrders, setWorkOrders] = useState<WorkOrderWithItems[]>([]);
   const [loading, setLoading] = useState(true);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   useEffect(() => {
     fetchWorkOrders();
@@ -111,9 +114,8 @@ export function ProductionOverview() {
   if (loading) {
     return (
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>{t('activeWorkOrdersTitle')}</CardTitle>
-          <CardDescription>{t('currentProductionQueue')}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex justify-center py-8">
@@ -125,49 +127,62 @@ export function ProductionOverview() {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{t('activeWorkOrdersTitle')}</CardTitle>
-        <CardDescription>{t('currentProductionQueue')}</CardDescription>
-      </CardHeader>
-      <CardContent>
-        {workOrders.length > 0 ? (
-          <div className="space-y-3">
-            {workOrders.map((wo) => (
-              <div
-                key={wo.id}
-                onClick={() => navigate(`/production/${wo.id}`)}
-                className="flex items-center justify-between rounded-lg border-2 bg-card p-3 transition-all cursor-pointer hover:bg-accent/50 hover:border-primary"
-              >
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-sm font-semibold">{wo.wo_number}</span>
-                    <Badge variant={getStatusBadgeVariant(wo.status)}>
-                      {getStatusLabel(wo.status)}
-                    </Badge>
-                  </div>
-                  <div className="mt-1 text-xs text-muted-foreground">
-                    {wo.productBreakdown.length > 0 
-                      ? formatProductBreakdownText(wo.productBreakdown)
-                      : `${wo.batch_size} items`
-                    }
-                  </div>
-                  {wo.profiles?.full_name && (
-                    <div className="mt-1 text-xs text-muted-foreground">
-                      {t('createdBy')}: {wo.profiles.full_name}
+    <>
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+          <CardTitle>{t('activeWorkOrdersTitle')}</CardTitle>
+          <Button variant="default" size="sm" onClick={() => setDialogOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            {t('createWorkOrder')}
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {workOrders.length > 0 ? (
+            <div className="space-y-3">
+              {workOrders.map((wo) => (
+                <div
+                  key={wo.id}
+                  onClick={() => navigate(`/production/${wo.id}`)}
+                  className="flex items-center justify-between rounded-lg border-2 bg-card p-3 transition-all cursor-pointer hover:bg-accent/50 hover:border-primary"
+                >
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-sm font-semibold">{wo.wo_number}</span>
+                      <Badge variant={getStatusBadgeVariant(wo.status)}>
+                        {getStatusLabel(wo.status)}
+                      </Badge>
                     </div>
-                  )}
+                    <div className="mt-1 text-xs text-muted-foreground">
+                      {wo.productBreakdown.length > 0 
+                        ? formatProductBreakdownText(wo.productBreakdown)
+                        : `${wo.batch_size} items`
+                      }
+                    </div>
+                    {wo.profiles?.full_name && (
+                      <div className="mt-1 text-xs text-muted-foreground">
+                        {t('createdBy')}: {wo.profiles.full_name}
+                      </div>
+                    )}
+                  </div>
+                  <ExternalLink className="h-4 w-4 text-muted-foreground" />
                 </div>
-                <ExternalLink className="h-4 w-4 text-muted-foreground" />
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="py-8 text-center text-sm text-muted-foreground">
-            {t('noActiveWorkOrders')}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+              ))}
+            </div>
+          ) : (
+            <div className="py-8 text-center text-sm text-muted-foreground">
+              {t('noActiveWorkOrders')}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <CreateWorkOrderDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        onSuccess={() => {
+          fetchWorkOrders();
+        }}
+      />
+    </>
   );
 }
