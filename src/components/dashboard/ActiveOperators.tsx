@@ -111,9 +111,6 @@ export function ActiveOperators() {
                 <div className="flex-1 min-w-0">
                   <div className="font-medium text-sm truncate">{colleague.full_name}</div>
                 </div>
-                <Badge variant={getRoleBadgeVariant(colleague.role) as any} className="text-xs shrink-0">
-                  {getRoleLabel(colleague.role)}
-                </Badge>
               </div>
             ))}
           </div>
