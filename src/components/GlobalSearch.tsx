@@ -17,7 +17,11 @@ interface SearchResult {
   status: string;
 }
 
-export function GlobalSearch() {
+interface GlobalSearchProps {
+  onOpenModal?: () => void;
+}
+
+export function GlobalSearch({ onOpenModal }: GlobalSearchProps) {
   const navigate = useNavigate();
   const { t } = useLanguage();
   const [query, setQuery] = useState('');
@@ -37,12 +41,16 @@ export function GlobalSearch() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Keyboard shortcut: Cmd/Ctrl + K
+  // Keyboard shortcut: Cmd/Ctrl + K - opens modal if available
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.key === 'k') {
         event.preventDefault();
-        inputRef.current?.focus();
+        if (onOpenModal) {
+          onOpenModal();
+        } else {
+          inputRef.current?.focus();
+        }
       }
       if (event.key === 'Escape') {
         setShowResults(false);
@@ -51,7 +59,7 @@ export function GlobalSearch() {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [onOpenModal]);
 
   const handleSearch = async (searchQuery: string) => {
     const q = searchQuery.trim().toUpperCase();

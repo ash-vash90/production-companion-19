@@ -411,6 +411,20 @@ export const translations = {
     allCompletedSteps: 'All completed production steps',
     batchMaterials: 'Batch Materials',
     materialsUsedInProduction: 'Materials used in production',
+    
+    // Search Modal
+    searchWorkOrdersSerials: 'Search work orders or serial numbers',
+    results: 'Results',
+    tryDifferentSearch: 'Try a different search term',
+    searchHint: 'Start typing to search',
+    searchByWOorSerial: 'Search by WO number or serial number',
+    navigate: 'Navigate',
+    select: 'Select',
+    close: 'Close',
+    
+    // Theme labels for sidebar
+    light: 'Light',
+    dark: 'Dark',
   },
   nl: {
     // Navigation
@@ -821,6 +835,20 @@ export const translations = {
     allCompletedSteps: 'Alle voltooide productiestappen',
     batchMaterials: 'Batchmaterialen',
     materialsUsedInProduction: 'Materialen gebruikt in productie',
+    
+    // Search Modal
+    searchWorkOrdersSerials: 'Zoek werkorders of serienummers',
+    results: 'Resultaten',
+    tryDifferentSearch: 'Probeer een andere zoekterm',
+    searchHint: 'Begin met typen om te zoeken',
+    searchByWOorSerial: 'Zoek op WO nummer of serienummer',
+    navigate: 'Navigeer',
+    select: 'Selecteer',
+    close: 'Sluiten',
+    
+    // Theme labels for sidebar
+    light: 'Licht',
+    dark: 'Donker',
   },
 };
 
