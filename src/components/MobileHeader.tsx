@@ -1,9 +1,8 @@
 import React from 'react';
-import { Menu, Search, Moon, Sun, Bell } from 'lucide-react';
+import { Menu, Search, Bell, Check, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useSidebar } from '@/components/ui/sidebar';
 import { RhosonicsLogo } from '@/components/RhosonicsLogo';
-import { useTheme } from '@/hooks/useTheme';
 import {
   Popover,
   PopoverContent,
@@ -17,7 +16,6 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { formatDistanceToNow } from 'date-fns';
 import { nl, enUS } from 'date-fns/locale';
-import { Check, Trash2 } from 'lucide-react';
 
 interface MobileHeaderProps {
   onSearchClick: () => void;
@@ -33,14 +31,19 @@ interface Notification {
 }
 
 export function MobileHeader({ onSearchClick }: MobileHeaderProps) {
-  const { toggleSidebar } = useSidebar();
-  const { theme, setTheme } = useTheme();
+  const { toggleSidebar, isMobile } = useSidebar();
   const { user } = useAuth();
   const { language, t } = useLanguage();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [notifOpen, setNotifOpen] = useState(false);
 
   const unreadCount = notifications.filter(n => !n.read).length;
+
+  // Only show on mobile (when sidebar is not visible by default)
+  // On tablet (md), sidebar is visible so we don't need this header
+  if (!isMobile) {
+    return null;
+  }
 
   useEffect(() => {
     if (user) {
@@ -69,16 +72,10 @@ export function MobileHeader({ onSearchClick }: MobileHeaderProps) {
     setNotifications(prev => prev.filter(n => n.id !== id));
   };
 
-  const toggleTheme = () => {
-    if (theme === 'light') setTheme('dark');
-    else if (theme === 'dark') setTheme('system');
-    else setTheme('light');
-  };
-
   const buttonClass = "h-10 w-10 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground";
 
   return (
-    <header className="sticky top-0 z-50 flex lg:hidden h-14 items-center justify-between border-b border-sidebar-border bg-sidebar px-3 gap-2">
+    <header className="sticky top-0 z-50 flex h-14 items-center justify-between border-b border-sidebar-border bg-sidebar px-3 gap-2">
       <div className="flex items-center gap-2">
         <Button
           variant="ghost"
@@ -106,23 +103,6 @@ export function MobileHeader({ onSearchClick }: MobileHeaderProps) {
           aria-label="Search"
         >
           <Search className="h-5 w-5" />
-        </Button>
-        
-        {/* Theme Toggle */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className={buttonClass}
-          onClick={toggleTheme}
-          aria-label="Toggle theme"
-        >
-          {theme === 'dark' ? (
-            <Moon className="h-4 w-4" />
-          ) : theme === 'system' ? (
-            <Sun className="h-4 w-4 opacity-70" />
-          ) : (
-            <Sun className="h-4 w-4" />
-          )}
         </Button>
         
         {/* Notifications */}

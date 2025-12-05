@@ -22,8 +22,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           {/* Mobile Header - visible on mobile/tablet */}
           <MobileHeader onSearchClick={() => setSearchOpen(true)} />
           
-          {/* Desktop Header - hidden on mobile/tablet */}
-          <header className="sticky top-0 z-40 hidden lg:flex h-14 shrink-0 items-center border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+          {/* Desktop Header - hidden on mobile only, visible on tablet+ */}
+          <header className="sticky top-0 z-40 hidden md:flex h-14 shrink-0 items-center border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
             <div className="flex flex-1 items-center justify-center px-3 max-w-2xl mx-auto">
               <GlobalSearch onOpenModal={() => setSearchOpen(true)} />
             </div>
