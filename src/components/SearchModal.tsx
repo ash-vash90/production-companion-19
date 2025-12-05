@@ -155,8 +155,8 @@ export function SearchModal({ open, onOpenChange }: SearchModalProps) {
           <DialogTitle>{t('search')}</DialogTitle>
         </DialogHeader>
         
-        <div className="flex items-center border-b px-4">
-          <Search className="h-5 w-5 text-muted-foreground shrink-0" />
+        <div className="flex items-center border-b border-border bg-muted/30 px-4">
+          <Search className="h-5 w-5 text-primary shrink-0" />
           <Input
             value={query}
             onChange={(e) => {
@@ -166,13 +166,13 @@ export function SearchModal({ open, onOpenChange }: SearchModalProps) {
             }}
             onKeyDown={handleKeyDown}
             placeholder={`${t('searchWorkOrdersSerials')}...`}
-            className="h-14 border-0 focus-visible:ring-0 text-base pl-3"
+            className="h-14 border-0 bg-transparent focus-visible:ring-0 text-base pl-3 placeholder:text-muted-foreground/70"
             autoFocus
           />
           {searching && (
-            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground shrink-0" />
+            <Loader2 className="h-5 w-5 animate-spin text-primary shrink-0" />
           )}
-          <kbd className="hidden sm:inline-flex h-6 items-center gap-1 rounded border bg-muted px-2 font-mono text-xs text-muted-foreground">
+          <kbd className="hidden lg:inline-flex h-6 items-center gap-1 rounded border bg-background px-2 font-mono text-xs text-muted-foreground">
             <Command className="h-3 w-3" />K
           </kbd>
         </div>
@@ -232,18 +232,18 @@ export function SearchModal({ open, onOpenChange }: SearchModalProps) {
           )}
         </div>
 
-        <div className="flex items-center justify-between border-t px-4 py-2 text-xs text-muted-foreground bg-muted/30">
+        <div className="hidden lg:flex items-center justify-between border-t px-4 py-2 text-xs text-muted-foreground bg-muted/30">
           <div className="flex items-center gap-3">
             <span className="flex items-center gap-1">
-              <kbd className="px-1.5 py-0.5 rounded bg-muted border text-[10px]">↑↓</kbd>
+              <kbd className="px-1.5 py-0.5 rounded bg-background border text-[10px]">↑↓</kbd>
               {t('navigate')}
             </span>
             <span className="flex items-center gap-1">
-              <kbd className="px-1.5 py-0.5 rounded bg-muted border text-[10px]">↵</kbd>
+              <kbd className="px-1.5 py-0.5 rounded bg-background border text-[10px]">↵</kbd>
               {t('select')}
             </span>
             <span className="flex items-center gap-1">
-              <kbd className="px-1.5 py-0.5 rounded bg-muted border text-[10px]">esc</kbd>
+              <kbd className="px-1.5 py-0.5 rounded bg-background border text-[10px]">esc</kbd>
               {t('close')}
             </span>
           </div>
