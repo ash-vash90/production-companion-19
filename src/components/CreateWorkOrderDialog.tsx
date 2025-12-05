@@ -166,6 +166,7 @@ export function CreateWorkOrderDialog({ open, onOpenChange, onSuccess, trigger }
               position_in_batch: position,
               status: 'planned',
               assigned_to: user.id,
+              product_type: batch.productType, // Store product type per item
             });
             position++;
           }
