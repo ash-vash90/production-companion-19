@@ -20,6 +20,13 @@ import {
 import { UserProfile } from '@/components/sidebar/UserProfile';
 import { RhosonicsLogo } from '@/components/RhosonicsLogo';
 import { Button } from '@/components/ui/button';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 export function AppSidebar() {
   const navigate = useNavigate();
@@ -30,26 +37,6 @@ export function AppSidebar() {
   const { state, toggleSidebar } = useSidebar();
   
   const isCollapsed = state === 'collapsed';
-
-  const getNextTheme = () => {
-    if (theme === 'light') return 'dark';
-    if (theme === 'dark') return 'system';
-    return 'light';
-  };
-
-  const getThemeIcon = () => {
-    if (theme === 'dark') return Moon;
-    if (theme === 'system') return Monitor;
-    return Sun;
-  };
-
-  const getThemeLabel = () => {
-    if (theme === 'dark') return t('darkMode');
-    if (theme === 'system') return t('systemMode');
-    return t('lightMode');
-  };
-
-  const ThemeIcon = getThemeIcon();
 
   const productionItems = [
     { title: t('dashboard'), url: '/', icon: LayoutDashboard },
@@ -171,47 +158,91 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter className="border-t border-sidebar-border">
-        <SidebarMenu>
-          {/* Theme Toggle */}
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              onClick={() => setTheme(getNextTheme())}
-              tooltip={isCollapsed ? getThemeLabel() : undefined}
-              className="group"
-            >
-              <ThemeIcon className="h-4 w-4" />
-              {!isCollapsed && (
-                <div className="flex items-center justify-between flex-1">
-                  <span className="text-sm">{getThemeLabel()}</span>
-                  <span className="text-xs text-muted-foreground group-hover:text-sidebar-accent-foreground">
-                    → {theme === 'light' ? t('dark') : theme === 'dark' ? t('system') : t('light')}
-                  </span>
-                </div>
-              )}
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          
-          {/* Language Toggle */}
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              onClick={() => setLanguage(language === 'en' ? 'nl' : 'en')}
-              tooltip={isCollapsed ? (language === 'en' ? 'Switch to Nederlands' : 'Switch to English') : undefined}
-              className="group"
-            >
-              <Globe className="h-4 w-4" />
-              {!isCollapsed && (
-                <div className="flex items-center justify-between flex-1">
-                  <span className="text-sm">
-                    {language === 'en' ? 'English' : 'Nederlands'}
-                  </span>
-                  <span className="text-xs text-muted-foreground group-hover:text-sidebar-accent-foreground">
-                    → {language === 'en' ? 'NL' : 'EN'}
-                  </span>
-                </div>
-              )}
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
+        {!isCollapsed && (
+          <div className="px-2 py-2 space-y-2">
+            {/* Theme Select */}
+            <div className="flex items-center gap-2">
+              <div className="w-8 flex justify-center shrink-0">
+                {theme === 'dark' ? (
+                  <Moon className="h-4 w-4 text-sidebar-foreground/70" />
+                ) : theme === 'system' ? (
+                  <Monitor className="h-4 w-4 text-sidebar-foreground/70" />
+                ) : (
+                  <Sun className="h-4 w-4 text-sidebar-foreground/70" />
+                )}
+              </div>
+              <Select value={theme} onValueChange={(value: 'light' | 'dark' | 'system') => setTheme(value)}>
+                <SelectTrigger className="flex-1 h-8 text-xs bg-sidebar-accent border-sidebar-border">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="light" className="text-xs">
+                    <span className="flex items-center gap-2">
+                      <Sun className="h-3.5 w-3.5" />
+                      {t('lightMode')}
+                    </span>
+                  </SelectItem>
+                  <SelectItem value="dark" className="text-xs">
+                    <span className="flex items-center gap-2">
+                      <Moon className="h-3.5 w-3.5" />
+                      {t('darkMode')}
+                    </span>
+                  </SelectItem>
+                  <SelectItem value="system" className="text-xs">
+                    <span className="flex items-center gap-2">
+                      <Monitor className="h-3.5 w-3.5" />
+                      {t('systemMode')}
+                    </span>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {/* Language Select */}
+            <div className="flex items-center gap-2">
+              <div className="w-8 flex justify-center shrink-0">
+                <Globe className="h-4 w-4 text-sidebar-foreground/70" />
+              </div>
+              <Select value={language} onValueChange={(value: 'en' | 'nl') => setLanguage(value)}>
+                <SelectTrigger className="flex-1 h-8 text-xs bg-sidebar-accent border-sidebar-border">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="en" className="text-xs">English</SelectItem>
+                  <SelectItem value="nl" className="text-xs">Nederlands</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        )}
+        
+        {isCollapsed && (
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                onClick={() => setTheme(theme === 'light' ? 'dark' : theme === 'dark' ? 'system' : 'light')}
+                tooltip={t('theme')}
+              >
+                {theme === 'dark' ? (
+                  <Moon className="h-4 w-4" />
+                ) : theme === 'system' ? (
+                  <Monitor className="h-4 w-4" />
+                ) : (
+                  <Sun className="h-4 w-4" />
+                )}
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                onClick={() => setLanguage(language === 'en' ? 'nl' : 'en')}
+                tooltip={language === 'en' ? 'Nederlands' : 'English'}
+              >
+                <Globe className="h-4 w-4" />
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        )}
+        
         <UserProfile />
       </SidebarFooter>
     </Sidebar>

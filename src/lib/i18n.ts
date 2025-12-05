@@ -425,6 +425,24 @@ export const translations = {
     // Theme labels for sidebar
     light: 'Light',
     dark: 'Dark',
+    
+    // Work Order Filters
+    allCustomers: 'All Customers',
+    noCustomer: 'No Customer',
+    age: 'Age',
+    allAges: 'All Ages',
+    today: 'Today',
+    thisWeek: 'This Week',
+    thisMonth: 'This Month',
+    olderThan30Days: 'Older than 30 days',
+    deliveryMonth: 'Delivery Month',
+    allDeliveryMonths: 'All Delivery Months',
+    createdMonth: 'Created Month',
+    allCreatedMonths: 'All Created Months',
+    allSizes: 'All Sizes',
+    groupBy: 'Group By',
+    noGrouping: 'No Grouping',
+    overdue: 'Overdue - past delivery date',
   },
   nl: {
     // Navigation
@@ -849,6 +867,24 @@ export const translations = {
     // Theme labels for sidebar
     light: 'Licht',
     dark: 'Donker',
+    
+    // Work Order Filters
+    allCustomers: 'Alle Klanten',
+    noCustomer: 'Geen Klant',
+    age: 'Ouderdom',
+    allAges: 'Alle Ouderdommen',
+    today: 'Vandaag',
+    thisWeek: 'Deze Week',
+    thisMonth: 'Deze Maand',
+    olderThan30Days: 'Ouder dan 30 dagen',
+    deliveryMonth: 'Leveringsmaand',
+    allDeliveryMonths: 'Alle Leveringsmaanden',
+    createdMonth: 'Aanmaakmaand',
+    allCreatedMonths: 'Alle Aanmaakmaanden',
+    allSizes: 'Alle Groottes',
+    groupBy: 'Groeperen Op',
+    noGrouping: 'Geen Groepering',
+    overdue: 'Achterstallig - voorbij leveringsdatum',
   },
 };
 
