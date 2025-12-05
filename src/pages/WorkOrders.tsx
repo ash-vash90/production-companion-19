@@ -11,14 +11,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
-import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { CreateWorkOrderDialog } from '@/components/CreateWorkOrderDialog';
+import { WorkOrderFilters, FilterState } from '@/components/workorders/WorkOrderFilters';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { getProductBreakdown, formatProductBreakdownText, ProductBreakdown, formatDate } from '@/lib/utils';
-import { Loader2, Plus, Package, Filter, Eye, AlertTriangle, ChevronDown, ChevronRight, LayoutGrid, List } from 'lucide-react';
-import { format, differenceInDays, parseISO, startOfMonth, isBefore, isAfter } from 'date-fns';
+import { getProductBreakdown, ProductBreakdown, formatDate } from '@/lib/utils';
+import { Loader2, Plus, Package, Filter, Eye, AlertTriangle, ChevronDown, ChevronRight, Layers } from 'lucide-react';
+import { format, differenceInDays, parseISO, isBefore } from 'date-fns';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 interface WorkOrderWithItems {
@@ -52,14 +52,16 @@ const WorkOrders = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   
   // Filters
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [productFilter, setProductFilter] = useState<string>('all');
-  const [customerFilter, setCustomerFilter] = useState<string>('all');
-  const [ageFilter, setAgeFilter] = useState<string>('all');
-  const [deliveryMonthFilter, setDeliveryMonthFilter] = useState<string>('all');
-  const [createdMonthFilter, setCreatedMonthFilter] = useState<string>('all');
-  const [batchSizeFilter, setBatchSizeFilter] = useState<string>('all');
+  const [filters, setFilters] = useState<FilterState>({
+    searchTerm: '',
+    statusFilter: 'all',
+    productFilter: 'all',
+    customerFilter: 'all',
+    ageFilter: 'all',
+    deliveryMonthFilter: 'all',
+    createdMonthFilter: 'all',
+    batchSizeFilter: 'all',
+  });
   
   // Grouping
   const [groupBy, setGroupBy] = useState<GroupByOption>('none');
@@ -124,12 +126,6 @@ const WorkOrders = () => {
       }));
 
       setWorkOrders(enrichedData as WorkOrderWithItems[]);
-      
-      // Expand all groups by default
-      if (groupBy !== 'none') {
-        const groups = getGroupKeys(enrichedData as WorkOrderWithItems[], groupBy);
-        setExpandedGroups(new Set(groups));
-      }
     } catch (error) {
       console.error('Error fetching work orders:', error);
       toast.error(t('error'), { description: t('failedLoadWorkOrders') });
@@ -166,8 +162,8 @@ const WorkOrders = () => {
   const filteredOrders = useMemo(() => {
     let filtered = [...workOrders];
 
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
+    if (filters.searchTerm) {
+      const term = filters.searchTerm.toLowerCase();
       filtered = filtered.filter(wo =>
         wo.wo_number.toLowerCase().includes(term) ||
         wo.product_type.toLowerCase().includes(term) ||
@@ -175,24 +171,24 @@ const WorkOrders = () => {
       );
     }
 
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter(wo => wo.status === statusFilter);
+    if (filters.statusFilter !== 'all') {
+      filtered = filtered.filter(wo => wo.status === filters.statusFilter);
     }
 
-    if (productFilter !== 'all') {
-      filtered = filtered.filter(wo => wo.product_type === productFilter);
+    if (filters.productFilter !== 'all') {
+      filtered = filtered.filter(wo => wo.product_type === filters.productFilter);
     }
 
-    if (customerFilter !== 'all') {
-      filtered = filtered.filter(wo => wo.customer_name === customerFilter);
+    if (filters.customerFilter !== 'all') {
+      filtered = filtered.filter(wo => wo.customer_name === filters.customerFilter);
     }
 
-    if (ageFilter !== 'all') {
+    if (filters.ageFilter !== 'all') {
       const now = new Date();
       filtered = filtered.filter(wo => {
         const createdDate = parseISO(wo.created_at);
         const ageDays = differenceInDays(now, createdDate);
-        switch (ageFilter) {
+        switch (filters.ageFilter) {
           case 'today': return ageDays === 0;
           case 'week': return ageDays <= 7;
           case 'month': return ageDays <= 30;
@@ -202,22 +198,22 @@ const WorkOrders = () => {
       });
     }
 
-    if (deliveryMonthFilter !== 'all') {
+    if (filters.deliveryMonthFilter !== 'all') {
       filtered = filtered.filter(wo => {
         if (!wo.scheduled_date) return false;
-        return format(parseISO(wo.scheduled_date), 'yyyy-MM') === deliveryMonthFilter;
+        return format(parseISO(wo.scheduled_date), 'yyyy-MM') === filters.deliveryMonthFilter;
       });
     }
 
-    if (createdMonthFilter !== 'all') {
+    if (filters.createdMonthFilter !== 'all') {
       filtered = filtered.filter(wo => {
-        return format(parseISO(wo.created_at), 'yyyy-MM') === createdMonthFilter;
+        return format(parseISO(wo.created_at), 'yyyy-MM') === filters.createdMonthFilter;
       });
     }
 
-    if (batchSizeFilter !== 'all') {
+    if (filters.batchSizeFilter !== 'all') {
       filtered = filtered.filter(wo => {
-        switch (batchSizeFilter) {
+        switch (filters.batchSizeFilter) {
           case 'small': return wo.batch_size <= 5;
           case 'medium': return wo.batch_size > 5 && wo.batch_size <= 20;
           case 'large': return wo.batch_size > 20;
@@ -227,7 +223,7 @@ const WorkOrders = () => {
     }
 
     return filtered;
-  }, [searchTerm, statusFilter, productFilter, customerFilter, ageFilter, deliveryMonthFilter, createdMonthFilter, batchSizeFilter, workOrders]);
+  }, [filters, workOrders]);
 
   // Grouping logic
   const getGroupKey = (wo: WorkOrderWithItems, groupOption: GroupByOption): string => {
@@ -242,12 +238,6 @@ const WorkOrders = () => {
       case 'customer': return wo.customer_name || 'no-customer';
       default: return 'all';
     }
-  };
-
-  const getGroupKeys = (orders: WorkOrderWithItems[], groupOption: GroupByOption): string[] => {
-    const keys = new Set<string>();
-    orders.forEach(wo => keys.add(getGroupKey(wo, groupOption)));
-    return Array.from(keys).sort();
   };
 
   const getGroupLabel = (key: string, groupOption: GroupByOption): string => {
@@ -284,6 +274,13 @@ const WorkOrders = () => {
     return groups;
   }, [filteredOrders, groupBy]);
 
+  // Expand all groups when groupBy changes
+  useEffect(() => {
+    if (groupBy !== 'none') {
+      setExpandedGroups(new Set(Object.keys(groupedOrders)));
+    }
+  }, [groupBy, groupedOrders]);
+
   const toggleGroup = (key: string) => {
     const newExpanded = new Set(expandedGroups);
     if (newExpanded.has(key)) {
@@ -309,21 +306,6 @@ const WorkOrders = () => {
     };
     return variants[status] || 'secondary';
   };
-
-  const clearAllFilters = () => {
-    setSearchTerm('');
-    setStatusFilter('all');
-    setProductFilter('all');
-    setCustomerFilter('all');
-    setAgeFilter('all');
-    setDeliveryMonthFilter('all');
-    setCreatedMonthFilter('all');
-    setBatchSizeFilter('all');
-  };
-
-  const hasActiveFilters = searchTerm || statusFilter !== 'all' || productFilter !== 'all' || 
-    customerFilter !== 'all' || ageFilter !== 'all' || deliveryMonthFilter !== 'all' || 
-    createdMonthFilter !== 'all' || batchSizeFilter !== 'all';
 
   const renderWorkOrderCard = (wo: WorkOrderWithItems) => {
     const overdue = isOverdue(wo);
@@ -488,142 +470,34 @@ const WorkOrders = () => {
             }
           />
 
-          {/* Enhanced Filter Bar */}
-          <Card className="shadow-sm">
-            <CardContent className="pt-4 pb-4">
-              <div className="space-y-3">
-                {/* Row 1: Search + Primary Filters */}
-                <div className="grid gap-2 grid-cols-2 md:grid-cols-4 lg:grid-cols-6">
-                  <div className="col-span-2">
-                    <Input
-                      placeholder={t('searchWorkOrders')}
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full h-9 text-sm"
-                    />
-                  </div>
-                  <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger className="h-9 text-sm">
-                      <SelectValue placeholder={t('status')} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">{t('allStatuses')}</SelectItem>
-                      <SelectItem value="planned">{t('planned')}</SelectItem>
-                      <SelectItem value="in_progress">{t('inProgressStatus')}</SelectItem>
-                      <SelectItem value="completed">{t('completed')}</SelectItem>
-                      <SelectItem value="on_hold">{t('onHold')}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Select value={productFilter} onValueChange={setProductFilter}>
-                    <SelectTrigger className="h-9 text-sm">
-                      <SelectValue placeholder={t('productType')} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">{t('allProducts')}</SelectItem>
-                      <SelectItem value="SDM_ECO">SDM ECO</SelectItem>
-                      <SelectItem value="SENSOR">Sensor</SelectItem>
-                      <SelectItem value="MLA">MLA</SelectItem>
-                      <SelectItem value="HMI">HMI</SelectItem>
-                      <SelectItem value="TRANSMITTER">Transmitter</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Select value={customerFilter} onValueChange={setCustomerFilter}>
-                    <SelectTrigger className="h-9 text-sm">
-                      <SelectValue placeholder={t('customer')} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">{t('allCustomers')}</SelectItem>
-                      {customers.map(customer => (
-                        <SelectItem key={customer} value={customer!}>{customer}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Select value={ageFilter} onValueChange={setAgeFilter}>
-                    <SelectTrigger className="h-9 text-sm">
-                      <SelectValue placeholder={t('age')} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">{t('allAges')}</SelectItem>
-                      <SelectItem value="today">{t('today')}</SelectItem>
-                      <SelectItem value="week">{t('thisWeek')}</SelectItem>
-                      <SelectItem value="month">{t('thisMonth')}</SelectItem>
-                      <SelectItem value="older">{t('olderThan30Days')}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Row 2: Date Filters + Batch Size + Grouping */}
-                <div className="grid gap-2 grid-cols-2 md:grid-cols-4 lg:grid-cols-6">
-                  <Select value={deliveryMonthFilter} onValueChange={setDeliveryMonthFilter}>
-                    <SelectTrigger className="h-9 text-sm">
-                      <SelectValue placeholder={t('deliveryMonth')} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">{t('allDeliveryMonths')}</SelectItem>
-                      {deliveryMonths.map(month => (
-                        <SelectItem key={month} value={month}>
-                          {format(parseISO(`${month}-01`), 'MMM yyyy')}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Select value={createdMonthFilter} onValueChange={setCreatedMonthFilter}>
-                    <SelectTrigger className="h-9 text-sm">
-                      <SelectValue placeholder={t('createdMonth')} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">{t('allCreatedMonths')}</SelectItem>
-                      {createdMonths.map(month => (
-                        <SelectItem key={month} value={month}>
-                          {format(parseISO(`${month}-01`), 'MMM yyyy')}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Select value={batchSizeFilter} onValueChange={setBatchSizeFilter}>
-                    <SelectTrigger className="h-9 text-sm">
-                      <SelectValue placeholder={t('batchSize')} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">{t('allSizes')}</SelectItem>
-                      <SelectItem value="small">1-5 {t('items')}</SelectItem>
-                      <SelectItem value="medium">6-20 {t('items')}</SelectItem>
-                      <SelectItem value="large">20+ {t('items')}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Select value={groupBy} onValueChange={(v) => {
-                    setGroupBy(v as GroupByOption);
-                    if (v !== 'none') {
-                      const groups = getGroupKeys(filteredOrders, v as GroupByOption);
-                      setExpandedGroups(new Set(groups));
-                    }
-                  }}>
-                    <SelectTrigger className="h-9 text-sm">
-                      <SelectValue placeholder={t('groupBy')} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">{t('noGrouping')}</SelectItem>
-                      <SelectItem value="status">{t('status')}</SelectItem>
-                      <SelectItem value="deliveryMonth">{t('deliveryMonth')}</SelectItem>
-                      <SelectItem value="createdMonth">{t('createdMonth')}</SelectItem>
-                      <SelectItem value="batchSize">{t('batchSize')}</SelectItem>
-                      <SelectItem value="customer">{t('customer')}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {hasActiveFilters && (
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={clearAllFilters}
-                      className="h-9 text-xs col-span-2 md:col-span-1"
-                    >
-                      {t('clearFilters')}
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          {/* Filters and Grouping Bar */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <WorkOrderFilters
+              filters={filters}
+              onFiltersChange={setFilters}
+              customers={customers}
+              deliveryMonths={deliveryMonths}
+              createdMonths={createdMonths}
+            />
+            
+            {/* Grouping Select */}
+            <div className="flex items-center gap-2">
+              <Layers className="h-4 w-4 text-muted-foreground" />
+              <Select value={groupBy} onValueChange={(v) => setGroupBy(v as GroupByOption)}>
+                <SelectTrigger className="h-9 w-[160px] text-sm">
+                  <SelectValue placeholder={t('groupBy')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">{t('noGrouping')}</SelectItem>
+                  <SelectItem value="status">{t('status')}</SelectItem>
+                  <SelectItem value="deliveryMonth">{t('deliveryMonth')}</SelectItem>
+                  <SelectItem value="createdMonth">{t('createdMonth')}</SelectItem>
+                  <SelectItem value="batchSize">{t('batchSize')}</SelectItem>
+                  <SelectItem value="customer">{t('customer')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
 
           {loading ? (
             <div className="flex justify-center py-12">
@@ -648,7 +522,16 @@ const WorkOrders = () => {
                   <Filter className="h-14 w-14 mx-auto mb-6 text-muted-foreground/50" />
                   <h3 className="text-lg font-semibold mb-3">{t('noMatchingOrders')}</h3>
                   <p className="text-sm text-muted-foreground mb-6">{t('tryDifferentFilters')}</p>
-                  <Button onClick={clearAllFilters} variant="outline" size="default">
+                  <Button onClick={() => setFilters({
+                    searchTerm: '',
+                    statusFilter: 'all',
+                    productFilter: 'all',
+                    customerFilter: 'all',
+                    ageFilter: 'all',
+                    deliveryMonthFilter: 'all',
+                    createdMonthFilter: 'all',
+                    batchSizeFilter: 'all',
+                  })} variant="outline" size="default">
                     {t('clearFilters')}
                   </Button>
                 </CardContent>
@@ -679,7 +562,7 @@ const WorkOrders = () => {
                             {getGroupLabel(groupKey, groupBy)}
                           </CardTitle>
                           <Badge variant="secondary" className="text-xs">
-                            {orders.length} {orders.length === 1 ? t('workOrder') : t('workOrders').toLowerCase()}
+                            {orders.length}
                           </Badge>
                         </div>
                       </CardHeader>
