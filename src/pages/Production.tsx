@@ -71,18 +71,19 @@ const Production = () => {
     }
   };
 
-  const handlePrintLabel = async (serialNumber: string, operatorInitials?: string) => {
+  const handlePrintLabel = async (serialNumber: string, operatorInitials?: string, itemProductType?: string) => {
     const now = new Date();
     const year = now.getFullYear();
     const month = now.toLocaleString('en', { month: 'short' }).toUpperCase();
     const day = String(now.getDate()).padStart(2, '0');
     const dateStr = `${year} / ${month} / ${day}`;
+    const productType = itemProductType || workOrder?.product_type || '';
 
     // Generate QR code containing serial number and work order info
     const qrData = JSON.stringify({
       serial: serialNumber,
       wo: workOrder?.wo_number,
-      product: workOrder?.product_type,
+      product: productType,
       date: now.toISOString().split('T')[0]
     });
     const qrCodeDataUrl = await QRCodeLib.toDataURL(qrData, { width: 120, margin: 1 });
@@ -175,7 +176,7 @@ const Production = () => {
           <body>
             <div class="label">
               <div class="date">${dateStr}</div>
-              <div class="product">${workOrder?.product_type || ''}</div>
+              <div class="product">${productType}</div>
               <div class="serial">${serialNumber}</div>
               <div class="codes-container">
                 <img src="${qrCodeDataUrl}" alt="QR Code" class="qr-code" />
@@ -383,10 +384,10 @@ const Production = () => {
                     <div className="flex flex-col items-center justify-center h-10 w-10 md:h-12 md:w-12 rounded-lg bg-primary text-primary-foreground font-bold text-base md:text-lg shadow-sm">
                       {item.position_in_batch}
                     </div>
-                    <div>
+                  <div>
                       <p className="font-data text-sm md:text-base font-semibold">{item.serial_number}</p>
                       <p className="text-xs md:text-sm text-muted-foreground font-data">
-                        {t('step')} {item.current_step}
+                        {item.product_type || workOrder.product_type} • {t('step')} {item.current_step}
                       </p>
                     </div>
                   </div>
@@ -402,7 +403,7 @@ const Production = () => {
                           className="h-8 w-8 md:h-10 md:w-10"
                           onClick={(e) => {
                             e.stopPropagation();
-                            handlePrintLabel(item.serial_number, item.operator_initials);
+                            handlePrintLabel(item.serial_number, item.operator_initials, item.product_type);
                           }}
                         >
                           <Printer className="h-4 w-4 md:h-5 md:w-5" />
@@ -418,7 +419,7 @@ const Production = () => {
                         </Button>
                       </>
                      )}
-                     {workOrder.product_type === 'SENSOR' && item.status === 'in_progress' && (
+                     {(item.product_type === 'SENSOR' || (!item.product_type && workOrder.product_type === 'SENSOR')) && item.status === 'in_progress' && (
                       <Button
                         size="sm"
                         variant="outline"

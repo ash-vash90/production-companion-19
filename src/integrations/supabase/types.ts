@@ -688,6 +688,7 @@ export type Database = {
             | Database["public"]["Enums"]["operator_initials"]
             | null
           position_in_batch: number
+          product_type: string | null
           quality_approved: boolean
           serial_number: string
           status: Database["public"]["Enums"]["work_order_status"]
@@ -708,6 +709,7 @@ export type Database = {
             | Database["public"]["Enums"]["operator_initials"]
             | null
           position_in_batch: number
+          product_type?: string | null
           quality_approved?: boolean
           serial_number: string
           status?: Database["public"]["Enums"]["work_order_status"]
@@ -728,6 +730,7 @@ export type Database = {
             | Database["public"]["Enums"]["operator_initials"]
             | null
           position_in_batch?: number
+          product_type?: string | null
           quality_approved?: boolean
           serial_number?: string
           status?: Database["public"]["Enums"]["work_order_status"]

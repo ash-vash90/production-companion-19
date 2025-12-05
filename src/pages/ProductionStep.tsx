@@ -138,12 +138,39 @@ const ProductionStep = () => {
       
       setWorkOrder(woData);
 
-      // Fetch production steps for this product type
+      // Fetch production steps for this item's product type (or fallback to work order product type)
+      const itemProductType = (itemData.product_type || woData.product_type) as 'SDM_ECO' | 'SENSOR' | 'MLA' | 'HMI' | 'TRANSMITTER';
       const { data: stepsData, error: stepsError } = await supabase
         .from('production_steps')
         .select('*')
-        .eq('product_type', woData.product_type)
+        .eq('product_type', itemProductType)
         .order('sort_order', { ascending: true });
+      
+      // For SDM_ECO items, check if all linked sub-assemblies are completed
+      if (itemProductType === 'SDM_ECO') {
+        const { data: subAssemblies } = await supabase
+          .from('sub_assemblies')
+          .select('child_item_id')
+          .eq('parent_item_id', itemId);
+        
+        if (subAssemblies && subAssemblies.length > 0) {
+          const childIds = subAssemblies.map(sa => sa.child_item_id);
+          const { data: childItems } = await supabase
+            .from('work_order_items')
+            .select('id, serial_number, status, product_type')
+            .in('id', childIds);
+          
+          const incompleteComponents = childItems?.filter(item => item.status !== 'completed') || [];
+          if (incompleteComponents.length > 0) {
+            const componentList = incompleteComponents.map(c => `${c.serial_number} (${c.product_type})`).join(', ');
+            toast.error(t('dependencyNotMet') || 'Dependencies not met', { 
+              description: `Complete these components first: ${componentList}` 
+            });
+            navigate(`/production/${itemData.work_order_id}`);
+            return;
+          }
+        }
+      }
 
       if (stepsError) throw stepsError;
       setProductionSteps(stepsData || []);
@@ -312,7 +339,7 @@ const ProductionStep = () => {
         step_number: item.current_step,
         step_name: currentStep.title_en,
         work_order_id: item.work_order_id,
-        product_type: workOrder.product_type,
+        product_type: item.product_type || workOrder.product_type,
       });
 
       // If all steps completed, trigger work order completion webhook and navigate
@@ -320,7 +347,7 @@ const ProductionStep = () => {
         await triggerWebhook('work_order_item_completed', {
           serial_number: item.serial_number,
           work_order_id: item.work_order_id,
-          product_type: workOrder.product_type,
+          product_type: item.product_type || workOrder.product_type,
         });
 
         // Check if all items in the batch are completed
@@ -426,7 +453,7 @@ const ProductionStep = () => {
             <div className="space-y-1">
               <h1 className="text-3xl md:text-4xl font-bold tracking-tight font-data">{item.serial_number}</h1>
               <p className="text-base md:text-lg text-muted-foreground font-data">
-                {workOrder.product_type} • {t('step')} {item.current_step} {t('of')} {productionSteps.length}
+                {item.product_type || workOrder.product_type} • {t('step')} {item.current_step} {t('of')} {productionSteps.length}
               </p>
             </div>
           </div>
