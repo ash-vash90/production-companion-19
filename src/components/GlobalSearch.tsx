@@ -161,7 +161,7 @@ export function GlobalSearch({ onOpenModal }: GlobalSearchProps) {
             handleSearch(val);
           }}
           onFocus={() => query.length >= 2 && setShowResults(true)}
-          placeholder={`${t('search')}... (⌘K)`}
+          placeholder={t('search')}
           className="h-9 pl-9 pr-9 bg-muted/50 border-border"
         />
         {query && (
