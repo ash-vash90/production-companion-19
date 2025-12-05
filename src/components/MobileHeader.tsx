@@ -39,17 +39,11 @@ export function MobileHeader({ onSearchClick }: MobileHeaderProps) {
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
-  // Only show on mobile (when sidebar is not visible by default)
-  // On tablet (md), sidebar is visible so we don't need this header
-  if (!isMobile) {
-    return null;
-  }
-
   useEffect(() => {
-    if (user) {
+    if (user && isMobile) {
       fetchNotifications();
     }
-  }, [user]);
+  }, [user, isMobile]);
 
   const fetchNotifications = async () => {
     if (!user) return;
@@ -71,6 +65,12 @@ export function MobileHeader({ onSearchClick }: MobileHeaderProps) {
     await supabase.from('notifications').delete().eq('id', id);
     setNotifications(prev => prev.filter(n => n.id !== id));
   };
+
+  // Only show on mobile (when sidebar is not visible by default)
+  // On tablet (md), sidebar is visible so we don't need this header
+  if (!isMobile) {
+    return null;
+  }
 
   const buttonClass = "h-10 w-10 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground";
 
