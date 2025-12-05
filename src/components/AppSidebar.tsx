@@ -1,8 +1,9 @@
-import { LayoutDashboard, Package, Settings, CalendarDays, BarChart3, Users, FileText, ClipboardList, PanelLeft, Globe } from 'lucide-react';
+import { LayoutDashboard, Package, Settings, CalendarDays, BarChart3, Users, FileText, ClipboardList, PanelLeft, Globe, Moon, Sun, Monitor } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useUserProfile } from '@/contexts/UserProfileContext';
+import { useTheme } from '@/hooks/useTheme';
 import {
   Sidebar,
   SidebarContent,
@@ -25,9 +26,30 @@ export function AppSidebar() {
   const location = useLocation();
   const { t, language, setLanguage } = useLanguage();
   const { isAdmin, loading } = useUserProfile();
+  const { theme, setTheme } = useTheme();
   const { state, toggleSidebar } = useSidebar();
   
   const isCollapsed = state === 'collapsed';
+
+  const getNextTheme = () => {
+    if (theme === 'light') return 'dark';
+    if (theme === 'dark') return 'system';
+    return 'light';
+  };
+
+  const getThemeIcon = () => {
+    if (theme === 'dark') return Moon;
+    if (theme === 'system') return Monitor;
+    return Sun;
+  };
+
+  const getThemeLabel = () => {
+    if (theme === 'dark') return t('darkMode');
+    if (theme === 'system') return t('systemMode');
+    return t('lightMode');
+  };
+
+  const ThemeIcon = getThemeIcon();
 
   const productionItems = [
     { title: t('dashboard'), url: '/', icon: LayoutDashboard },
@@ -150,6 +172,26 @@ export function AppSidebar() {
 
       <SidebarFooter className="border-t border-sidebar-border">
         <SidebarMenu>
+          {/* Theme Toggle */}
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              onClick={() => setTheme(getNextTheme())}
+              tooltip={isCollapsed ? getThemeLabel() : undefined}
+              className="group"
+            >
+              <ThemeIcon className="h-4 w-4" />
+              {!isCollapsed && (
+                <div className="flex items-center justify-between flex-1">
+                  <span className="text-sm">{getThemeLabel()}</span>
+                  <span className="text-xs text-muted-foreground group-hover:text-sidebar-accent-foreground">
+                    → {theme === 'light' ? t('dark') : theme === 'dark' ? t('system') : t('light')}
+                  </span>
+                </div>
+              )}
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          
+          {/* Language Toggle */}
           <SidebarMenuItem>
             <SidebarMenuButton
               onClick={() => setLanguage(language === 'en' ? 'nl' : 'en')}
