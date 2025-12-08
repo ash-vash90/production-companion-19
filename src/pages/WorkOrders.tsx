@@ -362,7 +362,7 @@ const WorkOrders = () => {
     return (
       <Card
         key={wo.id}
-        className={`hover:shadow-md transition-all border flex flex-col ${overdue ? 'border-destructive/50 bg-destructive/5' : ''}`}
+        className={`hover:shadow-md transition-all border flex flex-col max-w-xs ${overdue ? 'border-destructive/50 bg-destructive/5' : ''}`}
       >
         <CardHeader className="pb-2 p-3 lg:p-4">
           <div className="flex items-center justify-between mb-2 gap-2">
@@ -579,7 +579,7 @@ const WorkOrders = () => {
               </Card>
             )
           ) : groupBy === 'none' ? (
-            <div className="grid gap-2.5 lg:gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+            <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
               {filteredOrders.map(renderWorkOrderCard)}
             </div>
           ) : (
@@ -610,7 +610,7 @@ const WorkOrders = () => {
                     </CollapsibleTrigger>
                     <CollapsibleContent>
                       <CardContent className="pt-0 pb-3">
-                        <div className="grid gap-2.5 lg:gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+                        <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
                           {orders.map(renderWorkOrderCard)}
                         </div>
                       </CardContent>
