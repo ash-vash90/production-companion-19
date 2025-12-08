@@ -17,6 +17,7 @@ import ChecklistDialog from '@/components/production/ChecklistDialog';
 import BatchScanDialog from '@/components/production/BatchScanDialog';
 import ValidationHistoryDialog from '@/components/production/ValidationHistoryDialog';
 import StepDetailDialog from '@/components/production/StepDetailDialog';
+import StepEditDialog from '@/components/production/StepEditDialog';
 import { WorkOrderNotes } from '@/components/production/WorkOrderNotes';
 import { generateQualityCertificate } from '@/services/certificateService';
 
@@ -53,7 +54,9 @@ const ProductionStep = () => {
   const [showBatchScanDialog, setShowBatchScanDialog] = useState(false);
   const [showValidationHistory, setShowValidationHistory] = useState(false);
   const [showStepDetail, setShowStepDetail] = useState(false);
+  const [showStepEdit, setShowStepEdit] = useState(false);
   const [viewingStepNumber, setViewingStepNumber] = useState<number | null>(null);
+  const [editingStepNumber, setEditingStepNumber] = useState<number | null>(null);
   const [failedSteps, setFailedSteps] = useState<Set<number>>(new Set());
   const [stepCompletions, setStepCompletions] = useState<Map<number, StepCompletionInfo>>(new Map());
   const [presentUsers, setPresentUsers] = useState<PresenceUser[]>([]);
@@ -726,6 +729,25 @@ const ProductionStep = () => {
           workOrderItemId={item.id}
           stepNumber={viewingStepNumber}
           productType={item.product_type || workOrder.product_type}
+          onEdit={() => {
+            setEditingStepNumber(viewingStepNumber);
+            setShowStepEdit(true);
+          }}
+        />
+      )}
+
+      {/* Step edit dialog for editing completed steps (admin only) */}
+      {editingStepNumber && (
+        <StepEditDialog
+          open={showStepEdit}
+          onOpenChange={(open) => {
+            setShowStepEdit(open);
+            if (!open) setEditingStepNumber(null);
+          }}
+          workOrderItemId={item.id}
+          stepNumber={editingStepNumber}
+          productType={item.product_type || workOrder.product_type}
+          onSave={fetchData}
         />
       )}
     </Layout>
