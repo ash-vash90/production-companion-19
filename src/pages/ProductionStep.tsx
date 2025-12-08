@@ -16,6 +16,7 @@ import ChecklistDialog from '@/components/production/ChecklistDialog';
 import BatchScanDialog from '@/components/production/BatchScanDialog';
 import ValidationHistoryDialog from '@/components/production/ValidationHistoryDialog';
 import { generateQualityCertificate } from '@/services/certificateService';
+import { Comments } from '@/components/Comments';
 
 interface PresenceUser {
   id: string;
@@ -622,6 +623,9 @@ const ProductionStep = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Work Order Item Comments */}
+        {item && <Comments entityType="work_order_item" entityId={item.id} />}
       </div>
 
       {stepExecution && currentStep && (

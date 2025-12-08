@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Loader2, ArrowLeft, Package, QrCode, Printer, FileText } from 'lucide-react';
 import { generateQualityCertificate } from '@/services/certificateService';
+import { Comments } from '@/components/Comments';
 import QRCodeLib from 'qrcode';
 
 const Production = () => {
@@ -248,15 +249,15 @@ const Production = () => {
     }
   };
 
-  const getStatusColor = (status: string) => {
-    const colors: Record<string, string> = {
-      planned: 'bg-secondary text-secondary-foreground',
-      in_progress: 'bg-primary text-primary-foreground',
-      completed: 'bg-accent text-accent-foreground',
-      on_hold: 'bg-muted text-muted-foreground',
-      cancelled: 'bg-destructive text-destructive-foreground',
+  const getStatusVariant = (status: string): 'default' | 'secondary' | 'success' | 'warning' | 'info' | 'destructive' | 'outline' => {
+    const variants: Record<string, 'default' | 'secondary' | 'success' | 'warning' | 'info' | 'destructive' | 'outline'> = {
+      planned: 'secondary',
+      in_progress: 'info',
+      completed: 'success',
+      on_hold: 'warning',
+      cancelled: 'destructive',
     };
-    return colors[status] || 'bg-muted';
+    return variants[status] || 'secondary';
   };
 
   if (!user) return null;
@@ -312,7 +313,7 @@ const Production = () => {
                   <CardTitle className="text-3xl">{t('production')} {t('items')}</CardTitle>
                   <CardDescription className="text-lg mt-2">{t('trackItems')}</CardDescription>
                 </div>
-                <Badge className={`${getStatusColor(workOrder.status)} text-white h-12 px-6 text-lg font-semibold self-start`}>
+                <Badge variant={getStatusVariant(workOrder.status)} className="h-12 md:h-10 px-6 md:px-5 text-lg md:text-base font-semibold self-start">
                   {t(workOrder.status as any)}
                 </Badge>
               </div>
@@ -337,7 +338,7 @@ const Production = () => {
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <Badge className={`${getStatusColor(item.status)} text-white h-11 px-5 text-base font-semibold`}>
+                    <Badge variant={getStatusVariant(item.status)} className="h-11 md:h-10 px-5 md:px-4 text-base md:text-sm font-semibold">
                       {t(item.status as any)}
                     </Badge>
                      {item.status === 'completed' && (
@@ -383,6 +384,9 @@ const Production = () => {
               </div>
             </CardContent>
           </Card>
+
+          {/* Work Order Comments */}
+          <Comments entityType="work_order" entityId={workOrder.id} />
         </div>
       </Layout>
     </ProtectedRoute>

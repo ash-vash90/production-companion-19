@@ -213,9 +213,29 @@ CREATE TABLE public.activity_logs (
 
 ALTER TABLE public.activity_logs ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Users can view own activity logs" ON public.activity_logs FOR SELECT TO authenticated 
+CREATE POLICY "Users can view own activity logs" ON public.activity_logs FOR SELECT TO authenticated
   USING (auth.uid() = user_id OR EXISTS (SELECT 1 FROM public.user_roles WHERE user_id = auth.uid() AND role IN ('admin', 'supervisor')));
 CREATE POLICY "System can insert activity logs" ON public.activity_logs FOR INSERT TO authenticated WITH CHECK (true);
+
+-- Comments table for work orders and items
+CREATE TABLE public.comments (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  entity_type TEXT NOT NULL CHECK (entity_type IN ('work_order', 'work_order_item')),
+  entity_id UUID NOT NULL,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  content TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+ALTER TABLE public.comments ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view all comments" ON public.comments FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Users can create comments" ON public.comments FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can update own comments" ON public.comments FOR UPDATE TO authenticated USING (auth.uid() = user_id);
+CREATE POLICY "Users can delete own comments" ON public.comments FOR DELETE TO authenticated USING (auth.uid() = user_id);
+
+CREATE INDEX idx_comments_entity ON public.comments(entity_type, entity_id);
+CREATE INDEX idx_comments_user ON public.comments(user_id);
 
 -- Zapier webhooks configuration
 CREATE TABLE public.zapier_webhooks (

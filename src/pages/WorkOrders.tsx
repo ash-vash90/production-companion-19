@@ -8,7 +8,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { CreateWorkOrderDialog } from '@/components/CreateWorkOrderDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -31,6 +33,7 @@ const WorkOrders = () => {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
   const [workOrders, setWorkOrders] = useState<WorkOrderWithProfile[]>([]);
   const [filteredOrders, setFilteredOrders] = useState<WorkOrderWithProfile[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -189,13 +192,13 @@ const WorkOrders = () => {
     }
   };
 
-  const getStatusColor = (status: string) => {
-    const colors: Record<string, string> = {
-      planned: 'bg-secondary text-secondary-foreground',
-      in_progress: 'bg-primary text-primary-foreground',
-      completed: 'bg-accent text-accent-foreground',
-      on_hold: 'bg-muted text-muted-foreground',
-      cancelled: 'bg-destructive text-destructive-foreground',
+  const getStatusVariant = (status: string): 'default' | 'secondary' | 'success' | 'warning' | 'info' | 'destructive' | 'outline' => {
+    const variants: Record<string, 'default' | 'secondary' | 'success' | 'warning' | 'info' | 'destructive' | 'outline'> = {
+      planned: 'secondary',
+      in_progress: 'info',
+      completed: 'success',
+      on_hold: 'warning',
+      cancelled: 'destructive',
     };
     return variants[status] || 'secondary';
   };
@@ -366,12 +369,12 @@ const WorkOrders = () => {
                 >
                   <CardHeader onClick={() => navigate(`/production/${wo.id}`)} className="pb-4">
                     <div className="flex items-center justify-between mb-3">
-                      <CardTitle className="text-2xl font-data">{wo.wo_number}</CardTitle>
-                      <Badge className={`${getStatusColor(wo.status)} text-white h-10 px-5 text-base font-semibold`}>
+                      <CardTitle className="text-2xl md:text-xl font-data">{wo.wo_number}</CardTitle>
+                      <Badge variant={getStatusVariant(wo.status)} className="h-10 md:h-9 px-5 md:px-4 text-base md:text-sm font-semibold">
                         {t(wo.status as any)}
                       </Badge>
                     </div>
-                    <CardDescription className="text-xl font-semibold">{wo.product_type}</CardDescription>
+                    <CardDescription className="text-xl md:text-lg font-semibold">{wo.product_type}</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4 text-lg" onClick={() => navigate(`/production/${wo.id}`)}>

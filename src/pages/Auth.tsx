@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
@@ -20,12 +20,16 @@ const Auth = () => {
   const { signIn, signUp, user } = useAuth();
   const { language, setLanguage, t } = useLanguage();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Get the intended destination from location state, or default to dashboard
+  const from = (location.state as any)?.from?.pathname || '/';
 
   useEffect(() => {
     if (user) {
-      navigate('/');
+      navigate(from, { replace: true });
     }
-  }, [user, navigate]);
+  }, [user, navigate, from]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,13 +43,13 @@ const Auth = () => {
     setLoading(false);
 
     if (error) {
-      const errorMessage = error.message === 'Invalid login credentials' 
+      const errorMessage = error.message === 'Invalid login credentials'
         ? 'Invalid email or password. Please try again.'
         : error.message;
       toast.error(t('error'), { description: errorMessage });
     } else {
       toast.success(t('success'), { description: 'Successfully logged in' });
-      navigate('/');
+      navigate(from, { replace: true });
     }
   };
 
