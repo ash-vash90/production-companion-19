@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -10,30 +10,46 @@ import { ActiveOperators } from '@/components/dashboard/ActiveOperators';
 import { TodaysSchedule } from '@/components/dashboard/TodaysSchedule';
 import { WeatherWidget } from '@/components/dashboard/WeatherWidget';
 import { supabase } from '@/integrations/supabase/client';
+import { Loader2 } from 'lucide-react';
 
 const Index = () => {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { t } = useLanguage();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<{ full_name: string; role: string } | null>(null);
+  const [profileLoading, setProfileLoading] = useState(true);
+
+  const fetchProfile = useCallback(async () => {
+    if (!user) {
+      setProfileLoading(false);
+      return;
+    }
+    
+    try {
+      const { data } = await supabase
+        .from('profiles')
+        .select('full_name, role')
+        .eq('id', user.id)
+        .maybeSingle();
+      
+      if (data) setProfile(data);
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+    } finally {
+      setProfileLoading(false);
+    }
+  }, [user]);
 
   useEffect(() => {
+    if (authLoading) return;
+    
     if (!user) {
       navigate('/auth');
-    } else {
-      fetchProfile();
+      return;
     }
-  }, [user, navigate]);
-
-  const fetchProfile = async () => {
-    if (!user) return;
-    const { data } = await supabase
-      .from('profiles')
-      .select('full_name, role')
-      .eq('id', user.id)
-      .maybeSingle();
-    if (data) setProfile(data);
-  };
+    
+    fetchProfile();
+  }, [user, authLoading, navigate, fetchProfile]);
 
   const getFirstName = () => {
     if (!profile?.full_name) return '';
@@ -46,6 +62,19 @@ const Index = () => {
     if (hour < 18) return t('goodAfternoon');
     return t('goodEvening');
   };
+
+  // Show loading while auth is being checked or profile is being fetched
+  if (authLoading || (user && profileLoading)) {
+    return (
+      <ProtectedRoute>
+        <Layout>
+          <div className="flex items-center justify-center min-h-[50vh]">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        </Layout>
+      </ProtectedRoute>
+    );
+  }
 
   if (!user) return null;
 
