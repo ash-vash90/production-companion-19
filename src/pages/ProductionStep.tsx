@@ -297,6 +297,15 @@ const ProductionStep = () => {
 
       setStepExecution(data);
       
+      // Update work order status to in_progress if it's planned
+      if (workOrder.status === 'planned') {
+        await supabase
+          .from('work_orders')
+          .update({ status: 'in_progress', started_at: new Date().toISOString() })
+          .eq('id', workOrder.id);
+        setWorkOrder({ ...workOrder, status: 'in_progress' });
+      }
+      
       // Show appropriate dialog based on step requirements
       if (currentStep.requires_batch_number) {
         setShowBatchScanDialog(true);
@@ -463,7 +472,7 @@ const ProductionStep = () => {
 
   return (
     <Layout>
-      <div className="space-y-6 md:space-y-8">
+      <div className="space-y-6 md:space-y-8 max-w-3xl mx-auto">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="icon" onClick={() => navigate(`/production/${item.work_order_id}`)} className="h-12 w-12 md:h-10 md:w-10">
@@ -638,7 +647,9 @@ const ProductionStep = () => {
                     <div className="flex-1 min-w-0">
                       <span className="text-sm font-medium">{step.title_en}</span>
                       {isCompleted && completion && (
-                        <p className="text-xs text-muted-foreground">{formatDateTime(completion.completed_at)}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {completion.completed_by_name} • {formatDateTime(completion.completed_at)}
+                        </p>
                       )}
                     </div>
                     {hasFailed && <Badge variant="destructive" className="text-xs">{t('failed')}</Badge>}
