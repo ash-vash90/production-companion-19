@@ -364,15 +364,15 @@ const WorkOrders = () => {
         key={wo.id}
         className={`hover:shadow-md transition-all border flex flex-col ${overdue ? 'border-destructive/50 bg-destructive/5' : ''}`}
       >
-        <CardHeader className="pb-2 p-2.5 lg:p-3">
-          <div className="flex items-center justify-between mb-1.5 gap-2">
-            <CardTitle className="text-xs lg:text-sm font-data truncate">{wo.wo_number}</CardTitle>
-            <div className="flex items-center gap-1 shrink-0">
+        <CardHeader className="pb-2 p-3 lg:p-4">
+          <div className="flex items-center justify-between mb-2 gap-2">
+            <CardTitle className="text-sm font-data truncate">{wo.wo_number}</CardTitle>
+            <div className="flex items-center gap-1.5 shrink-0">
               {overdue && (
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger>
-                      <AlertTriangle className="h-3.5 w-3.5 text-destructive" />
+                      <AlertTriangle className="h-4 w-4 text-destructive" />
                     </TooltipTrigger>
                     <TooltipContent>
                       <p>{t('overdue')}</p>
@@ -380,7 +380,7 @@ const WorkOrders = () => {
                   </Tooltip>
                 </TooltipProvider>
               )}
-              <Badge variant={getStatusVariant(wo.status)} className="h-5 px-1.5 text-[10px] font-medium">
+              <Badge variant={getStatusVariant(wo.status)}>
                 {t(wo.status as any)}
               </Badge>
             </div>
@@ -388,78 +388,76 @@ const WorkOrders = () => {
           <div className="flex flex-wrap gap-1">
             {wo.productBreakdown.length > 0 
               ? wo.productBreakdown.map((item, idx) => (
-                  <Badge key={idx} variant="secondary" className="text-[10px] font-medium h-4 px-1.5">
+                  <Badge key={idx} variant="secondary" className="text-xs">
                     {item.count}× {item.label}
                   </Badge>
                 ))
-              : <span className="text-[10px] text-muted-foreground">{wo.batch_size} items</span>
+              : <span className="text-xs text-muted-foreground">{wo.batch_size} items</span>
             }
           </div>
         </CardHeader>
-        <CardContent className="p-2.5 lg:p-3 pt-0 flex-1 flex flex-col">
-          <div className="space-y-1 text-[11px] lg:text-xs flex-1">
+        <CardContent className="p-3 lg:p-4 pt-0 flex-1 flex flex-col">
+          <div className="space-y-1.5 text-xs lg:text-sm flex-1">
             {wo.customer_name && (
-              <div className="flex justify-between items-center p-1.5 rounded bg-muted/50">
+              <div className="flex justify-between items-center py-1">
                 <span className="text-muted-foreground">{t('customer')}:</span>
-                <span className="font-semibold truncate ml-2 max-w-[100px]">{wo.customer_name}</span>
+                <span className="font-medium truncate ml-2 max-w-[120px]">{wo.customer_name}</span>
               </div>
             )}
             {wo.external_order_number && (
-              <div className="flex justify-between items-center p-1.5 rounded bg-muted/50">
+              <div className="flex justify-between items-center py-1">
                 <span className="text-muted-foreground">{t('orderNumber')}:</span>
                 <span className="font-medium font-data">{wo.external_order_number}</span>
               </div>
             )}
             {wo.order_value && (
-              <div className="flex justify-between items-center p-1.5 rounded bg-muted/50">
+              <div className="flex justify-between items-center py-1">
                 <span className="text-muted-foreground">{t('value')}:</span>
                 <span className="font-semibold">€{wo.order_value.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}</span>
               </div>
             )}
             {wo.scheduled_date && (
-              <div className={`flex justify-between items-center p-1.5 rounded ${overdue ? 'bg-destructive/10' : 'bg-muted/50'}`}>
+              <div className={`flex justify-between items-center py-1 ${overdue ? 'text-destructive' : ''}`}>
                 <span className="text-muted-foreground">{t('scheduledDate')}:</span>
-                <span className={`font-medium ${overdue ? 'text-destructive' : ''}`}>{formatDate(wo.scheduled_date)}</span>
+                <span className="font-medium">{formatDate(wo.scheduled_date)}</span>
               </div>
             )}
             {wo.profiles && (
-              <div className="flex justify-between items-center p-1.5 rounded bg-muted/50">
+              <div className="flex justify-between items-center py-1">
                 <span className="text-muted-foreground">{t('createdBy')}:</span>
-                <div className="flex items-center gap-1.5 ml-2">
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger>
-                        <Avatar className="h-5 w-5">
-                          <AvatarImage src={wo.profiles.avatar_url || undefined} />
-                          <AvatarFallback className="text-[8px] bg-primary/10">
-                            {getInitials(wo.profiles.full_name)}
-                          </AvatarFallback>
-                        </Avatar>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>{wo.profiles.full_name}</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Avatar className="h-6 w-6">
+                        <AvatarImage src={wo.profiles.avatar_url || undefined} />
+                        <AvatarFallback className="text-[10px] bg-primary/10">
+                          {getInitials(wo.profiles.full_name)}
+                        </AvatarFallback>
+                      </Avatar>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{wo.profiles.full_name}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
             )}
           </div>
-          <div className="flex gap-1.5 mt-2">
+          <div className="flex gap-2 mt-3 pt-3 border-t">
             <Button
               variant="outline"
               size="sm"
-              className="flex-1 h-7 text-[10px] lg:text-xs"
+              className="flex-1"
               onClick={() => navigate(`/production/${wo.id}`)}
             >
-              <Eye className="h-3 w-3 mr-1" />
+              <Eye className="h-4 w-4 mr-1.5" />
               {t('view')}
             </Button>
             {isAdmin && (
               <Button
                 variant="destructive"
                 size="sm"
-                className="flex-1 h-7 text-[10px] lg:text-xs"
+                className="flex-1"
                 onClick={async (e) => {
                   e.stopPropagation();
                   if (confirm(t('confirmCancelWorkOrder'))) {

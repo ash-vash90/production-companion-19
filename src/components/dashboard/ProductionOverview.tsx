@@ -143,12 +143,12 @@ export function ProductionOverview() {
   if (loading) {
     return (
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-sm lg:text-base">{t('activeWorkOrdersTitle')}</CardTitle>
+        <CardHeader className="flex flex-row items-center justify-between pb-3">
+          <CardTitle className="text-base">{t('activeWorkOrdersTitle')}</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex justify-center py-6">
-            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          <div className="flex justify-center py-8">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
         </CardContent>
       </Card>
@@ -158,12 +158,12 @@ export function ProductionOverview() {
   return (
     <>
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-          <div className="flex items-center gap-2">
-            <CardTitle className="text-sm lg:text-base">{t('activeWorkOrdersTitle')}</CardTitle>
-            <Badge variant="warning" className="text-xs">{inProgressCount}</Badge>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+          <div className="flex items-center gap-3">
+            <CardTitle className="text-base">{t('activeWorkOrdersTitle')}</CardTitle>
+            <Badge variant="warning">{inProgressCount}</Badge>
             {plannedCount > 0 && !showAll && (
-              <span className="text-xs text-muted-foreground">
+              <span className="text-sm text-muted-foreground">
                 +{plannedCount} {language === 'nl' ? 'gepland' : 'planned'}
               </span>
             )}
@@ -172,16 +172,15 @@ export function ProductionOverview() {
             {(plannedCount > 0 || showAll) && (
               <Button 
                 variant="ghost" 
-                size="sm" 
-                className="h-7 text-xs"
+                size="sm"
                 onClick={() => setShowAll(!showAll)}
               >
-                <Eye className="h-3 w-3 mr-1" />
+                <Eye className="h-4 w-4 mr-1.5" />
                 {showAll ? (language === 'nl' ? 'Actief' : 'Active') : (language === 'nl' ? 'Alles' : 'All')}
               </Button>
             )}
-            <Button variant="default" size="sm" className="h-7 text-xs" onClick={() => setDialogOpen(true)}>
-              <Plus className="mr-1 h-3 w-3" />
+            <Button variant="default" size="sm" onClick={() => setDialogOpen(true)}>
+              <Plus className="mr-1.5 h-4 w-4" />
               {t('createWorkOrder')}
             </Button>
           </div>
@@ -193,16 +192,16 @@ export function ProductionOverview() {
                 <div
                   key={wo.id}
                   onClick={() => navigate(`/production/${wo.id}`)}
-                  className="flex items-center justify-between rounded-md border bg-card p-2.5 transition-all cursor-pointer hover:bg-accent/50 hover:border-primary/50"
+                  className="flex items-center justify-between rounded-lg border bg-card p-3 transition-all cursor-pointer hover:bg-accent/50 hover:border-primary/50"
                 >
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="font-mono text-xs lg:text-sm font-semibold">{wo.wo_number}</span>
-                      <Badge variant={getStatusBadgeVariant(wo.status)} className="text-[10px] h-5 px-1.5">
+                      <span className="font-mono text-sm font-semibold">{wo.wo_number}</span>
+                      <Badge variant={getStatusBadgeVariant(wo.status)}>
                         {getStatusLabel(wo.status)}
                       </Badge>
                     </div>
-                    <div className="mt-0.5 text-[11px] lg:text-xs text-muted-foreground truncate">
+                    <div className="mt-1 text-sm text-muted-foreground truncate">
                       {wo.productBreakdown.length > 0 
                         ? formatProductBreakdownText(wo.productBreakdown)
                         : `${wo.batch_size} items`
@@ -212,12 +211,12 @@ export function ProductionOverview() {
                       )}
                     </div>
                   </div>
-                  <ExternalLink className="h-3.5 w-3.5 text-muted-foreground shrink-0 ml-2" />
+                  <ExternalLink className="h-4 w-4 text-muted-foreground shrink-0 ml-3" />
                 </div>
               ))}
             </div>
           ) : (
-            <div className="py-6 text-center text-xs lg:text-sm text-muted-foreground">
+            <div className="py-8 text-center text-sm text-muted-foreground">
               {showAll ? t('noActiveWorkOrders') : (language === 'nl' ? 'Geen actieve werkorders' : 'No work orders in progress')}
             </div>
           )}

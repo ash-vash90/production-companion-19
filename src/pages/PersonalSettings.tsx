@@ -67,8 +67,8 @@ const PersonalSettings = () => {
       .eq('id', user.id)
       .single();
     
-    if (data?.notification_prefs && typeof data.notification_prefs === 'object') {
-      setNotificationPrefs({ ...DEFAULT_PREFS, ...(data.notification_prefs as NotificationPrefs) });
+    if (data?.notification_prefs && typeof data.notification_prefs === 'object' && !Array.isArray(data.notification_prefs)) {
+      setNotificationPrefs({ ...DEFAULT_PREFS, ...(data.notification_prefs as unknown as NotificationPrefs) });
     }
   };
 

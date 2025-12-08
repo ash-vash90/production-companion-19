@@ -116,19 +116,16 @@ export function ActiveOperators() {
 
   if (loading) {
     return (
-      <Card>
+      <Card className="h-full">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base">
-            <Users className="h-4 w-4" />
-            {language === 'nl' ? 'Online Collega\'s' : 'Online Colleagues'}
+            <Users className="h-5 w-5" />
+            {language === 'nl' ? 'Je Collega\'s' : 'Your Team'}
           </CardTitle>
-          <CardDescription className="text-xs">
-            {language === 'nl' ? 'Collega\'s die nu online zijn' : 'Colleagues currently online'}
-          </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex justify-center py-6">
-            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          <div className="flex justify-center py-8">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
         </CardContent>
       </Card>
@@ -136,43 +133,40 @@ export function ActiveOperators() {
   }
 
   return (
-    <Card>
+    <Card className="h-full flex flex-col">
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-base">
-          <Users className="h-4 w-4" />
-          {language === 'nl' ? 'Online Collega\'s' : 'Online Colleagues'}
+          <Users className="h-5 w-5" />
+          {language === 'nl' ? 'Je Collega\'s' : 'Your Team'}
           {onlineUsers.length > 0 && (
-            <Badge variant="success" className="ml-auto text-xs">
+            <Badge variant="success" className="ml-auto">
               <Circle className="h-2 w-2 mr-1 fill-current" />
               {onlineUsers.length} {language === 'nl' ? 'online' : 'online'}
             </Badge>
           )}
         </CardTitle>
-        <CardDescription className="text-xs">
-          {language === 'nl' ? 'Collega\'s die nu online zijn' : 'Colleagues currently online'}
-        </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex-1 pt-0">
         {onlineUsers.length > 0 ? (
           <div className="space-y-2">
             {onlineUsers.slice(0, 6).map((colleague) => (
               <div
                 key={colleague.id}
-                className="flex items-center gap-3 rounded-lg border bg-card p-2.5 hover:bg-muted/30 transition-colors"
+                className="flex items-center gap-3 rounded-lg border bg-card p-3 hover:bg-muted/30 transition-colors"
               >
                 <div className="relative">
-                  <Avatar className="h-8 w-8">
+                  <Avatar className="h-9 w-9">
                     <AvatarImage src={colleague.avatar_url || undefined} />
                     <AvatarFallback className="text-xs bg-primary/10 text-primary">
                       {getInitials(colleague.name)}
                     </AvatarFallback>
                   </Avatar>
-                  <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-success border-2 border-background" />
+                  <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-success border-2 border-background" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="font-medium text-sm truncate">{colleague.name}</div>
                   {colleague.role && (
-                    <Badge variant={getRoleBadgeVariant(colleague.role)} className="text-[10px] h-4 mt-0.5">
+                    <Badge variant={getRoleBadgeVariant(colleague.role)} className="text-xs mt-0.5">
                       {getRoleLabel(colleague.role)}
                     </Badge>
                   )}
@@ -181,7 +175,7 @@ export function ActiveOperators() {
             ))}
           </div>
         ) : (
-          <div className="py-6 text-center text-sm text-muted-foreground">
+          <div className="py-8 text-center text-sm text-muted-foreground">
             {language === 'nl' ? 'Niemand anders is online' : 'No one else is online'}
           </div>
         )}
