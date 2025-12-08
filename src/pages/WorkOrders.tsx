@@ -362,7 +362,7 @@ const WorkOrders = () => {
     return (
       <Card
         key={wo.id}
-        className={`hover:shadow-md transition-all border flex flex-col max-w-xs ${overdue ? 'border-destructive/50 bg-destructive/5' : ''}`}
+        className={`hover:shadow-md transition-all border flex flex-col ${overdue ? 'border-destructive/50 bg-destructive/5' : ''}`}
       >
         <CardHeader className="pb-2 p-3 lg:p-4">
           <div className="flex items-center justify-between mb-2 gap-2">
@@ -420,6 +420,12 @@ const WorkOrders = () => {
               <div className={`flex justify-between items-center py-1 ${overdue ? 'text-destructive' : ''}`}>
                 <span className="text-muted-foreground">{t('scheduledDate')}:</span>
                 <span className="font-medium">{formatDate(wo.scheduled_date)}</span>
+              </div>
+            )}
+            {wo.profiles && (
+              <div className="flex justify-between items-center py-1">
+                <span className="text-muted-foreground">{t('createdBy')}:</span>
+                <span className="font-medium truncate ml-2 max-w-[120px]">{wo.profiles.full_name}</span>
               </div>
             )}
           </div>
