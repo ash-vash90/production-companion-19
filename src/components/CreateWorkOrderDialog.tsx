@@ -35,7 +35,7 @@ const PRODUCT_TYPES: ProductType[] = ['SDM_ECO', 'SENSOR', 'MLA', 'HMI', 'TRANSM
 
 export function CreateWorkOrderDialog({ open, onOpenChange, onSuccess, trigger }: CreateWorkOrderDialogProps) {
   const { user } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [creating, setCreating] = useState(false);
   const [woNumber, setWoNumber] = useState('');
   const [generatingWO, setGeneratingWO] = useState(false);
@@ -48,11 +48,26 @@ export function CreateWorkOrderDialog({ open, onOpenChange, onSuccess, trigger }
     { id: crypto.randomUUID(), productType: 'SDM_ECO', quantity: 1 }
   ]);
 
+  // Validation errors
+  const [errors, setErrors] = useState<{
+    scheduledDate?: string;
+    customerName?: string;
+    externalOrderNumber?: string;
+    orderValue?: string;
+  }>({});
+
   // Generate WO number when dialog opens
   useEffect(() => {
     if (open) {
       generateWONumber();
       loadSerialPrefixes();
+      // Reset form
+      setScheduledDate(undefined);
+      setCustomerName('');
+      setExternalOrderNumber('');
+      setOrderValue('');
+      setProductBatches([{ id: crypto.randomUUID(), productType: 'SDM_ECO', quantity: 1 }]);
+      setErrors({});
     }
   }, [open]);
 
@@ -97,9 +112,36 @@ export function CreateWorkOrderDialog({ open, onOpenChange, onSuccess, trigger }
 
   const getTotalItems = () => productBatches.reduce((sum, b) => sum + b.quantity, 0);
 
+  const validate = (): boolean => {
+    const newErrors: typeof errors = {};
+
+    if (!scheduledDate) {
+      newErrors.scheduledDate = language === 'nl' ? 'Geplande datum is verplicht' : 'Scheduled date is required';
+    }
+
+    if (!customerName.trim()) {
+      newErrors.customerName = language === 'nl' ? 'Klantnaam is verplicht' : 'Customer name is required';
+    }
+
+    if (!externalOrderNumber.trim()) {
+      newErrors.externalOrderNumber = language === 'nl' ? 'Ordernummer is verplicht' : 'Order number is required';
+    }
+
+    if (!orderValue.trim() || isNaN(parseFloat(orderValue)) || parseFloat(orderValue) <= 0) {
+      newErrors.orderValue = language === 'nl' ? 'Geldige orderwaarde is verplicht' : 'Valid order value is required';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
+
+    if (!validate()) {
+      return;
+    }
 
     setCreating(true);
     
@@ -129,9 +171,9 @@ export function CreateWorkOrderDialog({ open, onOpenChange, onSuccess, trigger }
             created_by: user.id,
             status: 'planned',
             scheduled_date: scheduledDate ? format(scheduledDate, 'yyyy-MM-dd') : null,
-            customer_name: customerName || null,
-            external_order_number: externalOrderNumber || null,
-            order_value: orderValue ? parseFloat(orderValue) : null,
+            customer_name: customerName.trim(),
+            external_order_number: externalOrderNumber.trim(),
+            order_value: parseFloat(orderValue),
           })
           .select()
           .single();
@@ -145,7 +187,6 @@ export function CreateWorkOrderDialog({ open, onOpenChange, onSuccess, trigger }
         }
 
         // Generate serial numbers for each product batch using configured prefixes
-        // Include WO number to ensure uniqueness across work orders
         const prefixes = serialPrefixes || { SENSOR: 'Q', MLA: 'W', HMI: 'X', TRANSMITTER: 'T', SDM_ECO: 'SDM' };
         const serialFormat = await SettingsService.getSerialFormat();
         const items: any[] = [];
@@ -158,7 +199,6 @@ export function CreateWorkOrderDialog({ open, onOpenChange, onSuccess, trigger }
           const prefix = prefixes[batch.productType] || batch.productType.charAt(0);
           for (let i = 1; i <= batch.quantity; i++) {
             const paddedPosition = String(position).padStart(serialFormat.padLength, '0');
-            // Format: PREFIX-WOSEQUENCE-POSITION (e.g., Q-241204001-01)
             const serialNumber = `${prefix}${serialFormat.separator}${woSuffix}${serialFormat.separator}${paddedPosition}`;
             items.push({
               work_order_id: workOrder.id,
@@ -166,7 +206,7 @@ export function CreateWorkOrderDialog({ open, onOpenChange, onSuccess, trigger }
               position_in_batch: position,
               status: 'planned',
               assigned_to: user.id,
-              product_type: batch.productType, // Store product type per item
+              product_type: batch.productType,
             });
             position++;
           }
@@ -200,14 +240,8 @@ export function CreateWorkOrderDialog({ open, onOpenChange, onSuccess, trigger }
 
         toast.success(t('success'), { description: `${t('workOrderNumber')} ${currentWoNumber} ${t('workOrderCreated')}` });
         onOpenChange(false);
-        setWoNumber('');
-        setScheduledDate(undefined);
-        setCustomerName('');
-        setExternalOrderNumber('');
-        setOrderValue('');
-        setProductBatches([{ id: crypto.randomUUID(), productType: 'SDM_ECO', quantity: 1 }]);
         onSuccess();
-        return; // Success, exit loop
+        return;
         
       } catch (error: any) {
         if (error.code === '23505' && attempts < maxAttempts - 1) {
@@ -227,19 +261,19 @@ export function CreateWorkOrderDialog({ open, onOpenChange, onSuccess, trigger }
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-2xl">{t('createWorkOrder')}</DialogTitle>
-          <DialogDescription className="text-base">{t('createWorkOrderDesc')}</DialogDescription>
+          <DialogTitle className="text-lg">{t('createWorkOrder')}</DialogTitle>
+          <DialogDescription className="text-sm">{t('createWorkOrderDesc')}</DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleCreate} className="space-y-5">
-          <div className="space-y-3">
-            <Label className="text-base font-data uppercase tracking-wider">{t('workOrderNumber')}</Label>
+        <form onSubmit={handleCreate} className="space-y-4">
+          <div className="space-y-2">
+            <Label className="text-xs font-medium uppercase tracking-wider">{t('workOrderNumber')}</Label>
             <div className="flex items-center gap-2">
-              <div className="flex-1 p-3 rounded-lg border bg-muted/50 font-mono font-semibold">
+              <div className="flex-1 p-2.5 rounded-md border bg-muted/50 font-mono text-sm font-semibold">
                 {generatingWO ? (
                   <span className="flex items-center gap-2 text-muted-foreground">
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
                     Generating...
                   </span>
                 ) : (
@@ -250,28 +284,30 @@ export function CreateWorkOrderDialog({ open, onOpenChange, onSuccess, trigger }
                 type="button"
                 variant="outline"
                 size="icon"
+                className="h-9 w-9"
                 onClick={generateWONumber}
                 disabled={generatingWO}
-                title="Regenerate"
               >
-                <RefreshCw className={`h-4 w-4 ${generatingWO ? 'animate-spin' : ''}`} />
+                <RefreshCw className={`h-3.5 w-3.5 ${generatingWO ? 'animate-spin' : ''}`} />
               </Button>
             </div>
-            <p className="text-xs text-muted-foreground">Auto-generated based on settings format</p>
           </div>
 
-          <div className="space-y-3">
-            <Label className="text-base font-data uppercase tracking-wider">{t('scheduledDate')}</Label>
+          <div className="space-y-2">
+            <Label className="text-xs font-medium uppercase tracking-wider">
+              {t('scheduledDate')} <span className="text-destructive">*</span>
+            </Label>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
                   className={cn(
-                    "w-full justify-start text-left font-normal",
-                    !scheduledDate && "text-muted-foreground"
+                    "w-full justify-start text-left font-normal h-9 text-sm",
+                    !scheduledDate && "text-muted-foreground",
+                    errors.scheduledDate && "border-destructive"
                   )}
                 >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  <CalendarIcon className="mr-2 h-3.5 w-3.5" />
                   {scheduledDate ? format(scheduledDate, "PPP") : <span>{t('selectDate')}</span>}
                 </Button>
               </PopoverTrigger>
@@ -285,29 +321,40 @@ export function CreateWorkOrderDialog({ open, onOpenChange, onSuccess, trigger }
                 />
               </PopoverContent>
             </Popover>
+            {errors.scheduledDate && <p className="text-xs text-destructive">{errors.scheduledDate}</p>}
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label className="text-sm">{t('customer')}</Label>
+              <Label className="text-xs font-medium">
+                {t('customer')} <span className="text-destructive">*</span>
+              </Label>
               <Input
                 value={customerName}
                 onChange={(e) => setCustomerName(e.target.value)}
                 placeholder={t('customerPlaceholder')}
+                className={cn("h-9 text-sm", errors.customerName && "border-destructive")}
               />
+              {errors.customerName && <p className="text-xs text-destructive">{errors.customerName}</p>}
             </div>
             <div className="space-y-2">
-              <Label className="text-sm">{t('orderNumber')}</Label>
+              <Label className="text-xs font-medium">
+                {t('orderNumber')} <span className="text-destructive">*</span>
+              </Label>
               <Input
                 value={externalOrderNumber}
                 onChange={(e) => setExternalOrderNumber(e.target.value)}
                 placeholder={t('orderNumberPlaceholder')}
+                className={cn("h-9 text-sm", errors.externalOrderNumber && "border-destructive")}
               />
+              {errors.externalOrderNumber && <p className="text-xs text-destructive">{errors.externalOrderNumber}</p>}
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label className="text-sm">{t('value')} (€)</Label>
+            <Label className="text-xs font-medium">
+              {t('value')} (€) <span className="text-destructive">*</span>
+            </Label>
             <Input
               type="number"
               step="0.01"
@@ -315,56 +362,58 @@ export function CreateWorkOrderDialog({ open, onOpenChange, onSuccess, trigger }
               value={orderValue}
               onChange={(e) => setOrderValue(e.target.value)}
               placeholder="0.00"
+              className={cn("h-9 text-sm", errors.orderValue && "border-destructive")}
             />
+            {errors.orderValue && <p className="text-xs text-destructive">{errors.orderValue}</p>}
           </div>
 
-          <div className="space-y-3">
+          <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label className="text-base font-data uppercase tracking-wider">{t('productBatches')}</Label>
-              <Badge variant="secondary" className="text-xs">
+              <Label className="text-xs font-medium uppercase tracking-wider">{t('productBatches')}</Label>
+              <Badge variant="secondary" className="text-[10px]">
                 {getTotalItems()} {t('items')}
               </Badge>
             </div>
             
-            <div className="space-y-3 max-h-[240px] overflow-y-auto pr-1">
-              {productBatches.map((batch, index) => (
-                <div key={batch.id} className="flex items-center gap-2 p-3 rounded-lg border bg-muted/30">
+            <div className="space-y-2 max-h-[180px] overflow-y-auto pr-1">
+              {productBatches.map((batch) => (
+                <div key={batch.id} className="flex items-center gap-2 p-2 rounded-md border bg-muted/30">
                   <div className="flex-1">
                     <Select
                       value={batch.productType}
                       onValueChange={(value: ProductType) => updateProductBatch(batch.id, 'productType', value)}
                     >
-                      <SelectTrigger className="h-10 text-sm border">
+                      <SelectTrigger className="h-8 text-xs border">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
                         {PRODUCT_TYPES.map(type => (
-                          <SelectItem key={type} value={type} className="h-10 text-sm">
+                          <SelectItem key={type} value={type} className="text-xs">
                             {formatProductType(type)}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="w-20">
+                  <div className="w-16">
                     <Input
                       type="number"
                       min="1"
                       max="50"
                       value={batch.quantity}
                       onChange={(e) => updateProductBatch(batch.id, 'quantity', parseInt(e.target.value) || 1)}
-                      className="h-10 text-center"
+                      className="h-8 text-center text-xs"
                     />
                   </div>
                   <Button
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className="h-10 w-10 text-muted-foreground hover:text-destructive"
+                    className="h-8 w-8 text-muted-foreground hover:text-destructive"
                     onClick={() => removeProductBatch(batch.id)}
                     disabled={productBatches.length === 1}
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Trash2 className="h-3.5 w-3.5" />
                   </Button>
                 </div>
               ))}
@@ -374,20 +423,20 @@ export function CreateWorkOrderDialog({ open, onOpenChange, onSuccess, trigger }
               type="button"
               variant="outline"
               size="sm"
-              className="w-full"
+              className="w-full h-8 text-xs"
               onClick={addProductBatch}
             >
-              <Plus className="h-4 w-4 mr-2" />
+              <Plus className="h-3.5 w-3.5 mr-1" />
               {t('addProductBatch')}
             </Button>
           </div>
 
-          <DialogFooter className="gap-3">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} size="lg" className="flex-1">
+          <DialogFooter className="gap-2">
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} size="sm" className="flex-1">
               {t('cancel')}
             </Button>
-            <Button type="submit" disabled={creating} variant="default" size="lg" className="flex-1">
-              {creating && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
+            <Button type="submit" disabled={creating} variant="default" size="sm" className="flex-1">
+              {creating && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
               {t('create')}
             </Button>
           </DialogFooter>

@@ -17,7 +17,7 @@ import { WorkOrderFilters, FilterState } from '@/components/workorders/WorkOrder
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { getProductBreakdown, ProductBreakdown, formatDate } from '@/lib/utils';
-import { Loader2, Plus, Package, Filter, Eye, AlertTriangle, ChevronDown, ChevronRight, Layers } from 'lucide-react';
+import { Loader2, Plus, Package, Filter, Eye, AlertTriangle, ChevronDown, ChevronRight, Layers, RotateCcw } from 'lucide-react';
 import { format, differenceInDays, parseISO, isBefore } from 'date-fns';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
@@ -42,6 +42,20 @@ const getInitials = (name: string) => {
 
 type GroupByOption = 'none' | 'status' | 'deliveryMonth' | 'createdMonth' | 'batchSize' | 'customer';
 
+const DEFAULT_FILTERS: FilterState = {
+  searchTerm: '',
+  statusFilter: 'all',
+  productFilter: 'all',
+  customerFilter: 'all',
+  ageFilter: 'all',
+  deliveryMonthFilter: 'all',
+  createdMonthFilter: 'all',
+  batchSizeFilter: 'all',
+};
+
+const FILTERS_STORAGE_KEY = 'workorders_filters';
+const GROUPBY_STORAGE_KEY = 'workorders_groupby';
+
 const WorkOrders = () => {
   const { user } = useAuth();
   const { t } = useLanguage();
@@ -51,21 +65,37 @@ const WorkOrders = () => {
   const [workOrders, setWorkOrders] = useState<WorkOrderWithItems[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   
-  // Filters
-  const [filters, setFilters] = useState<FilterState>({
-    searchTerm: '',
-    statusFilter: 'all',
-    productFilter: 'all',
-    customerFilter: 'all',
-    ageFilter: 'all',
-    deliveryMonthFilter: 'all',
-    createdMonthFilter: 'all',
-    batchSizeFilter: 'all',
+  // Load persisted filters from sessionStorage
+  const [filters, setFilters] = useState<FilterState>(() => {
+    try {
+      const saved = sessionStorage.getItem(FILTERS_STORAGE_KEY);
+      return saved ? JSON.parse(saved) : DEFAULT_FILTERS;
+    } catch {
+      return DEFAULT_FILTERS;
+    }
   });
   
-  // Grouping
-  const [groupBy, setGroupBy] = useState<GroupByOption>('none');
+  // Load persisted groupBy from sessionStorage
+  const [groupBy, setGroupBy] = useState<GroupByOption>(() => {
+    try {
+      const saved = sessionStorage.getItem(GROUPBY_STORAGE_KEY);
+      return (saved as GroupByOption) || 'none';
+    } catch {
+      return 'none';
+    }
+  });
+  
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+
+  // Persist filters to sessionStorage
+  useEffect(() => {
+    sessionStorage.setItem(FILTERS_STORAGE_KEY, JSON.stringify(filters));
+  }, [filters]);
+
+  // Persist groupBy to sessionStorage
+  useEffect(() => {
+    sessionStorage.setItem(GROUPBY_STORAGE_KEY, groupBy);
+  }, [groupBy]);
 
   useEffect(() => {
     if (!user) {
@@ -133,6 +163,25 @@ const WorkOrders = () => {
       setLoading(false);
     }
   };
+
+  // Reset all filters
+  const resetFilters = () => {
+    setFilters(DEFAULT_FILTERS);
+    setGroupBy('none');
+  };
+
+  // Check if any filters are active
+  const hasActiveFilters = useMemo(() => {
+    return filters.searchTerm !== '' ||
+      filters.statusFilter !== 'all' ||
+      filters.productFilter !== 'all' ||
+      filters.customerFilter !== 'all' ||
+      filters.ageFilter !== 'all' ||
+      filters.deliveryMonthFilter !== 'all' ||
+      filters.createdMonthFilter !== 'all' ||
+      filters.batchSizeFilter !== 'all' ||
+      groupBy !== 'none';
+  }, [filters, groupBy]);
 
   // Get unique values for filter options
   const customers = useMemo(() => {
@@ -315,15 +364,15 @@ const WorkOrders = () => {
         key={wo.id}
         className={`hover:shadow-md transition-all border flex flex-col ${overdue ? 'border-destructive/50 bg-destructive/5' : ''}`}
       >
-        <CardHeader className="pb-2 p-3 lg:p-4">
-          <div className="flex items-center justify-between mb-2 gap-2">
-            <CardTitle className="text-sm lg:text-base font-data truncate">{wo.wo_number}</CardTitle>
-            <div className="flex items-center gap-1.5 shrink-0">
+        <CardHeader className="pb-2 p-2.5 lg:p-3">
+          <div className="flex items-center justify-between mb-1.5 gap-2">
+            <CardTitle className="text-xs lg:text-sm font-data truncate">{wo.wo_number}</CardTitle>
+            <div className="flex items-center gap-1 shrink-0">
               {overdue && (
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger>
-                      <AlertTriangle className="h-4 w-4 text-destructive" />
+                      <AlertTriangle className="h-3.5 w-3.5 text-destructive" />
                     </TooltipTrigger>
                     <TooltipContent>
                       <p>{t('overdue')}</p>
@@ -331,69 +380,58 @@ const WorkOrders = () => {
                   </Tooltip>
                 </TooltipProvider>
               )}
-              <Badge variant={getStatusVariant(wo.status)} className="h-5 lg:h-6 px-2 text-xs font-medium">
+              <Badge variant={getStatusVariant(wo.status)} className="h-5 px-1.5 text-[10px] font-medium">
                 {t(wo.status as any)}
               </Badge>
             </div>
           </div>
-          <div className="flex flex-wrap gap-1 lg:gap-1.5">
+          <div className="flex flex-wrap gap-1">
             {wo.productBreakdown.length > 0 
               ? wo.productBreakdown.map((item, idx) => (
-                  <Badge key={idx} variant="secondary" className="text-xs font-medium h-5 lg:h-6 px-2">
+                  <Badge key={idx} variant="secondary" className="text-[10px] font-medium h-4 px-1.5">
                     {item.count}× {item.label}
                   </Badge>
                 ))
-              : <span className="text-xs text-muted-foreground">{wo.batch_size} items</span>
+              : <span className="text-[10px] text-muted-foreground">{wo.batch_size} items</span>
             }
           </div>
         </CardHeader>
-        <CardContent className="p-3 lg:p-4 pt-0 flex-1 flex flex-col">
-          <div className="space-y-1.5 text-xs lg:text-sm flex-1">
+        <CardContent className="p-2.5 lg:p-3 pt-0 flex-1 flex flex-col">
+          <div className="space-y-1 text-[11px] lg:text-xs flex-1">
             {wo.customer_name && (
-              <div className="flex justify-between items-center p-1.5 lg:p-2 rounded bg-muted/50">
+              <div className="flex justify-between items-center p-1.5 rounded bg-muted/50">
                 <span className="text-muted-foreground">{t('customer')}:</span>
-                <span className="font-semibold truncate ml-2 max-w-[120px]">{wo.customer_name}</span>
+                <span className="font-semibold truncate ml-2 max-w-[100px]">{wo.customer_name}</span>
               </div>
             )}
             {wo.external_order_number && (
-              <div className="flex justify-between items-center p-1.5 lg:p-2 rounded bg-muted/50">
+              <div className="flex justify-between items-center p-1.5 rounded bg-muted/50">
                 <span className="text-muted-foreground">{t('orderNumber')}:</span>
                 <span className="font-medium font-data">{wo.external_order_number}</span>
               </div>
             )}
             {wo.order_value && (
-              <div className="flex justify-between items-center p-1.5 lg:p-2 rounded bg-muted/50">
+              <div className="flex justify-between items-center p-1.5 rounded bg-muted/50">
                 <span className="text-muted-foreground">{t('value')}:</span>
                 <span className="font-semibold">€{wo.order_value.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}</span>
               </div>
             )}
-            <div className="flex justify-between items-center p-1.5 lg:p-2 rounded bg-muted/50">
-              <span className="text-muted-foreground">{t('batchSize')}:</span>
-              <span className="font-semibold">{wo.batch_size}</span>
-            </div>
             {wo.scheduled_date && (
-              <div className={`flex justify-between items-center p-1.5 lg:p-2 rounded ${overdue ? 'bg-destructive/10' : 'bg-muted/50'}`}>
+              <div className={`flex justify-between items-center p-1.5 rounded ${overdue ? 'bg-destructive/10' : 'bg-muted/50'}`}>
                 <span className="text-muted-foreground">{t('scheduledDate')}:</span>
                 <span className={`font-medium ${overdue ? 'text-destructive' : ''}`}>{formatDate(wo.scheduled_date)}</span>
               </div>
             )}
-            <div className="flex justify-between items-center p-1.5 lg:p-2 rounded bg-muted/50">
-              <span className="text-muted-foreground">{t('created')}:</span>
-              <span className="font-medium">{formatDate(wo.created_at)}</span>
-            </div>
             {wo.profiles && (
-              <div className="flex justify-between items-center p-1.5 lg:p-2 rounded bg-muted/50">
+              <div className="flex justify-between items-center p-1.5 rounded bg-muted/50">
                 <span className="text-muted-foreground">{t('createdBy')}:</span>
-                <div className="flex items-center gap-2 ml-2">
-                  <span className="text-xs font-medium truncate max-w-[80px] hidden sm:inline md:hidden lg:inline">
-                    {wo.profiles.full_name}
-                  </span>
+                <div className="flex items-center gap-1.5 ml-2">
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger>
-                        <Avatar className="h-6 w-6">
+                        <Avatar className="h-5 w-5">
                           <AvatarImage src={wo.profiles.avatar_url || undefined} />
-                          <AvatarFallback className="text-[10px] bg-primary/10">
+                          <AvatarFallback className="text-[8px] bg-primary/10">
                             {getInitials(wo.profiles.full_name)}
                           </AvatarFallback>
                         </Avatar>
@@ -407,21 +445,21 @@ const WorkOrders = () => {
               </div>
             )}
           </div>
-          <div className="flex gap-2 mt-3">
+          <div className="flex gap-1.5 mt-2">
             <Button
               variant="outline"
               size="sm"
-              className="flex-1 h-8 text-xs"
+              className="flex-1 h-7 text-[10px] lg:text-xs"
               onClick={() => navigate(`/production/${wo.id}`)}
             >
-              <Eye className="h-3.5 w-3.5 mr-1.5" />
+              <Eye className="h-3 w-3 mr-1" />
               {t('view')}
             </Button>
             {isAdmin && (
               <Button
                 variant="destructive"
                 size="sm"
-                className="flex-1 h-8 text-xs"
+                className="flex-1 h-7 text-[10px] lg:text-xs"
                 onClick={async (e) => {
                   e.stopPropagation();
                   if (confirm(t('confirmCancelWorkOrder'))) {
@@ -454,37 +492,50 @@ const WorkOrders = () => {
   return (
     <ProtectedRoute>
       <Layout>
-        <div className="space-y-4">
+        <div className="space-y-3 lg:space-y-4">
           <PageHeader
             title={t('workOrders')}
             description={t('manageWorkOrders')}
             actions={
               <Button 
                 variant="default" 
-                size="default" 
+                size="sm" 
                 onClick={() => setDialogOpen(true)}
               >
-                <Plus className="mr-2 h-4 w-4" />
+                <Plus className="mr-1.5 h-3.5 w-3.5" />
                 {t('createWorkOrder')}
               </Button>
             }
           />
 
           {/* Filters and Grouping Bar */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <WorkOrderFilters
-              filters={filters}
-              onFiltersChange={setFilters}
-              customers={customers}
-              deliveryMonths={deliveryMonths}
-              createdMonths={createdMonths}
-            />
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <WorkOrderFilters
+                filters={filters}
+                onFiltersChange={setFilters}
+                customers={customers}
+                deliveryMonths={deliveryMonths}
+                createdMonths={createdMonths}
+              />
+              {hasActiveFilters && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-8 text-xs text-muted-foreground"
+                  onClick={resetFilters}
+                >
+                  <RotateCcw className="h-3 w-3 mr-1" />
+                  {t('reset')}
+                </Button>
+              )}
+            </div>
             
             {/* Grouping Select */}
             <div className="flex items-center gap-2">
-              <Layers className="h-4 w-4 text-muted-foreground" />
+              <Layers className="h-3.5 w-3.5 text-muted-foreground" />
               <Select value={groupBy} onValueChange={(v) => setGroupBy(v as GroupByOption)}>
-                <SelectTrigger className="h-9 w-[160px] text-sm">
+                <SelectTrigger className="h-8 w-[140px] text-xs">
                   <SelectValue placeholder={t('groupBy')} />
                 </SelectTrigger>
                 <SelectContent>
@@ -500,49 +551,41 @@ const WorkOrders = () => {
           </div>
 
           {loading ? (
-            <div className="flex justify-center py-12">
-              <Loader2 className="h-10 w-10 animate-spin text-primary" />
+            <div className="flex justify-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           ) : filteredOrders.length === 0 ? (
             workOrders.length === 0 ? (
               <Card className="shadow-sm">
-                <CardContent className="py-12 text-center">
-                  <Package className="h-16 w-16 mx-auto mb-6 text-muted-foreground/50" />
-                  <h3 className="text-xl font-semibold mb-3">{t('noWorkOrdersYet')}</h3>
-                  <p className="text-sm text-muted-foreground mb-6">{t('createFirstWorkOrder')}</p>
-                  <Button onClick={() => setDialogOpen(true)} variant="default" size="default">
-                    <Plus className="mr-2 h-4 w-4" />
+                <CardContent className="py-8 text-center">
+                  <Package className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
+                  <h3 className="text-base font-semibold mb-2">{t('noWorkOrdersYet')}</h3>
+                  <p className="text-xs text-muted-foreground mb-4">{t('createFirstWorkOrder')}</p>
+                  <Button onClick={() => setDialogOpen(true)} variant="default" size="sm">
+                    <Plus className="mr-1.5 h-3.5 w-3.5" />
                     {t('createWorkOrder')}
                   </Button>
                 </CardContent>
               </Card>
             ) : (
               <Card className="shadow-sm">
-                <CardContent className="py-12 text-center">
-                  <Filter className="h-14 w-14 mx-auto mb-6 text-muted-foreground/50" />
-                  <h3 className="text-lg font-semibold mb-3">{t('noMatchingOrders')}</h3>
-                  <p className="text-sm text-muted-foreground mb-6">{t('tryDifferentFilters')}</p>
-                  <Button onClick={() => setFilters({
-                    searchTerm: '',
-                    statusFilter: 'all',
-                    productFilter: 'all',
-                    customerFilter: 'all',
-                    ageFilter: 'all',
-                    deliveryMonthFilter: 'all',
-                    createdMonthFilter: 'all',
-                    batchSizeFilter: 'all',
-                  })} variant="outline" size="default">
+                <CardContent className="py-8 text-center">
+                  <Filter className="h-10 w-10 mx-auto mb-4 text-muted-foreground/50" />
+                  <h3 className="text-sm font-semibold mb-2">{t('noMatchingOrders')}</h3>
+                  <p className="text-xs text-muted-foreground mb-4">{t('tryDifferentFilters')}</p>
+                  <Button onClick={resetFilters} variant="outline" size="sm">
+                    <RotateCcw className="h-3 w-3 mr-1" />
                     {t('clearFilters')}
                   </Button>
                 </CardContent>
               </Card>
             )
           ) : groupBy === 'none' ? (
-            <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <div className="grid gap-2.5 lg:gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
               {filteredOrders.map(renderWorkOrderCard)}
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2">
               {Object.entries(groupedOrders).sort().map(([groupKey, orders]) => (
                 <Collapsible 
                   key={groupKey} 
@@ -551,25 +594,25 @@ const WorkOrders = () => {
                 >
                   <Card className="shadow-sm">
                     <CollapsibleTrigger className="w-full">
-                      <CardHeader className="py-3 px-4 flex flex-row items-center justify-between hover:bg-muted/50 transition-colors cursor-pointer">
-                        <div className="flex items-center gap-3">
+                      <CardHeader className="py-2.5 px-3 flex flex-row items-center justify-between hover:bg-muted/50 transition-colors cursor-pointer">
+                        <div className="flex items-center gap-2">
                           {expandedGroups.has(groupKey) ? (
-                            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                            <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
                           ) : (
-                            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                            <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
                           )}
-                          <CardTitle className="text-sm font-medium">
+                          <CardTitle className="text-xs font-medium">
                             {getGroupLabel(groupKey, groupBy)}
                           </CardTitle>
-                          <Badge variant="secondary" className="text-xs">
+                          <Badge variant="secondary" className="text-[10px]">
                             {orders.length}
                           </Badge>
                         </div>
                       </CardHeader>
                     </CollapsibleTrigger>
                     <CollapsibleContent>
-                      <CardContent className="pt-0 pb-4">
-                        <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                      <CardContent className="pt-0 pb-3">
+                        <div className="grid gap-2.5 lg:gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
                           {orders.map(renderWorkOrderCard)}
                         </div>
                       </CardContent>

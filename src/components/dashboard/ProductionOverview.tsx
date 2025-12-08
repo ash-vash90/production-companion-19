@@ -6,7 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getProductBreakdown, formatProductBreakdownText, ProductBreakdown } from '@/lib/utils';
-import { ExternalLink, Loader2, Plus } from 'lucide-react';
+import { ExternalLink, Loader2, Plus, Eye } from 'lucide-react';
 import { CreateWorkOrderDialog } from '@/components/CreateWorkOrderDialog';
 
 interface WorkOrderWithItems {
@@ -22,10 +22,11 @@ interface WorkOrderWithItems {
 
 export function ProductionOverview() {
   const navigate = useNavigate();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [workOrders, setWorkOrders] = useState<WorkOrderWithItems[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [showAll, setShowAll] = useState(false);
 
   useEffect(() => {
     fetchWorkOrders();
@@ -53,13 +54,13 @@ export function ProductionOverview() {
 
   const fetchWorkOrders = async () => {
     try {
-      // Fetch work orders with their items
+      // Fetch work orders - in_progress only by default, but fetch planned too for "view all"
       const { data: workOrdersData, error: woError } = await supabase
         .from('work_orders')
         .select('id, wo_number, product_type, batch_size, status, created_at, created_by')
         .in('status', ['planned', 'in_progress'])
         .order('created_at', { ascending: false })
-        .limit(5);
+        .limit(10);
 
       if (woError) throw woError;
 
@@ -131,15 +132,23 @@ export function ProductionOverview() {
     return status;
   };
 
+  // Filter to show only in_progress unless "View All" is clicked
+  const displayedOrders = showAll 
+    ? workOrders 
+    : workOrders.filter(wo => wo.status === 'in_progress');
+
+  const inProgressCount = workOrders.filter(wo => wo.status === 'in_progress').length;
+  const plannedCount = workOrders.filter(wo => wo.status === 'planned').length;
+
   if (loading) {
     return (
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>{t('activeWorkOrdersTitle')}</CardTitle>
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <CardTitle className="text-sm lg:text-base">{t('activeWorkOrdersTitle')}</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex justify-center py-8">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          <div className="flex justify-center py-6">
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
           </div>
         </CardContent>
       </Card>
@@ -149,48 +158,67 @@ export function ProductionOverview() {
   return (
     <>
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-          <CardTitle>{t('activeWorkOrdersTitle')}</CardTitle>
-          <Button variant="default" size="sm" onClick={() => setDialogOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            {t('createWorkOrder')}
-          </Button>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+          <div className="flex items-center gap-2">
+            <CardTitle className="text-sm lg:text-base">{t('activeWorkOrdersTitle')}</CardTitle>
+            <Badge variant="warning" className="text-xs">{inProgressCount}</Badge>
+            {plannedCount > 0 && !showAll && (
+              <span className="text-xs text-muted-foreground">
+                +{plannedCount} {language === 'nl' ? 'gepland' : 'planned'}
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            {(plannedCount > 0 || showAll) && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="h-7 text-xs"
+                onClick={() => setShowAll(!showAll)}
+              >
+                <Eye className="h-3 w-3 mr-1" />
+                {showAll ? (language === 'nl' ? 'Actief' : 'Active') : (language === 'nl' ? 'Alles' : 'All')}
+              </Button>
+            )}
+            <Button variant="default" size="sm" className="h-7 text-xs" onClick={() => setDialogOpen(true)}>
+              <Plus className="mr-1 h-3 w-3" />
+              {t('createWorkOrder')}
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
-          {workOrders.length > 0 ? (
-            <div className="space-y-3">
-              {workOrders.map((wo) => (
+          {displayedOrders.length > 0 ? (
+            <div className="space-y-2">
+              {displayedOrders.map((wo) => (
                 <div
                   key={wo.id}
                   onClick={() => navigate(`/production/${wo.id}`)}
-                  className="flex items-center justify-between rounded-lg border-2 bg-card p-3 transition-all cursor-pointer hover:bg-accent/50 hover:border-primary"
+                  className="flex items-center justify-between rounded-md border bg-card p-2.5 transition-all cursor-pointer hover:bg-accent/50 hover:border-primary/50"
                 >
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="font-mono text-sm font-semibold">{wo.wo_number}</span>
-                      <Badge variant={getStatusBadgeVariant(wo.status)}>
+                      <span className="font-mono text-xs lg:text-sm font-semibold">{wo.wo_number}</span>
+                      <Badge variant={getStatusBadgeVariant(wo.status)} className="text-[10px] h-5 px-1.5">
                         {getStatusLabel(wo.status)}
                       </Badge>
                     </div>
-                    <div className="mt-1 text-xs text-muted-foreground">
+                    <div className="mt-0.5 text-[11px] lg:text-xs text-muted-foreground truncate">
                       {wo.productBreakdown.length > 0 
                         ? formatProductBreakdownText(wo.productBreakdown)
                         : `${wo.batch_size} items`
                       }
+                      {wo.profiles?.full_name && (
+                        <span className="ml-2 opacity-70">• {wo.profiles.full_name}</span>
+                      )}
                     </div>
-                    {wo.profiles?.full_name && (
-                      <div className="mt-1 text-xs text-muted-foreground">
-                        {t('createdBy')}: {wo.profiles.full_name}
-                      </div>
-                    )}
                   </div>
-                  <ExternalLink className="h-4 w-4 text-muted-foreground" />
+                  <ExternalLink className="h-3.5 w-3.5 text-muted-foreground shrink-0 ml-2" />
                 </div>
               ))}
             </div>
           ) : (
-            <div className="py-8 text-center text-sm text-muted-foreground">
-              {t('noActiveWorkOrders')}
+            <div className="py-6 text-center text-xs lg:text-sm text-muted-foreground">
+              {showAll ? t('noActiveWorkOrders') : (language === 'nl' ? 'Geen actieve werkorders' : 'No work orders in progress')}
             </div>
           )}
         </CardContent>

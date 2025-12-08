@@ -2,6 +2,8 @@
 export type Language = 'en' | 'nl';
 
 export const translations = {
+  reset: { en: 'Reset', nl: 'Reset' },
+  selectRole: { en: 'Select role', nl: 'Selecteer rol' },
   en: {
     // Navigation
     dashboard: 'Dashboard',

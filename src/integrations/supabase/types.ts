@@ -394,6 +394,7 @@ export type Database = {
           full_name: string
           id: string
           language: string
+          notification_prefs: Json | null
           role: Database["public"]["Enums"]["app_role"]
           updated_at: string
         }
@@ -403,6 +404,7 @@ export type Database = {
           full_name: string
           id: string
           language?: string
+          notification_prefs?: Json | null
           role?: Database["public"]["Enums"]["app_role"]
           updated_at?: string
         }
@@ -412,6 +414,7 @@ export type Database = {
           full_name?: string
           id?: string
           language?: string
+          notification_prefs?: Json | null
           role?: Database["public"]["Enums"]["app_role"]
           updated_at?: string
         }
@@ -752,6 +755,8 @@ export type Database = {
           content: string
           created_at: string
           id: string
+          mentions: string[] | null
+          reply_to_id: string | null
           step_number: number | null
           updated_at: string
           user_id: string
@@ -762,6 +767,8 @@ export type Database = {
           content: string
           created_at?: string
           id?: string
+          mentions?: string[] | null
+          reply_to_id?: string | null
           step_number?: number | null
           updated_at?: string
           user_id: string
@@ -772,6 +779,8 @@ export type Database = {
           content?: string
           created_at?: string
           id?: string
+          mentions?: string[] | null
+          reply_to_id?: string | null
           step_number?: number | null
           updated_at?: string
           user_id?: string
@@ -779,6 +788,13 @@ export type Database = {
           work_order_item_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "work_order_notes_reply_to_id_fkey"
+            columns: ["reply_to_id"]
+            isOneToOne: false
+            referencedRelation: "work_order_notes"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "work_order_notes_work_order_id_fkey"
             columns: ["work_order_id"]
