@@ -443,6 +443,16 @@ export const translations = {
     groupBy: 'Group By',
     noGrouping: 'No Grouping',
     overdue: 'Overdue - past delivery date',
+    
+    // Notes & Comments
+    notesAndComments: 'Notes & Comments',
+    writeNote: 'Write a note...',
+    noteAdded: 'Note added',
+    noteDeleted: 'Note deleted',
+    noNotesYet: 'No notes yet',
+    onlineColleagues: 'Online Colleagues',
+    colleaguesCurrentlyOnline: 'Colleagues currently online',
+    noOneElseOnline: 'No one else is online',
   },
   nl: {
     // Navigation
@@ -885,6 +895,16 @@ export const translations = {
     groupBy: 'Groeperen Op',
     noGrouping: 'Geen Groepering',
     overdue: 'Achterstallig - voorbij leveringsdatum',
+    
+    // Notes & Comments
+    notesAndComments: 'Notities & Opmerkingen',
+    writeNote: 'Schrijf een notitie...',
+    noteAdded: 'Notitie toegevoegd',
+    noteDeleted: 'Notitie verwijderd',
+    noNotesYet: 'Nog geen notities',
+    onlineColleagues: 'Online Collega\'s',
+    colleaguesCurrentlyOnline: 'Collega\'s die nu online zijn',
+    noOneElseOnline: 'Niemand anders is online',
   },
 };
 

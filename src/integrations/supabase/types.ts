@@ -747,6 +747,54 @@ export type Database = {
           },
         ]
       }
+      work_order_notes: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          step_number: number | null
+          updated_at: string
+          user_id: string
+          work_order_id: string
+          work_order_item_id: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          step_number?: number | null
+          updated_at?: string
+          user_id: string
+          work_order_id: string
+          work_order_item_id?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          step_number?: number | null
+          updated_at?: string
+          user_id?: string
+          work_order_id?: string
+          work_order_item_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "work_order_notes_work_order_id_fkey"
+            columns: ["work_order_id"]
+            isOneToOne: false
+            referencedRelation: "work_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_order_notes_work_order_item_id_fkey"
+            columns: ["work_order_item_id"]
+            isOneToOne: false
+            referencedRelation: "work_order_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       work_orders: {
         Row: {
           assigned_to: string | null

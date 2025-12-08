@@ -16,6 +16,7 @@ import MeasurementDialog from '@/components/production/MeasurementDialog';
 import ChecklistDialog from '@/components/production/ChecklistDialog';
 import BatchScanDialog from '@/components/production/BatchScanDialog';
 import ValidationHistoryDialog from '@/components/production/ValidationHistoryDialog';
+import { WorkOrderNotes } from '@/components/production/WorkOrderNotes';
 import { generateQualityCertificate } from '@/services/certificateService';
 
 interface PresenceUser {
@@ -656,6 +657,13 @@ const ProductionStep = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Notes section */}
+        <WorkOrderNotes 
+          workOrderId={item.work_order_id} 
+          workOrderItemId={item.id}
+          currentStepNumber={item.current_step}
+        />
       </div>
 
       {stepExecution && currentStep && (
