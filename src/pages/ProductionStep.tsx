@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import Layout from '@/components/Layout';
@@ -16,6 +16,7 @@ import MeasurementDialog from '@/components/production/MeasurementDialog';
 import ChecklistDialog from '@/components/production/ChecklistDialog';
 import BatchScanDialog from '@/components/production/BatchScanDialog';
 import ValidationHistoryDialog from '@/components/production/ValidationHistoryDialog';
+import StepDetailDialog from '@/components/production/StepDetailDialog';
 import { WorkOrderNotes } from '@/components/production/WorkOrderNotes';
 import { generateQualityCertificate } from '@/services/certificateService';
 
@@ -35,6 +36,7 @@ interface StepCompletionInfo {
 
 const ProductionStep = () => {
   const { itemId } = useParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
   const { t } = useLanguage();
   const navigate = useNavigate();
@@ -50,6 +52,8 @@ const ProductionStep = () => {
   const [showChecklistDialog, setShowChecklistDialog] = useState(false);
   const [showBatchScanDialog, setShowBatchScanDialog] = useState(false);
   const [showValidationHistory, setShowValidationHistory] = useState(false);
+  const [showStepDetail, setShowStepDetail] = useState(false);
+  const [viewingStepNumber, setViewingStepNumber] = useState<number | null>(null);
   const [failedSteps, setFailedSteps] = useState<Set<number>>(new Set());
   const [stepCompletions, setStepCompletions] = useState<Map<number, StepCompletionInfo>>(new Map());
   const [presentUsers, setPresentUsers] = useState<PresenceUser[]>([]);
@@ -102,6 +106,20 @@ const ProductionStep = () => {
       supabase.removeChannel(channel);
     };
   }, [user, itemId, currentUserProfile]);
+
+  // Handle viewStep query param for viewing completed steps
+  useEffect(() => {
+    const viewStep = searchParams.get('viewStep');
+    if (viewStep) {
+      const stepNum = parseInt(viewStep, 10);
+      if (!isNaN(stepNum)) {
+        setViewingStepNumber(stepNum);
+        setShowStepDetail(true);
+        // Clear the query param
+        setSearchParams({});
+      }
+    }
+  }, [searchParams, setSearchParams]);
 
   useEffect(() => {
     if (user && itemId) {
@@ -584,17 +602,21 @@ const ProductionStep = () => {
                 const completion = stepCompletions.get(step.step_number);
                 const isCompleted = step.step_number < item.current_step;
                 const isCurrent = step.step_number === item.current_step;
+                const canNavigate = isCompleted; // Can click completed steps to view details
                 
                 return (
                   <div
                     key={step.id}
+                    onClick={() => canNavigate && navigate(`/production/step/${item.id}?viewStep=${step.step_number}`)}
                     className={`flex items-center gap-4 md:gap-3 p-4 md:p-3 rounded-lg transition-all ${
+                      canNavigate ? 'cursor-pointer hover:shadow-md' : ''
+                    } ${
                       isCurrent
                         ? 'bg-primary/10 border-2 border-primary'
                         : isCompleted
                         ? hasFailed
-                          ? 'bg-destructive/10 border border-destructive/30'
-                          : 'bg-accent/50 border border-border'
+                          ? 'bg-destructive/10 border border-destructive/30 hover:bg-destructive/20'
+                          : 'bg-accent/50 border border-border hover:bg-accent'
                         : 'bg-muted/30 border border-border'
                     }`}
                   >
@@ -624,6 +646,9 @@ const ProductionStep = () => {
                           <p className="text-xs text-muted-foreground mt-0.5">
                             {completion.operator_initials || completion.completed_by_name} • {formatDateTime(completion.completed_at)}
                           </p>
+                        )}
+                        {isCompleted && (
+                          <p className="text-xs text-primary mt-0.5">{t('clickToView') || 'Click to view details'}</p>
                         )}
                       </div>
                       <div className="flex items-center gap-2">
@@ -692,14 +717,29 @@ const ProductionStep = () => {
             productionStep={currentStep}
             onComplete={fetchData}
           />
-
-          <ValidationHistoryDialog
-            open={showValidationHistory}
-            onOpenChange={setShowValidationHistory}
-            workOrderItemId={item.id}
-            serialNumber={item.serial_number}
-          />
         </>
+      )}
+
+      {/* Always show validation history dialog - not dependent on stepExecution */}
+      <ValidationHistoryDialog
+        open={showValidationHistory}
+        onOpenChange={setShowValidationHistory}
+        workOrderItemId={item.id}
+        serialNumber={item.serial_number}
+      />
+
+      {/* Step detail dialog for viewing completed steps */}
+      {viewingStepNumber && (
+        <StepDetailDialog
+          open={showStepDetail}
+          onOpenChange={(open) => {
+            setShowStepDetail(open);
+            if (!open) setViewingStepNumber(null);
+          }}
+          workOrderItemId={item.id}
+          stepNumber={viewingStepNumber}
+          productType={item.product_type || workOrder.product_type}
+        />
       )}
     </Layout>
   );
