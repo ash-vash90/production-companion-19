@@ -602,13 +602,13 @@ const ProductionStep = () => {
                 const completion = stepCompletions.get(step.step_number);
                 const isCompleted = step.step_number < item.current_step;
                 const isCurrent = step.step_number === item.current_step;
-                const canNavigate = isCompleted; // Can click completed steps to view details
+                const canNavigate = isCompleted;
                 
                 return (
                   <div
                     key={step.id}
                     onClick={() => canNavigate && navigate(`/production/step/${item.id}?viewStep=${step.step_number}`)}
-                    className={`flex items-center gap-4 md:gap-3 p-4 md:p-3 rounded-lg transition-all ${
+                    className={`flex items-center gap-3 p-3 rounded-lg transition-all ${
                       canNavigate ? 'cursor-pointer hover:shadow-md' : ''
                     } ${
                       isCurrent
@@ -620,62 +620,29 @@ const ProductionStep = () => {
                         : 'bg-muted/30 border border-border'
                     }`}
                   >
-                    <div className={`flex items-center justify-center h-10 w-10 md:h-8 md:w-8 rounded-full ${
+                    <div className={`flex items-center justify-center h-8 w-8 rounded-full shrink-0 ${
                       isCompleted
                         ? hasFailed
-                          ? 'bg-destructive text-destructive-foreground shadow-lg'
-                          : 'bg-primary text-primary-foreground shadow-lg'
+                          ? 'bg-destructive text-destructive-foreground'
+                          : 'bg-primary text-primary-foreground'
                         : isCurrent
                         ? 'bg-primary/20 text-primary border-2 border-primary'
                         : 'bg-muted text-muted-foreground'
                     }`}>
                       {isCompleted ? (
-                        hasFailed ? (
-                          <XCircle className="h-5 w-5 md:h-4 md:w-4" />
-                        ) : (
-                          <CheckCircle2 className="h-5 w-5 md:h-4 md:w-4" />
-                        )
+                        hasFailed ? <XCircle className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />
                       ) : (
-                        <span className="text-base md:text-sm font-bold font-data">{step.step_number}</span>
+                        <span className="text-sm font-bold">{step.step_number}</span>
                       )}
                     </div>
-                    <div className="flex-1 flex items-center justify-between gap-2">
-                      <div className="flex-1">
-                        <span className="text-base md:text-sm font-medium font-data">{step.title_en}</span>
-                        {isCompleted && completion && (
-                          <p className="text-xs text-muted-foreground mt-0.5">
-                            {completion.operator_initials || completion.completed_by_name} • {formatDateTime(completion.completed_at)}
-                          </p>
-                        )}
-                        {isCompleted && (
-                          <p className="text-xs text-primary mt-0.5">{t('clickToView') || 'Click to view details'}</p>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {isCompleted && completion && (
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Avatar className="h-7 w-7">
-                                  {completion.avatar_url && (
-                                    <AvatarImage src={completion.avatar_url} alt={completion.completed_by_name} />
-                                  )}
-                                  <AvatarFallback className="bg-muted text-xs">
-                                    {completion.operator_initials || getInitials(completion.completed_by_name)}
-                                  </AvatarFallback>
-                                </Avatar>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>{completion.completed_by_name}</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        )}
-                        {hasFailed && (
-                          <Badge variant="destructive" className="ml-2">{t('failed')}</Badge>
-                        )}
-                      </div>
+                    <div className="flex-1 min-w-0">
+                      <span className="text-sm font-medium">{step.title_en}</span>
+                      {isCompleted && completion && (
+                        <p className="text-xs text-muted-foreground">{formatDateTime(completion.completed_at)}</p>
+                      )}
                     </div>
+                    {hasFailed && <Badge variant="destructive" className="text-xs">{t('failed')}</Badge>}
+                    {isCompleted && <Badge variant="outline" className="text-xs">{t('view')}</Badge>}
                   </div>
                 );
               })}

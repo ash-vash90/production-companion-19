@@ -422,26 +422,6 @@ const WorkOrders = () => {
                 <span className="font-medium">{formatDate(wo.scheduled_date)}</span>
               </div>
             )}
-            {wo.profiles && (
-              <div className="flex justify-between items-center py-1">
-                <span className="text-muted-foreground">{t('createdBy')}:</span>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger>
-                      <Avatar className="h-6 w-6">
-                        <AvatarImage src={wo.profiles.avatar_url || undefined} />
-                        <AvatarFallback className="text-[10px] bg-primary/10">
-                          {getInitials(wo.profiles.full_name)}
-                        </AvatarFallback>
-                      </Avatar>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>{wo.profiles.full_name}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
-            )}
           </div>
           <div className="flex gap-2 mt-3 pt-3 border-t">
             <Button
