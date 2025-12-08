@@ -120,12 +120,12 @@ export function TodaysSchedule() {
 
   return (
     <Card className="h-full flex flex-col">
-      <CardHeader className="pb-2">
-        <CardTitle className="flex items-center gap-2 text-sm min-w-0">
-          <Calendar className="h-4 w-4 shrink-0" />
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2 text-base min-w-0">
+          <Calendar className="h-5 w-5 shrink-0" />
           <span className="truncate">{language === 'nl' ? 'Planning Vandaag' : "Today's Schedule"}</span>
           {workOrders.length > 0 && (
-            <Badge variant="secondary" className="shrink-0 text-[10px]">
+            <Badge variant="secondary" className="shrink-0">
               {workOrders.length}
             </Badge>
           )}
@@ -133,7 +133,7 @@ export function TodaysSchedule() {
       </CardHeader>
       <CardContent className="flex-1 flex flex-col pt-0">
         {workOrders.length === 0 ? (
-          <div className="text-xs text-muted-foreground py-4 text-center flex-1 flex items-center justify-center">
+          <div className="text-sm text-muted-foreground py-6 text-center flex-1 flex items-center justify-center">
             {language === 'nl' 
               ? 'Geen werkorders gepland voor vandaag' 
               : 'No work orders scheduled for today'}
@@ -147,18 +147,18 @@ export function TodaysSchedule() {
               return (
                 <div
                   key={wo.id}
-                  className="flex items-center justify-between p-2 rounded-md border bg-card hover:bg-muted/50 transition-colors cursor-pointer"
+                  className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors cursor-pointer"
                   onClick={() => navigate(`/production/${wo.id}`)}
                 >
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5">
-                      <span className="font-medium text-xs">{wo.wo_number}</span>
-                      <Badge variant={getStatusVariant(wo.status) as any} className="text-[9px] h-4 px-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-sm">{wo.wo_number}</span>
+                      <Badge variant={getStatusVariant(wo.status) as any} className="text-xs">
                         {formatStatus(wo.status)}
                       </Badge>
                     </div>
-                    <div className="flex items-center gap-1 mt-0.5 text-[10px] text-muted-foreground">
-                      <Package className="h-2.5 w-2.5" />
+                    <div className="flex items-center gap-1.5 mt-1 text-sm text-muted-foreground">
+                      <Package className="h-3.5 w-3.5" />
                       <span className="truncate">{breakdownText || formatProductType(wo.product_type)}</span>
                     </div>
                   </div>
@@ -166,20 +166,20 @@ export function TodaysSchedule() {
               );
             })}
             {workOrders.length > 4 && (
-              <div className="text-[10px] text-muted-foreground text-center">
+              <div className="text-sm text-muted-foreground text-center">
                 +{workOrders.length - 4} {language === 'nl' ? 'meer' : 'more'}
               </div>
             )}
           </div>
         )}
-        <div className="pt-3 mt-auto border-t">
+        <div className="pt-4 mt-auto border-t">
           <Button 
             variant="outline" 
             size="sm" 
-            className="w-full h-7 text-[10px]"
+            className="w-full"
             onClick={() => navigate('/calendar')}
           >
-            <Calendar className="h-3 w-3 mr-1.5" />
+            <Calendar className="h-4 w-4 mr-2" />
             {language === 'nl' ? 'Bekijk kalender' : 'View calendar'}
           </Button>
         </div>
