@@ -17,7 +17,7 @@ import { WorkOrderFilters, FilterState } from '@/components/workorders/WorkOrder
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { getProductBreakdown, ProductBreakdown, formatDate } from '@/lib/utils';
-import { Loader2, Plus, Package, Filter, Eye, AlertTriangle, ChevronDown, ChevronRight, Layers, RotateCcw } from 'lucide-react';
+import { Loader2, Plus, Package, Filter, Eye, AlertTriangle, ChevronDown, ChevronRight, Layers, RotateCcw, LayoutGrid, Table } from 'lucide-react';
 import { format, differenceInDays, parseISO, isBefore } from 'date-fns';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
@@ -55,6 +55,9 @@ const DEFAULT_FILTERS: FilterState = {
 
 const FILTERS_STORAGE_KEY = 'workorders_filters';
 const GROUPBY_STORAGE_KEY = 'workorders_groupby';
+const VIEWMODE_STORAGE_KEY = 'workorders_viewmode';
+
+type ViewMode = 'cards' | 'table';
 
 const WorkOrders = () => {
   const { user } = useAuth();
@@ -85,6 +88,16 @@ const WorkOrders = () => {
     }
   });
   
+  // Load persisted viewMode from sessionStorage
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    try {
+      const saved = sessionStorage.getItem(VIEWMODE_STORAGE_KEY);
+      return (saved as ViewMode) || 'cards';
+    } catch {
+      return 'cards';
+    }
+  });
+  
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
   // Persist filters to sessionStorage
@@ -96,6 +109,11 @@ const WorkOrders = () => {
   useEffect(() => {
     sessionStorage.setItem(GROUPBY_STORAGE_KEY, groupBy);
   }, [groupBy]);
+
+  // Persist viewMode to sessionStorage
+  useEffect(() => {
+    sessionStorage.setItem(VIEWMODE_STORAGE_KEY, viewMode);
+  }, [viewMode]);
 
   useEffect(() => {
     if (!user) {
@@ -471,6 +489,92 @@ const WorkOrders = () => {
     );
   };
 
+  const renderTableView = (orders: WorkOrderWithItems[]) => (
+    <Card className="shadow-sm overflow-hidden">
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead className="bg-muted/50 border-b">
+            <tr>
+              <th className="text-left p-3 font-medium">{t('workOrderNumber')}</th>
+              <th className="text-left p-3 font-medium">{t('products')}</th>
+              <th className="text-left p-3 font-medium">{t('customer')}</th>
+              <th className="text-left p-3 font-medium">{t('status')}</th>
+              <th className="text-left p-3 font-medium">{t('scheduledDate')}</th>
+              <th className="text-left p-3 font-medium">{t('createdBy')}</th>
+              <th className="text-right p-3 font-medium">{t('actions')}</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y">
+            {orders.map((wo) => {
+              const overdue = isOverdue(wo);
+              return (
+                <tr key={wo.id} className={`hover:bg-muted/30 ${overdue ? 'bg-destructive/5' : ''}`}>
+                  <td className="p-3 font-data font-medium">
+                    <div className="flex items-center gap-2">
+                      {overdue && <AlertTriangle className="h-4 w-4 text-destructive" />}
+                      {wo.wo_number}
+                    </div>
+                  </td>
+                  <td className="p-3">
+                    <div className="flex flex-wrap gap-1">
+                      {wo.productBreakdown.length > 0 
+                        ? wo.productBreakdown.map((item, idx) => (
+                            <Badge key={idx} variant="secondary" className="text-xs">
+                              {item.count}× {item.label}
+                            </Badge>
+                          ))
+                        : <span className="text-muted-foreground">{wo.batch_size} items</span>
+                      }
+                    </div>
+                  </td>
+                  <td className="p-3 text-muted-foreground">{wo.customer_name || '-'}</td>
+                  <td className="p-3">
+                    <Badge variant={getStatusVariant(wo.status)}>{t(wo.status as any)}</Badge>
+                  </td>
+                  <td className={`p-3 ${overdue ? 'text-destructive font-medium' : 'text-muted-foreground'}`}>
+                    {wo.scheduled_date ? formatDate(wo.scheduled_date) : '-'}
+                  </td>
+                  <td className="p-3 text-muted-foreground">{wo.profiles?.full_name || '-'}</td>
+                  <td className="p-3 text-right">
+                    <div className="flex justify-end gap-2">
+                      <Button variant="outline" size="sm" onClick={() => navigate(`/production/${wo.id}`)}>
+                        <Eye className="h-4 w-4 mr-1" />
+                        {t('view')}
+                      </Button>
+                      {isAdmin && (
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={async () => {
+                            if (confirm(t('confirmCancelWorkOrder'))) {
+                              try {
+                                const { error } = await supabase
+                                  .from('work_orders')
+                                  .update({ status: 'cancelled' })
+                                  .eq('id', wo.id);
+                                if (error) throw error;
+                                toast.success(t('success'), { description: t('workOrderCancelled') });
+                                fetchWorkOrders();
+                              } catch (error: any) {
+                                toast.error(t('error'), { description: error.message });
+                              }
+                            }
+                          }}
+                        >
+                          {t('cancel')}
+                        </Button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </Card>
+  );
+
   if (!user) return null;
 
   return (
@@ -515,22 +619,45 @@ const WorkOrders = () => {
               )}
             </div>
             
-            {/* Grouping Select */}
-            <div className="flex items-center gap-2">
-              <Layers className="h-3.5 w-3.5 text-muted-foreground" />
-              <Select value={groupBy} onValueChange={(v) => setGroupBy(v as GroupByOption)}>
-                <SelectTrigger className="h-8 w-[140px] text-xs">
-                  <SelectValue placeholder={t('groupBy')} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">{t('noGrouping')}</SelectItem>
-                  <SelectItem value="status">{t('status')}</SelectItem>
-                  <SelectItem value="deliveryMonth">{t('deliveryMonth')}</SelectItem>
-                  <SelectItem value="createdMonth">{t('createdMonth')}</SelectItem>
-                  <SelectItem value="batchSize">{t('batchSize')}</SelectItem>
-                  <SelectItem value="customer">{t('customer')}</SelectItem>
-                </SelectContent>
-              </Select>
+            {/* View Toggle and Grouping */}
+            <div className="flex items-center gap-3">
+              {/* View Mode Toggle */}
+              <div className="flex items-center border rounded-md">
+                <Button
+                  variant={viewMode === 'cards' ? 'secondary' : 'ghost'}
+                  size="sm"
+                  className="h-8 px-2 rounded-r-none"
+                  onClick={() => setViewMode('cards')}
+                >
+                  <LayoutGrid className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant={viewMode === 'table' ? 'secondary' : 'ghost'}
+                  size="sm"
+                  className="h-8 px-2 rounded-l-none"
+                  onClick={() => setViewMode('table')}
+                >
+                  <Table className="h-4 w-4" />
+                </Button>
+              </div>
+              
+              {/* Grouping Select */}
+              <div className="flex items-center gap-2">
+                <Layers className="h-3.5 w-3.5 text-muted-foreground" />
+                <Select value={groupBy} onValueChange={(v) => setGroupBy(v as GroupByOption)}>
+                  <SelectTrigger className="h-8 w-[140px] text-xs">
+                    <SelectValue placeholder={t('groupBy')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">{t('noGrouping')}</SelectItem>
+                    <SelectItem value="status">{t('status')}</SelectItem>
+                    <SelectItem value="deliveryMonth">{t('deliveryMonth')}</SelectItem>
+                    <SelectItem value="createdMonth">{t('createdMonth')}</SelectItem>
+                    <SelectItem value="batchSize">{t('batchSize')}</SelectItem>
+                    <SelectItem value="customer">{t('customer')}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
 
@@ -565,9 +692,13 @@ const WorkOrders = () => {
               </Card>
             )
           ) : groupBy === 'none' ? (
-            <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
-              {filteredOrders.map(renderWorkOrderCard)}
-            </div>
+            viewMode === 'cards' ? (
+              <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {filteredOrders.map(renderWorkOrderCard)}
+              </div>
+            ) : (
+              renderTableView(filteredOrders)
+            )
           ) : (
             <div className="space-y-2">
               {Object.entries(groupedOrders).sort().map(([groupKey, orders]) => (
@@ -596,9 +727,13 @@ const WorkOrders = () => {
                     </CollapsibleTrigger>
                     <CollapsibleContent>
                       <CardContent className="pt-0 pb-3">
-                        <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
-                          {orders.map(renderWorkOrderCard)}
-                        </div>
+                        {viewMode === 'cards' ? (
+                          <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                            {orders.map(renderWorkOrderCard)}
+                          </div>
+                        ) : (
+                          renderTableView(orders)
+                        )}
                       </CardContent>
                     </CollapsibleContent>
                   </Card>

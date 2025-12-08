@@ -297,6 +297,15 @@ const ProductionStep = () => {
 
       setStepExecution(data);
       
+      // Update work order item status to in_progress if it's planned
+      if (item.status === 'planned') {
+        await supabase
+          .from('work_order_items')
+          .update({ status: 'in_progress' })
+          .eq('id', itemId);
+        setItem({ ...item, status: 'in_progress' });
+      }
+      
       // Update work order status to in_progress if it's planned
       if (workOrder.status === 'planned') {
         await supabase
