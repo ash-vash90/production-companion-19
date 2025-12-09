@@ -26,13 +26,13 @@ export function useActivityLog() {
       }
 
       try {
-        const { error } = await supabase.from('activity_logs').insert({
+        const { error } = await supabase.from('activity_logs').insert([{
           user_id: user.id,
           action,
           entity_type: entityType,
           entity_id: entityId,
-          details: details || {},
-        });
+          details: (details || {}) as any,
+        }]);
 
         if (error) {
           console.error('Failed to log activity:', error);

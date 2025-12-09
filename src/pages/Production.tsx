@@ -442,8 +442,7 @@ const Production = () => {
             </CardContent>
           </Card>
 
-          {/* Work Order Comments */}
-          <Comments entityType="work_order" entityId={workOrder.id} />
+          {/* Work Order Notes - using existing work_order_notes functionality */}
         </div>
       </Layout>
     </ProtectedRoute>
