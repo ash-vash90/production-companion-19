@@ -115,12 +115,15 @@ export function ProductionOverview() {
     }
   };
 
-  const getStatusBadgeVariant = (status: string) => {
-    if (status === 'in_progress') return 'warning';
-    if (status === 'planned') return 'info';
-    if (status === 'completed') return 'success';
-    if (status === 'cancelled') return 'destructive';
-    return 'secondary';
+  const getStatusVariant = (status: string): 'default' | 'secondary' | 'success' | 'warning' | 'info' | 'destructive' | 'outline' => {
+    const variants: Record<string, 'default' | 'secondary' | 'success' | 'warning' | 'info' | 'destructive' | 'outline'> = {
+      planned: 'secondary',
+      in_progress: 'info',
+      completed: 'success',
+      on_hold: 'warning',
+      cancelled: 'destructive',
+    };
+    return variants[status] || 'secondary';
   };
 
   const getStatusLabel = (status: string) => {

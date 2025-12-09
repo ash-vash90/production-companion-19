@@ -261,7 +261,7 @@ const Production = () => {
       on_hold: 'bg-muted text-muted-foreground',
       cancelled: 'bg-destructive text-destructive-foreground',
     };
-    return colors[status] || 'bg-muted';
+    return variants[status] || 'secondary';
   };
 
   if (!user) return null;
@@ -438,6 +438,9 @@ const Production = () => {
               </div>
             </CardContent>
           </Card>
+
+          {/* Work Order Comments */}
+          <Comments entityType="work_order" entityId={workOrder.id} />
         </div>
       </Layout>
     </ProtectedRoute>

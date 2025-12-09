@@ -100,7 +100,7 @@ export function RecentActivity() {
       scan_batch: 'bg-warning text-warning-foreground',
       print_label: 'bg-secondary text-secondary-foreground',
     };
-    return colors[action] || 'bg-muted text-muted-foreground';
+    return variants[action] || 'secondary';
   };
 
   const formatActivityDetails = (activity: ActivityLog): string | null => {
