@@ -20,7 +20,7 @@ import StepDetailDialog from '@/components/production/StepDetailDialog';
 import StepEditDialog from '@/components/production/StepEditDialog';
 import { WorkOrderNotes } from '@/components/production/WorkOrderNotes';
 import { generateQualityCertificate } from '@/services/certificateService';
-import { Comments } from '@/components/Comments';
+
 
 interface PresenceUser {
   id: string;
