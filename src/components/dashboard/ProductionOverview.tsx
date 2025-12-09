@@ -117,10 +117,10 @@ export function ProductionOverview() {
 
   const getStatusVariant = (status: string): 'default' | 'secondary' | 'success' | 'warning' | 'info' | 'destructive' | 'outline' => {
     const variants: Record<string, 'default' | 'secondary' | 'success' | 'warning' | 'info' | 'destructive' | 'outline'> = {
-      planned: 'secondary',
-      in_progress: 'info',
+      planned: 'info',
+      in_progress: 'warning',
       completed: 'success',
-      on_hold: 'warning',
+      on_hold: 'secondary',
       cancelled: 'destructive',
     };
     return variants[status] || 'secondary';
