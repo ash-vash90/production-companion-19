@@ -28,6 +28,7 @@ const RoleManagement = lazy(() => import("./pages/RoleManagement"));
 const ProductionCalendar = lazy(() => import("./pages/ProductionCalendar"));
 const Genealogy = lazy(() => import("./pages/Genealogy"));
 const Search = lazy(() => import("./pages/Search"));
+const Inventory = lazy(() => import("./pages/Inventory"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -66,6 +67,7 @@ const App = () => (
                   <Route path="/genealogy/:serialNumber" element={<Genealogy />} />
                   <Route path="/settings" element={<Settings />} />
                   <Route path="/personal-settings" element={<PersonalSettings />} />
+                  <Route path="/inventory" element={<Inventory />} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>
