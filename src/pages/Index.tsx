@@ -90,20 +90,20 @@ const Index = () => {
             <WeatherWidget />
           </div>
 
-          {/* Top row: Today's Schedule and Active Colleagues - FIRST */}
-          <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
+          {/* Top row: Today's Schedule and Active Colleagues */}
+          <div className="grid gap-4 md:gap-6 grid-cols-1 md:grid-cols-2">
             <TodaysSchedule />
             <ActiveOperators />
           </div>
 
-          {/* Main Content Grid */}
-          <div className="grid gap-6 lg:grid-cols-5">
-            <div className="lg:col-span-3 space-y-6">
-              <ProductionOverview />
-            </div>
-            <div className="lg:col-span-2">
-              <RecentActivity />
-            </div>
+          {/* Work Orders - full width on mobile/tablet */}
+          <div className="w-full">
+            <ProductionOverview />
+          </div>
+
+          {/* Recent Activity - full width on mobile/tablet */}
+          <div className="w-full">
+            <RecentActivity />
           </div>
         </div>
       </Layout>
