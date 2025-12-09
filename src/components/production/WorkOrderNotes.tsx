@@ -10,7 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { toast } from 'sonner';
-import { MessageSquare, Send, Loader2, Trash2, Reply, AtSign, Check } from 'lucide-react';
+import { MessageSquare, Send, Loader2, Trash2, Reply, AtSign, Check, Pencil, X } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { nl, enUS } from 'date-fns/locale';
 import { createNotification } from '@/services/notificationService';
@@ -51,6 +51,8 @@ export function WorkOrderNotes({ workOrderId, workOrderItemId, currentStepNumber
   const [mentionOpen, setMentionOpen] = useState(false);
   const [mentionQuery, setMentionQuery] = useState('');
   const [selectedMentions, setSelectedMentions] = useState<string[]>([]);
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState('');
   const notesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -177,9 +179,9 @@ export function WorkOrderNotes({ workOrderId, workOrderItemId, currentStepNumber
         if (mentionedUserId !== user.id) {
           await createNotification({
             userId: mentionedUserId,
-            type: 'work_order_completed', // Using existing type for now
+            type: 'user_mentioned',
             title: language === 'nl' ? 'Je bent genoemd' : 'You were mentioned',
-            message: language === 'nl' 
+            message: language === 'nl'
               ? `${allUsers.find(u => u.id === user.id)?.full_name || 'Iemand'} heeft je genoemd in een opmerking`
               : `${allUsers.find(u => u.id === user.id)?.full_name || 'Someone'} mentioned you in a comment`,
             entityType: 'work_order',
@@ -220,6 +222,36 @@ export function WorkOrderNotes({ workOrderId, workOrderItemId, currentStepNumber
     }
   };
 
+  const handleStartEdit = (note: Note) => {
+    setEditingNoteId(note.id);
+    setEditContent(note.content);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingNoteId(null);
+    setEditContent('');
+  };
+
+  const handleSaveEdit = async (noteId: string) => {
+    if (!editContent.trim()) return;
+
+    try {
+      const { error } = await supabase
+        .from('work_order_notes')
+        .update({ content: editContent.trim() })
+        .eq('id', noteId);
+
+      if (error) throw error;
+
+      setEditingNoteId(null);
+      setEditContent('');
+      toast.success(language === 'nl' ? 'Notitie bijgewerkt' : 'Note updated');
+    } catch (error: any) {
+      console.error('Error updating note:', error);
+      toast.error(t('error'), { description: error.message });
+    }
+  };
+
   const getInitials = (name: string) => {
     if (!name) return '?';
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
@@ -245,12 +277,12 @@ export function WorkOrderNotes({ workOrderId, workOrderItemId, currentStepNumber
     <div
       key={note.id}
       className={`flex gap-2 p-2 rounded-lg border ${
-        note.user_id === user?.id ? 'bg-primary/5 border-primary/20' : 'bg-muted/30'
-      } ${isReply ? 'ml-6 border-l-2 border-l-primary/30' : ''}`}
+        note.user_id === user?.id ? 'bg-accent/50 border-border' : 'bg-muted/30 border-border/50'
+      } ${isReply ? 'ml-6 border-l-2 border-l-muted-foreground/30' : ''}`}
     >
       <Avatar className="h-6 w-6 shrink-0">
         <AvatarImage src={note.avatar_url} />
-        <AvatarFallback className="text-[10px] bg-primary/10 text-primary">
+        <AvatarFallback className="text-[10px] bg-muted text-muted-foreground">
           {getInitials(note.user_name || '')}
         </AvatarFallback>
       </Avatar>
@@ -273,25 +305,66 @@ export function WorkOrderNotes({ workOrderId, workOrderItemId, currentStepNumber
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-5 w-5 text-muted-foreground hover:text-primary"
+                className="h-5 w-5 text-muted-foreground hover:text-foreground"
                 onClick={() => setReplyingTo(note)}
               >
                 <Reply className="h-3 w-3" />
               </Button>
             )}
-            {note.user_id === user?.id && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-5 w-5 text-muted-foreground hover:text-destructive"
-                onClick={() => handleDelete(note.id)}
-              >
-                <Trash2 className="h-3 w-3" />
-              </Button>
+            {note.user_id === user?.id && editingNoteId !== note.id && (
+              <>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-5 w-5 text-muted-foreground hover:text-foreground"
+                  onClick={() => handleStartEdit(note)}
+                >
+                  <Pencil className="h-3 w-3" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-5 w-5 text-muted-foreground hover:text-destructive"
+                  onClick={() => handleDelete(note.id)}
+                >
+                  <Trash2 className="h-3 w-3" />
+                </Button>
+              </>
             )}
           </div>
         </div>
-        <p className="text-xs mt-0.5 whitespace-pre-wrap break-words">{note.content}</p>
+        {editingNoteId === note.id ? (
+          <div className="mt-1 space-y-2">
+            <Textarea
+              value={editContent}
+              onChange={(e) => setEditContent(e.target.value)}
+              className="min-h-[60px] resize-none text-xs"
+              autoFocus
+            />
+            <div className="flex gap-1 justify-end">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 px-2 text-xs"
+                onClick={handleCancelEdit}
+              >
+                <X className="h-3 w-3 mr-1" />
+                {language === 'nl' ? 'Annuleren' : 'Cancel'}
+              </Button>
+              <Button
+                size="sm"
+                className="h-6 px-2 text-xs"
+                onClick={() => handleSaveEdit(note.id)}
+                disabled={!editContent.trim()}
+              >
+                <Check className="h-3 w-3 mr-1" />
+                {language === 'nl' ? 'Opslaan' : 'Save'}
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <p className="text-xs mt-0.5 whitespace-pre-wrap break-words">{note.content}</p>
+        )}
         {/* Render replies */}
         {!isReply && getReplies(note.id).length > 0 && (
           <div className="mt-2 space-y-2">
@@ -323,11 +396,12 @@ export function WorkOrderNotes({ workOrderId, workOrderItemId, currentStepNumber
         ) : (
           <>
             {/* Notes list */}
-            <div className="max-h-48 overflow-y-auto space-y-2">
+            <div className="max-h-80 overflow-y-auto space-y-2 pr-1">
               {parentNotes.length > 0 ? (
                 parentNotes.map((note) => renderNote(note))
               ) : (
-                <div className="py-3 text-center text-xs text-muted-foreground">
+                <div className="py-6 text-center text-xs text-muted-foreground">
+                  <MessageSquare className="h-8 w-8 mx-auto mb-2 opacity-40" />
                   {language === 'nl' ? 'Nog geen notities' : 'No notes yet'}
                 </div>
               )}

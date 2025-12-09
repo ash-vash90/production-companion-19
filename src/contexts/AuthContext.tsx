@@ -32,11 +32,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return now - startTime > SESSION_TIMEOUT_MS;
   };
 
-  const handleExpiredSession = () => {
+  const handleExpiredSession = async () => {
     localStorage.removeItem(SESSION_START_KEY);
-    supabase.auth.signOut();
-    toast.info('Session expired', { 
-      description: 'You have been logged out after 12 hours. Please sign in again.' 
+    try {
+      await supabase.auth.signOut();
+    } catch (error) {
+      console.error('Error signing out expired session:', error);
+    }
+    toast.info('Session expired', {
+      description: 'You have been logged out after 12 hours. Please sign in again.'
     });
   };
 
@@ -62,24 +66,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session: existingSession } }) => {
-      if (existingSession) {
-        // Check if session has timed out
-        if (checkSessionTimeout()) {
-          handleExpiredSession();
-          setSession(null);
-          setUser(null);
-        } else {
-          setSession(existingSession);
-          setUser(existingSession.user);
-          // Ensure session start is tracked
-          if (!localStorage.getItem(SESSION_START_KEY)) {
-            localStorage.setItem(SESSION_START_KEY, Date.now().toString());
+    supabase.auth.getSession()
+      .then(({ data: { session: existingSession } }) => {
+        if (existingSession) {
+          // Check if session has timed out
+          if (checkSessionTimeout()) {
+            handleExpiredSession();
+            setSession(null);
+            setUser(null);
+          } else {
+            setSession(existingSession);
+            setUser(existingSession.user);
+            // Ensure session start is tracked
+            if (!localStorage.getItem(SESSION_START_KEY)) {
+              localStorage.setItem(SESSION_START_KEY, Date.now().toString());
+            }
           }
         }
-      }
-      setLoading(false);
-    });
+        setLoading(false);
+      })
+      .catch((error) => {
+        console.error('Error getting session:', error);
+        setLoading(false);
+      });
 
     // Set up periodic session timeout check (every 5 minutes)
     sessionCheckRef.current = setInterval(() => {
@@ -126,7 +135,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signOut = async () => {
     localStorage.removeItem(SESSION_START_KEY);
-    await supabase.auth.signOut();
+    try {
+      await supabase.auth.signOut();
+    } catch (error) {
+      console.error('Error signing out:', error);
+      throw error;
+    }
   };
 
   return (

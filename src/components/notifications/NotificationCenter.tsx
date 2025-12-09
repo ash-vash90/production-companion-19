@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { formatDistanceToNow } from 'date-fns';
 import { nl, enUS } from 'date-fns/locale';
 import { toast } from '@/hooks/use-toast';
@@ -29,6 +30,7 @@ interface Notification {
 export function NotificationCenter() {
   const { user } = useAuth();
   const { language, t } = useLanguage();
+  const { sendNotification, isEnabled: pushEnabled } = usePushNotifications();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -74,7 +76,7 @@ export function NotificationCenter() {
         (payload) => {
           const newNotification = payload.new as Notification;
           setNotifications(prev => [newNotification, ...prev]);
-          
+
           // Show instant toast for non-cancelled notifications
           if (newNotification.type !== 'work_order_cancelled') {
             toast({
@@ -82,6 +84,14 @@ export function NotificationCenter() {
               description: newNotification.message,
               variant: getToastVariant(newNotification.type),
             });
+
+            // Send browser push notification if enabled and tab is not focused
+            if (pushEnabled && document.hidden) {
+              sendNotification(newNotification.title, {
+                body: newNotification.message,
+                tag: newNotification.id,
+              });
+            }
           }
         }
       )
@@ -141,6 +151,8 @@ export function NotificationCenter() {
         return 'info';
       case 'exact_sync_error':
         return 'warning';
+      case 'user_mentioned':
+        return 'secondary';
       default:
         return 'secondary';
     }
@@ -156,6 +168,8 @@ export function NotificationCenter() {
         return language === 'nl' ? 'Gesynchroniseerd' : 'Synced';
       case 'exact_sync_error':
         return language === 'nl' ? 'Synchronisatie mislukt' : 'Sync Failed';
+      case 'user_mentioned':
+        return language === 'nl' ? 'Vermelding' : 'Mention';
       default:
         return type;
     }
