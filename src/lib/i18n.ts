@@ -258,7 +258,8 @@ export const translations = {
     trackShipments: 'Track shipments',
     manageMaterials: 'Manage materials',
     viewInventory: 'View inventory',
-    
+    inventory: 'Inventory',
+
     // Search and Filters
     searchWorkOrders: 'Search work orders...',
     filterByStatus: 'Filter by status',
@@ -719,7 +720,8 @@ export const translations = {
     trackShipments: 'Zendingen volgen',
     manageMaterials: 'Materialen beheren',
     viewInventory: 'Voorraad bekijken',
-    
+    inventory: 'Voorraad',
+
     // Search and Filters
     searchWorkOrders: 'Zoek werkorders...',
     filterByStatus: 'Filter op status',
