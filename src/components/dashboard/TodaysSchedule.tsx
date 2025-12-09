@@ -2,12 +2,13 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Calendar, Package } from 'lucide-react';
+import { Calendar, Package, AlertTriangle, Clock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { formatProductType, formatStatus, getProductBreakdown, formatProductBreakdownText } from '@/lib/utils';
-import { format } from 'date-fns';
+import { format, parseISO, differenceInDays, isAfter } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
+import { cn } from '@/lib/utils';
 
 interface WorkOrderItem {
   id: string;
@@ -20,7 +21,8 @@ interface WorkOrder {
   status: string;
   product_type: string;
   batch_size: number;
-  scheduled_date: string | null;
+  start_date: string | null;
+  shipping_date: string | null;
   items?: WorkOrderItem[];
 }
 
@@ -35,8 +37,8 @@ export function TodaysSchedule() {
     
     const { data: woData, error: woError } = await supabase
       .from('work_orders')
-      .select('id, wo_number, status, product_type, batch_size, scheduled_date')
-      .eq('scheduled_date', today)
+      .select('id, wo_number, status, product_type, batch_size, start_date, shipping_date')
+      .eq('start_date', today)
       .neq('status', 'cancelled')
       .order('wo_number', { ascending: true });
 
@@ -100,6 +102,20 @@ export function TodaysSchedule() {
     }
   };
 
+  const getShippingUrgency = (shippingDate: string | null) => {
+    if (!shippingDate) return null;
+    const today = new Date();
+    const shipDate = parseISO(shippingDate);
+    const daysUntilShipping = differenceInDays(shipDate, today);
+    
+    if (isAfter(today, shipDate)) {
+      return 'overdue'; // Past due - red
+    } else if (daysUntilShipping <= 2) {
+      return 'urgent'; // Nearing - yellow
+    }
+    return null;
+  };
+
   if (loading) {
     return (
       <Card className="h-full">
@@ -143,11 +159,16 @@ export function TodaysSchedule() {
             {workOrders.slice(0, 4).map((wo) => {
               const productBreakdown = wo.items ? getProductBreakdown(wo.items) : [];
               const breakdownText = formatProductBreakdownText(productBreakdown);
+              const urgency = getShippingUrgency(wo.shipping_date);
               
               return (
                 <div
                   key={wo.id}
-                  className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors cursor-pointer"
+                  className={cn(
+                    "flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors cursor-pointer",
+                    urgency === 'overdue' && "border-destructive/50 bg-destructive/5",
+                    urgency === 'urgent' && "border-warning/50 bg-warning/5"
+                  )}
                   onClick={() => navigate(`/production/${wo.id}`)}
                 >
                   <div className="flex-1 min-w-0">
@@ -156,10 +177,25 @@ export function TodaysSchedule() {
                       <Badge variant={getStatusVariant(wo.status) as any} className="text-xs">
                         {formatStatus(wo.status)}
                       </Badge>
+                      {urgency === 'overdue' && (
+                        <AlertTriangle className="h-3.5 w-3.5 text-destructive" />
+                      )}
+                      {urgency === 'urgent' && (
+                        <Clock className="h-3.5 w-3.5 text-warning" />
+                      )}
                     </div>
                     <div className="flex items-center gap-1.5 mt-1 text-sm text-muted-foreground">
                       <Package className="h-3.5 w-3.5" />
                       <span className="truncate">{breakdownText || formatProductType(wo.product_type)}</span>
+                      {wo.shipping_date && (
+                        <span className={cn(
+                          "text-xs ml-auto",
+                          urgency === 'overdue' && "text-destructive font-medium",
+                          urgency === 'urgent' && "text-warning font-medium"
+                        )}>
+                          → {format(parseISO(wo.shipping_date), 'dd/MM')}
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>

@@ -40,7 +40,8 @@ export function CreateWorkOrderDialog({ open, onOpenChange, onSuccess, trigger }
   const [woNumber, setWoNumber] = useState('');
   const [generatingWO, setGeneratingWO] = useState(false);
   const [serialPrefixes, setSerialPrefixes] = useState<SerialPrefixes | null>(null);
-  const [scheduledDate, setScheduledDate] = useState<Date | undefined>(undefined);
+  const [startDate, setStartDate] = useState<Date | undefined>(undefined);
+  const [shippingDate, setShippingDate] = useState<Date | undefined>(undefined);
   const [customerName, setCustomerName] = useState('');
   const [externalOrderNumber, setExternalOrderNumber] = useState('');
   const [orderValue, setOrderValue] = useState('');
@@ -50,7 +51,8 @@ export function CreateWorkOrderDialog({ open, onOpenChange, onSuccess, trigger }
 
   // Validation errors
   const [errors, setErrors] = useState<{
-    scheduledDate?: string;
+    startDate?: string;
+    shippingDate?: string;
     customerName?: string;
     externalOrderNumber?: string;
     orderValue?: string;
@@ -62,7 +64,8 @@ export function CreateWorkOrderDialog({ open, onOpenChange, onSuccess, trigger }
       generateWONumber();
       loadSerialPrefixes();
       // Reset form
-      setScheduledDate(undefined);
+      setStartDate(undefined);
+      setShippingDate(undefined);
       setCustomerName('');
       setExternalOrderNumber('');
       setOrderValue('');
@@ -115,8 +118,16 @@ export function CreateWorkOrderDialog({ open, onOpenChange, onSuccess, trigger }
   const validate = (): boolean => {
     const newErrors: typeof errors = {};
 
-    if (!scheduledDate) {
-      newErrors.scheduledDate = language === 'nl' ? 'Geplande datum is verplicht' : 'Scheduled date is required';
+    if (!startDate) {
+      newErrors.startDate = language === 'nl' ? 'Startdatum is verplicht' : 'Start date is required';
+    }
+
+    if (!shippingDate) {
+      newErrors.shippingDate = language === 'nl' ? 'Verzenddatum is verplicht' : 'Shipping date is required';
+    }
+
+    if (startDate && shippingDate && startDate > shippingDate) {
+      newErrors.shippingDate = language === 'nl' ? 'Verzenddatum moet na startdatum zijn' : 'Shipping date must be after start date';
     }
 
     if (!customerName.trim()) {
@@ -170,7 +181,8 @@ export function CreateWorkOrderDialog({ open, onOpenChange, onSuccess, trigger }
             batch_size: totalBatchSize,
             created_by: user.id,
             status: 'planned',
-            scheduled_date: scheduledDate ? format(scheduledDate, 'yyyy-MM-dd') : null,
+            start_date: startDate ? format(startDate, 'yyyy-MM-dd') : null,
+            shipping_date: shippingDate ? format(shippingDate, 'yyyy-MM-dd') : null,
             customer_name: customerName.trim(),
             external_order_number: externalOrderNumber.trim(),
             order_value: parseFloat(orderValue),
@@ -293,35 +305,67 @@ export function CreateWorkOrderDialog({ open, onOpenChange, onSuccess, trigger }
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label className="text-xs font-medium uppercase tracking-wider">
-              {t('scheduledDate')} <span className="text-destructive">*</span>
-            </Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "w-full justify-start text-left font-normal h-9 text-sm",
-                    !scheduledDate && "text-muted-foreground",
-                    errors.scheduledDate && "border-destructive"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-3.5 w-3.5" />
-                  {scheduledDate ? format(scheduledDate, "PPP") : <span>{t('selectDate')}</span>}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={scheduledDate}
-                  onSelect={setScheduledDate}
-                  initialFocus
-                  className="pointer-events-auto"
-                />
-              </PopoverContent>
-            </Popover>
-            {errors.scheduledDate && <p className="text-xs text-destructive">{errors.scheduledDate}</p>}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label className="text-xs font-medium">
+                {language === 'nl' ? 'Startdatum' : 'Start Date'} <span className="text-destructive">*</span>
+              </Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal h-9 text-sm",
+                      !startDate && "text-muted-foreground",
+                      errors.startDate && "border-destructive"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-3.5 w-3.5" />
+                    {startDate ? format(startDate, "dd/MM/yyyy") : <span>{t('selectDate')}</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={startDate}
+                    onSelect={setStartDate}
+                    initialFocus
+                    className="pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+              {errors.startDate && <p className="text-xs text-destructive">{errors.startDate}</p>}
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs font-medium">
+                {language === 'nl' ? 'Verzenddatum' : 'Shipping Date'} <span className="text-destructive">*</span>
+              </Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal h-9 text-sm",
+                      !shippingDate && "text-muted-foreground",
+                      errors.shippingDate && "border-destructive"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-3.5 w-3.5" />
+                    {shippingDate ? format(shippingDate, "dd/MM/yyyy") : <span>{t('selectDate')}</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={shippingDate}
+                    onSelect={setShippingDate}
+                    initialFocus
+                    className="pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+              {errors.shippingDate && <p className="text-xs text-destructive">{errors.shippingDate}</p>}
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
