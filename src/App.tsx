@@ -1,30 +1,43 @@
+import { lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import { UserProfileProvider } from "./contexts/UserProfileContext";
-import Index from "./pages/Index";
+import { Loader2 } from "lucide-react";
+
+// Auth page loads eagerly for fast initial login experience
 import Auth from "./pages/Auth";
-import WorkOrders from "./pages/WorkOrders";
-import Production from "./pages/Production";
-import ProductionStep from "./pages/ProductionStep";
-import ProductionSensor from "./pages/ProductionSensor";
-import QualityCertificates from "./pages/QualityCertificates";
-import ProductionReports from "./pages/ProductionReports";
-import ProductionReportDetail from "./pages/ProductionReportDetail";
-import Settings from "./pages/Settings";
-import PersonalSettings from "./pages/PersonalSettings";
-import Analytics from "./pages/Analytics";
-import RoleManagement from "./pages/RoleManagement";
-import ProductionCalendar from "./pages/ProductionCalendar";
-import Genealogy from "./pages/Genealogy";
-import Search from "./pages/Search";
-import NotFound from "./pages/NotFound";
+
+// Lazy load all other pages to reduce initial bundle size
+const Index = lazy(() => import("./pages/Index"));
+const WorkOrders = lazy(() => import("./pages/WorkOrders"));
+const Production = lazy(() => import("./pages/Production"));
+const ProductionStep = lazy(() => import("./pages/ProductionStep"));
+const ProductionSensor = lazy(() => import("./pages/ProductionSensor"));
+const QualityCertificates = lazy(() => import("./pages/QualityCertificates"));
+const ProductionReports = lazy(() => import("./pages/ProductionReports"));
+const ProductionReportDetail = lazy(() => import("./pages/ProductionReportDetail"));
+const Settings = lazy(() => import("./pages/Settings"));
+const PersonalSettings = lazy(() => import("./pages/PersonalSettings"));
+const Analytics = lazy(() => import("./pages/Analytics"));
+const RoleManagement = lazy(() => import("./pages/RoleManagement"));
+const ProductionCalendar = lazy(() => import("./pages/ProductionCalendar"));
+const Genealogy = lazy(() => import("./pages/Genealogy"));
+const Search = lazy(() => import("./pages/Search"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
+
+// Loading fallback component
+const PageLoader = () => (
+  <div className="flex items-center justify-center min-h-screen">
+    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+  </div>
+);
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -35,26 +48,28 @@ const App = () => (
         <AuthProvider>
           <LanguageProvider>
             <UserProfileProvider>
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/auth" element={<Auth />} />
-                <Route path="/work-orders" element={<WorkOrders />} />
-                <Route path="/production/:itemId" element={<Production />} />
-                <Route path="/production/step/:itemId" element={<ProductionStep />} />
-                <Route path="/production/sensor/:itemId" element={<ProductionSensor />} />
-                <Route path="/quality-certificates" element={<QualityCertificates />} />
-                <Route path="/production-reports" element={<ProductionReports />} />
-                <Route path="/production-reports/:id" element={<ProductionReportDetail />} />
-                <Route path="/analytics" element={<Analytics />} />
-                <Route path="/role-management" element={<RoleManagement />} />
-                <Route path="/calendar" element={<ProductionCalendar />} />
-                <Route path="/search" element={<Search />} />
-                <Route path="/genealogy/:serialNumber" element={<Genealogy />} />
-                <Route path="/settings" element={<Settings />} />
-                <Route path="/personal-settings" element={<PersonalSettings />} />
-                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                <Route path="*" element={<NotFound />} />
-              </Routes>
+              <Suspense fallback={<PageLoader />}>
+                <Routes>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/auth" element={<Auth />} />
+                  <Route path="/work-orders" element={<WorkOrders />} />
+                  <Route path="/production/:itemId" element={<Production />} />
+                  <Route path="/production/step/:itemId" element={<ProductionStep />} />
+                  <Route path="/production/sensor/:itemId" element={<ProductionSensor />} />
+                  <Route path="/quality-certificates" element={<QualityCertificates />} />
+                  <Route path="/production-reports" element={<ProductionReports />} />
+                  <Route path="/production-reports/:id" element={<ProductionReportDetail />} />
+                  <Route path="/analytics" element={<Analytics />} />
+                  <Route path="/role-management" element={<RoleManagement />} />
+                  <Route path="/calendar" element={<ProductionCalendar />} />
+                  <Route path="/search" element={<Search />} />
+                  <Route path="/genealogy/:serialNumber" element={<Genealogy />} />
+                  <Route path="/settings" element={<Settings />} />
+                  <Route path="/personal-settings" element={<PersonalSettings />} />
+                  {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </Suspense>
             </UserProfileProvider>
           </LanguageProvider>
         </AuthProvider>

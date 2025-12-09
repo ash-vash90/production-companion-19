@@ -97,3 +97,23 @@ export function formatProductBreakdownText(breakdown: ProductBreakdown[]): strin
   if (breakdown.length === 1) return `${breakdown[0].count}× ${breakdown[0].label}`;
   return breakdown.map(b => `${b.count}× ${b.label}`).join(', ');
 }
+
+/**
+ * Get localized text from an object with language-specific fields.
+ * Commonly used for database records with title_en/title_nl, description_en/description_nl, etc.
+ *
+ * @param obj - Object containing language-specific fields
+ * @param fieldPrefix - The field prefix (e.g., 'title' for title_en/title_nl)
+ * @param language - The language code ('en' or 'nl')
+ * @returns The localized text or empty string if not found
+ */
+export function getLocalizedText(
+  obj: Record<string, unknown> | null | undefined,
+  fieldPrefix: string,
+  language: 'en' | 'nl'
+): string {
+  if (!obj) return '';
+  const localizedKey = `${fieldPrefix}_${language}`;
+  const fallbackKey = `${fieldPrefix}_en`;
+  return (obj[localizedKey] as string) || (obj[fallbackKey] as string) || '';
+}
