@@ -23,7 +23,8 @@ interface WorkOrder {
   product_type: string;
   batch_size: number;
   status: string;
-  scheduled_date: string | null;
+  start_date: string | null;
+  shipping_date: string | null;
 }
 
 const ProductionCalendar = () => {
@@ -61,10 +62,11 @@ const ProductionCalendar = () => {
 
       const { data, error } = await supabase
         .from('work_orders')
-        .select('id, wo_number, product_type, batch_size, status, scheduled_date')
+        .select('id, wo_number, product_type, batch_size, status, start_date, shipping_date')
         .neq('status', 'cancelled')
-        .or(`scheduled_date.gte.${format(start, 'yyyy-MM-dd')},scheduled_date.lte.${format(end, 'yyyy-MM-dd')},scheduled_date.is.null`)
-        .order('scheduled_date', { ascending: true });
+        .gte('start_date', format(start, 'yyyy-MM-dd'))
+        .lte('start_date', format(end, 'yyyy-MM-dd'))
+        .order('start_date', { ascending: true });
 
       if (error) throw error;
       setWorkOrders(data || []);
@@ -108,11 +110,9 @@ const ProductionCalendar = () => {
 
   const getWorkOrdersForDate = (date: Date) => {
     return workOrders.filter(wo => 
-      wo.scheduled_date && isSameDay(parseISO(wo.scheduled_date), date)
+      wo.start_date && isSameDay(parseISO(wo.start_date), date)
     );
   };
-
-  const unscheduledOrders = workOrders.filter(wo => !wo.scheduled_date && wo.status !== 'completed');
 
   const goToPrevious = () => {
     if (viewMode === 'month') {
@@ -142,7 +142,7 @@ const ProductionCalendar = () => {
       return;
     }
     setSelectedOrder(order);
-    setNewDate(order.scheduled_date ? parseISO(order.scheduled_date) : undefined);
+    setNewDate(order.start_date ? parseISO(order.start_date) : undefined);
     setDialogOpen(true);
   };
 
@@ -153,7 +153,7 @@ const ProductionCalendar = () => {
     try {
       const { error } = await supabase
         .from('work_orders')
-        .update({ scheduled_date: newDate ? format(newDate, 'yyyy-MM-dd') : null })
+        .update({ start_date: newDate ? format(newDate, 'yyyy-MM-dd') : null })
         .eq('id', selectedOrder.id);
 
       if (error) throw error;
@@ -164,29 +164,6 @@ const ProductionCalendar = () => {
     } catch (error) {
       console.error('Error scheduling work order:', error);
       toast.error(t('error'), { description: t('errorSchedulingWorkOrder') || 'Failed to schedule work order' });
-    } finally {
-      setUpdating(false);
-    }
-  };
-
-  const handleClearDate = async () => {
-    if (!selectedOrder) return;
-    
-    setUpdating(true);
-    try {
-      const { error } = await supabase
-        .from('work_orders')
-        .update({ scheduled_date: null })
-        .eq('id', selectedOrder.id);
-
-      if (error) throw error;
-
-      toast.success(t('success'), { description: t('scheduleCleared') || 'Schedule cleared' });
-      setDialogOpen(false);
-      fetchWorkOrders();
-    } catch (error) {
-      console.error('Error clearing schedule:', error);
-      toast.error(t('error'));
     } finally {
       setUpdating(false);
     }
@@ -222,50 +199,9 @@ const ProductionCalendar = () => {
           </CardContent>
         </Card>
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Unscheduled Work Orders - Admin only */}
-          {isAdmin && (
-          <Card className="lg:col-span-1">
-            <CardHeader>
-              <CardTitle>{t('unscheduledOrders')}</CardTitle>
-              <CardDescription>{t('clickToSchedule')}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                <div className="text-center py-8 text-muted-foreground">{t('loading')}</div>
-              ) : unscheduledOrders.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Package className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                  <p className="text-sm">{t('noUnscheduledOrders')}</p>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {unscheduledOrders.map((order) => (
-                    <div
-                      key={order.id}
-                      onClick={() => handleOrderClick(order)}
-                      className={cn(
-                        "p-3 bg-card border-l-4 rounded-lg cursor-pointer hover:bg-muted/50 transition-colors",
-                        getStatusBorderColor(order.status)
-                      )}
-                    >
-                      <div className="flex items-center justify-between gap-2 mb-1">
-                        <span className="font-semibold text-sm truncate">{order.wo_number}</span>
-                        <Badge className={getStatusColor(order.status)}>{formatStatus(order.status)}</Badge>
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        {formatProductType(order.product_type)} • {order.batch_size} units
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-          )}
-
+        <div className="w-full">
           {/* Calendar Grid */}
-          <Card className={isAdmin ? "lg:col-span-3" : "lg:col-span-4"}>
+          <Card>
             <CardHeader>
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <CardTitle>
@@ -406,8 +342,6 @@ const ProductionCalendar = () => {
             </CardContent>
           </Card>
         </div>
-
-        {/* Schedule Dialog */}
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogContent>
             <DialogHeader>
@@ -457,11 +391,6 @@ const ProductionCalendar = () => {
               >
                 {t('viewWorkOrder')}
               </Button>
-              {selectedOrder?.scheduled_date && (
-                <Button variant="outline" onClick={handleClearDate} disabled={updating}>
-                  {t('clearSchedule')}
-                </Button>
-              )}
               <Button onClick={handleSaveDate} disabled={updating || !newDate}>
                 {t('save')}
               </Button>
