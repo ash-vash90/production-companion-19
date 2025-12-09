@@ -1,28 +1,80 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import Layout from '@/components/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
-import { DashboardStats } from '@/components/dashboard/DashboardStats';
 import { ProductionOverview } from '@/components/dashboard/ProductionOverview';
 import { RecentActivity } from '@/components/dashboard/RecentActivity';
 import { ActiveOperators } from '@/components/dashboard/ActiveOperators';
-import { CreateWorkOrderDialog } from '@/components/CreateWorkOrderDialog';
-import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
+import { TodaysSchedule } from '@/components/dashboard/TodaysSchedule';
+import { WeatherWidget } from '@/components/dashboard/WeatherWidget';
+import { supabase } from '@/integrations/supabase/client';
+import { Loader2 } from 'lucide-react';
 
 const Index = () => {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { t } = useLanguage();
   const navigate = useNavigate();
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [profile, setProfile] = useState<{ full_name: string; role: string } | null>(null);
+  const [profileLoading, setProfileLoading] = useState(true);
+
+  const fetchProfile = useCallback(async () => {
+    if (!user) {
+      setProfileLoading(false);
+      return;
+    }
+    
+    try {
+      const { data } = await supabase
+        .from('profiles')
+        .select('full_name, role')
+        .eq('id', user.id)
+        .maybeSingle();
+      
+      if (data) setProfile(data);
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+    } finally {
+      setProfileLoading(false);
+    }
+  }, [user]);
 
   useEffect(() => {
+    if (authLoading) return;
+    
     if (!user) {
       navigate('/auth');
+      return;
     }
-  }, [user, navigate]);
+    
+    fetchProfile();
+  }, [user, authLoading, navigate, fetchProfile]);
+
+  const getFirstName = () => {
+    if (!profile?.full_name) return '';
+    return profile.full_name.split(' ')[0];
+  };
+
+  const getGreetingMessage = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return t('goodMorning');
+    if (hour < 18) return t('goodAfternoon');
+    return t('goodEvening');
+  };
+
+  // Show loading while auth is being checked or profile is being fetched
+  if (authLoading || (user && profileLoading)) {
+    return (
+      <ProtectedRoute>
+        <Layout>
+          <div className="flex items-center justify-center min-h-[50vh]">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        </Layout>
+      </ProtectedRoute>
+    );
+  }
 
   if (!user) return null;
 
@@ -30,42 +82,30 @@ const Index = () => {
     <ProtectedRoute>
       <Layout>
         <div className="space-y-6">
-          {/* Header */}
+          {/* Header with greeting and weather */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div>
-              <h1 className="text-4xl font-bold tracking-tight">{t('dashboard')}</h1>
-              <p className="text-lg text-muted-foreground mt-2">
-                {t('realTimeMonitoring')}
-              </p>
-            </div>
-            <Button variant="default" size="lg" onClick={() => setDialogOpen(true)}>
-              <Plus className="mr-2" />
-              {t('createWorkOrder')}
-            </Button>
+            <h1 className="text-xl md:text-2xl lg:text-3xl font-semibold tracking-tight">
+              {getGreetingMessage()}, {getFirstName()}
+            </h1>
+            <WeatherWidget />
           </div>
 
-          {/* Stats Grid */}
-          <DashboardStats />
+          {/* Top row: Today's Schedule and Active Colleagues - FIRST */}
+          <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
+            <TodaysSchedule />
+            <ActiveOperators />
+          </div>
 
           {/* Main Content Grid */}
-          <div className="grid gap-6 lg:grid-cols-3">
-            <div className="lg:col-span-2 space-y-6">
+          <div className="grid gap-6 lg:grid-cols-5">
+            <div className="lg:col-span-3 space-y-6">
               <ProductionOverview />
-              <RecentActivity />
             </div>
-            <div>
-              <ActiveOperators />
+            <div className="lg:col-span-2">
+              <RecentActivity />
             </div>
           </div>
         </div>
-
-        <CreateWorkOrderDialog
-          open={dialogOpen}
-          onOpenChange={setDialogOpen}
-          onSuccess={() => {
-            // Optionally refresh data or navigate
-          }}
-        />
       </Layout>
     </ProtectedRoute>
   );

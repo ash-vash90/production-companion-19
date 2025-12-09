@@ -11,29 +11,39 @@
   --rhosonics-green: 142 76% 36%;
   --rhosonics-green-light: 142 76% 45%;
   
-  /* Base colors - clean industrial aesthetic */
-  --background: 0 0% 100%;
-  --foreground: 0 0% 9%;
+  /* Obsidian/Slate palette from reference */
+  --obsidian: 228 25% 10%;
+  --slate-50: 210 40% 98%;
+  --slate-100: 210 40% 96%;
+  --slate-200: 214 32% 91%;
+  --slate-400: 215 16% 62%;
+  --slate-500: 215 16% 47%;
+  --slate-800: 217 33% 17%;
+  --slate-900: 222 47% 11%;
+  
+  /* Base colors - clean industrial aesthetic using slate */
+  --background: 210 40% 98%;
+  --foreground: 228 25% 10%;
   --card: 0 0% 100%;
-  --card-foreground: 0 0% 9%;
+  --card-foreground: 228 25% 10%;
   --popover: 0 0% 100%;
-  --popover-foreground: 0 0% 9%;
+  --popover-foreground: 228 25% 10%;
   
   /* Primary - Rhosonics green for buttons only */
   --primary: 142 76% 36%;
   --primary-foreground: 0 0% 100%;
   
-  /* Secondary - neutral grays */
-  --secondary: 0 0% 96%;
-  --secondary-foreground: 0 0% 9%;
+  /* Secondary - slate grays */
+  --secondary: 210 40% 96%;
+  --secondary-foreground: 228 25% 10%;
   
-  /* Muted elements */
-  --muted: 0 0% 96%;
-  --muted-foreground: 0 0% 45%;
+  /* Muted elements - slate */
+  --muted: 214 32% 91%;
+  --muted-foreground: 215 16% 47%;
   
-  /* Accent - subtle highlight */
-  --accent: 0 0% 96%;
-  --accent-foreground: 0 0% 9%;
+  /* Accent - subtle slate */
+  --accent: 210 40% 96%;
+  --accent-foreground: 228 25% 10%;
   
   /* Destructive */
   --destructive: 0 84% 60%;
@@ -43,13 +53,13 @@
   --success: 142 76% 36%;
   --success-foreground: 0 0% 100%;
   --warning: 45 93% 47%;
-  --warning-foreground: 0 0% 9%;
+  --warning-foreground: 228 25% 10%;
   --info: 200 70% 50%;
   --info-foreground: 0 0% 100%;
   
-  /* Borders and inputs */
-  --border: 0 0% 90%;
-  --input: 0 0% 90%;
+  /* Borders and inputs - slate */
+  --border: 214 32% 91%;
+  --input: 214 32% 91%;
   --ring: 142 76% 36%;
   
   /* Charts */
@@ -60,57 +70,58 @@
   --chart-5: 0 84% 60%;
   
   /* Radius */
-  --radius: 0.5rem;
+  --radius: 0.375rem;
   
-  /* Sidebar */
-  --sidebar: 0 0% 98%;
-  --sidebar-foreground: 0 0% 9%;
+  /* Sidebar - obsidian dark */
+  --sidebar: 228 25% 10%;
+  --sidebar-foreground: 210 40% 98%;
   --sidebar-primary: 142 76% 36%;
   --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 0 0% 96%;
-  --sidebar-accent-foreground: 0 0% 9%;
-  --sidebar-border: 0 0% 90%;
+  --sidebar-accent: 217 33% 17%;
+  --sidebar-accent-foreground: 210 40% 98%;
+  --sidebar-border: 217 33% 17%;
   --sidebar-ring: 142 76% 36%;
 }
 
 .dark {
-  --background: 0 0% 7%;
-  --foreground: 0 0% 95%;
-  --card: 0 0% 10%;
-  --card-foreground: 0 0% 95%;
-  --popover: 0 0% 10%;
-  --popover-foreground: 0 0% 95%;
+  /* Dark mode using obsidian/slate palette */
+  --background: 228 25% 10%;
+  --foreground: 210 40% 98%;
+  --card: 217 33% 17%;
+  --card-foreground: 210 40% 98%;
+  --popover: 217 33% 17%;
+  --popover-foreground: 210 40% 98%;
   --primary: 142 76% 45%;
-  --primary-foreground: 0 0% 9%;
-  --secondary: 0 0% 15%;
-  --secondary-foreground: 0 0% 95%;
-  --muted: 0 0% 15%;
-  --muted-foreground: 0 0% 60%;
-  --accent: 0 0% 15%;
-  --accent-foreground: 0 0% 95%;
+  --primary-foreground: 228 25% 10%;
+  --secondary: 222 47% 11%;
+  --secondary-foreground: 210 40% 98%;
+  --muted: 222 47% 11%;
+  --muted-foreground: 215 16% 62%;
+  --accent: 222 47% 11%;
+  --accent-foreground: 210 40% 98%;
   --destructive: 0 62% 50%;
-  --destructive-foreground: 0 0% 95%;
+  --destructive-foreground: 210 40% 98%;
   --success: 142 76% 45%;
-  --success-foreground: 0 0% 9%;
+  --success-foreground: 228 25% 10%;
   --warning: 45 93% 55%;
-  --warning-foreground: 0 0% 9%;
+  --warning-foreground: 228 25% 10%;
   --info: 200 70% 60%;
-  --info-foreground: 0 0% 9%;
-  --border: 0 0% 20%;
-  --input: 0 0% 20%;
+  --info-foreground: 228 25% 10%;
+  --border: 217 33% 22%;
+  --input: 217 33% 22%;
   --ring: 142 76% 45%;
   --chart-1: 142 76% 45%;
   --chart-2: 200 70% 60%;
   --chart-3: 280 60% 60%;
   --chart-4: 40 90% 60%;
   --chart-5: 0 70% 60%;
-  --sidebar: 0 0% 10%;
-  --sidebar-foreground: 0 0% 95%;
+  --sidebar: 222 47% 11%;
+  --sidebar-foreground: 210 40% 98%;
   --sidebar-primary: 142 76% 45%;
-  --sidebar-primary-foreground: 0 0% 9%;
-  --sidebar-accent: 0 0% 15%;
-  --sidebar-accent-foreground: 0 0% 95%;
-  --sidebar-border: 0 0% 20%;
+  --sidebar-primary-foreground: 228 25% 10%;
+  --sidebar-accent: 217 33% 17%;
+  --sidebar-accent-foreground: 210 40% 98%;
+  --sidebar-border: 217 33% 22%;
   --sidebar-ring: 142 76% 45%;
 }
 

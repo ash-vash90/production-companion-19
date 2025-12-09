@@ -7,17 +7,20 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Loader2, ArrowLeft, Package, QrCode, Printer, FileText } from 'lucide-react';
+import { Loader2, ArrowLeft, Package, QrCode, Printer, FileText, CalendarIcon } from 'lucide-react';
 import { generateQualityCertificate } from '@/services/certificateService';
-import { Comments } from '@/components/Comments';
+import { format } from 'date-fns';
 import QRCodeLib from 'qrcode';
+import { formatStatus } from '@/lib/utils';
 
 const Production = () => {
   const { itemId } = useParams();
   const { user } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [workOrder, setWorkOrder] = useState<any>(null);
@@ -68,18 +71,19 @@ const Production = () => {
     }
   };
 
-  const handlePrintLabel = async (serialNumber: string, operatorInitials?: string) => {
+  const handlePrintLabel = async (serialNumber: string, operatorInitials?: string, itemProductType?: string) => {
     const now = new Date();
     const year = now.getFullYear();
     const month = now.toLocaleString('en', { month: 'short' }).toUpperCase();
     const day = String(now.getDate()).padStart(2, '0');
     const dateStr = `${year} / ${month} / ${day}`;
+    const productType = itemProductType || workOrder?.product_type || '';
 
     // Generate QR code containing serial number and work order info
     const qrData = JSON.stringify({
       serial: serialNumber,
       wo: workOrder?.wo_number,
-      product: workOrder?.product_type,
+      product: productType,
       date: now.toISOString().split('T')[0]
     });
     const qrCodeDataUrl = await QRCodeLib.toDataURL(qrData, { width: 120, margin: 1 });
@@ -172,7 +176,7 @@ const Production = () => {
           <body>
             <div class="label">
               <div class="date">${dateStr}</div>
-              <div class="product">${workOrder?.product_type || ''}</div>
+              <div class="product">${productType}</div>
               <div class="serial">${serialNumber}</div>
               <div class="codes-container">
                 <img src="${qrCodeDataUrl}" alt="QR Code" class="qr-code" />
@@ -249,13 +253,13 @@ const Production = () => {
     }
   };
 
-  const getStatusVariant = (status: string): 'default' | 'secondary' | 'success' | 'warning' | 'info' | 'destructive' | 'outline' => {
-    const variants: Record<string, 'default' | 'secondary' | 'success' | 'warning' | 'info' | 'destructive' | 'outline'> = {
-      planned: 'secondary',
-      in_progress: 'info',
-      completed: 'success',
-      on_hold: 'warning',
-      cancelled: 'destructive',
+  const getStatusColor = (status: string) => {
+    const colors: Record<string, string> = {
+      planned: 'bg-info text-info-foreground',
+      in_progress: 'bg-warning text-warning-foreground',
+      completed: 'bg-success text-success-foreground',
+      on_hold: 'bg-muted text-muted-foreground',
+      cancelled: 'bg-destructive text-destructive-foreground',
     };
     return variants[status] || 'secondary';
   };
@@ -293,83 +297,133 @@ const Production = () => {
   return (
     <ProtectedRoute>
       <Layout>
-        <div className="space-y-6 lg:space-y-8 p-2 md:p-4">
+        <div className="space-y-4 lg:space-y-6 p-2 md:p-4 max-w-4xl mx-auto">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/work-orders')} className="h-14 w-14">
-              <ArrowLeft className="h-8 w-8" />
+            <Button variant="ghost" size="icon" onClick={() => navigate('/work-orders')} className="h-10 w-10 md:h-12 md:w-12">
+              <ArrowLeft className="h-5 w-5 md:h-6 md:w-6" />
             </Button>
-            <div className="space-y-1">
-              <h1 className="text-4xl lg:text-5xl font-bold tracking-tight">{workOrder.wo_number}</h1>
-              <p className="text-xl lg:text-2xl text-muted-foreground font-data">
+            <div className="space-y-1 flex-1">
+              <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold tracking-tight">{workOrder.wo_number}</h1>
+              <p className="text-sm md:text-base lg:text-lg text-muted-foreground font-data">
                 {workOrder.product_type} • Batch: {workOrder.batch_size}
               </p>
             </div>
           </div>
 
-          <Card className="shadow-lg">
-            <CardHeader className="pb-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                  <CardTitle className="text-3xl">{t('production')} {t('items')}</CardTitle>
-                  <CardDescription className="text-lg mt-2">{t('trackItems')}</CardDescription>
+          {/* Scheduled Date Section - Only for non-completed work orders */}
+          {workOrder.status !== 'completed' && (
+            <Card className="shadow-sm">
+              <CardContent className="py-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <CalendarIcon className="h-5 w-5 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm font-medium">{t('scheduledDate')}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {workOrder.scheduled_date 
+                          ? format(new Date(workOrder.scheduled_date), 'PPP')
+                          : t('notScheduled')}
+                      </p>
+                    </div>
+                  </div>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" size="sm">
+                        {workOrder.scheduled_date ? t('changeDate') : t('setDate')}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="end">
+                      <Calendar
+                        mode="single"
+                        selected={workOrder.scheduled_date ? new Date(workOrder.scheduled_date) : undefined}
+                        onSelect={async (date) => {
+                          if (date) {
+                            try {
+                              const { error } = await supabase
+                                .from('work_orders')
+                                .update({ scheduled_date: format(date, 'yyyy-MM-dd') })
+                                .eq('id', workOrder.id);
+                              if (error) throw error;
+                              toast.success(t('success'), { description: t('scheduledDateUpdated') });
+                              fetchProductionData();
+                            } catch (error: any) {
+                              toast.error(t('error'), { description: error.message });
+                            }
+                          }
+                        }}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
                 </div>
-                <Badge variant={getStatusVariant(workOrder.status)} className="h-12 md:h-10 px-6 md:px-5 text-lg md:text-base font-semibold self-start">
-                  {t(workOrder.status as any)}
+              </CardContent>
+            </Card>
+          )}
+
+          <Card className="shadow-sm">
+            <CardHeader className="pb-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <CardTitle className="text-xl md:text-2xl">{t('production')} {t('items')}</CardTitle>
+                  <CardDescription className="text-sm mt-1">{t('trackItems')}</CardDescription>
+                </div>
+                <Badge className={`${getStatusColor(workOrder.status)} h-8 md:h-10 px-4 text-sm md:text-base font-semibold self-start`}>
+                  {formatStatus(workOrder.status, language as 'en' | 'nl')}
                 </Badge>
               </div>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
+              <div className="space-y-2 md:space-y-3">
                 {items.map((item) => (
                   <div
                     key={item.id}
-                    className="flex items-center justify-between p-6 border-2 rounded-lg hover:bg-accent/50 transition-all cursor-pointer active:scale-[0.98] hover:shadow-md"
+                    className="flex items-center justify-between p-3 md:p-4 border rounded-lg hover:bg-accent/50 transition-all cursor-pointer active:scale-[0.99] hover:shadow-sm"
                   onClick={() => navigate(`/production/step/${item.id}`)}
                 >
-                  <div className="flex items-center gap-5">
-                    <div className="flex flex-col items-center justify-center h-16 w-16 rounded-lg bg-primary text-white font-bold text-2xl shadow-md">
+                  <div className="flex items-center gap-3 md:gap-4">
+                    <div className="flex flex-col items-center justify-center h-10 w-10 md:h-12 md:w-12 rounded-lg bg-primary text-primary-foreground font-bold text-base md:text-lg shadow-sm">
                       {item.position_in_batch}
                     </div>
-                    <div>
-                      <p className="font-data text-xl font-semibold">{item.serial_number}</p>
-                      <p className="text-lg text-muted-foreground font-data mt-1">
-                        {t('step')} {item.current_step}
+                  <div>
+                      <p className="font-data text-sm md:text-base font-semibold">{item.serial_number}</p>
+                      <p className="text-xs md:text-sm text-muted-foreground font-data">
+                        {item.product_type || workOrder.product_type} • {t('step')} {item.current_step}
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <Badge variant={getStatusVariant(item.status)} className="h-11 md:h-10 px-5 md:px-4 text-base md:text-sm font-semibold">
-                      {t(item.status as any)}
+                  <div className="flex items-center gap-2">
+                    <Badge className={`${getStatusColor(item.status)} h-6 md:h-8 px-2 md:px-3 text-xs md:text-sm font-medium`}>
+                      {formatStatus(item.status, language as 'en' | 'nl')}
                     </Badge>
                      {item.status === 'completed' && (
                       <>
                         <Button
                           size="icon"
                           variant="outline"
-                          className="h-14 w-14 border-2"
+                          className="h-8 w-8 md:h-10 md:w-10"
                           onClick={(e) => {
                             e.stopPropagation();
-                            handlePrintLabel(item.serial_number, item.operator_initials);
+                            handlePrintLabel(item.serial_number, item.operator_initials, item.product_type);
                           }}
                         >
-                          <Printer className="h-7 w-7" />
+                          <Printer className="h-4 w-4 md:h-5 md:w-5" />
                         </Button>
                         <Button
                           size="icon"
                           variant={item.certificate_generated ? "default" : "outline"}
-                          className="h-14 w-14 border-2"
+                          className="h-8 w-8 md:h-10 md:w-10"
                           onClick={(e) => handleGenerateCertificate(item.id, item.serial_number, e)}
                           disabled={item.certificate_generated}
                         >
-                          <FileText className="h-7 w-7" />
+                          <FileText className="h-4 w-4 md:h-5 md:w-5" />
                         </Button>
                       </>
                      )}
-                     {workOrder.product_type === 'SENSOR' && item.status === 'in_progress' && (
+                     {(item.product_type === 'SENSOR' || (!item.product_type && workOrder.product_type === 'SENSOR')) && item.status === 'in_progress' && (
                       <Button
-                        size="lg"
+                        size="sm"
                         variant="outline"
-                        className="h-14 px-6 text-base border-2"
+                        className="h-8 md:h-10 px-3 text-xs md:text-sm"
                         onClick={(e) => {
                           e.stopPropagation();
                           navigate(`/production/sensor/${item.id}`);

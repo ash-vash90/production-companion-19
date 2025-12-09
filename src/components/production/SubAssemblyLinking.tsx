@@ -7,8 +7,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { Link2, X, ScanBarcode } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { formatDateTime } from '@/lib/utils';
 
 interface SubAssemblyLinkingProps {
   open: boolean;
@@ -24,6 +26,7 @@ const SubAssemblyLinking: React.FC<SubAssemblyLinkingProps> = ({
   onComplete,
 }) => {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [componentType, setComponentType] = useState<string>('');
   const [serialNumber, setSerialNumber] = useState<string>('');
   const [linkedComponents, setLinkedComponents] = useState<any[]>([]);
@@ -234,7 +237,7 @@ const SubAssemblyLinking: React.FC<SubAssemblyLinkingProps> = ({
                         <span className="font-mono font-medium">{link.child_item.serial_number}</span>
                       </div>
                       <p className="text-xs text-muted-foreground mt-1">
-                        Linked: {new Date(link.linked_at).toLocaleString()}
+                        Linked: {formatDateTime(link.linked_at)}
                       </p>
                     </div>
                     <Button
@@ -253,7 +256,7 @@ const SubAssemblyLinking: React.FC<SubAssemblyLinkingProps> = ({
 
         <DialogFooter>
           <Button onClick={() => onOpenChange(false)}>
-            Done
+            {t('save')}
           </Button>
         </DialogFooter>
       </DialogContent>

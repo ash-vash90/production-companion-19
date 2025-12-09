@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { LanguageProvider } from "./contexts/LanguageContext";
+import { UserProfileProvider } from "./contexts/UserProfileContext";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import WorkOrders from "./pages/WorkOrders";
@@ -13,11 +14,14 @@ import ProductionStep from "./pages/ProductionStep";
 import ProductionSensor from "./pages/ProductionSensor";
 import QualityCertificates from "./pages/QualityCertificates";
 import ProductionReports from "./pages/ProductionReports";
+import ProductionReportDetail from "./pages/ProductionReportDetail";
 import Settings from "./pages/Settings";
+import PersonalSettings from "./pages/PersonalSettings";
 import Analytics from "./pages/Analytics";
 import RoleManagement from "./pages/RoleManagement";
 import ProductionCalendar from "./pages/ProductionCalendar";
 import Genealogy from "./pages/Genealogy";
+import Search from "./pages/Search";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,23 +34,28 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <LanguageProvider>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/work-orders" element={<WorkOrders />} />
-              <Route path="/production/:itemId" element={<Production />} />
-              <Route path="/production/step/:itemId" element={<ProductionStep />} />
-              <Route path="/production/sensor/:itemId" element={<ProductionSensor />} />
-              <Route path="/quality-certificates" element={<QualityCertificates />} />
-              <Route path="/production-reports" element={<ProductionReports />} />
-              <Route path="/analytics" element={<Analytics />} />
-              <Route path="/role-management" element={<RoleManagement />} />
-              <Route path="/calendar" element={<ProductionCalendar />} />
-              <Route path="/genealogy/:serialNumber" element={<Genealogy />} />
-              <Route path="/settings" element={<Settings />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
+            <UserProfileProvider>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/work-orders" element={<WorkOrders />} />
+                <Route path="/production/:itemId" element={<Production />} />
+                <Route path="/production/step/:itemId" element={<ProductionStep />} />
+                <Route path="/production/sensor/:itemId" element={<ProductionSensor />} />
+                <Route path="/quality-certificates" element={<QualityCertificates />} />
+                <Route path="/production-reports" element={<ProductionReports />} />
+                <Route path="/production-reports/:id" element={<ProductionReportDetail />} />
+                <Route path="/analytics" element={<Analytics />} />
+                <Route path="/role-management" element={<RoleManagement />} />
+                <Route path="/calendar" element={<ProductionCalendar />} />
+                <Route path="/search" element={<Search />} />
+                <Route path="/genealogy/:serialNumber" element={<Genealogy />} />
+                <Route path="/settings" element={<Settings />} />
+                <Route path="/personal-settings" element={<PersonalSettings />} />
+                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </UserProfileProvider>
           </LanguageProvider>
         </AuthProvider>
       </BrowserRouter>

@@ -1,17 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '@/components/Layout';
+import { PageHeader } from '@/components/PageHeader';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useUserProfile } from '@/contexts/UserProfileContext';
 import { toast } from 'sonner';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, parseISO } from 'date-fns';
-import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, closestCenter } from '@dnd-kit/core';
-import { ChevronLeft, ChevronRight, Package } from 'lucide-react';
+import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, parseISO, addWeeks, subWeeks } from 'date-fns';
+import { ChevronLeft, ChevronRight, Package, CalendarIcon, LayoutGrid, List } from 'lucide-react';
+import { cn, formatProductType } from '@/lib/utils';
 
 interface WorkOrder {
   id: string;
@@ -25,24 +29,35 @@ interface WorkOrder {
 const ProductionCalendar = () => {
   const { user } = useAuth();
   const { t } = useLanguage();
+  const { isAdmin } = useUserProfile();
   const navigate = useNavigate();
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [viewMode, setViewMode] = useState<'month' | 'week'>('month');
   const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeId, setActiveId] = useState<string | null>(null);
-  const [draggedOrder, setDraggedOrder] = useState<WorkOrder | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<WorkOrder | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [newDate, setNewDate] = useState<Date | undefined>(undefined);
+  const [updating, setUpdating] = useState(false);
 
   useEffect(() => {
     if (user) {
       fetchWorkOrders();
     }
-  }, [user, currentDate]);
+  }, [user, currentDate, viewMode]);
 
   const fetchWorkOrders = async () => {
     try {
       setLoading(true);
-      const start = startOfMonth(currentDate);
-      const end = endOfMonth(currentDate);
+      let start: Date, end: Date;
+      
+      if (viewMode === 'month') {
+        start = startOfMonth(currentDate);
+        end = endOfMonth(currentDate);
+      } else {
+        start = startOfWeek(currentDate, { weekStartsOn: 1 });
+        end = endOfWeek(currentDate, { weekStartsOn: 1 });
+      }
 
       const { data, error } = await supabase
         .from('work_orders')
@@ -61,54 +76,34 @@ const ProductionCalendar = () => {
     }
   };
 
-  const handleDragStart = (event: DragStartEvent) => {
-    const { active } = event;
-    setActiveId(active.id as string);
-    const order = workOrders.find(wo => wo.id === active.id);
-    setDraggedOrder(order || null);
-  };
-
-  const handleDragEnd = async (event: DragEndEvent) => {
-    const { active, over } = event;
-    setActiveId(null);
-    setDraggedOrder(null);
-
-    if (!over || active.id === over.id) return;
-
-    const workOrderId = active.id as string;
-    const newDate = over.id as string;
-
-    try {
-      const { error } = await supabase
-        .from('work_orders')
-        .update({ scheduled_date: newDate })
-        .eq('id', workOrderId);
-
-      if (error) throw error;
-
-      toast.success(t('workOrderRescheduled'));
-      fetchWorkOrders();
-    } catch (error) {
-      console.error('Error rescheduling work order:', error);
-      toast.error(t('errorUpdatingWorkOrder'));
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'planned': return 'bg-info text-info-foreground';
+      case 'in_progress': return 'bg-warning text-warning-foreground';
+      case 'completed': return 'bg-success text-success-foreground';
+      default: return 'bg-muted text-muted-foreground';
     }
   };
 
-  const getStatusVariant = (status: string): 'default' | 'secondary' | 'success' | 'warning' | 'info' | 'destructive' | 'outline' => {
-    const variants: Record<string, 'default' | 'secondary' | 'success' | 'warning' | 'info' | 'destructive' | 'outline'> = {
-      planned: 'secondary',
-      in_progress: 'info',
-      completed: 'success',
-      on_hold: 'warning',
-      cancelled: 'destructive',
-    };
-    return variants[status] || 'secondary';
+  const getStatusBorderColor = (status: string) => {
+    switch (status) {
+      case 'planned': return 'border-info';
+      case 'in_progress': return 'border-warning';
+      case 'completed': return 'border-success';
+      default: return 'border-border';
+    }
   };
 
-  const getDaysInMonth = () => {
-    const start = startOfMonth(currentDate);
-    const end = endOfMonth(currentDate);
-    return eachDayOfInterval({ start, end });
+  const getDaysInView = () => {
+    if (viewMode === 'month') {
+      const start = startOfMonth(currentDate);
+      const end = endOfMonth(currentDate);
+      return eachDayOfInterval({ start, end });
+    } else {
+      const start = startOfWeek(currentDate, { weekStartsOn: 1 });
+      const end = endOfWeek(currentDate, { weekStartsOn: 1 });
+      return eachDayOfInterval({ start, end });
+    }
   };
 
   const getWorkOrdersForDate = (date: Date) => {
@@ -117,30 +112,123 @@ const ProductionCalendar = () => {
     );
   };
 
-  const unscheduledOrders = workOrders.filter(wo => !wo.scheduled_date);
+  const unscheduledOrders = workOrders.filter(wo => !wo.scheduled_date && wo.status !== 'completed');
 
-  const goToPreviousMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1));
+  const goToPrevious = () => {
+    if (viewMode === 'month') {
+      setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1));
+    } else {
+      setCurrentDate(subWeeks(currentDate, 1));
+    }
   };
 
-  const goToNextMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1));
+  const goToNext = () => {
+    if (viewMode === 'month') {
+      setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1));
+    } else {
+      setCurrentDate(addWeeks(currentDate, 1));
+    }
+  };
+
+  const handleOrderClick = (order: WorkOrder) => {
+    // Non-admins can only view, not edit
+    if (!isAdmin) {
+      navigate(`/production/${order.id}`);
+      return;
+    }
+    // Don't allow date changes for completed orders
+    if (order.status === 'completed') {
+      navigate(`/production/${order.id}`);
+      return;
+    }
+    setSelectedOrder(order);
+    setNewDate(order.scheduled_date ? parseISO(order.scheduled_date) : undefined);
+    setDialogOpen(true);
+  };
+
+  const handleSaveDate = async () => {
+    if (!selectedOrder) return;
+    
+    setUpdating(true);
+    try {
+      const { error } = await supabase
+        .from('work_orders')
+        .update({ scheduled_date: newDate ? format(newDate, 'yyyy-MM-dd') : null })
+        .eq('id', selectedOrder.id);
+
+      if (error) throw error;
+
+      toast.success(t('success'), { description: t('workOrderScheduled') || 'Work order scheduled' });
+      setDialogOpen(false);
+      fetchWorkOrders();
+    } catch (error) {
+      console.error('Error scheduling work order:', error);
+      toast.error(t('error'), { description: t('errorSchedulingWorkOrder') || 'Failed to schedule work order' });
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const handleClearDate = async () => {
+    if (!selectedOrder) return;
+    
+    setUpdating(true);
+    try {
+      const { error } = await supabase
+        .from('work_orders')
+        .update({ scheduled_date: null })
+        .eq('id', selectedOrder.id);
+
+      if (error) throw error;
+
+      toast.success(t('success'), { description: t('scheduleCleared') || 'Schedule cleared' });
+      setDialogOpen(false);
+      fetchWorkOrders();
+    } catch (error) {
+      console.error('Error clearing schedule:', error);
+      toast.error(t('error'));
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const formatStatus = (status: string) => {
+    return status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
   };
 
   return (
     <Layout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">{t('productionCalendar')}</h1>
-          <p className="text-muted-foreground mt-2">{t('productionCalendarDescription')}</p>
-        </div>
+        <PageHeader title={t('productionCalendar')} description={t('productionCalendarDescription')} />
+
+        {/* Status Legend */}
+        <Card>
+          <CardContent className="py-3">
+            <div className="flex flex-wrap items-center gap-4">
+              <span className="text-sm font-medium text-muted-foreground">{t('legend')}:</span>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-info"></div>
+                <span className="text-sm">{t('planned')}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-warning"></div>
+                <span className="text-sm">{t('inProgress')}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-success"></div>
+                <span className="text-sm">{t('completed')}</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Unscheduled Work Orders */}
+          {/* Unscheduled Work Orders - Admin only */}
+          {isAdmin && (
           <Card className="lg:col-span-1">
             <CardHeader>
               <CardTitle>{t('unscheduledOrders')}</CardTitle>
-              <CardDescription>{t('dragToSchedule')}</CardDescription>
+              <CardDescription>{t('clickToSchedule')}</CardDescription>
             </CardHeader>
             <CardContent>
               {loading ? (
@@ -153,178 +241,235 @@ const ProductionCalendar = () => {
               ) : (
                 <div className="space-y-2">
                   {unscheduledOrders.map((order) => (
-                    <DraggableWorkOrder key={order.id} order={order} getStatusVariant={getStatusVariant} />
+                    <div
+                      key={order.id}
+                      onClick={() => handleOrderClick(order)}
+                      className={cn(
+                        "p-3 bg-card border-l-4 rounded-lg cursor-pointer hover:bg-muted/50 transition-colors",
+                        getStatusBorderColor(order.status)
+                      )}
+                    >
+                      <div className="flex items-center justify-between gap-2 mb-1">
+                        <span className="font-semibold text-sm truncate">{order.wo_number}</span>
+                        <Badge className={getStatusColor(order.status)}>{formatStatus(order.status)}</Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {formatProductType(order.product_type)} • {order.batch_size} units
+                      </p>
+                    </div>
                   ))}
                 </div>
               )}
             </CardContent>
           </Card>
+          )}
 
           {/* Calendar Grid */}
-          <Card className="lg:col-span-3">
+          <Card className={isAdmin ? "lg:col-span-3" : "lg:col-span-4"}>
             <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>{format(currentDate, 'MMMM yyyy')}</CardTitle>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="icon" onClick={goToPreviousMonth}>
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <CardTitle>
+                  {viewMode === 'month' 
+                    ? format(currentDate, 'MMMM yyyy')
+                    : `${format(startOfWeek(currentDate, { weekStartsOn: 1 }), 'MMM d')} - ${format(endOfWeek(currentDate, { weekStartsOn: 1 }), 'MMM d, yyyy')}`
+                  }
+                </CardTitle>
+                <div className="flex items-center gap-2">
+                  <div className="flex border rounded-md">
+                    <Button 
+                      variant={viewMode === 'week' ? 'secondary' : 'ghost'} 
+                      size="sm"
+                      className="rounded-r-none"
+                      onClick={() => setViewMode('week')}
+                    >
+                      <List className="h-4 w-4 mr-1" />
+                      {t('week')}
+                    </Button>
+                    <Button 
+                      variant={viewMode === 'month' ? 'secondary' : 'ghost'} 
+                      size="sm"
+                      className="rounded-l-none"
+                      onClick={() => setViewMode('month')}
+                    >
+                      <LayoutGrid className="h-4 w-4 mr-1" />
+                      {t('month')}
+                    </Button>
+                  </div>
+                  <Button variant="outline" size="icon" onClick={goToPrevious}>
                     <ChevronLeft className="h-4 w-4" />
                   </Button>
-                  <Button variant="outline" size="icon" onClick={goToNextMonth}>
+                  <Button variant="outline" size="icon" onClick={goToNext}>
                     <ChevronRight className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
             </CardHeader>
             <CardContent>
-              <DndContext
-                collisionDetection={closestCenter}
-                onDragStart={handleDragStart}
-                onDragEnd={handleDragEnd}
-              >
+              {viewMode === 'month' ? (
                 <div className="grid grid-cols-7 gap-2">
                   {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
                     <div key={day} className="text-center font-semibold text-sm py-2 text-muted-foreground">
                       {day}
                     </div>
                   ))}
-                  {getDaysInMonth().map((date) => (
-                    <CalendarDay
-                      key={date.toISOString()}
-                      date={date}
-                      workOrders={getWorkOrdersForDate(date)}
-                      getStatusVariant={getStatusVariant}
-                      navigate={navigate}
-                      onRefetch={fetchWorkOrders}
-                    />
-                  ))}
-                </div>
-                <DragOverlay>
-                  {activeId && draggedOrder ? (
-                    <div className="p-3 bg-card border rounded-lg shadow-lg cursor-grabbing">
-                      <div className="flex items-center justify-between gap-2 mb-1">
-                        <span className="font-semibold text-sm">{draggedOrder.wo_number}</span>
-                        <Badge variant={getStatusVariant(draggedOrder.status)}>
-                          {draggedOrder.status}
-                        </Badge>
+                  {getDaysInView().map((date) => {
+                    const dayOrders = getWorkOrdersForDate(date);
+                    const isToday = isSameDay(date, new Date());
+                    
+                    return (
+                      <div
+                        key={date.toISOString()}
+                        className={cn(
+                          "min-h-[100px] p-2 border rounded-lg bg-card",
+                          isToday && "bg-primary/5 border-primary/20"
+                        )}
+                      >
+                        <div className={cn(
+                          "text-sm font-medium mb-2",
+                          isToday ? "text-primary" : "text-foreground"
+                        )}>
+                          {format(date, 'd')}
+                        </div>
+                        <div className="space-y-1">
+                          {dayOrders.map((order) => (
+                            <div
+                              key={order.id}
+                              onClick={() => handleOrderClick(order)}
+                              className={cn(
+                                "p-1.5 border-l-2 bg-background/50 rounded text-xs cursor-pointer hover:bg-background/80 transition-colors",
+                                getStatusBorderColor(order.status)
+                              )}
+                            >
+                              <div className="font-medium truncate">{order.wo_number}</div>
+                              <div className="text-muted-foreground truncate text-[10px]">
+                                {formatProductType(order.product_type)}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                      <p className="text-xs text-muted-foreground">
-                        {draggedOrder.product_type} • {draggedOrder.batch_size} units
-                      </p>
-                    </div>
-                  ) : null}
-                </DragOverlay>
-              </DndContext>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {getDaysInView().map((date) => {
+                    const dayOrders = getWorkOrdersForDate(date);
+                    const isToday = isSameDay(date, new Date());
+                    
+                    return (
+                      <div
+                        key={date.toISOString()}
+                        className={cn(
+                          "p-4 border rounded-lg bg-card",
+                          isToday && "bg-primary/5 border-primary/20"
+                        )}
+                      >
+                        <div className={cn(
+                          "text-sm font-semibold mb-3 pb-2 border-b",
+                          isToday ? "text-primary" : "text-foreground"
+                        )}>
+                          {format(date, 'EEEE, MMMM d')}
+                          {isToday && <span className="ml-2 text-xs font-normal text-muted-foreground">(Today)</span>}
+                        </div>
+                        {dayOrders.length === 0 ? (
+                          <p className="text-sm text-muted-foreground italic">No work orders scheduled</p>
+                        ) : (
+                          <div className="space-y-2">
+                            {dayOrders.map((order) => (
+                              <div
+                                key={order.id}
+                                onClick={() => handleOrderClick(order)}
+                                className={cn(
+                                  "p-3 border-l-4 bg-background/50 rounded-lg cursor-pointer hover:bg-background/80 transition-colors",
+                                  getStatusBorderColor(order.status)
+                                )}
+                              >
+                                <div className="flex items-center justify-between gap-2 mb-1">
+                                  <span className="font-semibold">{order.wo_number}</span>
+                                  <Badge className={getStatusColor(order.status)}>
+                                    {formatStatus(order.status)}
+                                  </Badge>
+                                </div>
+                                <div className="text-sm text-muted-foreground">
+                                  {formatProductType(order.product_type)} • {order.batch_size} units
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
+
+        {/* Schedule Dialog */}
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{t('scheduleWorkOrder')}</DialogTitle>
+              <DialogDescription>
+                {selectedOrder?.wo_number} - {selectedOrder && formatProductType(selectedOrder.product_type)}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-4">
+              <div className="flex items-center gap-2 mb-4">
+                <span className="text-sm font-medium">{t('currentStatus')}:</span>
+                <Badge className={selectedOrder ? getStatusColor(selectedOrder.status) : ''}>
+                  {selectedOrder && formatStatus(selectedOrder.status)}
+                </Badge>
+              </div>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !newDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {newDate ? format(newDate, "PPP") : <span>{t('selectDate')}</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={newDate}
+                    onSelect={setNewDate}
+                    initialFocus
+                    className="pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+            <DialogFooter className="gap-2 sm:gap-2">
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setDialogOpen(false);
+                  navigate(`/production/${selectedOrder?.id}`);
+                }}
+              >
+                {t('viewWorkOrder')}
+              </Button>
+              {selectedOrder?.scheduled_date && (
+                <Button variant="outline" onClick={handleClearDate} disabled={updating}>
+                  {t('clearSchedule')}
+                </Button>
+              )}
+              <Button onClick={handleSaveDate} disabled={updating || !newDate}>
+                {t('save')}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </Layout>
-  );
-};
-
-// Draggable Work Order Component
-const DraggableWorkOrder: React.FC<{
-  order: WorkOrder;
-  getStatusVariant: (status: string) => 'default' | 'secondary' | 'success' | 'warning' | 'info' | 'destructive' | 'outline';
-}> = ({ order, getStatusVariant }) => {
-  const [isDragging, setIsDragging] = useState(false);
-
-  return (
-    <div
-      draggable
-      onDragStart={(e) => {
-        setIsDragging(true);
-        e.dataTransfer.effectAllowed = 'move';
-        e.dataTransfer.setData('workOrderId', order.id);
-      }}
-      onDragEnd={() => setIsDragging(false)}
-      className={`p-3 bg-card border rounded-lg cursor-grab active:cursor-grabbing transition-opacity ${
-        isDragging ? 'opacity-50' : ''
-      }`}
-    >
-      <div className="flex items-center justify-between gap-2 mb-1">
-        <span className="font-semibold text-sm truncate">{order.wo_number}</span>
-        <Badge variant={getStatusVariant(order.status)}>{order.status}</Badge>
-      </div>
-      <p className="text-xs text-muted-foreground">
-        {order.product_type} • {order.batch_size} units
-      </p>
-    </div>
-  );
-};
-
-// Calendar Day Component
-const CalendarDay: React.FC<{
-  date: Date;
-  workOrders: WorkOrder[];
-  getStatusVariant: (status: string) => 'default' | 'secondary' | 'success' | 'warning' | 'info' | 'destructive' | 'outline';
-  navigate: (path: string) => void;
-  onRefetch: () => void;
-}> = ({ date, workOrders, getStatusVariant, navigate, onRefetch }) => {
-  const [isDragOver, setIsDragOver] = useState(false);
-  const dateString = format(date, 'yyyy-MM-dd');
-  const isToday = isSameDay(date, new Date());
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    setIsDragOver(true);
-  };
-
-  const handleDragLeave = () => {
-    setIsDragOver(false);
-  };
-
-  const handleDrop = async (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragOver(false);
-    const workOrderId = e.dataTransfer.getData('workOrderId');
-    
-    if (workOrderId) {
-      try {
-        const { error } = await supabase
-          .from('work_orders')
-          .update({ scheduled_date: dateString })
-          .eq('id', workOrderId);
-
-        if (error) throw error;
-
-        toast.success(t('success'), { description: t('workOrderScheduled') || 'Work order scheduled' });
-        onRefetch(); // Refetch to show updated schedule (SPA-friendly)
-      } catch (error) {
-        console.error('Error scheduling work order:', error);
-        toast.error(t('error'), { description: t('errorSchedulingWorkOrder') || 'Failed to schedule work order' });
-      }
-    }
-  };
-
-  return (
-    <div
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      onDrop={handleDrop}
-      className={`min-h-[100px] p-2 border rounded-lg transition-colors ${
-        isToday ? 'bg-primary/5 border-primary/20' : 'bg-card'
-      } ${isDragOver ? 'bg-primary/10 border-primary' : ''}`}
-    >
-      <div className={`text-sm font-medium mb-2 ${isToday ? 'text-primary' : 'text-foreground'}`}>
-        {format(date, 'd')}
-      </div>
-      <div className="space-y-1">
-        {workOrders.map((order) => (
-          <div
-            key={order.id}
-            onClick={() => navigate(`/production/${order.id}`)}
-            className="p-1.5 bg-background/50 border rounded text-xs cursor-pointer hover:bg-background/80 transition-colors"
-          >
-            <div className="font-medium truncate">{order.wo_number}</div>
-            <div className="text-muted-foreground truncate text-[10px]">
-              {order.product_type}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
   );
 };
 

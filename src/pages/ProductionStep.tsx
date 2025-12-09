@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import Layout from '@/components/Layout';
@@ -11,10 +11,14 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Loader2, ArrowLeft, CheckCircle2, AlertCircle, ScanBarcode, History, XCircle, Users } from 'lucide-react';
+import { formatDateTime } from '@/lib/utils';
 import MeasurementDialog from '@/components/production/MeasurementDialog';
 import ChecklistDialog from '@/components/production/ChecklistDialog';
 import BatchScanDialog from '@/components/production/BatchScanDialog';
 import ValidationHistoryDialog from '@/components/production/ValidationHistoryDialog';
+import StepDetailDialog from '@/components/production/StepDetailDialog';
+import StepEditDialog from '@/components/production/StepEditDialog';
+import { WorkOrderNotes } from '@/components/production/WorkOrderNotes';
 import { generateQualityCertificate } from '@/services/certificateService';
 import { Comments } from '@/components/Comments';
 
@@ -29,10 +33,12 @@ interface StepCompletionInfo {
   completed_by_name: string;
   completed_at: string;
   operator_initials: string | null;
+  avatar_url: string | null;
 }
 
 const ProductionStep = () => {
   const { itemId } = useParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
   const { t } = useLanguage();
   const navigate = useNavigate();
@@ -48,6 +54,10 @@ const ProductionStep = () => {
   const [showChecklistDialog, setShowChecklistDialog] = useState(false);
   const [showBatchScanDialog, setShowBatchScanDialog] = useState(false);
   const [showValidationHistory, setShowValidationHistory] = useState(false);
+  const [showStepDetail, setShowStepDetail] = useState(false);
+  const [showStepEdit, setShowStepEdit] = useState(false);
+  const [viewingStepNumber, setViewingStepNumber] = useState<number | null>(null);
+  const [editingStepNumber, setEditingStepNumber] = useState<number | null>(null);
   const [failedSteps, setFailedSteps] = useState<Set<number>>(new Set());
   const [stepCompletions, setStepCompletions] = useState<Map<number, StepCompletionInfo>>(new Map());
   const [presentUsers, setPresentUsers] = useState<PresenceUser[]>([]);
@@ -101,6 +111,20 @@ const ProductionStep = () => {
     };
   }, [user, itemId, currentUserProfile]);
 
+  // Handle viewStep query param for viewing completed steps
+  useEffect(() => {
+    const viewStep = searchParams.get('viewStep');
+    if (viewStep) {
+      const stepNum = parseInt(viewStep, 10);
+      if (!isNaN(stepNum)) {
+        setViewingStepNumber(stepNum);
+        setShowStepDetail(true);
+        // Clear the query param
+        setSearchParams({});
+      }
+    }
+  }, [searchParams, setSearchParams]);
+
   useEffect(() => {
     if (user && itemId) {
       fetchData();
@@ -137,12 +161,39 @@ const ProductionStep = () => {
       
       setWorkOrder(woData);
 
-      // Fetch production steps for this product type
+      // Fetch production steps for this item's product type (or fallback to work order product type)
+      const itemProductType = (itemData.product_type || woData.product_type) as 'SDM_ECO' | 'SENSOR' | 'MLA' | 'HMI' | 'TRANSMITTER';
       const { data: stepsData, error: stepsError } = await supabase
         .from('production_steps')
         .select('*')
-        .eq('product_type', woData.product_type)
+        .eq('product_type', itemProductType)
         .order('sort_order', { ascending: true });
+      
+      // For SDM_ECO items, check if all linked sub-assemblies are completed
+      if (itemProductType === 'SDM_ECO') {
+        const { data: subAssemblies } = await supabase
+          .from('sub_assemblies')
+          .select('child_item_id')
+          .eq('parent_item_id', itemId);
+        
+        if (subAssemblies && subAssemblies.length > 0) {
+          const childIds = subAssemblies.map(sa => sa.child_item_id);
+          const { data: childItems } = await supabase
+            .from('work_order_items')
+            .select('id, serial_number, status, product_type')
+            .in('id', childIds);
+          
+          const incompleteComponents = childItems?.filter(item => item.status !== 'completed') || [];
+          if (incompleteComponents.length > 0) {
+            const componentList = incompleteComponents.map(c => `${c.serial_number} (${c.product_type})`).join(', ');
+            toast.error(t('dependencyNotMet') || 'Dependencies not met', { 
+              description: `Complete these components first: ${componentList}` 
+            });
+            navigate(`/production/${itemData.work_order_id}`);
+            return;
+          }
+        }
+      }
 
       if (stepsError) throw stepsError;
       setProductionSteps(stepsData || []);
@@ -181,10 +232,10 @@ const ProductionStep = () => {
         const executorIds = [...new Set(completedExecs.map((e: any) => e.executed_by).filter(Boolean))];
         const { data: profiles } = await supabase
           .from('profiles')
-          .select('id, full_name')
+          .select('id, full_name, avatar_url')
           .in('id', executorIds);
         
-        const profileMap = new Map(profiles?.map(p => [p.id, p.full_name]) || []);
+        const profileMap = new Map(profiles?.map(p => [p.id, { name: p.full_name, avatar_url: p.avatar_url }]) || []);
         
         const completionsMap = new Map<number, StepCompletionInfo>();
         completedExecs.forEach((exec: any) => {
@@ -193,11 +244,13 @@ const ProductionStep = () => {
             // Keep the most recent completion for each step
             const existing = completionsMap.get(stepNumber);
             if (!existing || new Date(exec.completed_at) > new Date(existing.completed_at)) {
+              const profile = profileMap.get(exec.executed_by);
               completionsMap.set(stepNumber, {
                 step_number: stepNumber,
-                completed_by_name: profileMap.get(exec.executed_by) || 'Unknown',
+                completed_by_name: profile?.name || 'Unknown',
                 completed_at: exec.completed_at,
                 operator_initials: exec.operator_initials,
+                avatar_url: profile?.avatar_url || null,
               });
             }
           }
@@ -247,6 +300,24 @@ const ProductionStep = () => {
       if (error) throw error;
 
       setStepExecution(data);
+      
+      // Update work order item status to in_progress if it's planned
+      if (item.status === 'planned') {
+        await supabase
+          .from('work_order_items')
+          .update({ status: 'in_progress' })
+          .eq('id', itemId);
+        setItem({ ...item, status: 'in_progress' });
+      }
+      
+      // Update work order status to in_progress if it's planned
+      if (workOrder.status === 'planned') {
+        await supabase
+          .from('work_orders')
+          .update({ status: 'in_progress', started_at: new Date().toISOString() })
+          .eq('id', workOrder.id);
+        setWorkOrder({ ...workOrder, status: 'in_progress' });
+      }
       
       // Show appropriate dialog based on step requirements
       if (currentStep.requires_batch_number) {
@@ -309,7 +380,7 @@ const ProductionStep = () => {
         step_number: item.current_step,
         step_name: currentStep.title_en,
         work_order_id: item.work_order_id,
-        product_type: workOrder.product_type,
+        product_type: item.product_type || workOrder.product_type,
       });
 
       // If all steps completed, trigger work order completion webhook and navigate
@@ -317,7 +388,7 @@ const ProductionStep = () => {
         await triggerWebhook('work_order_item_completed', {
           serial_number: item.serial_number,
           work_order_id: item.work_order_id,
-          product_type: workOrder.product_type,
+          product_type: item.product_type || workOrder.product_type,
         });
 
         // Check if all items in the batch are completed
@@ -414,7 +485,7 @@ const ProductionStep = () => {
 
   return (
     <Layout>
-      <div className="space-y-6 md:space-y-8">
+      <div className="space-y-6 md:space-y-8 max-w-3xl mx-auto">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="icon" onClick={() => navigate(`/production/${item.work_order_id}`)} className="h-12 w-12 md:h-10 md:w-10">
@@ -423,7 +494,7 @@ const ProductionStep = () => {
             <div className="space-y-1">
               <h1 className="text-3xl md:text-4xl font-bold tracking-tight font-data">{item.serial_number}</h1>
               <p className="text-base md:text-lg text-muted-foreground font-data">
-                {workOrder.product_type} • {t('step')} {item.current_step} {t('of')} {productionSteps.length}
+                {item.product_type || workOrder.product_type} • {t('step')} {item.current_step} {t('of')} {productionSteps.length}
               </p>
             </div>
           </div>
@@ -553,70 +624,49 @@ const ProductionStep = () => {
                 const completion = stepCompletions.get(step.step_number);
                 const isCompleted = step.step_number < item.current_step;
                 const isCurrent = step.step_number === item.current_step;
+                const canNavigate = isCompleted;
                 
                 return (
                   <div
                     key={step.id}
-                    className={`flex items-center gap-4 md:gap-3 p-4 md:p-3 rounded-lg transition-all ${
+                    onClick={() => canNavigate && navigate(`/production/step/${item.id}?viewStep=${step.step_number}`)}
+                    className={`flex items-center gap-3 p-3 rounded-lg transition-all ${
+                      canNavigate ? 'cursor-pointer hover:shadow-md' : ''
+                    } ${
                       isCurrent
                         ? 'bg-primary/10 border-2 border-primary'
                         : isCompleted
                         ? hasFailed
-                          ? 'bg-destructive/10 border border-destructive/30'
-                          : 'bg-accent/50 border border-border'
+                          ? 'bg-destructive/10 border border-destructive/30 hover:bg-destructive/20'
+                          : 'bg-accent/50 border border-border hover:bg-accent'
                         : 'bg-muted/30 border border-border'
                     }`}
                   >
-                    <div className={`flex items-center justify-center h-10 w-10 md:h-8 md:w-8 rounded-full ${
+                    <div className={`flex items-center justify-center h-8 w-8 rounded-full shrink-0 ${
                       isCompleted
                         ? hasFailed
-                          ? 'bg-destructive text-destructive-foreground shadow-lg'
-                          : 'bg-primary text-primary-foreground shadow-lg'
+                          ? 'bg-destructive text-destructive-foreground'
+                          : 'bg-primary text-primary-foreground'
                         : isCurrent
                         ? 'bg-primary/20 text-primary border-2 border-primary'
                         : 'bg-muted text-muted-foreground'
                     }`}>
                       {isCompleted ? (
-                        hasFailed ? (
-                          <XCircle className="h-5 w-5 md:h-4 md:w-4" />
-                        ) : (
-                          <CheckCircle2 className="h-5 w-5 md:h-4 md:w-4" />
-                        )
+                        hasFailed ? <XCircle className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />
                       ) : (
-                        <span className="text-base md:text-sm font-bold font-data">{step.step_number}</span>
+                        <span className="text-sm font-bold">{step.step_number}</span>
                       )}
                     </div>
-                    <div className="flex-1 flex items-center justify-between gap-2">
-                      <div className="flex-1">
-                        <span className="text-base md:text-sm font-medium font-data">{step.title_en}</span>
-                        {isCompleted && completion && (
-                          <p className="text-xs text-muted-foreground mt-0.5">
-                            {completion.operator_initials || completion.completed_by_name} • {new Date(completion.completed_at).toLocaleString()}
-                          </p>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {isCompleted && completion && (
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Avatar className="h-7 w-7">
-                                  <AvatarFallback className="bg-muted text-xs">
-                                    {completion.operator_initials || getInitials(completion.completed_by_name)}
-                                  </AvatarFallback>
-                                </Avatar>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>{completion.completed_by_name}</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        )}
-                        {hasFailed && (
-                          <Badge variant="destructive" className="ml-2">{t('failed')}</Badge>
-                        )}
-                      </div>
+                    <div className="flex-1 min-w-0">
+                      <span className="text-sm font-medium">{step.title_en}</span>
+                      {isCompleted && completion && (
+                        <p className="text-xs text-muted-foreground">
+                          {completion.completed_by_name} • {formatDateTime(completion.completed_at)}
+                        </p>
+                      )}
                     </div>
+                    {hasFailed && <Badge variant="destructive" className="text-xs">{t('failed')}</Badge>}
+                    {isCompleted && <Badge variant="outline" className="text-xs">{t('view')}</Badge>}
                   </div>
                 );
               })}
@@ -624,8 +674,12 @@ const ProductionStep = () => {
           </CardContent>
         </Card>
 
-        {/* Work Order Item Comments */}
-        {item && <Comments entityType="work_order_item" entityId={item.id} />}
+        {/* Notes section */}
+        <WorkOrderNotes 
+          workOrderId={item.work_order_id} 
+          workOrderItemId={item.id}
+          currentStepNumber={item.current_step}
+        />
       </div>
 
       {stepExecution && currentStep && (
@@ -654,14 +708,48 @@ const ProductionStep = () => {
             productionStep={currentStep}
             onComplete={fetchData}
           />
-
-          <ValidationHistoryDialog
-            open={showValidationHistory}
-            onOpenChange={setShowValidationHistory}
-            workOrderItemId={item.id}
-            serialNumber={item.serial_number}
-          />
         </>
+      )}
+
+      {/* Always show validation history dialog - not dependent on stepExecution */}
+      <ValidationHistoryDialog
+        open={showValidationHistory}
+        onOpenChange={setShowValidationHistory}
+        workOrderItemId={item.id}
+        serialNumber={item.serial_number}
+      />
+
+      {/* Step detail dialog for viewing completed steps */}
+      {viewingStepNumber && (
+        <StepDetailDialog
+          open={showStepDetail}
+          onOpenChange={(open) => {
+            setShowStepDetail(open);
+            if (!open) setViewingStepNumber(null);
+          }}
+          workOrderItemId={item.id}
+          stepNumber={viewingStepNumber}
+          productType={item.product_type || workOrder.product_type}
+          onEdit={() => {
+            setEditingStepNumber(viewingStepNumber);
+            setShowStepEdit(true);
+          }}
+        />
+      )}
+
+      {/* Step edit dialog for editing completed steps (admin only) */}
+      {editingStepNumber && (
+        <StepEditDialog
+          open={showStepEdit}
+          onOpenChange={(open) => {
+            setShowStepEdit(open);
+            if (!open) setEditingStepNumber(null);
+          }}
+          workOrderItemId={item.id}
+          stepNumber={editingStepNumber}
+          productType={item.product_type || workOrder.product_type}
+          onSave={fetchData}
+        />
       )}
     </Layout>
   );

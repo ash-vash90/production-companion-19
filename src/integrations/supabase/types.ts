@@ -273,6 +273,42 @@ export type Database = {
         }
         Relationships: []
       }
+      notifications: {
+        Row: {
+          created_at: string
+          entity_id: string | null
+          entity_type: string | null
+          id: string
+          message: string
+          read: boolean
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          message: string
+          read?: boolean
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          message?: string
+          read?: boolean
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       production_steps: {
         Row: {
           batch_type: string | null
@@ -353,26 +389,32 @@ export type Database = {
       }
       profiles: {
         Row: {
+          avatar_url: string | null
           created_at: string
           full_name: string
           id: string
           language: string
+          notification_prefs: Json | null
           role: Database["public"]["Enums"]["app_role"]
           updated_at: string
         }
         Insert: {
+          avatar_url?: string | null
           created_at?: string
           full_name: string
           id: string
           language?: string
+          notification_prefs?: Json | null
           role?: Database["public"]["Enums"]["app_role"]
           updated_at?: string
         }
         Update: {
+          avatar_url?: string | null
           created_at?: string
           full_name?: string
           id?: string
           language?: string
+          notification_prefs?: Json | null
           role?: Database["public"]["Enums"]["app_role"]
           updated_at?: string
         }
@@ -539,6 +581,33 @@ export type Database = {
           },
         ]
       }
+      system_settings: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          setting_key: string
+          setting_value: Json
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          setting_key: string
+          setting_value?: Json
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          setting_key?: string
+          setting_value?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           assigned_at: string
@@ -622,6 +691,7 @@ export type Database = {
             | Database["public"]["Enums"]["operator_initials"]
             | null
           position_in_batch: number
+          product_type: string | null
           quality_approved: boolean
           serial_number: string
           status: Database["public"]["Enums"]["work_order_status"]
@@ -642,6 +712,7 @@ export type Database = {
             | Database["public"]["Enums"]["operator_initials"]
             | null
           position_in_batch: number
+          product_type?: string | null
           quality_approved?: boolean
           serial_number: string
           status?: Database["public"]["Enums"]["work_order_status"]
@@ -662,6 +733,7 @@ export type Database = {
             | Database["public"]["Enums"]["operator_initials"]
             | null
           position_in_batch?: number
+          product_type?: string | null
           quality_approved?: boolean
           serial_number?: string
           status?: Database["public"]["Enums"]["work_order_status"]
@@ -678,6 +750,67 @@ export type Database = {
           },
         ]
       }
+      work_order_notes: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          mentions: string[] | null
+          reply_to_id: string | null
+          step_number: number | null
+          updated_at: string
+          user_id: string
+          work_order_id: string
+          work_order_item_id: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          mentions?: string[] | null
+          reply_to_id?: string | null
+          step_number?: number | null
+          updated_at?: string
+          user_id: string
+          work_order_id: string
+          work_order_item_id?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          mentions?: string[] | null
+          reply_to_id?: string | null
+          step_number?: number | null
+          updated_at?: string
+          user_id?: string
+          work_order_id?: string
+          work_order_item_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "work_order_notes_reply_to_id_fkey"
+            columns: ["reply_to_id"]
+            isOneToOne: false
+            referencedRelation: "work_order_notes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_order_notes_work_order_id_fkey"
+            columns: ["work_order_id"]
+            isOneToOne: false
+            referencedRelation: "work_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_order_notes_work_order_item_id_fkey"
+            columns: ["work_order_item_id"]
+            isOneToOne: false
+            referencedRelation: "work_order_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       work_orders: {
         Row: {
           assigned_to: string | null
@@ -685,8 +818,11 @@ export type Database = {
           completed_at: string | null
           created_at: string
           created_by: string
+          customer_name: string | null
+          external_order_number: string | null
           id: string
           notes: string | null
+          order_value: number | null
           parent_wo_id: string | null
           product_type: Database["public"]["Enums"]["product_type"]
           scheduled_date: string | null
@@ -701,8 +837,11 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           created_by: string
+          customer_name?: string | null
+          external_order_number?: string | null
           id?: string
           notes?: string | null
+          order_value?: number | null
           parent_wo_id?: string | null
           product_type: Database["public"]["Enums"]["product_type"]
           scheduled_date?: string | null
@@ -717,8 +856,11 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           created_by?: string
+          customer_name?: string | null
+          external_order_number?: string | null
           id?: string
           notes?: string | null
+          order_value?: number | null
           parent_wo_id?: string | null
           product_type?: Database["public"]["Enums"]["product_type"]
           scheduled_date?: string | null

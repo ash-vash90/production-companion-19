@@ -1,9 +1,10 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 const SESSION_TIMEOUT_MS = 12 * 60 * 60 * 1000; // 12 hours in milliseconds
+const SESSION_START_KEY = 'auth_session_start';
 
 interface AuthContextType {
   user: User | null;
@@ -16,80 +17,82 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const isSessionExpired = (session: Session | null): boolean => {
-  if (!session?.user?.created_at) return false;
-  
-  // Use the session's iat (issued at) from the access token if available
-  // Otherwise fall back to checking against last sign in
-  const lastSignIn = session.user.last_sign_in_at;
-  if (!lastSignIn) return false;
-  
-  const signInTime = new Date(lastSignIn).getTime();
-  const now = Date.now();
-  return now - signInTime > SESSION_TIMEOUT_MS;
-};
-
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const sessionCheckRef = useRef<NodeJS.Timeout | null>(null);
 
-  const handleSessionExpiry = async (currentSession: Session | null) => {
-    if (currentSession && isSessionExpired(currentSession)) {
-      await supabase.auth.signOut();
-      toast.info('Session expired', { 
-        description: 'You have been logged out after 12 hours. Please sign in again.' 
-      });
-      return true;
-    }
-    return false;
+  const checkSessionTimeout = () => {
+    const sessionStart = localStorage.getItem(SESSION_START_KEY);
+    if (!sessionStart) return false;
+    
+    const startTime = parseInt(sessionStart, 10);
+    const now = Date.now();
+    return now - startTime > SESSION_TIMEOUT_MS;
+  };
+
+  const handleExpiredSession = () => {
+    localStorage.removeItem(SESSION_START_KEY);
+    supabase.auth.signOut();
+    toast.info('Session expired', { 
+      description: 'You have been logged out after 12 hours. Please sign in again.' 
+    });
   };
 
   useEffect(() => {
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      // Check if session is expired
-      if (session && await handleSessionExpiry(session)) {
-        setSession(null);
-        setUser(null);
-        setLoading(false);
-        return;
+    // Set up auth state listener FIRST (no async in callback!)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, newSession) => {
+      // Synchronous state updates only
+      setSession(newSession);
+      setUser(newSession?.user ?? null);
+      setLoading(false);
+
+      // Handle session start tracking
+      if (event === 'SIGNED_IN' && newSession) {
+        // Only set session start if not already set (fresh login)
+        if (!localStorage.getItem(SESSION_START_KEY)) {
+          localStorage.setItem(SESSION_START_KEY, Date.now().toString());
+        }
       }
       
-      setSession(session);
-      setUser(session?.user ?? null);
+      if (event === 'SIGNED_OUT') {
+        localStorage.removeItem(SESSION_START_KEY);
+      }
+    });
+
+    // THEN check for existing session
+    supabase.auth.getSession().then(({ data: { session: existingSession } }) => {
+      if (existingSession) {
+        // Check if session has timed out
+        if (checkSessionTimeout()) {
+          handleExpiredSession();
+          setSession(null);
+          setUser(null);
+        } else {
+          setSession(existingSession);
+          setUser(existingSession.user);
+          // Ensure session start is tracked
+          if (!localStorage.getItem(SESSION_START_KEY)) {
+            localStorage.setItem(SESSION_START_KEY, Date.now().toString());
+          }
+        }
+      }
       setLoading(false);
     });
 
-    // Check for existing session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      // Check if session is expired
-      if (session && await handleSessionExpiry(session)) {
-        setSession(null);
-        setUser(null);
-        setLoading(false);
-        return;
-      }
-      
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
-
-    // Set up periodic session check (every 5 minutes)
-    const intervalId = setInterval(async () => {
-      const { data: { session: currentSession } } = await supabase.auth.getSession();
-      if (currentSession && isSessionExpired(currentSession)) {
-        await supabase.auth.signOut();
-        toast.info('Session expired', { 
-          description: 'You have been logged out after 12 hours. Please sign in again.' 
-        });
+    // Set up periodic session timeout check (every 5 minutes)
+    sessionCheckRef.current = setInterval(() => {
+      if (checkSessionTimeout()) {
+        handleExpiredSession();
       }
     }, 5 * 60 * 1000);
 
     return () => {
       subscription.unsubscribe();
-      clearInterval(intervalId);
+      if (sessionCheckRef.current) {
+        clearInterval(sessionCheckRef.current);
+      }
     };
   }, []);
 
@@ -98,6 +101,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       email,
       password,
     });
+    if (!error) {
+      localStorage.setItem(SESSION_START_KEY, Date.now().toString());
+    }
     return { error };
   };
 
@@ -119,6 +125,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signOut = async () => {
+    localStorage.removeItem(SESSION_START_KEY);
     await supabase.auth.signOut();
   };
 
