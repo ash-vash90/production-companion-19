@@ -94,13 +94,15 @@ const ProductionCalendar = () => {
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'planned': return 'bg-secondary text-secondary-foreground border-secondary';
-      case 'in_progress': return 'bg-primary text-primary-foreground border-primary';
-      case 'completed': return 'bg-accent text-accent-foreground border-accent';
-      default: return 'bg-muted text-muted-foreground border-border';
-    }
+  const getStatusVariant = (status: string): 'default' | 'secondary' | 'success' | 'warning' | 'info' | 'destructive' | 'outline' => {
+    const variants: Record<string, 'default' | 'secondary' | 'success' | 'warning' | 'info' | 'destructive' | 'outline'> = {
+      planned: 'secondary',
+      in_progress: 'info',
+      completed: 'success',
+      on_hold: 'warning',
+      cancelled: 'destructive',
+    };
+    return variants[status] || 'secondary';
   };
 
   const getDaysInMonth = () => {
@@ -151,7 +153,7 @@ const ProductionCalendar = () => {
               ) : (
                 <div className="space-y-2">
                   {unscheduledOrders.map((order) => (
-                    <DraggableWorkOrder key={order.id} order={order} getStatusColor={getStatusColor} />
+                    <DraggableWorkOrder key={order.id} order={order} getStatusVariant={getStatusVariant} />
                   ))}
                 </div>
               )}
@@ -190,7 +192,7 @@ const ProductionCalendar = () => {
                       key={date.toISOString()}
                       date={date}
                       workOrders={getWorkOrdersForDate(date)}
-                      getStatusColor={getStatusColor}
+                      getStatusVariant={getStatusVariant}
                       navigate={navigate}
                       onRefetch={fetchWorkOrders}
                     />
@@ -201,7 +203,7 @@ const ProductionCalendar = () => {
                     <div className="p-3 bg-card border rounded-lg shadow-lg cursor-grabbing">
                       <div className="flex items-center justify-between gap-2 mb-1">
                         <span className="font-semibold text-sm">{draggedOrder.wo_number}</span>
-                        <Badge className={getStatusColor(draggedOrder.status)}>
+                        <Badge variant={getStatusVariant(draggedOrder.status)}>
                           {draggedOrder.status}
                         </Badge>
                       </div>
@@ -223,8 +225,8 @@ const ProductionCalendar = () => {
 // Draggable Work Order Component
 const DraggableWorkOrder: React.FC<{
   order: WorkOrder;
-  getStatusColor: (status: string) => string;
-}> = ({ order, getStatusColor }) => {
+  getStatusVariant: (status: string) => 'default' | 'secondary' | 'success' | 'warning' | 'info' | 'destructive' | 'outline';
+}> = ({ order, getStatusVariant }) => {
   const [isDragging, setIsDragging] = useState(false);
 
   return (
@@ -242,7 +244,7 @@ const DraggableWorkOrder: React.FC<{
     >
       <div className="flex items-center justify-between gap-2 mb-1">
         <span className="font-semibold text-sm truncate">{order.wo_number}</span>
-        <Badge className={getStatusColor(order.status)}>{order.status}</Badge>
+        <Badge variant={getStatusVariant(order.status)}>{order.status}</Badge>
       </div>
       <p className="text-xs text-muted-foreground">
         {order.product_type} • {order.batch_size} units
@@ -255,10 +257,10 @@ const DraggableWorkOrder: React.FC<{
 const CalendarDay: React.FC<{
   date: Date;
   workOrders: WorkOrder[];
-  getStatusColor: (status: string) => string;
+  getStatusVariant: (status: string) => 'default' | 'secondary' | 'success' | 'warning' | 'info' | 'destructive' | 'outline';
   navigate: (path: string) => void;
   onRefetch: () => void;
-}> = ({ date, workOrders, getStatusColor, navigate, onRefetch }) => {
+}> = ({ date, workOrders, getStatusVariant, navigate, onRefetch }) => {
   const [isDragOver, setIsDragOver] = useState(false);
   const dateString = format(date, 'yyyy-MM-dd');
   const isToday = isSameDay(date, new Date());

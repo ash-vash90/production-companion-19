@@ -44,14 +44,14 @@ export function RecentActivity() {
     return labels[action] || action.replace(/_/g, ' ');
   };
 
-  const getActionColor = (action: string) => {
-    const colors: Record<string, string> = {
-      create_work_order: 'bg-primary text-primary-foreground',
-      complete_step: 'bg-accent text-accent-foreground',
-      record_measurement: 'bg-secondary text-secondary-foreground',
-      scan_batch: 'bg-muted text-muted-foreground',
+  const getActionVariant = (action: string): 'default' | 'secondary' | 'success' | 'warning' | 'info' | 'destructive' | 'outline' => {
+    const variants: Record<string, 'default' | 'secondary' | 'success' | 'warning' | 'info' | 'destructive' | 'outline'> = {
+      create_work_order: 'default',
+      complete_step: 'success',
+      record_measurement: 'info',
+      scan_batch: 'secondary',
     };
-    return colors[action] || 'bg-muted text-muted-foreground';
+    return variants[action] || 'secondary';
   };
 
   if (loading) {
@@ -87,7 +87,7 @@ export function RecentActivity() {
                 <Activity className="h-4 w-4 mt-0.5 text-muted-foreground" />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <Badge className={`${getActionColor(activity.action)} text-xs`}>
+                    <Badge variant={getActionVariant(activity.action)} className="text-xs">
                       {getActionLabel(activity.action)}
                     </Badge>
                   </div>
