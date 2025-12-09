@@ -1,10 +1,11 @@
 import { supabase } from '@/integrations/supabase/client';
 
-export type NotificationType = 
+export type NotificationType =
   | 'work_order_completed'
   | 'work_order_cancelled'
   | 'exact_sync_success'
-  | 'exact_sync_error';
+  | 'exact_sync_error'
+  | 'user_mentioned';
 
 interface CreateNotificationParams {
   userId: string;

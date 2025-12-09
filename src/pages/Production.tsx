@@ -200,11 +200,14 @@ const Production = () => {
       `);
       printWindow.document.close();
 
+      // Log activity in background (non-blocking)
       supabase.from('activity_logs').insert({
         user_id: user?.id,
         action: 'print_label',
         entity_type: 'work_order_item',
         details: { serial_number: serialNumber, wo_number: workOrder?.wo_number, operator: operatorInitials },
+      }).then(({ error }) => {
+        if (error) console.error('Failed to log print activity:', error);
       });
     }
   };
@@ -261,7 +264,7 @@ const Production = () => {
       on_hold: 'bg-muted text-muted-foreground',
       cancelled: 'bg-destructive text-destructive-foreground',
     };
-    return variants[status] || 'secondary';
+    return colors[status] || 'bg-secondary text-secondary-foreground';
   };
 
   if (!user) return null;
