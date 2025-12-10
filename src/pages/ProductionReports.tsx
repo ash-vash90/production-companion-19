@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -6,17 +6,16 @@ import Layout from '@/components/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Loader2, BarChart3, Search } from 'lucide-react';
-import { format } from 'date-fns';
+import { Loader2, BarChart3 } from 'lucide-react';
+import { format, isToday, isThisWeek, isThisMonth, subDays } from 'date-fns';
 import { nl, enUS } from 'date-fns/locale';
-import { getProductBreakdown, formatProductBreakdownText, ProductBreakdown } from '@/lib/utils';
+import { getProductBreakdown, ProductBreakdown } from '@/lib/utils';
+import { ReportFilters, ReportFilterState } from '@/components/reports/ReportFilters';
 
 interface WorkOrderWithItems {
   id: string;
@@ -26,6 +25,7 @@ interface WorkOrderWithItems {
   status: string;
   created_at: string;
   completed_at: string | null;
+  customer_name: string | null;
   productBreakdown: ProductBreakdown[];
 }
 
@@ -36,9 +36,15 @@ const ProductionReports = () => {
   
   const [loading, setLoading] = useState(true);
   const [workOrders, setWorkOrders] = useState<WorkOrderWithItems[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [productFilter, setProductFilter] = useState<string>('all');
+  const [groupBy, setGroupBy] = useState('none');
+  const [filters, setFilters] = useState<ReportFilterState>({
+    searchTerm: '',
+    statusFilter: 'all',
+    productFilter: 'all',
+    customerFilter: 'all',
+    ageFilter: 'all',
+    createdMonthFilter: 'all',
+  });
 
   useEffect(() => {
     if (!user) {
@@ -52,14 +58,13 @@ const ProductionReports = () => {
     try {
       const { data: workOrdersData, error } = await supabase
         .from('work_orders')
-        .select('id, wo_number, product_type, batch_size, status, created_at, completed_at')
+        .select('id, wo_number, product_type, batch_size, status, created_at, completed_at, customer_name')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
       const woIds = workOrdersData?.map(wo => wo.id) || [];
       
-      // Fetch items for all work orders to get product breakdown
       let itemsMap: Record<string, Array<{ serial_number: string }>> = {};
       if (woIds.length > 0) {
         const { data: itemsData } = await supabase
@@ -75,7 +80,6 @@ const ProductionReports = () => {
         }
       }
 
-      // Enrich with product breakdown
       const enrichedData = (workOrdersData || []).map(wo => ({
         ...wo,
         productBreakdown: getProductBreakdown(itemsMap[wo.id] || [])
@@ -90,13 +94,61 @@ const ProductionReports = () => {
     }
   };
 
-  const filteredWorkOrders = workOrders.filter((wo) => {
-    const searchLower = searchTerm.toLowerCase();
-    const matchesSearch = wo.wo_number.toLowerCase().includes(searchLower);
-    const matchesStatus = statusFilter === 'all' || wo.status === statusFilter;
-    const matchesProduct = productFilter === 'all' || wo.product_type === productFilter;
-    return matchesSearch && matchesStatus && matchesProduct;
-  });
+  // Extract unique customers and months for filter options
+  const customers = useMemo(() => {
+    return [...new Set(workOrders.map(wo => wo.customer_name).filter(Boolean))];
+  }, [workOrders]);
+
+  const createdMonths = useMemo(() => {
+    const months = workOrders.map(wo => format(new Date(wo.created_at), 'yyyy-MM'));
+    return [...new Set(months)].sort().reverse();
+  }, [workOrders]);
+
+  // Apply filters
+  const filteredWorkOrders = useMemo(() => {
+    return workOrders.filter((wo) => {
+      const searchLower = filters.searchTerm.toLowerCase();
+      const matchesSearch = wo.wo_number.toLowerCase().includes(searchLower) ||
+        (wo.customer_name?.toLowerCase().includes(searchLower));
+      const matchesStatus = filters.statusFilter === 'all' || wo.status === filters.statusFilter;
+      const matchesProduct = filters.productFilter === 'all' || wo.product_type === filters.productFilter;
+      const matchesCustomer = filters.customerFilter === 'all' || wo.customer_name === filters.customerFilter;
+      
+      // Age filter
+      let matchesAge = true;
+      if (filters.ageFilter !== 'all') {
+        const createdDate = new Date(wo.created_at);
+        if (filters.ageFilter === 'today') matchesAge = isToday(createdDate);
+        else if (filters.ageFilter === 'week') matchesAge = isThisWeek(createdDate);
+        else if (filters.ageFilter === 'month') matchesAge = isThisMonth(createdDate);
+        else if (filters.ageFilter === 'older') matchesAge = createdDate < subDays(new Date(), 30);
+      }
+
+      // Created month filter
+      let matchesCreatedMonth = true;
+      if (filters.createdMonthFilter !== 'all') {
+        matchesCreatedMonth = format(new Date(wo.created_at), 'yyyy-MM') === filters.createdMonthFilter;
+      }
+
+      return matchesSearch && matchesStatus && matchesProduct && matchesCustomer && matchesAge && matchesCreatedMonth;
+    });
+  }, [workOrders, filters]);
+
+  // Group work orders
+  const groupedWorkOrders = useMemo(() => {
+    if (groupBy === 'none') return { 'all': filteredWorkOrders };
+    
+    return filteredWorkOrders.reduce((acc, wo) => {
+      let key = '';
+      if (groupBy === 'status') key = wo.status;
+      else if (groupBy === 'product') key = wo.product_type;
+      else if (groupBy === 'customer') key = wo.customer_name || 'No Customer';
+      
+      if (!acc[key]) acc[key] = [];
+      acc[key].push(wo);
+      return acc;
+    }, {} as Record<string, WorkOrderWithItems[]>);
+  }, [filteredWorkOrders, groupBy]);
 
   const getStatusVariant = (status: string): 'info' | 'warning' | 'success' | 'secondary' | 'destructive' => {
     switch (status) {
@@ -118,6 +170,17 @@ const ProductionReports = () => {
     return status;
   };
 
+  const clearAllFilters = () => {
+    setFilters({
+      searchTerm: '',
+      statusFilter: 'all',
+      productFilter: 'all',
+      customerFilter: 'all',
+      ageFilter: 'all',
+      createdMonthFilter: 'all',
+    });
+  };
+
   if (!user) return null;
 
   return (
@@ -126,51 +189,14 @@ const ProductionReports = () => {
         <div className="space-y-6">
           <PageHeader title={t('productionReports')} description={t('viewAnalyzeProduction')} />
 
-          <Card>
-            <CardHeader>
-              <CardTitle>{t('filterReports')}</CardTitle>
-              <CardDescription>{t('searchFilterData')}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-4 md:grid-cols-3">
-                <div className="relative">
-                  <Search className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
-                  <Input
-                    placeholder={t('searchWorkOrdersPlaceholder')}
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger>
-                    <SelectValue placeholder={t('filterByStatus')} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">{t('allStatuses')}</SelectItem>
-                    <SelectItem value="planned">{t('planned')}</SelectItem>
-                    <SelectItem value="in_progress">{t('inProgressStatus')}</SelectItem>
-                    <SelectItem value="completed">{t('completed')}</SelectItem>
-                    <SelectItem value="on_hold">{t('onHold')}</SelectItem>
-                    <SelectItem value="cancelled">{t('cancelled')}</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Select value={productFilter} onValueChange={setProductFilter}>
-                  <SelectTrigger>
-                    <SelectValue placeholder={t('filterByProduct')} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">{t('allProducts')}</SelectItem>
-                    <SelectItem value="SDM_ECO">SDM-ECO</SelectItem>
-                    <SelectItem value="SENSOR">Sensor</SelectItem>
-                    <SelectItem value="MLA">MLA</SelectItem>
-                    <SelectItem value="HMI">HMI</SelectItem>
-                    <SelectItem value="TRANSMITTER">Transmitter</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </CardContent>
-          </Card>
+          <ReportFilters
+            filters={filters}
+            onFiltersChange={setFilters}
+            customers={customers}
+            createdMonths={createdMonths}
+            groupBy={groupBy}
+            onGroupByChange={setGroupBy}
+          />
 
           {loading ? (
             <div className="flex justify-center py-12">
@@ -186,79 +212,90 @@ const ProductionReports = () => {
                 <p className="text-sm text-muted-foreground mb-6">
                   {t('tryAdjustingFilters')}
                 </p>
-                <Button
-                  onClick={() => {
-                    setSearchTerm('');
-                    setStatusFilter('all');
-                    setProductFilter('all');
-                  }}
-                  variant="outline"
-                >
+                <Button onClick={clearAllFilters} variant="outline">
                   {t('clearFilters')}
                 </Button>
               </CardContent>
             </Card>
           ) : (
-            <Card>
-              <CardContent className="p-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>{t('woNumber')}</TableHead>
-                      <TableHead>{t('productType')}</TableHead>
-                      <TableHead>{t('batchSize')}</TableHead>
-                      <TableHead>{t('status')}</TableHead>
-                      <TableHead>{t('created')}</TableHead>
-                      <TableHead>{t('completed')}</TableHead>
-                      <TableHead className="text-right">{t('actions')}</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredWorkOrders.map((wo) => (
-                      <TableRow key={wo.id}>
-                        <TableCell className="font-mono font-semibold">
-                          {wo.wo_number}
-                        </TableCell>
-                        <TableCell>
-                          {wo.productBreakdown.length > 0 ? (
-                            <div className="flex flex-wrap gap-1">
-                              {wo.productBreakdown.map((b) => (
-                                <Badge key={b.type} variant="outline">
-                                  {b.count}× {b.label}
-                                </Badge>
-                              ))}
-                            </div>
-                          ) : (
-                            <Badge variant="outline">{wo.batch_size} items</Badge>
-                          )}
-                        </TableCell>
-                        <TableCell className="font-mono">{wo.batch_size}</TableCell>
-                        <TableCell>
-                          <Badge variant={getStatusVariant(wo.status)}>
-                            {getStatusLabel(wo.status)}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-sm">
-                          {format(new Date(wo.created_at), 'MMM dd, yyyy', { locale: language === 'nl' ? nl : enUS })}
-                        </TableCell>
-                        <TableCell className="text-sm">
-                          {wo.completed_at ? format(new Date(wo.completed_at), 'MMM dd, yyyy', { locale: language === 'nl' ? nl : enUS }) : '-'}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => navigate(`/production-reports/${wo.id}`)}
-                          >
-                            {t('viewReport')}
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
+            <div className="space-y-6">
+              {Object.entries(groupedWorkOrders).map(([groupKey, orders]) => (
+                <Card key={groupKey}>
+                  {groupBy !== 'none' && (
+                    <div className="px-6 py-3 border-b bg-muted/30">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-semibold">
+                          {groupBy === 'status' ? getStatusLabel(groupKey) : groupKey.replace('_', ' ')}
+                        </h3>
+                        <Badge variant="secondary">{orders.length}</Badge>
+                      </div>
+                    </div>
+                  )}
+                  <CardContent className="p-0">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>{t('woNumber')}</TableHead>
+                          <TableHead>{t('productType')}</TableHead>
+                          <TableHead>{t('customer')}</TableHead>
+                          <TableHead>{t('batchSize')}</TableHead>
+                          <TableHead>{t('status')}</TableHead>
+                          <TableHead>{t('created')}</TableHead>
+                          <TableHead>{t('completed')}</TableHead>
+                          <TableHead className="text-right">{t('actions')}</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {orders.map((wo) => (
+                          <TableRow key={wo.id}>
+                            <TableCell className="font-mono font-semibold">
+                              {wo.wo_number}
+                            </TableCell>
+                            <TableCell>
+                              {wo.productBreakdown.length > 0 ? (
+                                <div className="flex flex-wrap gap-1">
+                                  {wo.productBreakdown.map((b) => (
+                                    <Badge key={b.type} variant="outline">
+                                      {b.count}× {b.label}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              ) : (
+                                <Badge variant="outline">{wo.batch_size} items</Badge>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-sm text-muted-foreground">
+                              {wo.customer_name || '-'}
+                            </TableCell>
+                            <TableCell className="font-mono">{wo.batch_size}</TableCell>
+                            <TableCell>
+                              <Badge variant={getStatusVariant(wo.status)}>
+                                {getStatusLabel(wo.status)}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-sm">
+                              {format(new Date(wo.created_at), 'dd/MM/yyyy', { locale: language === 'nl' ? nl : enUS })}
+                            </TableCell>
+                            <TableCell className="text-sm">
+                              {wo.completed_at ? format(new Date(wo.completed_at), 'dd/MM/yyyy', { locale: language === 'nl' ? nl : enUS }) : '-'}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => navigate(`/production-reports/${wo.id}`)}
+                              >
+                                {t('viewReport')}
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           )}
         </div>
       </Layout>

@@ -7,15 +7,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { formatDateTime } from '@/lib/utils';
-import { Plus, Trash2, Copy, Eye, EyeOff, Loader2, Webhook, Zap, History, RefreshCw, Info, Code, Settings2 } from 'lucide-react';
+import { Plus, Trash2, Copy, Eye, EyeOff, Loader2, Webhook, Zap, History, ChevronRight, Code, Settings2, AlertCircle } from 'lucide-react';
 
 interface IncomingWebhook {
   id: string;
@@ -71,7 +71,7 @@ const ACTION_TYPES = [
     description: 'Change the status of an existing work order',
     fields: [
       { key: 'wo_number', label: 'Work Order Number', required: true, placeholder: '$.data.orderNumber', hint: 'The work order to update' },
-      { key: 'status', label: 'New Status', required: true, placeholder: '$.data.status', hint: 'Must be: planned, in_progress, on_hold, completed, or cancelled' },
+      { key: 'status', label: 'New Status', required: true, placeholder: '$.data.status', hint: 'planned, in_progress, on_hold, completed, or cancelled' },
     ]
   },
   { 
@@ -80,7 +80,7 @@ const ACTION_TYPES = [
     description: 'Update the status of a specific work order item',
     fields: [
       { key: 'serial_number', label: 'Serial Number', required: true, placeholder: '$.data.serialNumber', hint: 'The item to update' },
-      { key: 'status', label: 'New Status', required: true, placeholder: '$.data.status', hint: 'Must be: planned, in_progress, on_hold, completed, or cancelled' },
+      { key: 'status', label: 'New Status', required: true, placeholder: '$.data.status', hint: 'planned, in_progress, on_hold, completed, or cancelled' },
       { key: 'current_step', label: 'Current Step', required: false, placeholder: '$.data.step', hint: 'Optional step number override' },
     ]
   },
@@ -89,10 +89,10 @@ const ACTION_TYPES = [
     label: 'Log Activity',
     description: 'Create an activity log entry for audit purposes',
     fields: [
-      { key: 'action', label: 'Action', required: true, placeholder: '$.data.action', hint: 'e.g., "external_update", "sync_completed"' },
-      { key: 'entity_type', label: 'Entity Type', required: true, placeholder: '$.data.entityType', hint: 'e.g., "work_order", "item"' },
-      { key: 'entity_id', label: 'Entity ID', required: false, placeholder: '$.data.entityId', hint: 'Optional UUID of the related entity' },
-      { key: 'details_path', label: 'Details (JSON)', required: false, placeholder: '$.data.details', hint: 'Additional details to log' },
+      { key: 'action', label: 'Action', required: true, placeholder: '$.data.action', hint: 'e.g., "external_update"' },
+      { key: 'entity_type', label: 'Entity Type', required: true, placeholder: '$.data.entityType', hint: 'e.g., "work_order"' },
+      { key: 'entity_id', label: 'Entity ID', required: false, placeholder: '$.data.entityId', hint: 'UUID of related entity' },
+      { key: 'details_path', label: 'Details (JSON)', required: false, placeholder: '$.data.details', hint: 'Additional details' },
     ]
   },
   { 
@@ -100,7 +100,7 @@ const ACTION_TYPES = [
     label: 'Trigger Outgoing Webhook',
     description: 'Forward the data to another webhook endpoint',
     fields: [
-      { key: 'webhook_url', label: 'Webhook URL', required: true, placeholder: 'https://example.com/webhook', hint: 'The URL to send the data to' },
+      { key: 'webhook_url', label: 'Webhook URL', required: true, placeholder: 'https://example.com/webhook', hint: 'The URL to send data to' },
     ]
   },
 ];
@@ -122,7 +122,6 @@ const AutomationManager = () => {
   const [newWebhook, setNewWebhook] = useState({ name: '', description: '' });
   const [newRule, setNewRule] = useState({
     name: '',
-    description: '',
     action_type: 'create_work_order',
     field_mappings: {} as Record<string, string>,
     conditions: {
@@ -288,7 +287,6 @@ const AutomationManager = () => {
       setRules(prev => [...prev, data as AutomationRule]);
       setNewRule({ 
         name: '', 
-        description: '',
         action_type: 'create_work_order', 
         field_mappings: {},
         conditions: { enabled: false, field: '', operator: 'equals', value: '' }
@@ -356,33 +354,34 @@ const AutomationManager = () => {
 
   return (
     <div className="space-y-6">
+      {/* Webhooks List */}
       <Card>
-        <CardHeader>
+        <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2 text-lg">
                 <Webhook className="h-5 w-5" />
                 {t('incomingWebhooks') || 'Incoming Webhooks'}
               </CardTitle>
-              <CardDescription>
-                {t('incomingWebhooksDesc') || 'Create endpoints to receive data from external systems like Exact ERP'}
+              <CardDescription className="text-sm mt-1">
+                {t('incomingWebhooksDesc') || 'Receive data from external systems'}
               </CardDescription>
             </div>
             <Dialog open={webhookDialogOpen} onOpenChange={setWebhookDialogOpen}>
               <DialogTrigger asChild>
-                <Button>
+                <Button size="sm">
                   <Plus className="mr-2 h-4 w-4" />
-                  {t('createEndpoint') || 'Create Endpoint'}
+                  {t('createEndpoint') || 'Create'}
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-lg">
+              <DialogContent>
                 <DialogHeader>
                   <DialogTitle>{t('createWebhookEndpoint') || 'Create Webhook Endpoint'}</DialogTitle>
                   <DialogDescription>
-                    {t('createWebhookEndpointDesc') || 'Create a new endpoint to receive incoming webhooks from external systems'}
+                    {t('createWebhookEndpointDesc') || 'Create a new endpoint to receive incoming webhooks'}
                   </DialogDescription>
                 </DialogHeader>
-                <div className="space-y-4">
+                <div className="space-y-4 py-4">
                   <div className="space-y-2">
                     <Label>{t('name') || 'Name'} *</Label>
                     <Input
@@ -390,29 +389,15 @@ const AutomationManager = () => {
                       onChange={(e) => setNewWebhook(prev => ({ ...prev, name: e.target.value }))}
                       placeholder="e.g., Exact ERP Integration"
                     />
-                    <p className="text-xs text-muted-foreground">
-                      A descriptive name to identify this webhook endpoint
-                    </p>
                   </div>
                   <div className="space-y-2">
                     <Label>{t('description') || 'Description'}</Label>
                     <Textarea
                       value={newWebhook.description}
                       onChange={(e) => setNewWebhook(prev => ({ ...prev, description: e.target.value }))}
-                      placeholder="What this webhook is used for, which system sends data here..."
-                      rows={3}
+                      placeholder="What this webhook is used for..."
+                      rows={2}
                     />
-                  </div>
-                  
-                  <div className="p-3 bg-muted/50 rounded-lg space-y-2">
-                    <div className="flex items-center gap-2 text-sm font-medium">
-                      <Info className="h-4 w-4" />
-                      What happens next
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      After creating the endpoint, you'll receive a unique URL and secret key.
-                      Configure the external system to send HTTP POST requests to this URL with the secret in the X-Webhook-Secret header.
-                    </p>
                   </div>
                 </div>
                 <DialogFooter>
@@ -429,392 +414,391 @@ const AutomationManager = () => {
         </CardHeader>
         <CardContent>
           {webhooks.length === 0 ? (
-            <div className="text-center py-8">
-              <Webhook className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-              <h3 className="font-semibold mb-2">{t('noWebhooksYet') || 'No webhook endpoints yet'}</h3>
+            <div className="text-center py-8 border rounded-lg border-dashed">
+              <Webhook className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
+              <h3 className="font-medium mb-1">{t('noWebhooksYet') || 'No webhook endpoints yet'}</h3>
               <p className="text-sm text-muted-foreground mb-4">
-                Create your first endpoint to start receiving data from external systems
+                Create your first endpoint to start receiving data
               </p>
-              <Button onClick={() => setWebhookDialogOpen(true)}>
+              <Button size="sm" onClick={() => setWebhookDialogOpen(true)}>
                 <Plus className="mr-2 h-4 w-4" />
-                {t('createFirstEndpoint') || 'Create your first endpoint'}
+                {t('createFirstEndpoint') || 'Create Endpoint'}
               </Button>
             </div>
           ) : (
-            <Tabs value={selectedWebhook?.id} onValueChange={(id) => setSelectedWebhook(webhooks.find(w => w.id === id) || null)}>
-              <TabsList className="flex-wrap h-auto gap-1">
-                {webhooks.map((webhook) => (
-                  <TabsTrigger key={webhook.id} value={webhook.id} className="gap-2">
-                    {webhook.name}
-                    {!webhook.enabled && <Badge variant="secondary" className="text-xs">Disabled</Badge>}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-              
+            <div className="space-y-3">
               {webhooks.map((webhook) => (
-                <TabsContent key={webhook.id} value={webhook.id} className="space-y-6 mt-6">
-                  {/* Webhook Details */}
-                  <div className="p-4 border rounded-lg bg-muted/30 space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h4 className="font-semibold">{t('endpointDetails') || 'Endpoint Details'}</h4>
-                      <div className="flex items-center gap-2">
+                <div
+                  key={webhook.id}
+                  onClick={() => setSelectedWebhook(webhook)}
+                  className={`p-4 border rounded-lg cursor-pointer transition-colors ${
+                    selectedWebhook?.id === webhook.id 
+                      ? 'border-primary bg-primary/5' 
+                      : 'hover:border-primary/50'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">{webhook.name}</span>
+                      {!webhook.enabled && (
+                        <Badge variant="secondary" className="text-xs">Disabled</Badge>
+                      )}
+                    </div>
+                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                    <span>{webhook.trigger_count} triggers</span>
+                    {webhook.last_triggered_at && (
+                      <span>Last: {formatDateTime(webhook.last_triggered_at)}</span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Selected Webhook Details */}
+      {selectedWebhook && (
+        <Card>
+          <CardHeader className="pb-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-lg">{selectedWebhook.name}</CardTitle>
+                {selectedWebhook.description && (
+                  <CardDescription className="mt-1">{selectedWebhook.description}</CardDescription>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <Switch
+                  checked={selectedWebhook.enabled}
+                  onCheckedChange={(checked) => toggleWebhook(selectedWebhook.id, checked)}
+                />
+                <Button variant="ghost" size="icon" onClick={() => deleteWebhook(selectedWebhook.id)}>
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Endpoint URL */}
+            <div className="space-y-2">
+              <Label className="text-sm text-muted-foreground">Webhook URL</Label>
+              <div className="flex items-center gap-2">
+                <code className="flex-1 text-xs sm:text-sm bg-muted p-2 rounded border truncate font-mono">
+                  {getWebhookUrl(selectedWebhook.endpoint_key)}
+                </code>
+                <Button variant="outline" size="icon" className="shrink-0" onClick={() => copyToClipboard(getWebhookUrl(selectedWebhook.endpoint_key))}>
+                  <Copy className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Secret Key */}
+            <div className="space-y-2">
+              <Label className="text-sm text-muted-foreground">Secret Key (X-Webhook-Secret)</Label>
+              <div className="flex items-center gap-2">
+                <code className="flex-1 text-xs sm:text-sm bg-muted p-2 rounded border font-mono truncate">
+                  {showSecrets[selectedWebhook.id] ? selectedWebhook.secret_key : '••••••••••••••••'}
+                </code>
+                <Button variant="outline" size="icon" className="shrink-0" onClick={() => setShowSecrets(prev => ({ ...prev, [selectedWebhook.id]: !prev[selectedWebhook.id] }))}>
+                  {showSecrets[selectedWebhook.id] ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </Button>
+                <Button variant="outline" size="icon" className="shrink-0" onClick={() => copyToClipboard(selectedWebhook.secret_key)}>
+                  <Copy className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Automation Rules */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="font-medium flex items-center gap-2">
+                    <Zap className="h-4 w-4" />
+                    Automation Rules
+                  </h4>
+                  <p className="text-sm text-muted-foreground">
+                    Define actions when this webhook receives data
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={() => { fetchLogs(selectedWebhook.id); setLogsDialogOpen(true); }}>
+                    <History className="mr-2 h-4 w-4" />
+                    Logs
+                  </Button>
+                  <Dialog open={ruleDialogOpen} onOpenChange={setRuleDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button size="sm">
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add Rule
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-xl max-h-[90vh]">
+                      <DialogHeader>
+                        <DialogTitle>Create Automation Rule</DialogTitle>
+                        <DialogDescription>
+                          Define what happens when this webhook is triggered
+                        </DialogDescription>
+                      </DialogHeader>
+                      <ScrollArea className="max-h-[60vh] pr-4">
+                        <div className="space-y-6 py-4">
+                          {/* Rule Name */}
+                          <div className="space-y-2">
+                            <Label>Rule Name *</Label>
+                            <Input
+                              value={newRule.name}
+                              onChange={(e) => setNewRule(prev => ({ ...prev, name: e.target.value }))}
+                              placeholder="e.g., Create Work Order from Exact"
+                            />
+                          </div>
+
+                          <Separator />
+
+                          {/* Action Type */}
+                          <div className="space-y-2">
+                            <Label>Action Type *</Label>
+                            <Select
+                              value={newRule.action_type}
+                              onValueChange={(value) => setNewRule(prev => ({ ...prev, action_type: value, field_mappings: {} }))}
+                            >
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {ACTION_TYPES.map(type => (
+                                  <SelectItem key={type.value} value={type.value}>
+                                    {type.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            {selectedActionType && (
+                              <p className="text-xs text-muted-foreground">
+                                {selectedActionType.description}
+                              </p>
+                            )}
+                          </div>
+
+                          <Separator />
+
+                          {/* Field Mappings */}
+                          {selectedActionType && (
+                            <div className="space-y-4">
+                              <div className="flex items-center gap-2">
+                                <Code className="h-4 w-4" />
+                                <Label>Field Mappings</Label>
+                              </div>
+                              <p className="text-xs text-muted-foreground">
+                                Map JSON data using path syntax (e.g., $.data.orderNumber)
+                              </p>
+                              <div className="space-y-3">
+                                {selectedActionType.fields.map(field => (
+                                  <div key={field.key} className="space-y-1">
+                                    <Label className="text-sm">
+                                      {field.label}
+                                      {field.required && <span className="text-destructive ml-1">*</span>}
+                                    </Label>
+                                    <Input
+                                      value={newRule.field_mappings[field.key] || ''}
+                                      onChange={(e) => setNewRule(prev => ({
+                                        ...prev,
+                                        field_mappings: { ...prev.field_mappings, [field.key]: e.target.value }
+                                      }))}
+                                      placeholder={field.placeholder}
+                                      className="font-mono text-sm"
+                                    />
+                                    <p className="text-xs text-muted-foreground">{field.hint}</p>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          <Separator />
+
+                          {/* Conditions */}
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <Settings2 className="h-4 w-4" />
+                                <Label>Conditional Execution</Label>
+                              </div>
+                              <Switch
+                                checked={newRule.conditions.enabled}
+                                onCheckedChange={(checked) => setNewRule(prev => ({
+                                  ...prev,
+                                  conditions: { ...prev.conditions, enabled: checked }
+                                }))}
+                              />
+                            </div>
+                            
+                            {newRule.conditions.enabled && (
+                              <div className="p-3 bg-muted/50 rounded-lg space-y-3">
+                                <div className="space-y-1">
+                                  <Label className="text-xs">Field Path</Label>
+                                  <Input
+                                    value={newRule.conditions.field}
+                                    onChange={(e) => setNewRule(prev => ({
+                                      ...prev,
+                                      conditions: { ...prev.conditions, field: e.target.value }
+                                    }))}
+                                    placeholder="$.data.type"
+                                    className="font-mono text-sm"
+                                  />
+                                </div>
+                                <div className="grid grid-cols-2 gap-3">
+                                  <div className="space-y-1">
+                                    <Label className="text-xs">Operator</Label>
+                                    <Select
+                                      value={newRule.conditions.operator}
+                                      onValueChange={(value) => setNewRule(prev => ({
+                                        ...prev,
+                                        conditions: { ...prev.conditions, operator: value }
+                                      }))}
+                                    >
+                                      <SelectTrigger className="text-sm">
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="equals">Equals</SelectItem>
+                                        <SelectItem value="not_equals">Not Equals</SelectItem>
+                                        <SelectItem value="contains">Contains</SelectItem>
+                                        <SelectItem value="exists">Exists</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                  <div className="space-y-1">
+                                    <Label className="text-xs">Value</Label>
+                                    <Input
+                                      value={newRule.conditions.value}
+                                      onChange={(e) => setNewRule(prev => ({
+                                        ...prev,
+                                        conditions: { ...prev.conditions, value: e.target.value }
+                                      }))}
+                                      placeholder="work_order"
+                                      disabled={['exists', 'not_exists'].includes(newRule.conditions.operator)}
+                                      className="text-sm"
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </ScrollArea>
+                      <DialogFooter className="pt-4">
+                        <Button variant="outline" onClick={() => setRuleDialogOpen(false)}>
+                          {t('cancel')}
+                        </Button>
+                        <Button onClick={createRule} disabled={!newRule.name}>
+                          Create Rule
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+              </div>
+
+              {rules.length === 0 ? (
+                <div className="text-center py-6 border rounded-lg border-dashed">
+                  <Zap className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                  <p className="font-medium mb-1 text-sm">No automation rules yet</p>
+                  <p className="text-xs text-muted-foreground">
+                    Add a rule to define what happens when data is received
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {rules.map((rule) => (
+                    <div key={rule.id} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
+                          <span className="font-medium text-sm">{rule.name}</span>
+                          <Badge variant="outline" className="text-xs">
+                            {ACTION_TYPES.find(a => a.value === rule.action_type)?.label}
+                          </Badge>
+                          {rule.conditions && (
+                            <Badge variant="secondary" className="text-xs">Conditional</Badge>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground font-mono truncate">
+                          {Object.entries(rule.field_mappings)
+                            .filter(([_, v]) => v)
+                            .slice(0, 2)
+                            .map(([k, v]) => `${k}: ${v}`)
+                            .join(' | ') || 'No mappings'}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 ml-2">
                         <Switch
-                          checked={webhook.enabled}
-                          onCheckedChange={(checked) => toggleWebhook(webhook.id, checked)}
+                          checked={rule.enabled}
+                          onCheckedChange={(checked) => toggleRule(rule.id, checked)}
                         />
-                        <Button variant="ghost" size="icon" onClick={() => deleteWebhook(webhook.id)}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => deleteRule(rule.id)}>
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
                     </div>
-                    
-                    {webhook.description && (
-                      <p className="text-sm text-muted-foreground">{webhook.description}</p>
-                    )}
-                    
-                    <div className="space-y-3">
-                      <div>
-                        <Label className="text-xs text-muted-foreground">{t('webhookUrl') || 'Webhook URL'}</Label>
-                        <div className="flex items-center gap-2 mt-1">
-                          <code className="flex-1 text-sm bg-background p-2 rounded border truncate">
-                            {getWebhookUrl(webhook.endpoint_key)}
-                          </code>
-                          <Button variant="outline" size="icon" onClick={() => copyToClipboard(getWebhookUrl(webhook.endpoint_key))}>
-                            <Copy className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <Label className="text-xs text-muted-foreground">{t('secretKey') || 'Secret Key'} (X-Webhook-Secret header)</Label>
-                        <div className="flex items-center gap-2 mt-1">
-                          <code className="flex-1 text-sm bg-background p-2 rounded border font-mono">
-                            {showSecrets[webhook.id] ? webhook.secret_key : '••••••••••••••••••••••••'}
-                          </code>
-                          <Button variant="outline" size="icon" onClick={() => setShowSecrets(prev => ({ ...prev, [webhook.id]: !prev[webhook.id] }))}>
-                            {showSecrets[webhook.id] ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                          </Button>
-                          <Button variant="outline" size="icon" onClick={() => copyToClipboard(webhook.secret_key)}>
-                            <Copy className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                      
-                      <div className="flex gap-4 text-sm text-muted-foreground pt-2">
-                        <span>{t('triggerCount') || 'Total triggers'}: <strong>{webhook.trigger_count}</strong></span>
-                        {webhook.last_triggered_at && (
-                          <span>{t('lastTriggered') || 'Last triggered'}: <strong>{formatDateTime(webhook.last_triggered_at)}</strong></span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Automation Rules */}
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h4 className="font-semibold flex items-center gap-2">
-                          <Zap className="h-4 w-4" />
-                          {t('automationRules') || 'Automation Rules'}
-                        </h4>
-                        <p className="text-sm text-muted-foreground">
-                          Define what actions to perform when this webhook receives data
-                        </p>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button variant="outline" size="sm" onClick={() => { fetchLogs(webhook.id); setLogsDialogOpen(true); }}>
-                          <History className="mr-2 h-4 w-4" />
-                          {t('viewLogs') || 'View Logs'}
-                        </Button>
-                        <Dialog open={ruleDialogOpen} onOpenChange={setRuleDialogOpen}>
-                          <DialogTrigger asChild>
-                            <Button size="sm">
-                              <Plus className="mr-2 h-4 w-4" />
-                              {t('addRule') || 'Add Rule'}
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent className="max-w-2xl">
-                            <DialogHeader>
-                              <DialogTitle>{t('createAutomationRule') || 'Create Automation Rule'}</DialogTitle>
-                              <DialogDescription>
-                                {t('createAutomationRuleDesc') || 'Define what happens when this webhook is triggered'}
-                              </DialogDescription>
-                            </DialogHeader>
-                            <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-2">
-                              {/* Basic Info */}
-                              <div className="space-y-4">
-                                <div className="space-y-2">
-                                  <Label>{t('ruleName') || 'Rule Name'} *</Label>
-                                  <Input
-                                    value={newRule.name}
-                                    onChange={(e) => setNewRule(prev => ({ ...prev, name: e.target.value }))}
-                                    placeholder="e.g., Create Work Order from Exact"
-                                  />
-                                </div>
-                              </div>
-                              
-                              <Separator />
-                              
-                              {/* Action Type */}
-                              <div className="space-y-4">
-                                <div className="space-y-2">
-                                  <Label>{t('actionType') || 'Action Type'} *</Label>
-                                  <Select
-                                    value={newRule.action_type}
-                                    onValueChange={(value) => setNewRule(prev => ({ ...prev, action_type: value, field_mappings: {} }))}
-                                  >
-                                    <SelectTrigger>
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      {ACTION_TYPES.map(type => (
-                                        <SelectItem key={type.value} value={type.value}>
-                                          {type.label}
-                                        </SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
-                                  {selectedActionType && (
-                                    <p className="text-xs text-muted-foreground">
-                                      {selectedActionType.description}
-                                    </p>
-                                  )}
-                                </div>
-                              </div>
-                              
-                              <Separator />
-                              
-                              {/* Field Mappings */}
-                              {selectedActionType && (
-                                <div className="space-y-4">
-                                  <div className="flex items-center gap-2">
-                                    <Code className="h-4 w-4" />
-                                    <Label>{t('fieldMappings') || 'Field Mappings'}</Label>
-                                  </div>
-                                  <p className="text-xs text-muted-foreground">
-                                    Map incoming JSON data to action fields using JSON path syntax (e.g., $.data.orderNumber)
-                                  </p>
-                                  <div className="space-y-3">
-                                    {selectedActionType.fields.map(field => (
-                                      <div key={field.key} className="grid grid-cols-3 gap-3 items-start">
-                                        <div className="space-y-1">
-                                          <Label className="text-sm">
-                                            {field.label}
-                                            {field.required && <span className="text-destructive ml-1">*</span>}
-                                          </Label>
-                                          <p className="text-xs text-muted-foreground">{field.hint}</p>
-                                        </div>
-                                        <div className="col-span-2">
-                                          <Input
-                                            value={newRule.field_mappings[field.key] || ''}
-                                            onChange={(e) => setNewRule(prev => ({
-                                              ...prev,
-                                              field_mappings: { ...prev.field_mappings, [field.key]: e.target.value }
-                                            }))}
-                                            placeholder={field.placeholder}
-                                            className="font-mono text-sm"
-                                          />
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-                              
-                              <Separator />
-                              
-                              {/* Conditions */}
-                              <div className="space-y-4">
-                                <div className="flex items-center justify-between">
-                                  <div className="flex items-center gap-2">
-                                    <Settings2 className="h-4 w-4" />
-                                    <Label>Conditional Execution</Label>
-                                  </div>
-                                  <Switch
-                                    checked={newRule.conditions.enabled}
-                                    onCheckedChange={(checked) => setNewRule(prev => ({
-                                      ...prev,
-                                      conditions: { ...prev.conditions, enabled: checked }
-                                    }))}
-                                  />
-                                </div>
-                                <p className="text-xs text-muted-foreground">
-                                  Only execute this rule when certain conditions are met
-                                </p>
-                                
-                                {newRule.conditions.enabled && (
-                                  <div className="grid grid-cols-3 gap-3 p-3 bg-muted/30 rounded-lg">
-                                    <div className="space-y-1">
-                                      <Label className="text-xs">Field Path</Label>
-                                      <Input
-                                        value={newRule.conditions.field}
-                                        onChange={(e) => setNewRule(prev => ({
-                                          ...prev,
-                                          conditions: { ...prev.conditions, field: e.target.value }
-                                        }))}
-                                        placeholder="$.data.type"
-                                        className="font-mono text-sm"
-                                      />
-                                    </div>
-                                    <div className="space-y-1">
-                                      <Label className="text-xs">Operator</Label>
-                                      <Select
-                                        value={newRule.conditions.operator}
-                                        onValueChange={(value) => setNewRule(prev => ({
-                                          ...prev,
-                                          conditions: { ...prev.conditions, operator: value }
-                                        }))}
-                                      >
-                                        <SelectTrigger>
-                                          <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                          <SelectItem value="equals">Equals</SelectItem>
-                                          <SelectItem value="not_equals">Not Equals</SelectItem>
-                                          <SelectItem value="contains">Contains</SelectItem>
-                                          <SelectItem value="starts_with">Starts With</SelectItem>
-                                          <SelectItem value="ends_with">Ends With</SelectItem>
-                                          <SelectItem value="exists">Exists</SelectItem>
-                                          <SelectItem value="not_exists">Does Not Exist</SelectItem>
-                                        </SelectContent>
-                                      </Select>
-                                    </div>
-                                    <div className="space-y-1">
-                                      <Label className="text-xs">Value</Label>
-                                      <Input
-                                        value={newRule.conditions.value}
-                                        onChange={(e) => setNewRule(prev => ({
-                                          ...prev,
-                                          conditions: { ...prev.conditions, value: e.target.value }
-                                        }))}
-                                        placeholder="work_order"
-                                        disabled={['exists', 'not_exists'].includes(newRule.conditions.operator)}
-                                      />
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                            <DialogFooter className="pt-4">
-                              <Button variant="outline" onClick={() => setRuleDialogOpen(false)}>
-                                {t('cancel')}
-                              </Button>
-                              <Button onClick={createRule} disabled={!newRule.name}>
-                                {t('create')}
-                              </Button>
-                            </DialogFooter>
-                          </DialogContent>
-                        </Dialog>
-                      </div>
-                    </div>
-                    
-                    {rules.length === 0 ? (
-                      <div className="text-center py-6 border rounded-lg border-dashed">
-                        <Zap className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                        <p className="font-medium mb-1">No automation rules yet</p>
-                        <p className="text-sm text-muted-foreground">
-                          {t('noRulesYet') || 'Add a rule to define what happens when data is received'}
-                        </p>
-                      </div>
-                    ) : (
-                      <div className="space-y-2">
-                        {rules.map((rule) => (
-                          <div key={rule.id} className="flex items-center justify-between p-4 border rounded-lg">
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className="font-medium">{rule.name}</span>
-                                <Badge variant="outline">
-                                  {ACTION_TYPES.find(a => a.value === rule.action_type)?.label}
-                                </Badge>
-                                {rule.conditions && (
-                                  <Badge variant="secondary" className="text-xs">
-                                    Conditional
-                                  </Badge>
-                                )}
-                              </div>
-                              <p className="text-xs text-muted-foreground font-mono truncate">
-                                {Object.entries(rule.field_mappings)
-                                  .filter(([_, v]) => v)
-                                  .map(([k, v]) => `${k}: ${v}`)
-                                  .join(' | ') || 'No field mappings'}
-                              </p>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Switch
-                                checked={rule.enabled}
-                                onCheckedChange={(checked) => toggleRule(rule.id, checked)}
-                              />
-                              <Button variant="ghost" size="icon" onClick={() => deleteRule(rule.id)}>
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </TabsContent>
-              ))}
-            </Tabs>
-          )}
-        </CardContent>
-      </Card>
-      
+                  ))}
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Logs Dialog */}
       <Dialog open={logsDialogOpen} onOpenChange={setLogsDialogOpen}>
-        <DialogContent className="max-w-3xl max-h-[80vh]">
+        <DialogContent className="max-w-2xl max-h-[80vh]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <History className="h-5 w-5" />
-              {t('webhookLogs') || 'Webhook Logs'}
+              Webhook Logs
             </DialogTitle>
             <DialogDescription>
-              Recent webhook executions and their results
+              Recent webhook executions for {selectedWebhook?.name}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-3 max-h-[60vh] overflow-y-auto">
+          <ScrollArea className="max-h-[60vh]">
             {logs.length === 0 ? (
-              <div className="text-center py-8">
-                <History className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                <p className="text-muted-foreground">No logs yet</p>
-                <p className="text-sm text-muted-foreground">Logs will appear here after the webhook receives data</p>
+              <div className="text-center py-8 text-muted-foreground">
+                No logs yet
               </div>
             ) : (
-              logs.map((log) => (
-                <div key={log.id} className="p-4 border rounded-lg space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">
-                      {formatDateTime(log.created_at)}
-                    </span>
-                    <Badge variant={log.response_status === 200 ? 'default' : log.response_status === 207 ? 'secondary' : 'destructive'}>
-                      Status: {log.response_status || 'N/A'}
-                    </Badge>
-                  </div>
-                  {log.error_message && (
-                    <p className="text-sm text-destructive bg-destructive/10 p-2 rounded">{log.error_message}</p>
-                  )}
-                  {log.executed_rules && log.executed_rules.length > 0 && (
-                    <div className="text-sm">
-                      <span className="text-muted-foreground">Rules executed: </span>
-                      {log.executed_rules.map((r: any, i: number) => (
-                        <Badge key={i} variant={r.success ? 'outline' : 'destructive'} className="mr-1">
-                          {r.rule}
-                        </Badge>
-                      ))}
+              <div className="space-y-3">
+                {logs.map((log) => (
+                  <div key={log.id} className="p-3 border rounded-lg text-sm">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs text-muted-foreground">
+                        {formatDateTime(log.created_at)}
+                      </span>
+                      <Badge 
+                        variant={log.error_message ? 'destructive' : log.response_status === 200 ? 'success' : 'secondary'}
+                        className="text-xs"
+                      >
+                        {log.error_message ? 'Error' : `${log.response_status || 200}`}
+                      </Badge>
                     </div>
-                  )}
-                  <details className="text-xs">
-                    <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
-                      View request payload
-                    </summary>
-                    <pre className="mt-2 p-3 bg-muted rounded text-xs overflow-x-auto">
-                      {JSON.stringify(log.request_body, null, 2)}
-                    </pre>
-                  </details>
-                </div>
-              ))
+                    {log.error_message && (
+                      <div className="flex items-start gap-2 p-2 bg-destructive/10 rounded text-destructive text-xs">
+                        <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                        <span>{log.error_message}</span>
+                      </div>
+                    )}
+                    {log.executed_rules && Array.isArray(log.executed_rules) && log.executed_rules.length > 0 && (
+                      <div className="mt-2 text-xs text-muted-foreground">
+                        Executed: {log.executed_rules.map((r: any) => r.name || r).join(', ')}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
             )}
-          </div>
+          </ScrollArea>
         </DialogContent>
       </Dialog>
     </div>
