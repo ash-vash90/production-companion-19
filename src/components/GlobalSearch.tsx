@@ -1,6 +1,6 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Loader2, Package, FileText, X } from 'lucide-react';
+import { Search, Loader2, Package, FileText, X, Boxes } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -8,9 +8,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { formatProductType } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
+import { useDebounce } from '@/hooks/useDebounce';
 
 interface SearchResult {
-  type: 'work_order' | 'serial_number';
+  type: 'work_order' | 'serial_number' | 'material' | 'batch';
   id: string;
   title: string;
   subtitle: string;
@@ -30,6 +31,9 @@ export function GlobalSearch({ onOpenModal }: GlobalSearchProps) {
   const [showResults, setShowResults] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  
+  // Debounce the search query
+  const debouncedQuery = useDebounce(query, 300);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -61,92 +65,149 @@ export function GlobalSearch({ onOpenModal }: GlobalSearchProps) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onOpenModal]);
 
-  const handleSearch = async (searchQuery: string) => {
-    const q = searchQuery.trim().toUpperCase();
-    if (!q || q.length < 2) {
-      setResults([]);
-      setShowResults(false);
-      return;
-    }
-
-    setSearching(true);
-    setShowResults(true);
-
-    try {
-      const searchResults: SearchResult[] = [];
-
-      // Search work orders by wo_number
-      const { data: workOrders } = await supabase
-        .from('work_orders')
-        .select('id, wo_number, product_type, status')
-        .ilike('wo_number', `%${q}%`)
-        .neq('status', 'cancelled')
-        .limit(5);
-
-      for (const wo of workOrders || []) {
-        searchResults.push({
-          type: 'work_order',
-          id: wo.id,
-          title: wo.wo_number,
-          subtitle: formatProductType(wo.product_type),
-          status: wo.status,
-        });
+  // Perform search when debounced query changes
+  useEffect(() => {
+    const performSearch = async () => {
+      const q = debouncedQuery.trim().toUpperCase();
+      if (!q || q.length < 2) {
+        setResults([]);
+        setShowResults(false);
+        return;
       }
 
-      // Search work order items by serial_number
-      const { data: items } = await supabase
-        .from('work_order_items')
-        .select(`
-          id,
-          serial_number,
-          status,
-          work_order:work_orders(wo_number, product_type)
-        `)
-        .ilike('serial_number', `%${q}%`)
-        .limit(5);
+      setSearching(true);
+      setShowResults(true);
 
-      for (const item of items || []) {
-        const wo = item.work_order as any;
-        searchResults.push({
-          type: 'serial_number',
-          id: item.serial_number,
-          title: item.serial_number,
-          subtitle: wo?.wo_number || 'Unknown',
-          status: item.status,
-        });
+      try {
+        // Run all searches in parallel for better performance
+        const [workOrdersRes, itemsRes, materialsRes, stockRes] = await Promise.all([
+          // Search work orders
+          supabase
+            .from('work_orders')
+            .select('id, wo_number, product_type, status')
+            .ilike('wo_number', `%${q}%`)
+            .neq('status', 'cancelled')
+            .limit(3),
+          // Search serial numbers
+          supabase
+            .from('work_order_items')
+            .select('id, serial_number, status, work_order:work_orders(wo_number)')
+            .ilike('serial_number', `%${q}%`)
+            .limit(3),
+          // Search materials by name or SKU
+          supabase
+            .from('materials')
+            .select('id, name, sku, material_type, active')
+            .or(`name.ilike.%${q}%,sku.ilike.%${q}%,material_type.ilike.%${q}%`)
+            .limit(3),
+          // Search inventory by batch number
+          supabase
+            .from('inventory_stock')
+            .select('id, batch_number, quantity_on_hand, material:materials(name)')
+            .ilike('batch_number', `%${q}%`)
+            .limit(3)
+        ]);
+
+        const searchResults: SearchResult[] = [];
+
+        // Add work orders
+        for (const wo of workOrdersRes.data || []) {
+          searchResults.push({
+            type: 'work_order',
+            id: wo.id,
+            title: wo.wo_number,
+            subtitle: formatProductType(wo.product_type),
+            status: wo.status,
+          });
+        }
+
+        // Add serial numbers
+        for (const item of itemsRes.data || []) {
+          const wo = item.work_order as any;
+          searchResults.push({
+            type: 'serial_number',
+            id: item.serial_number,
+            title: item.serial_number,
+            subtitle: wo?.wo_number || 'Unknown',
+            status: item.status,
+          });
+        }
+
+        // Add materials
+        for (const mat of materialsRes.data || []) {
+          searchResults.push({
+            type: 'material',
+            id: mat.id,
+            title: mat.name,
+            subtitle: `SKU: ${mat.sku}`,
+            status: mat.active ? 'active' : 'inactive',
+          });
+        }
+
+        // Add batch numbers from inventory
+        for (const stock of stockRes.data || []) {
+          if (stock.batch_number) {
+            const mat = stock.material as any;
+            searchResults.push({
+              type: 'batch',
+              id: stock.id,
+              title: stock.batch_number,
+              subtitle: mat?.name || 'Unknown material',
+              status: stock.quantity_on_hand > 0 ? 'in_stock' : 'out_of_stock',
+            });
+          }
+        }
+
+        setResults(searchResults);
+      } catch (error) {
+        console.error('Error searching:', error);
+      } finally {
+        setSearching(false);
       }
+    };
 
-      setResults(searchResults);
-    } catch (error) {
-      console.error('Error searching:', error);
-    } finally {
-      setSearching(false);
-    }
-  };
+    performSearch();
+  }, [debouncedQuery]);
 
-  const handleResultClick = (result: SearchResult) => {
+  const handleResultClick = useCallback((result: SearchResult) => {
     if (result.type === 'work_order') {
       navigate(`/production/${result.id}`);
+    } else if (result.type === 'material' || result.type === 'batch') {
+      navigate('/inventory');
     } else {
       navigate(`/genealogy/${encodeURIComponent(result.id)}`);
     }
     setQuery('');
     setShowResults(false);
     setResults([]);
-  };
+  }, [navigate]);
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = useCallback((status: string) => {
     switch (status) {
       case 'completed': return 'bg-success text-success-foreground';
       case 'in_progress': return 'bg-warning text-warning-foreground';
       case 'planned': return 'bg-info text-info-foreground';
+      case 'active':
+      case 'in_stock': return 'bg-success text-success-foreground';
+      case 'inactive':
+      case 'out_of_stock': return 'bg-muted text-muted-foreground';
       default: return 'bg-muted text-muted-foreground';
     }
-  };
+  }, []);
 
-  const formatStatus = (status: string) => {
+  const formatStatus = useCallback((status: string) => {
     return status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-  };
+  }, []);
+  
+  const getResultIcon = useCallback((type: SearchResult['type']) => {
+    switch (type) {
+      case 'work_order': return <Package className="h-4 w-4 text-primary" />;
+      case 'serial_number': return <FileText className="h-4 w-4 text-primary" />;
+      case 'material':
+      case 'batch': return <Boxes className="h-4 w-4 text-primary" />;
+      default: return <FileText className="h-4 w-4 text-primary" />;
+    }
+  }, []);
 
   return (
     <div ref={containerRef} className="relative w-full max-w-md">
@@ -158,7 +219,6 @@ export function GlobalSearch({ onOpenModal }: GlobalSearchProps) {
           onChange={(e) => {
             const val = e.target.value.toUpperCase();
             setQuery(val);
-            handleSearch(val);
           }}
           onFocus={() => query.length >= 2 && setShowResults(true)}
           placeholder={t('search')}
@@ -192,11 +252,7 @@ export function GlobalSearch({ onOpenModal }: GlobalSearchProps) {
               className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-accent transition-colors first:rounded-t-lg last:rounded-b-lg"
             >
               <div className="h-8 w-8 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
-                {result.type === 'work_order' ? (
-                  <Package className="h-4 w-4 text-primary" />
-                ) : (
-                  <FileText className="h-4 w-4 text-primary" />
-                )}
+                {getResultIcon(result.type)}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-mono text-sm font-medium truncate">{result.title}</p>

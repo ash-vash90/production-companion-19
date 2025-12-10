@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -27,34 +27,12 @@ export function ProductionOverview() {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [showAll, setShowAll] = useState(false);
+  const isMountedRef = useRef(true);
+  const isSubscribedRef = useRef(false);
 
-  useEffect(() => {
-    fetchWorkOrders();
-
-    // Real-time subscription for work order changes
-    const channel = supabase
-      .channel('production-overview-realtime')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'work_orders',
-        },
-        () => {
-          fetchWorkOrders();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
-
-  const fetchWorkOrders = async () => {
+  const fetchWorkOrders = useCallback(async () => {
     try {
-      // Fetch work orders - in_progress only by default, but fetch planned too for "view all"
+      // Fetch work orders with minimal data
       const { data: workOrdersData, error: woError } = await supabase
         .from('work_orders')
         .select('id, wo_number, product_type, batch_size, status, created_at, created_by')
@@ -63,42 +41,46 @@ export function ProductionOverview() {
         .limit(10);
 
       if (woError) throw woError;
+      if (!isMountedRef.current) return;
 
       const woIds = workOrdersData?.map(wo => wo.id) || [];
       
-      // Fetch items for all work orders to get product breakdown
-      let itemsMap: Record<string, Array<{ serial_number: string }>> = {};
-      if (woIds.length > 0) {
-        const { data: itemsData } = await supabase
-          .from('work_order_items')
-          .select('work_order_id, serial_number')
-          .in('work_order_id', woIds);
-        
-        for (const item of itemsData || []) {
-          if (!itemsMap[item.work_order_id]) {
-            itemsMap[item.work_order_id] = [];
-          }
-          itemsMap[item.work_order_id].push({ serial_number: item.serial_number });
+      // Run parallel fetches for items and profiles
+      const [itemsRes, profilesRes] = await Promise.all([
+        woIds.length > 0 
+          ? supabase
+              .from('work_order_items')
+              .select('work_order_id, serial_number')
+              .in('work_order_id', woIds)
+          : { data: [] },
+        (() => {
+          const creatorIds = [...new Set(workOrdersData?.map(wo => wo.created_by).filter(Boolean) || [])];
+          return creatorIds.length > 0
+            ? supabase
+                .from('profiles')
+                .select('id, full_name')
+                .in('id', creatorIds)
+            : { data: [] };
+        })()
+      ]);
+
+      if (!isMountedRef.current) return;
+
+      // Build lookup maps
+      const itemsMap: Record<string, Array<{ serial_number: string }>> = {};
+      for (const item of itemsRes.data || []) {
+        if (!itemsMap[item.work_order_id]) {
+          itemsMap[item.work_order_id] = [];
         }
+        itemsMap[item.work_order_id].push({ serial_number: item.serial_number });
       }
 
-      // Fetch profiles for creators
-      const creatorIds = [...new Set(workOrdersData?.map(wo => wo.created_by).filter(Boolean) || [])];
-      let profilesMap: Record<string, string> = {};
-      
-      if (creatorIds.length > 0) {
-        const { data: profilesData } = await supabase
-          .from('profiles')
-          .select('id, full_name')
-          .in('id', creatorIds);
-        
-        profilesMap = (profilesData || []).reduce((acc, p) => {
-          acc[p.id] = p.full_name;
-          return acc;
-        }, {} as Record<string, string>);
-      }
+      const profilesMap = (profilesRes.data || []).reduce((acc, p) => {
+        acc[p.id] = p.full_name;
+        return acc;
+      }, {} as Record<string, string>);
 
-      // Merge data with product breakdown
+      // Merge data
       const enrichedData = (workOrdersData || []).map(wo => ({
         ...wo,
         profiles: wo.created_by && profilesMap[wo.created_by] 
@@ -111,11 +93,42 @@ export function ProductionOverview() {
     } catch (error) {
       console.error('Error fetching work orders:', error);
     } finally {
-      setLoading(false);
+      if (isMountedRef.current) {
+        setLoading(false);
+      }
     }
-  };
+  }, []);
 
-  const getStatusVariant = (status: string): 'default' | 'secondary' | 'success' | 'warning' | 'info' | 'destructive' | 'outline' => {
+  useEffect(() => {
+    isMountedRef.current = true;
+    fetchWorkOrders();
+
+    // Debounced realtime - don't refetch on every change
+    let debounceTimer: NodeJS.Timeout;
+    const channel = supabase
+      .channel('production-overview-realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'work_orders' },
+        () => {
+          clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(() => {
+            if (isMountedRef.current) fetchWorkOrders();
+          }, 500);
+        }
+      )
+      .subscribe();
+
+    isSubscribedRef.current = true;
+
+    return () => {
+      isMountedRef.current = false;
+      clearTimeout(debounceTimer);
+      supabase.removeChannel(channel);
+    };
+  }, [fetchWorkOrders]);
+
+  const getStatusVariant = useCallback((status: string): 'default' | 'secondary' | 'success' | 'warning' | 'info' | 'destructive' | 'outline' => {
     const variants: Record<string, 'default' | 'secondary' | 'success' | 'warning' | 'info' | 'destructive' | 'outline'> = {
       planned: 'info',
       in_progress: 'warning',
@@ -124,7 +137,27 @@ export function ProductionOverview() {
       cancelled: 'destructive',
     };
     return variants[status] || 'secondary';
-  };
+  }, []);
+
+  const getStatusLabel = useCallback((status: string) => {
+    if (status === 'in_progress') return t('inProgressStatus');
+    if (status === 'planned') return t('planned');
+    if (status === 'completed') return t('completed');
+    if (status === 'on_hold') return t('onHold');
+    if (status === 'cancelled') return t('cancelled');
+    return status;
+  }, [t]);
+
+  // Memoize displayed orders and counts
+  const { displayedOrders, inProgressCount, plannedCount } = useMemo(() => {
+    const inProgress = workOrders.filter(wo => wo.status === 'in_progress');
+    const planned = workOrders.filter(wo => wo.status === 'planned');
+    return {
+      displayedOrders: showAll ? workOrders : inProgress,
+      inProgressCount: inProgress.length,
+      plannedCount: planned.length,
+    };
+  }, [workOrders, showAll]);
 
   const getStatusLabel = (status: string) => {
     if (status === 'in_progress') return t('inProgressStatus');
