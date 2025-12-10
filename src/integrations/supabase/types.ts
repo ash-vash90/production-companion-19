@@ -273,6 +273,215 @@ export type Database = {
         }
         Relationships: []
       }
+      inventory_stock: {
+        Row: {
+          batch_number: string | null
+          created_at: string
+          expiry_date: string | null
+          id: string
+          material_id: string
+          opening_date: string | null
+          quantity_on_hand: number
+          quantity_reserved: number
+          received_date: string | null
+          updated_at: string
+        }
+        Insert: {
+          batch_number?: string | null
+          created_at?: string
+          expiry_date?: string | null
+          id?: string
+          material_id: string
+          opening_date?: string | null
+          quantity_on_hand?: number
+          quantity_reserved?: number
+          received_date?: string | null
+          updated_at?: string
+        }
+        Update: {
+          batch_number?: string | null
+          created_at?: string
+          expiry_date?: string | null
+          id?: string
+          material_id?: string
+          opening_date?: string | null
+          quantity_on_hand?: number
+          quantity_reserved?: number
+          received_date?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_stock_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "materials"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inventory_transactions: {
+        Row: {
+          batch_number: string | null
+          created_at: string
+          id: string
+          inventory_stock_id: string | null
+          material_id: string
+          notes: string | null
+          performed_by: string | null
+          production_step_id: string | null
+          quantity: number
+          quantity_after: number | null
+          quantity_before: number | null
+          reference_id: string | null
+          reference_type: string | null
+          transaction_type: string
+          work_order_id: string | null
+          work_order_item_id: string | null
+        }
+        Insert: {
+          batch_number?: string | null
+          created_at?: string
+          id?: string
+          inventory_stock_id?: string | null
+          material_id: string
+          notes?: string | null
+          performed_by?: string | null
+          production_step_id?: string | null
+          quantity: number
+          quantity_after?: number | null
+          quantity_before?: number | null
+          reference_id?: string | null
+          reference_type?: string | null
+          transaction_type: string
+          work_order_id?: string | null
+          work_order_item_id?: string | null
+        }
+        Update: {
+          batch_number?: string | null
+          created_at?: string
+          id?: string
+          inventory_stock_id?: string | null
+          material_id?: string
+          notes?: string | null
+          performed_by?: string | null
+          production_step_id?: string | null
+          quantity?: number
+          quantity_after?: number | null
+          quantity_before?: number | null
+          reference_id?: string | null
+          reference_type?: string | null
+          transaction_type?: string
+          work_order_id?: string | null
+          work_order_item_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_transactions_inventory_stock_id_fkey"
+            columns: ["inventory_stock_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_stock"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_transactions_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "materials"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_transactions_production_step_id_fkey"
+            columns: ["production_step_id"]
+            isOneToOne: false
+            referencedRelation: "production_steps"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_transactions_work_order_id_fkey"
+            columns: ["work_order_id"]
+            isOneToOne: false
+            referencedRelation: "work_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_transactions_work_order_item_id_fkey"
+            columns: ["work_order_item_id"]
+            isOneToOne: false
+            referencedRelation: "work_order_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      materials: {
+        Row: {
+          active: boolean
+          category: string
+          created_at: string
+          description: string | null
+          id: string
+          lead_time_days: number | null
+          material_type: string
+          min_order_quantity: number
+          name: string
+          name_nl: string | null
+          reorder_point: number
+          reorder_quantity: number | null
+          shelf_life_days: number | null
+          sku: string
+          supplier_name: string | null
+          supplier_sku: string | null
+          track_batches: boolean
+          track_expiry: boolean
+          unit_of_measure: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          lead_time_days?: number | null
+          material_type: string
+          min_order_quantity?: number
+          name: string
+          name_nl?: string | null
+          reorder_point?: number
+          reorder_quantity?: number | null
+          shelf_life_days?: number | null
+          sku: string
+          supplier_name?: string | null
+          supplier_sku?: string | null
+          track_batches?: boolean
+          track_expiry?: boolean
+          unit_of_measure?: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          lead_time_days?: number | null
+          material_type?: string
+          min_order_quantity?: number
+          name?: string
+          name_nl?: string | null
+          reorder_point?: number
+          reorder_quantity?: number | null
+          shelf_life_days?: number | null
+          sku?: string
+          supplier_name?: string | null
+          supplier_sku?: string | null
+          track_batches?: boolean
+          track_expiry?: boolean
+          unit_of_measure?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string
