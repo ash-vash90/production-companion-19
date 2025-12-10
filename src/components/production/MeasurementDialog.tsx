@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,10 +27,21 @@ const MeasurementDialog: React.FC<MeasurementDialogProps> = ({
   onComplete,
 }) => {
   const { user } = useAuth();
-  const [operatorInitials, setOperatorInitials] = useState<string>('');
   const [measurements, setMeasurements] = useState<Record<string, any>>({});
   const [validationResult, setValidationResult] = useState<{ passed: boolean; message: string } | null>(null);
   const [saving, setSaving] = useState(false);
+  const [userProfile, setUserProfile] = useState<{ full_name: string } | null>(null);
+
+  useEffect(() => {
+    if (user) {
+      supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', user.id)
+        .single()
+        .then(({ data }) => setUserProfile(data));
+    }
+  }, [user]);
 
   // Parse measurement fields from JSON
   const measurementFields = Array.isArray(productionStep.measurement_fields) 
@@ -115,11 +126,6 @@ const MeasurementDialog: React.FC<MeasurementDialogProps> = ({
   };
 
   const handleSave = async () => {
-    if (!operatorInitials) {
-      toast.error('Error', { description: 'Please select operator initials' });
-      return;
-    }
-
     // Check if all required fields are filled
     const allFieldsFilled = measurementFields.every((field: any) => 
       measurements[field.name] !== undefined && measurements[field.name] !== ''
@@ -135,11 +141,10 @@ const MeasurementDialog: React.FC<MeasurementDialogProps> = ({
 
     setSaving(true);
     try {
-      // Save the measurement data and validation result
+      // Save the measurement data and validation result (no operator_initials - using user profile)
       const { error: execError } = await supabase
         .from('step_executions')
         .update({
-          operator_initials: operatorInitials as 'MB' | 'HL' | 'AB' | 'EV',
           measurement_values: measurements,
           validation_status: validation.passed ? 'passed' : 'failed',
           validation_message: validation.message,
@@ -173,7 +178,7 @@ const MeasurementDialog: React.FC<MeasurementDialogProps> = ({
           details: { 
             measurements, 
             validation: validation.passed, 
-            operator: operatorInitials,
+            operator: userProfile?.full_name,
             failed_step: workOrderItem.current_step,
             restart_step: restartStep,
           },
@@ -186,18 +191,16 @@ const MeasurementDialog: React.FC<MeasurementDialogProps> = ({
         onComplete();
         onOpenChange(false);
         setMeasurements({});
-        setOperatorInitials('');
         setValidationResult(null);
         return;
       }
 
-      // Log successful measurement
       await supabase.from('activity_logs').insert({
         user_id: user?.id,
         action: 'record_measurement',
         entity_type: 'step_execution',
         entity_id: stepExecution.id,
-        details: { measurements, validation: validation.passed, operator: operatorInitials },
+        details: { measurements, validation: validation.passed, operator: userProfile?.full_name },
       });
 
       // Trigger webhook for quality check
@@ -208,7 +211,7 @@ const MeasurementDialog: React.FC<MeasurementDialogProps> = ({
           step_number: productionStep.step_number,
           step_name: productionStep.title_en,
           measurements,
-          operator: operatorInitials,
+          operator: userProfile?.full_name,
         });
       } else {
         await triggerWebhook('quality_check_failed', {
@@ -217,7 +220,7 @@ const MeasurementDialog: React.FC<MeasurementDialogProps> = ({
           step_name: productionStep.title_en,
           measurements,
           validation_message: validation.message,
-          operator: operatorInitials,
+          operator: userProfile?.full_name,
         });
       }
 
@@ -229,7 +232,6 @@ const MeasurementDialog: React.FC<MeasurementDialogProps> = ({
       onOpenChange(false);
       
       setMeasurements({});
-      setOperatorInitials('');
       setValidationResult(null);
     } catch (error: any) {
       console.error('Error saving measurements:', error);
@@ -250,20 +252,13 @@ const MeasurementDialog: React.FC<MeasurementDialogProps> = ({
         </DialogHeader>
 
         <div className="space-y-6 py-4">
-          <div className="space-y-4">
-            <Label htmlFor="operator" className="text-xl font-data uppercase tracking-wider">Operator Initials *</Label>
-            <Select value={operatorInitials} onValueChange={setOperatorInitials}>
-              <SelectTrigger className="h-16 text-xl border-2 font-semibold">
-                <SelectValue placeholder="Select operator" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="MB" className="h-16 text-xl py-4">MB</SelectItem>
-                <SelectItem value="HL" className="h-16 text-xl py-4">HL</SelectItem>
-                <SelectItem value="AB" className="h-16 text-xl py-4">AB</SelectItem>
-                <SelectItem value="EV" className="h-16 text-xl py-4">EV</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          {/* Show current operator */}
+          {userProfile && (
+            <div className="p-4 bg-accent/50 rounded-lg border">
+              <p className="text-sm text-muted-foreground">Recording as:</p>
+              <p className="font-semibold text-lg">{userProfile.full_name}</p>
+            </div>
+          )}
 
           {measurementFields.map((field: any) => (
             <div key={field.name} className="space-y-4">

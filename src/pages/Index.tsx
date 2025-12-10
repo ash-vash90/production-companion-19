@@ -92,17 +92,21 @@ const Index = () => {
 
           {/* Top row: Today's Schedule and Active Colleagues */}
           <div className="grid gap-4 md:gap-6 grid-cols-1 md:grid-cols-2">
-            <TodaysSchedule />
-            <ActiveOperators />
+            <div className="min-w-0">
+              <TodaysSchedule />
+            </div>
+            <div className="min-w-0">
+              <ActiveOperators />
+            </div>
           </div>
 
           {/* Work Orders - full width on mobile/tablet */}
-          <div className="w-full">
+          <div className="min-w-0 overflow-hidden">
             <ProductionOverview />
           </div>
 
           {/* Recent Activity - full width on mobile/tablet */}
-          <div className="w-full">
+          <div className="min-w-0 overflow-hidden">
             <RecentActivity />
           </div>
         </div>
