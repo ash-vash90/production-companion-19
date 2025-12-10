@@ -596,5 +596,5 @@ export async function getRecentTransactions(limit = 20): Promise<InventoryTransa
     return [];
   }
 
-  return data || [];
+  return (data || []) as InventoryTransaction[];
 }
