@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Loader2, Package, FileText, X, Command } from 'lucide-react';
+import { Search, Loader2, Package, FileText, X, Command, Boxes } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -8,9 +8,10 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { formatProductType, cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useDebounce } from '@/hooks/useDebounce';
 
 interface SearchResult {
-  type: 'work_order' | 'serial_number';
+  type: 'work_order' | 'serial_number' | 'material' | 'batch';
   id: string;
   title: string;
   subtitle: string;
@@ -29,6 +30,9 @@ export function SearchModal({ open, onOpenChange }: SearchModalProps) {
   const [searching, setSearching] = useState(false);
   const [results, setResults] = useState<SearchResult[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
+  
+  // Debounce search
+  const debouncedQuery = useDebounce(query, 300);
 
   // Reset state when modal opens
   useEffect(() => {
@@ -51,76 +55,111 @@ export function SearchModal({ open, onOpenChange }: SearchModalProps) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onOpenChange]);
 
-  const handleSearch = useCallback(async (searchQuery: string) => {
-    const q = searchQuery.trim().toUpperCase();
-    if (!q || q.length < 2) {
-      setResults([]);
-      return;
-    }
-
-    setSearching(true);
-
-    try {
-      const searchResults: SearchResult[] = [];
-
-      // Search work orders by wo_number
-      const { data: workOrders } = await supabase
-        .from('work_orders')
-        .select('id, wo_number, product_type, status')
-        .ilike('wo_number', `%${q}%`)
-        .neq('status', 'cancelled')
-        .limit(5);
-
-      for (const wo of workOrders || []) {
-        searchResults.push({
-          type: 'work_order',
-          id: wo.id,
-          title: wo.wo_number,
-          subtitle: formatProductType(wo.product_type),
-          status: wo.status,
-        });
+  // Perform search when debounced query changes
+  useEffect(() => {
+    const performSearch = async () => {
+      const q = debouncedQuery.trim().toUpperCase();
+      if (!q || q.length < 2) {
+        setResults([]);
+        return;
       }
 
-      // Search work order items by serial_number
-      const { data: items } = await supabase
-        .from('work_order_items')
-        .select(`
-          id,
-          serial_number,
-          status,
-          work_order:work_orders(wo_number, product_type)
-        `)
-        .ilike('serial_number', `%${q}%`)
-        .limit(5);
+      setSearching(true);
 
-      for (const item of items || []) {
-        const wo = item.work_order as any;
-        searchResults.push({
-          type: 'serial_number',
-          id: item.serial_number,
-          title: item.serial_number,
-          subtitle: wo?.wo_number || 'Unknown',
-          status: item.status,
-        });
+      try {
+        // Run all searches in parallel
+        const [workOrdersRes, itemsRes, materialsRes, stockRes] = await Promise.all([
+          supabase
+            .from('work_orders')
+            .select('id, wo_number, product_type, status')
+            .ilike('wo_number', `%${q}%`)
+            .neq('status', 'cancelled')
+            .limit(4),
+          supabase
+            .from('work_order_items')
+            .select('id, serial_number, status, work_order:work_orders(wo_number)')
+            .ilike('serial_number', `%${q}%`)
+            .limit(4),
+          supabase
+            .from('materials')
+            .select('id, name, sku, material_type, active')
+            .or(`name.ilike.%${q}%,sku.ilike.%${q}%,material_type.ilike.%${q}%`)
+            .limit(3),
+          supabase
+            .from('inventory_stock')
+            .select('id, batch_number, quantity_on_hand, material:materials(name)')
+            .ilike('batch_number', `%${q}%`)
+            .limit(3)
+        ]);
+
+        const searchResults: SearchResult[] = [];
+
+        for (const wo of workOrdersRes.data || []) {
+          searchResults.push({
+            type: 'work_order',
+            id: wo.id,
+            title: wo.wo_number,
+            subtitle: formatProductType(wo.product_type),
+            status: wo.status,
+          });
+        }
+
+        for (const item of itemsRes.data || []) {
+          const wo = item.work_order as any;
+          searchResults.push({
+            type: 'serial_number',
+            id: item.serial_number,
+            title: item.serial_number,
+            subtitle: wo?.wo_number || 'Unknown',
+            status: item.status,
+          });
+        }
+
+        for (const mat of materialsRes.data || []) {
+          searchResults.push({
+            type: 'material',
+            id: mat.id,
+            title: mat.name,
+            subtitle: `SKU: ${mat.sku}`,
+            status: mat.active ? 'active' : 'inactive',
+          });
+        }
+
+        for (const stock of stockRes.data || []) {
+          if (stock.batch_number) {
+            const mat = stock.material as any;
+            searchResults.push({
+              type: 'batch',
+              id: stock.id,
+              title: stock.batch_number,
+              subtitle: mat?.name || 'Unknown material',
+              status: stock.quantity_on_hand > 0 ? 'in_stock' : 'out_of_stock',
+            });
+          }
+        }
+
+        setResults(searchResults);
+        setSelectedIndex(0);
+      } catch (error) {
+        console.error('Error searching:', error);
+      } finally {
+        setSearching(false);
       }
+    };
 
-      setResults(searchResults);
-      setSelectedIndex(0);
-    } catch (error) {
-      console.error('Error searching:', error);
-    } finally {
-      setSearching(false);
-    }
-  }, []);
+    performSearch();
+  }, [debouncedQuery]);
 
-  const handleResultClick = (result: SearchResult) => {
+  const handleResultClick = useCallback((result: SearchResult) => {
     if (result.type === 'work_order') {
       navigate(`/production/${result.id}`);
+    } else if (result.type === 'material' || result.type === 'batch') {
+      navigate('/inventory');
     } else {
       navigate(`/genealogy/${encodeURIComponent(result.id)}`);
     }
     onOpenChange(false);
-  };
+  }, [navigate, onOpenChange]);
 
   const handleKeyDown = (event: React.KeyboardEvent) => {
     if (event.key === 'ArrowDown') {
@@ -135,18 +174,32 @@ export function SearchModal({ open, onOpenChange }: SearchModalProps) {
     }
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = useCallback((status: string) => {
     switch (status) {
       case 'completed': return 'bg-success text-success-foreground';
       case 'in_progress': return 'bg-warning text-warning-foreground';
       case 'planned': return 'bg-info text-info-foreground';
+      case 'active':
+      case 'in_stock': return 'bg-success text-success-foreground';
+      case 'inactive':
+      case 'out_of_stock': return 'bg-muted text-muted-foreground';
       default: return 'bg-muted text-muted-foreground';
     }
-  };
+  }, []);
 
-  const formatStatus = (status: string) => {
+  const formatStatus = useCallback((status: string) => {
     return status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-  };
+  }, []);
+
+  const getResultIcon = useCallback((type: SearchResult['type']) => {
+    switch (type) {
+      case 'work_order': return <Package className="h-5 w-5 text-primary" />;
+      case 'serial_number': return <FileText className="h-5 w-5 text-primary" />;
+      case 'material':
+      case 'batch': return <Boxes className="h-5 w-5 text-primary" />;
+      default: return <FileText className="h-5 w-5 text-primary" />;
+    }
+  }, []);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -162,7 +215,6 @@ export function SearchModal({ open, onOpenChange }: SearchModalProps) {
             onChange={(e) => {
               const val = e.target.value.toUpperCase();
               setQuery(val);
-              handleSearch(val);
             }}
             onKeyDown={handleKeyDown}
             placeholder={`${t('searchWorkOrdersSerials')}...`}
@@ -195,11 +247,7 @@ export function SearchModal({ open, onOpenChange }: SearchModalProps) {
                   )}
                 >
                   <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                    {result.type === 'work_order' ? (
-                      <Package className="h-5 w-5 text-primary" />
-                    ) : (
-                      <FileText className="h-5 w-5 text-primary" />
-                    )}
+                    {getResultIcon(result.type)}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-mono text-sm font-medium truncate">{result.title}</p>

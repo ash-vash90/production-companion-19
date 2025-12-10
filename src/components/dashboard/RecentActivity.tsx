@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useRef, memo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
@@ -25,16 +25,13 @@ interface ActivityLog {
   user_name?: string;
 }
 
-export function RecentActivity() {
+export const RecentActivity = memo(function RecentActivity() {
   const { t, language } = useLanguage();
   const [activities, setActivities] = useState<ActivityLog[]>([]);
   const [loading, setLoading] = useState(true);
+  const isMountedRef = useRef(true);
 
-  useEffect(() => {
-    fetchActivities();
-  }, []);
-
-  const fetchActivities = async () => {
+  const fetchActivities = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('activity_logs')
@@ -43,6 +40,7 @@ export function RecentActivity() {
         .limit(10);
 
       if (error) throw error;
+      if (!isMountedRef.current) return;
       
       // Get unique user IDs
       const userIds = [...new Set((data || []).map(a => a.user_id).filter(Boolean))];
@@ -61,6 +59,8 @@ export function RecentActivity() {
         }, {} as Record<string, string>);
       }
 
+      if (!isMountedRef.current) return;
+
       // Enrich activities with user names
       const enrichedActivities: ActivityLog[] = (data || []).map(activity => ({
         id: activity.id,
@@ -77,9 +77,20 @@ export function RecentActivity() {
     } catch (error) {
       console.error('Error fetching activities:', error);
     } finally {
-      setLoading(false);
+      if (isMountedRef.current) {
+        setLoading(false);
+      }
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    fetchActivities();
+    
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, [fetchActivities]);
 
   const getActionLabel = (action: string) => {
     const labels: Record<string, string> = {
@@ -198,4 +209,4 @@ export function RecentActivity() {
       </CardContent>
     </Card>
   );
-}
+});

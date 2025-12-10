@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useRef, memo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -15,15 +15,17 @@ interface OnlineUser {
   online_at: string;
 }
 
-export function ActiveOperators() {
+export const ActiveOperators = memo(function ActiveOperators() {
   const { language } = useLanguage();
   const { user } = useAuth();
   const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentUserProfile, setCurrentUserProfile] = useState<any>(null);
+  const isMountedRef = useRef(true);
 
-  // Fetch current user profile first
   useEffect(() => {
+    isMountedRef.current = true;
+    
     if (user) {
       supabase
         .from('profiles')
@@ -31,10 +33,16 @@ export function ActiveOperators() {
         .eq('id', user.id)
         .single()
         .then(({ data }) => {
-          setCurrentUserProfile(data);
-          setLoading(false);
+          if (isMountedRef.current) {
+            setCurrentUserProfile(data);
+            setLoading(false);
+          }
         });
     }
+    
+    return () => {
+      isMountedRef.current = false;
+    };
   }, [user]);
 
   // Set up real-time presence channel
@@ -182,4 +190,4 @@ export function ActiveOperators() {
       </CardContent>
     </Card>
   );
-}
+});

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef, memo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -26,13 +26,14 @@ interface WorkOrder {
   items?: WorkOrderItem[];
 }
 
-export function TodaysSchedule() {
+export const TodaysSchedule = memo(function TodaysSchedule() {
   const { language, t } = useLanguage();
   const navigate = useNavigate();
   const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
   const [loading, setLoading] = useState(true);
+  const isMountedRef = useRef(true);
 
-  const fetchTodaysWorkOrders = async () => {
+  const fetchTodaysWorkOrders = useCallback(async () => {
     const today = format(new Date(), 'yyyy-MM-dd');
     
     const { data: woData, error: woError } = await supabase
@@ -44,11 +45,11 @@ export function TodaysSchedule() {
 
     if (woError) {
       console.error('Error fetching work orders:', woError);
-      setLoading(false);
+      if (isMountedRef.current) setLoading(false);
       return;
     }
 
-    if (!woData || woData.length === 0) {
+    if (!woData || woData.length === 0 || !isMountedRef.current) {
       setWorkOrders([]);
       setLoading(false);
       return;
@@ -60,6 +61,8 @@ export function TodaysSchedule() {
       .select('id, serial_number, work_order_id')
       .in('work_order_id', woIds);
 
+    if (!isMountedRef.current) return;
+
     const workOrdersWithItems = woData.map(wo => ({
       ...wo,
       items: itemsData?.filter(item => item.work_order_id === wo.id) || [],
@@ -67,32 +70,36 @@ export function TodaysSchedule() {
 
     setWorkOrders(workOrdersWithItems);
     setLoading(false);
-  };
+  }, []);
 
   useEffect(() => {
+    isMountedRef.current = true;
     fetchTodaysWorkOrders();
 
+    // Debounced realtime
+    let debounceTimer: NodeJS.Timeout;
     const channel = supabase
       .channel('todays-schedule-realtime')
       .on(
         'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'work_orders',
-        },
+        { event: '*', schema: 'public', table: 'work_orders' },
         () => {
-          fetchTodaysWorkOrders();
+          clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(() => {
+            if (isMountedRef.current) fetchTodaysWorkOrders();
+          }, 500);
         }
       )
       .subscribe();
 
     return () => {
+      isMountedRef.current = false;
+      clearTimeout(debounceTimer);
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [fetchTodaysWorkOrders]);
 
-  const getStatusVariant = (status: string) => {
+  const getStatusVariant = useCallback((status: string) => {
     switch (status) {
       case 'completed': return 'success';
       case 'in_progress': return 'warning';
@@ -100,21 +107,21 @@ export function TodaysSchedule() {
       case 'on_hold': return 'secondary';
       default: return 'secondary';
     }
-  };
+  }, []);
 
-  const getShippingUrgency = (shippingDate: string | null) => {
+  const getShippingUrgency = useCallback((shippingDate: string | null) => {
     if (!shippingDate) return null;
     const today = new Date();
     const shipDate = parseISO(shippingDate);
     const daysUntilShipping = differenceInDays(shipDate, today);
     
     if (isAfter(today, shipDate)) {
-      return 'overdue'; // Past due - red
+      return 'overdue';
     } else if (daysUntilShipping <= 2) {
-      return 'urgent'; // Nearing - yellow
+      return 'urgent';
     }
     return null;
-  };
+  }, []);
 
   if (loading) {
     return (
@@ -222,4 +229,4 @@ export function TodaysSchedule() {
       </CardContent>
     </Card>
   );
-}
+});
