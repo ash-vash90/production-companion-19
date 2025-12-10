@@ -26,11 +26,22 @@ const ChecklistDialog: React.FC<ChecklistDialogProps> = ({
 }) => {
   const { user } = useAuth();
   const { language } = useLanguage();
-  const [operatorInitials, setOperatorInitials] = useState<string>('');
   const [checklistItems, setChecklistItems] = useState<any[]>([]);
   const [responses, setResponses] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [userProfile, setUserProfile] = useState<{ full_name: string } | null>(null);
+
+  useEffect(() => {
+    if (user) {
+      supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', user.id)
+        .single()
+        .then(({ data }) => setUserProfile(data));
+    }
+  }, [user]);
 
   useEffect(() => {
     if (open && productionStep) {
@@ -75,11 +86,6 @@ const ChecklistDialog: React.FC<ChecklistDialogProps> = ({
   };
 
   const handleSave = async () => {
-    if (!operatorInitials) {
-      toast.error('Error', { description: 'Please select operator initials' });
-      return;
-    }
-
     // Check if all required items are checked
     const allRequiredChecked = checklistItems
       .filter(item => item.required)
@@ -114,23 +120,13 @@ const ChecklistDialog: React.FC<ChecklistDialogProps> = ({
 
       if (responseError) throw responseError;
 
-      // Update step execution with operator initials
-      const { error: execError } = await supabase
-        .from('step_executions')
-        .update({
-          operator_initials: operatorInitials as 'MB' | 'HL' | 'AB' | 'EV',
-        })
-        .eq('id', stepExecution.id);
-
-      if (execError) throw execError;
-
       // Log activity
       await supabase.from('activity_logs').insert({
         user_id: user?.id,
         action: 'complete_checklist',
         entity_type: 'step_execution',
         entity_id: stepExecution.id,
-        details: { operator: operatorInitials, items_checked: Object.values(responses).filter(Boolean).length },
+        details: { operator: userProfile?.full_name, items_checked: Object.values(responses).filter(Boolean).length },
       });
 
       toast.success('Success', { description: 'Checklist saved successfully' });
@@ -155,20 +151,13 @@ const ChecklistDialog: React.FC<ChecklistDialogProps> = ({
         </DialogHeader>
 
         <div className="space-y-5 py-4">
-          <div className="space-y-3">
-            <Label htmlFor="operator" className="text-base font-data uppercase tracking-wider">Operator Initials *</Label>
-            <Select value={operatorInitials} onValueChange={setOperatorInitials}>
-              <SelectTrigger className="h-12 text-base border-2">
-                <SelectValue placeholder="Select operator" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="MB" className="h-12 text-base">MB</SelectItem>
-                <SelectItem value="HL" className="h-12 text-base">HL</SelectItem>
-                <SelectItem value="AB" className="h-12 text-base">AB</SelectItem>
-                <SelectItem value="EV" className="h-12 text-base">EV</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          {/* Show current operator */}
+          {userProfile && (
+            <div className="p-3 bg-accent/50 rounded-lg border">
+              <p className="text-sm text-muted-foreground">Recording as:</p>
+              <p className="font-semibold">{userProfile.full_name}</p>
+            </div>
+          )}
 
           {loading ? (
             <div className="text-center py-8 text-muted-foreground text-base">Loading checklist...</div>

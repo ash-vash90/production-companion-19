@@ -11,8 +11,10 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Loader2, Users } from 'lucide-react';
+import { Loader2, Users, Trash2 } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 interface UserProfile {
   id: string;
@@ -148,6 +150,39 @@ const RoleManagement = () => {
     }
   };
 
+  const handleDeleteUser = async (userId: string, userName: string) => {
+    try {
+      // Delete from user_roles first
+      await supabase
+        .from('user_roles')
+        .delete()
+        .eq('user_id', userId);
+      
+      // Delete from profiles
+      const { error } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', userId);
+      
+      if (error) throw error;
+      
+      // Log activity
+      await supabase.from('activity_logs').insert({
+        user_id: user?.id,
+        action: 'delete_user',
+        entity_type: 'profile',
+        entity_id: userId,
+        details: { deleted_user: userName },
+      });
+      
+      setUsers(prev => prev.filter(u => u.id !== userId));
+      toast.success(t('success'), { description: t('userDeleted') || 'User deleted' });
+    } catch (error: any) {
+      console.error('Error deleting user:', error);
+      toast.error(t('error'), { description: error.message });
+    }
+  };
+
   if (!user) return null;
 
   // Show loading while checking permissions
@@ -191,42 +226,68 @@ const RoleManagement = () => {
                   <p className="text-sm text-muted-foreground">{t('noUsersFound')}</p>
                 </div>
               ) : (
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {users.map((profile) => (
                     <div
                       key={profile.id}
-                      className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 border rounded-lg hover:bg-accent/50 transition-all"
+                      className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 border rounded-lg hover:bg-accent/50 transition-all"
                     >
                       <div className="flex items-center gap-3 min-w-0">
-                        <span className="text-xl">{getRoleIcon(profile.role)}</span>
+                        <span className="text-2xl">{getRoleIcon(profile.role)}</span>
                         <div className="min-w-0">
-                          <h4 className="font-medium text-sm truncate">{profile.full_name}</h4>
-                          <p className="text-xs text-muted-foreground">
+                          <h4 className="font-medium text-base truncate">{profile.full_name}</h4>
+                          <p className="text-sm text-muted-foreground">
                             {t('joined')}: {formatDate(profile.created_at)}
                           </p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2 sm:gap-3 ml-9 sm:ml-0">
-                        <Badge variant={getRoleBadgeVariant(profile.role)} className="text-xs">
+                      <div className="flex items-center gap-3 ml-11 sm:ml-0">
+                        <Badge variant={getRoleBadgeVariant(profile.role)} className="text-sm px-3 py-1">
                           {t(profile.role as any) || profile.role}
                         </Badge>
                         {profile.id !== user.id ? (
-                          <Select
-                            value={profile.role}
-                            onValueChange={(value) => handleRoleChange(profile.id, value as 'admin' | 'supervisor' | 'operator' | 'logistics')}
-                          >
-                            <SelectTrigger className="w-[140px] h-8 text-xs">
-                              <SelectValue placeholder={t('selectRole')} />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="admin">{t('admin')}</SelectItem>
-                              <SelectItem value="supervisor">{t('supervisor')}</SelectItem>
-                              <SelectItem value="operator">{t('operator')}</SelectItem>
-                              <SelectItem value="logistics">{t('logistics')}</SelectItem>
-                            </SelectContent>
-                          </Select>
+                          <>
+                            <Select
+                              value={profile.role}
+                              onValueChange={(value) => handleRoleChange(profile.id, value as 'admin' | 'supervisor' | 'operator' | 'logistics')}
+                            >
+                              <SelectTrigger className="w-[140px] h-9 text-sm">
+                                <SelectValue placeholder={t('selectRole')} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="admin">{t('admin')}</SelectItem>
+                                <SelectItem value="supervisor">{t('supervisor')}</SelectItem>
+                                <SelectItem value="operator">{t('operator')}</SelectItem>
+                                <SelectItem value="logistics">{t('logistics')}</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10">
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>{t('deleteUser') || 'Delete User'}</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    {t('deleteUserConfirmation') || `Are you sure you want to delete ${profile.full_name}? This action cannot be undone.`}
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => handleDeleteUser(profile.id, profile.full_name)}
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  >
+                                    {t('delete')}
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </>
                         ) : (
-                          <span className="text-xs text-muted-foreground italic">
+                          <span className="text-sm text-muted-foreground italic">
                             ({t('you')})
                           </span>
                         )}
@@ -240,50 +301,50 @@ const RoleManagement = () => {
 
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm lg:text-base">{t('rolePermissions')}</CardTitle>
-              <CardDescription className="text-xs lg:text-sm">{t('rolePermissionsDescription')}</CardDescription>
+              <CardTitle className="text-base lg:text-lg">{t('rolePermissions')}</CardTitle>
+              <CardDescription className="text-sm">{t('rolePermissionsDescription')}</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div className="p-3 border rounded-lg">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-lg">👑</span>
-                    <h4 className="font-semibold text-sm">{t('admin')}</h4>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="p-4 border rounded-lg">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-xl">👑</span>
+                    <h4 className="font-semibold text-base">{t('admin')}</h4>
                   </div>
-                  <ul className="text-xs text-muted-foreground space-y-0.5 ml-6">
+                  <ul className="text-sm text-muted-foreground space-y-1 ml-7">
                     <li>• {t('fullSystemAccess')}</li>
                     <li>• {t('manageRolesPermission')}</li>
                     <li>• {t('configureSystemWebhooks')}</li>
                   </ul>
                 </div>
-                <div className="p-3 border rounded-lg">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-lg">👔</span>
-                    <h4 className="font-semibold text-sm">{t('supervisor')}</h4>
+                <div className="p-4 border rounded-lg">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-xl">👔</span>
+                    <h4 className="font-semibold text-base">{t('supervisor')}</h4>
                   </div>
-                  <ul className="text-xs text-muted-foreground space-y-0.5 ml-6">
+                  <ul className="text-sm text-muted-foreground space-y-1 ml-7">
                     <li>• {t('manageAllWorkOrders')}</li>
                     <li>• {t('assignTasks')}</li>
                     <li>• {t('viewReports')}</li>
                   </ul>
                 </div>
-                <div className="p-3 border rounded-lg">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-lg">🔧</span>
-                    <h4 className="font-semibold text-sm">{t('operator')}</h4>
+                <div className="p-4 border rounded-lg">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-xl">🔧</span>
+                    <h4 className="font-semibold text-base">{t('operator')}</h4>
                   </div>
-                  <ul className="text-xs text-muted-foreground space-y-0.5 ml-6">
+                  <ul className="text-sm text-muted-foreground space-y-1 ml-7">
                     <li>• {t('executeSteps')}</li>
                     <li>• {t('scanBatchMaterials')}</li>
                     <li>• {t('recordMeasurements')}</li>
                   </ul>
                 </div>
-                <div className="p-3 border rounded-lg">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-lg">📦</span>
-                    <h4 className="font-semibold text-sm">{t('logistics')}</h4>
+                <div className="p-4 border rounded-lg">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-xl">📦</span>
+                    <h4 className="font-semibold text-base">{t('logistics')}</h4>
                   </div>
-                  <ul className="text-xs text-muted-foreground space-y-0.5 ml-6">
+                  <ul className="text-sm text-muted-foreground space-y-1 ml-7">
                     <li>• {t('printLabels')}</li>
                     <li>• {t('trackShipments')}</li>
                     <li>• {t('manageMaterials')}</li>
