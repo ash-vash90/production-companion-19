@@ -159,22 +159,6 @@ export function ProductionOverview() {
     };
   }, [workOrders, showAll]);
 
-  const getStatusLabel = (status: string) => {
-    if (status === 'in_progress') return t('inProgressStatus');
-    if (status === 'planned') return t('planned');
-    if (status === 'completed') return t('completed');
-    if (status === 'on_hold') return t('onHold');
-    if (status === 'cancelled') return t('cancelled');
-    return status;
-  };
-
-  // Filter to show only in_progress unless "View All" is clicked
-  const displayedOrders = showAll 
-    ? workOrders 
-    : workOrders.filter(wo => wo.status === 'in_progress');
-
-  const inProgressCount = workOrders.filter(wo => wo.status === 'in_progress').length;
-  const plannedCount = workOrders.filter(wo => wo.status === 'planned').length;
 
   if (loading) {
     return (
