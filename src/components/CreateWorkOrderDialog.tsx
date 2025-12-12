@@ -378,6 +378,7 @@ export function CreateWorkOrderDialog({ open, onOpenChange, onSuccess, trigger }
                 onChange={(e) => setCustomerName(e.target.value)}
                 placeholder={t('customerPlaceholder')}
                 className={cn("h-9 text-sm", errors.customerName && "border-destructive")}
+                maxLength={255}
               />
               {errors.customerName && <p className="text-xs text-destructive">{errors.customerName}</p>}
             </div>
@@ -390,6 +391,7 @@ export function CreateWorkOrderDialog({ open, onOpenChange, onSuccess, trigger }
                 onChange={(e) => setExternalOrderNumber(e.target.value)}
                 placeholder={t('orderNumberPlaceholder')}
                 className={cn("h-9 text-sm", errors.externalOrderNumber && "border-destructive")}
+                maxLength={100}
               />
               {errors.externalOrderNumber && <p className="text-xs text-destructive">{errors.externalOrderNumber}</p>}
             </div>

@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { Loader2, Factory } from 'lucide-react';
+import { loginSchema, signupSchema } from '@/lib/validation';
 
 const Auth = () => {
   const [loading, setLoading] = useState(false);
@@ -17,6 +18,7 @@ const Auth = () => {
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [selectedLanguage, setSelectedLanguage] = useState<'en' | 'nl'>('en');
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const { signIn, signUp, user } = useAuth();
   const { language, setLanguage, t } = useLanguage();
   const navigate = useNavigate();
@@ -33,13 +35,24 @@ const Auth = () => {
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) {
-      toast.error(t('error'), { description: 'Please fill in all fields' });
+    setValidationErrors({});
+    
+    // Validate input with zod
+    const result = loginSchema.safeParse({ email, password });
+    if (!result.success) {
+      const errors: Record<string, string> = {};
+      result.error.errors.forEach((err) => {
+        if (err.path[0]) {
+          errors[err.path[0] as string] = err.message;
+        }
+      });
+      setValidationErrors(errors);
+      toast.error(t('error'), { description: Object.values(errors)[0] });
       return;
     }
 
     setLoading(true);
-    const { error } = await signIn(email, password);
+    const { error } = await signIn(email.trim(), password);
     setLoading(false);
 
     if (error) {
@@ -55,13 +68,24 @@ const Auth = () => {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password || !fullName) {
-      toast.error(t('error'), { description: 'Please fill in all fields' });
+    setValidationErrors({});
+    
+    // Validate input with zod
+    const result = signupSchema.safeParse({ email, password, fullName });
+    if (!result.success) {
+      const errors: Record<string, string> = {};
+      result.error.errors.forEach((err) => {
+        if (err.path[0]) {
+          errors[err.path[0] as string] = err.message;
+        }
+      });
+      setValidationErrors(errors);
+      toast.error(t('error'), { description: Object.values(errors)[0] });
       return;
     }
 
     setLoading(true);
-    const { error } = await signUp(email, password, fullName, selectedLanguage);
+    const { error } = await signUp(email.trim(), password, fullName.trim(), selectedLanguage);
     setLoading(false);
 
     if (error) {
@@ -106,8 +130,11 @@ const Auth = () => {
                     placeholder="operator@rhosonics.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                    className={validationErrors.email ? 'border-destructive' : ''}
+                    maxLength={255}
                     required
                   />
+                  {validationErrors.email && <p className="text-xs text-destructive">{validationErrors.email}</p>}
                 </div>
                 <div className="space-y-3">
                   <Label htmlFor="password" className="font-data text-base md:text-sm uppercase tracking-wider">{t('password')}</Label>
@@ -116,6 +143,8 @@ const Auth = () => {
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    className={validationErrors.password ? 'border-destructive' : ''}
+                    maxLength={128}
                     required
                   />
                 </div>
@@ -136,8 +165,11 @@ const Auth = () => {
                     placeholder="John Doe"
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
+                    className={validationErrors.fullName ? 'border-destructive' : ''}
+                    maxLength={100}
                     required
                   />
+                  {validationErrors.fullName && <p className="text-xs text-destructive">{validationErrors.fullName}</p>}
                 </div>
                 <div className="space-y-3">
                   <Label htmlFor="signup-email" className="font-data text-base md:text-sm uppercase tracking-wider">{t('email')}</Label>
@@ -147,8 +179,11 @@ const Auth = () => {
                     placeholder="operator@rhosonics.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                    className={validationErrors.email ? 'border-destructive' : ''}
+                    maxLength={255}
                     required
                   />
+                  {validationErrors.email && <p className="text-xs text-destructive">{validationErrors.email}</p>}
                 </div>
                 <div className="space-y-3">
                   <Label htmlFor="signup-password" className="font-data text-base md:text-sm uppercase tracking-wider">{t('password')}</Label>
@@ -157,8 +192,12 @@ const Auth = () => {
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    className={validationErrors.password ? 'border-destructive' : ''}
+                    maxLength={128}
                     required
                   />
+                  {validationErrors.password && <p className="text-xs text-destructive">{validationErrors.password}</p>}
+                  <p className="text-xs text-muted-foreground">Min 8 chars, 1 uppercase, 1 lowercase, 1 number</p>
                 </div>
                 <div className="space-y-3">
                   <Label htmlFor="language" className="font-data text-base md:text-sm uppercase tracking-wider">Language / Taal</Label>
