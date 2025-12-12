@@ -86,31 +86,29 @@ const RoleManagement = () => {
 
   const handleRoleChange = async (userId: string, newRole: 'admin' | 'supervisor' | 'operator' | 'logistics') => {
     try {
-      // Update profiles table for display
+      // Update user_roles table (authoritative source) using upsert on user_id
+      const { error: roleError } = await supabase
+        .from('user_roles')
+        .upsert({
+          user_id: userId,
+          role: newRole,
+          assigned_by: user?.id,
+          assigned_at: new Date().toISOString(),
+        }, { 
+          onConflict: 'user_id'
+        });
+
+      if (roleError) throw roleError;
+
+      // Update profiles table for display (secondary)
       const { error: profileError } = await supabase
         .from('profiles')
         .update({ role: newRole })
         .eq('id', userId);
 
-      if (profileError) throw profileError;
-
-      // Update user_roles table (authoritative source)
-      // First delete existing role
-      await supabase
-        .from('user_roles')
-        .delete()
-        .eq('user_id', userId);
-
-      // Then insert new role
-      const { error: roleError } = await supabase
-        .from('user_roles')
-        .insert({
-          user_id: userId,
-          role: newRole,
-          assigned_by: user?.id,
-        });
-
-      if (roleError) throw roleError;
+      if (profileError) {
+        console.warn('Failed to update profiles table:', profileError);
+      }
 
       // Log activity
       await supabase.from('activity_logs').insert({
@@ -121,12 +119,13 @@ const RoleManagement = () => {
         details: { new_role: newRole },
       });
 
-      // Update local state immediately
-      setUsers(prev => prev.map(u => u.id === userId ? { ...u, role: newRole } : u));
+      // Re-fetch users to confirm the change persisted
+      await fetchUsers();
       toast.success(t('success'), { description: t('roleUpdated') });
     } catch (error: any) {
       console.error('Error changing role:', error);
       toast.error(t('error'), { description: error.message });
+      await fetchUsers();
     }
   };
 
