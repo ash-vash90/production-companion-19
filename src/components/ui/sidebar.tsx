@@ -170,7 +170,7 @@ const Sidebar = React.forwardRef<
           data-sidebar="sidebar"
           data-mobile="true"
           side={side}
-          className="inset-y-0 left-0 h-svh w-[--sidebar-width] max-w-full bg-sidebar p-0 text-sidebar-foreground border-r border-sidebar-border rounded-none [&>button]:hidden"
+          className="w-[--sidebar-width] max-w-[min(85vw,280px)] bg-sidebar p-0 text-sidebar-foreground shadow-none [&>button]:hidden"
           style={
             {
               "--sidebar-width": SIDEBAR_WIDTH_MOBILE,
