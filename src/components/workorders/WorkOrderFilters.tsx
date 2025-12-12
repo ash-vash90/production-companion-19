@@ -67,24 +67,24 @@ export function WorkOrderFilters({
   ].filter(f => f !== 'all').length;
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-2 flex-1 sm:flex-initial">
       {/* Search Input */}
-      <div className="relative w-[200px] sm:w-[240px]">
+      <div className="relative flex-1 min-w-0 sm:flex-none sm:w-[200px] md:w-[240px]">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           placeholder={t('searchWorkOrders')}
           value={filters.searchTerm}
           onChange={(e) => updateFilter('searchTerm', e.target.value)}
-          className="pl-9 h-9 text-sm"
+          className="pl-9 h-10 sm:h-9 text-sm w-full"
         />
         {filters.searchTerm && (
           <Button
             variant="ghost"
             size="icon"
-            className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6"
+            className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 sm:h-6 sm:w-6"
             onClick={() => updateFilter('searchTerm', '')}
           >
-            <X className="h-3 w-3" />
+            <X className="h-3.5 w-3.5 sm:h-3 sm:w-3" />
           </Button>
         )}
       </div>
@@ -92,7 +92,7 @@ export function WorkOrderFilters({
       {/* Filter Popover */}
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
-          <Button variant="outline" size="sm" className="h-9 gap-2">
+          <Button variant="outline" size="sm" className="h-10 sm:h-9 gap-1.5 sm:gap-2 px-3 shrink-0">
             <Filter className="h-4 w-4" />
             <span className="hidden sm:inline">{t('filter')}</span>
             {activeFilterCount > 0 && (
