@@ -17,7 +17,7 @@ import { WorkOrderFilters, FilterState } from '@/components/workorders/WorkOrder
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { getProductBreakdown, ProductBreakdown, formatDate } from '@/lib/utils';
-import { Loader2, Plus, Package, Filter, Eye, AlertTriangle, ChevronDown, ChevronRight, Layers, RotateCcw, LayoutGrid, Table } from 'lucide-react';
+import { Loader2, Plus, Package, Filter, Eye, AlertTriangle, ChevronDown, ChevronRight, Layers, RotateCcw, LayoutGrid, Table, Clock, Link2 } from 'lucide-react';
 import { format, differenceInDays, parseISO, isBefore } from 'date-fns';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
@@ -35,6 +35,8 @@ interface WorkOrderWithItems {
   order_value: number | null;
   profiles: { full_name: string; avatar_url: string | null } | null;
   productBreakdown: ProductBreakdown[];
+  isMainAssembly: boolean;
+  hasSubassemblies: boolean;
 }
 
 const getInitials = (name: string) => {
@@ -166,13 +168,21 @@ const WorkOrders = () => {
         }, {} as Record<string, { full_name: string; avatar_url: string | null }>);
       }
 
-      const enrichedData = (workOrdersData || []).map(wo => ({
-        ...wo,
-        profiles: wo.created_by && profilesMap[wo.created_by] 
-          ? profilesMap[wo.created_by] 
-          : null,
-        productBreakdown: getProductBreakdown(itemsMap[wo.id] || [])
-      }));
+      const enrichedData = (workOrdersData || []).map(wo => {
+        const breakdown = getProductBreakdown(itemsMap[wo.id] || []);
+        const hasSDM_ECO = breakdown.some(b => b.type === 'SDM_ECO');
+        const hasSubassemblies = breakdown.some(b => ['SENSOR', 'MLA', 'HMI', 'TRANSMITTER'].includes(b.type));
+        
+        return {
+          ...wo,
+          profiles: wo.created_by && profilesMap[wo.created_by] 
+            ? profilesMap[wo.created_by] 
+            : null,
+          productBreakdown: breakdown,
+          isMainAssembly: hasSDM_ECO,
+          hasSubassemblies: hasSubassemblies
+        };
+      });
 
       setWorkOrders(enrichedData as WorkOrderWithItems[]);
     } catch (error) {
@@ -359,9 +369,30 @@ const WorkOrders = () => {
     setExpandedGroups(newExpanded);
   };
 
-  const isOverdue = (wo: WorkOrderWithItems): boolean => {
+  // Check if shipping date is overdue (not completed)
+  const isShippingOverdue = (wo: WorkOrderWithItems): boolean => {
     if (!wo.shipping_date || wo.status === 'completed') return false;
     return isBefore(parseISO(wo.shipping_date), new Date());
+  };
+
+  // Check if shipping date is approaching (within 3 days, not completed)
+  const isShippingApproaching = (wo: WorkOrderWithItems): boolean => {
+    if (!wo.shipping_date || wo.status === 'completed') return false;
+    const daysUntil = differenceInDays(parseISO(wo.shipping_date), new Date());
+    return daysUntil >= 0 && daysUntil <= 3;
+  };
+
+  // Check if start date is overdue (only for planned orders)
+  const isStartOverdue = (wo: WorkOrderWithItems): boolean => {
+    if (!wo.start_date || wo.status !== 'planned') return false;
+    return isBefore(parseISO(wo.start_date), new Date());
+  };
+
+  // Check if start date is approaching (within 2 days, only for planned)
+  const isStartApproaching = (wo: WorkOrderWithItems): boolean => {
+    if (!wo.start_date || wo.status !== 'planned') return false;
+    const daysUntil = differenceInDays(parseISO(wo.start_date), new Date());
+    return daysUntil >= 0 && daysUntil <= 2;
   };
 
   const getStatusVariant = (status: string): 'success' | 'warning' | 'info' | 'secondary' | 'destructive' => {
@@ -376,25 +407,71 @@ const WorkOrders = () => {
   };
 
   const renderWorkOrderCard = (wo: WorkOrderWithItems) => {
-    const overdue = isOverdue(wo);
+    const shippingOverdue = isShippingOverdue(wo);
+    const shippingApproaching = isShippingApproaching(wo);
+    const startOverdue = isStartOverdue(wo);
+    const startApproaching = isStartApproaching(wo);
+    const hasUrgency = shippingOverdue || shippingApproaching || startOverdue || startApproaching;
+    
+    let borderClass = '';
+    if (shippingOverdue) borderClass = 'border-destructive/50 bg-destructive/5';
+    else if (startOverdue) borderClass = 'border-warning/50 bg-warning/5';
+    else if (shippingApproaching) borderClass = 'border-warning/30 bg-warning/5';
+    else if (startApproaching) borderClass = 'border-info/30 bg-info/5';
     
     return (
       <Card
         key={wo.id}
-        className={`hover:shadow-md transition-all border flex flex-col ${overdue ? 'border-destructive/50 bg-destructive/5' : ''}`}
+        className={`hover:shadow-md transition-all border flex flex-col ${borderClass}`}
       >
         <CardHeader className="pb-2 p-3 lg:p-4">
           <div className="flex items-center justify-between mb-2 gap-2">
             <CardTitle className="text-sm font-data truncate">{wo.wo_number}</CardTitle>
             <div className="flex items-center gap-1.5 shrink-0">
-              {overdue && (
+              {shippingOverdue && (
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger>
                       <AlertTriangle className="h-4 w-4 text-destructive" />
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>{t('overdue')}</p>
+                      <p>{t('shippingOverdue')}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
+              {startOverdue && !shippingOverdue && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Clock className="h-4 w-4 text-warning" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{t('startOverdue')}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
+              {shippingApproaching && !shippingOverdue && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <AlertTriangle className="h-4 w-4 text-warning" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{t('shippingSoon')}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
+              {startApproaching && !startOverdue && !shippingApproaching && !shippingOverdue && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Clock className="h-4 w-4 text-info" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{t('startingSoon')}</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -405,9 +482,15 @@ const WorkOrders = () => {
             </div>
           </div>
           <div className="flex flex-wrap gap-1">
+            {(wo.isMainAssembly || wo.hasSubassemblies) && (
+              <Badge variant="outline" className="text-[9px] gap-0.5">
+                <Link2 className="h-2.5 w-2.5" />
+                {wo.isMainAssembly ? 'Assembly' : 'Subassembly'}
+              </Badge>
+            )}
             {wo.productBreakdown.length > 0 
               ? wo.productBreakdown.map((item, idx) => (
-                  <Badge key={idx} variant="secondary" className="text-xs">
+                  <Badge key={idx} variant="secondary">
                     {item.count}× {item.label}
                   </Badge>
                 ))
@@ -442,7 +525,7 @@ const WorkOrders = () => {
               </div>
             )}
             {wo.shipping_date && (
-              <div className={`flex justify-between items-center py-1 ${overdue ? 'text-destructive' : ''}`}>
+              <div className={`flex justify-between items-center py-1 ${shippingOverdue ? 'text-destructive' : shippingApproaching ? 'text-warning' : ''}`}>
                 <span className="text-muted-foreground">{language === 'nl' ? 'Verzending' : 'Ship'}:</span>
                 <span className="font-medium">{formatDate(wo.shipping_date)}</span>
               </div>
@@ -513,12 +596,15 @@ const WorkOrders = () => {
           </thead>
           <tbody className="divide-y">
             {orders.map((wo) => {
-              const overdue = isOverdue(wo);
+              const shippingOverdue = isShippingOverdue(wo);
+              const startOverdue = isStartOverdue(wo);
+              const hasUrgency = shippingOverdue || startOverdue;
               return (
-                <tr key={wo.id} className={`hover:bg-muted/30 ${overdue ? 'bg-destructive/5' : ''}`}>
+                <tr key={wo.id} className={`hover:bg-muted/30 ${shippingOverdue ? 'bg-destructive/5' : startOverdue ? 'bg-warning/5' : ''}`}>
                   <td className="p-3 font-data font-medium">
                     <div className="flex items-center gap-2">
-                      {overdue && <AlertTriangle className="h-4 w-4 text-destructive" />}
+                      {shippingOverdue && <AlertTriangle className="h-4 w-4 text-destructive" />}
+                      {startOverdue && !shippingOverdue && <Clock className="h-4 w-4 text-warning" />}
                       {wo.wo_number}
                     </div>
                   </td>
@@ -538,7 +624,7 @@ const WorkOrders = () => {
                   <td className="p-3">
                     <Badge variant={getStatusVariant(wo.status)}>{t(wo.status as any)}</Badge>
                   </td>
-                  <td className={`p-3 ${overdue ? 'text-destructive font-medium' : 'text-muted-foreground'}`}>
+                  <td className={`p-3 ${shippingOverdue ? 'text-destructive font-medium' : 'text-muted-foreground'}`}>
                     {wo.shipping_date ? formatDate(wo.shipping_date) : '-'}
                   </td>
                   <td className="p-3 text-muted-foreground">{wo.profiles?.full_name || '-'}</td>
