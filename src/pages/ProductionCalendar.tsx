@@ -175,25 +175,25 @@ const ProductionCalendar = () => {
 
   return (
     <Layout>
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6 w-full max-w-full overflow-hidden">
         <PageHeader title={t('productionCalendar')} description={t('productionCalendarDescription')} />
 
         {/* Status Legend */}
         <Card>
-          <CardContent className="py-3">
-            <div className="flex flex-wrap items-center gap-4">
-              <span className="text-sm font-medium text-muted-foreground">{t('legend')}:</span>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-info"></div>
-                <span className="text-sm">{t('planned')}</span>
+          <CardContent className="py-2 sm:py-3 px-3 sm:px-6">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-4">
+              <span className="text-xs sm:text-sm font-medium text-muted-foreground">{t('legend')}:</span>
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-info"></div>
+                <span className="text-xs sm:text-sm">{t('planned')}</span>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-warning"></div>
-                <span className="text-sm">{t('inProgress')}</span>
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-warning"></div>
+                <span className="text-xs sm:text-sm">{t('inProgress')}</span>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-success"></div>
-                <span className="text-sm">{t('completed')}</span>
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-success"></div>
+                <span className="text-xs sm:text-sm">{t('completed')}</span>
               </div>
             </div>
           </CardContent>
@@ -202,51 +202,54 @@ const ProductionCalendar = () => {
         <div className="w-full">
           {/* Calendar Grid */}
           <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between flex-wrap gap-2">
-                <CardTitle>
+            <CardHeader className="px-3 sm:px-6 pb-3 sm:pb-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-3">
+                <CardTitle className="text-base sm:text-lg">
                   {viewMode === 'month' 
                     ? format(currentDate, 'MMMM yyyy')
                     : `${format(startOfWeek(currentDate, { weekStartsOn: 1 }), 'MMM d')} - ${format(endOfWeek(currentDate, { weekStartsOn: 1 }), 'MMM d, yyyy')}`
                   }
                 </CardTitle>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 sm:gap-2 w-full sm:w-auto">
                   <div className="flex border rounded-md">
                     <Button 
                       variant={viewMode === 'week' ? 'secondary' : 'ghost'} 
                       size="sm"
-                      className="rounded-r-none"
+                      className="rounded-r-none text-xs sm:text-sm h-8 px-2 sm:px-3"
                       onClick={() => setViewMode('week')}
                     >
-                      <List className="h-4 w-4 mr-1" />
-                      {t('week')}
+                      <List className="h-3.5 w-3.5 sm:h-4 sm:w-4 sm:mr-1" />
+                      <span className="hidden sm:inline">{t('week')}</span>
                     </Button>
                     <Button 
                       variant={viewMode === 'month' ? 'secondary' : 'ghost'} 
                       size="sm"
-                      className="rounded-l-none"
+                      className="rounded-l-none text-xs sm:text-sm h-8 px-2 sm:px-3"
                       onClick={() => setViewMode('month')}
                     >
-                      <LayoutGrid className="h-4 w-4 mr-1" />
-                      {t('month')}
+                      <LayoutGrid className="h-3.5 w-3.5 sm:h-4 sm:w-4 sm:mr-1" />
+                      <span className="hidden sm:inline">{t('month')}</span>
                     </Button>
                   </div>
-                  <Button variant="outline" size="icon" onClick={goToPrevious}>
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  <Button variant="outline" size="icon" onClick={goToNext}>
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
+                  <div className="flex items-center gap-1 ml-auto sm:ml-0">
+                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={goToPrevious}>
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={goToNext}>
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="px-2 sm:px-6">
             {viewMode === 'month' ? (
-                <div className="overflow-x-auto -mx-4 sm:mx-0">
-                  <div className="grid grid-cols-7 gap-1 sm:gap-2 min-w-[320px] px-4 sm:px-0">
+                <div className="w-full">
+                  <div className="grid grid-cols-7 gap-0.5 sm:gap-1 md:gap-2">
                     {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
-                      <div key={day} className="text-center font-semibold text-xs sm:text-sm py-1 sm:py-2 text-muted-foreground">
-                        <span className="hidden sm:inline">{day}</span>
+                      <div key={day} className="text-center font-semibold text-[10px] sm:text-xs md:text-sm py-1 sm:py-2 text-muted-foreground">
+                        <span className="hidden md:inline">{day}</span>
+                        <span className="hidden sm:inline md:hidden">{day.slice(0, 2)}</span>
                         <span className="sm:hidden">{day.slice(0, 1)}</span>
                       </div>
                     ))}
@@ -258,35 +261,35 @@ const ProductionCalendar = () => {
                         <div
                           key={date.toISOString()}
                           className={cn(
-                            "min-h-[60px] sm:min-h-[80px] md:min-h-[100px] p-1 sm:p-2 border rounded-lg bg-card",
+                            "min-h-[50px] sm:min-h-[70px] md:min-h-[90px] lg:min-h-[100px] p-0.5 sm:p-1 md:p-2 border rounded sm:rounded-lg bg-card",
                             isToday && "bg-primary/5 border-primary/20"
                           )}
                         >
                           <div className={cn(
-                            "text-xs sm:text-sm font-medium mb-1 sm:mb-2",
+                            "text-[10px] sm:text-xs md:text-sm font-medium mb-0.5 sm:mb-1 md:mb-2",
                             isToday ? "text-primary" : "text-foreground"
                           )}>
                             {format(date, 'd')}
                           </div>
-                          <div className="space-y-0.5 sm:space-y-1">
+                          <div className="space-y-0.5">
                             {dayOrders.slice(0, 2).map((order) => (
                               <div
                                 key={order.id}
                                 onClick={() => handleOrderClick(order)}
                                 className={cn(
-                                  "p-1 sm:p-1.5 border-l-2 bg-background/50 rounded text-[10px] sm:text-xs cursor-pointer hover:bg-background/80 transition-colors",
+                                  "p-0.5 sm:p-1 md:p-1.5 border-l-2 bg-background/50 rounded text-[8px] sm:text-[10px] md:text-xs cursor-pointer hover:bg-background/80 transition-colors",
                                   getStatusBorderColor(order.status)
                                 )}
                               >
                                 <div className="font-medium truncate">{order.wo_number}</div>
-                                <div className="text-muted-foreground truncate text-[8px] sm:text-[10px] hidden sm:block">
+                                <div className="text-muted-foreground truncate text-[7px] sm:text-[9px] md:text-[10px] hidden md:block">
                                   {formatProductType(order.product_type)}
                                 </div>
                               </div>
                             ))}
                             {dayOrders.length > 2 && (
-                              <div className="text-[9px] sm:text-xs text-muted-foreground text-center">
-                                +{dayOrders.length - 2} more
+                              <div className="text-[8px] sm:text-[10px] md:text-xs text-muted-foreground text-center">
+                                +{dayOrders.length - 2}
                               </div>
                             )}
                           </div>
