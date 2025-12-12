@@ -315,12 +315,12 @@ export function CreateWorkOrderDialog({ open, onOpenChange, onSuccess, trigger }
                   <Button
                     variant="outline"
                     className={cn(
-                      "w-full justify-start text-left font-normal h-9 text-sm",
+                      "w-full h-10 px-3 text-base leading-5 font-normal flex items-center gap-2 justify-start text-left",
                       !startDate && "text-muted-foreground",
-                      errors.startDate && "border-destructive"
+                      errors.startDate && "border-destructive",
                     )}
                   >
-                    <CalendarIcon className="mr-2 h-3.5 w-3.5" />
+                    <CalendarIcon className="h-4 w-4" />
                     {startDate ? format(startDate, "dd/MM/yyyy") : <span>{t('selectDate')}</span>}
                   </Button>
                 </PopoverTrigger>
@@ -345,12 +345,12 @@ export function CreateWorkOrderDialog({ open, onOpenChange, onSuccess, trigger }
                   <Button
                     variant="outline"
                     className={cn(
-                      "w-full justify-start text-left font-normal h-9 text-sm",
+                      "w-full h-10 px-3 text-base leading-5 font-normal flex items-center gap-2 justify-start text-left",
                       !shippingDate && "text-muted-foreground",
-                      errors.shippingDate && "border-destructive"
+                      errors.shippingDate && "border-destructive",
                     )}
                   >
-                    <CalendarIcon className="mr-2 h-3.5 w-3.5" />
+                    <CalendarIcon className="h-4 w-4" />
                     {shippingDate ? format(shippingDate, "dd/MM/yyyy") : <span>{t('selectDate')}</span>}
                   </Button>
                 </PopoverTrigger>
@@ -377,7 +377,7 @@ export function CreateWorkOrderDialog({ open, onOpenChange, onSuccess, trigger }
                 value={customerName}
                 onChange={(e) => setCustomerName(e.target.value)}
                 placeholder={t('customerPlaceholder')}
-                className={cn("h-9 text-sm", errors.customerName && "border-destructive")}
+                className={cn("text-base", errors.customerName && "border-destructive")}
                 maxLength={255}
               />
               {errors.customerName && <p className="text-xs text-destructive">{errors.customerName}</p>}
@@ -390,7 +390,7 @@ export function CreateWorkOrderDialog({ open, onOpenChange, onSuccess, trigger }
                 value={externalOrderNumber}
                 onChange={(e) => setExternalOrderNumber(e.target.value)}
                 placeholder={t('orderNumberPlaceholder')}
-                className={cn("h-9 text-sm", errors.externalOrderNumber && "border-destructive")}
+                className={cn("text-base", errors.externalOrderNumber && "border-destructive")}
                 maxLength={100}
               />
               {errors.externalOrderNumber && <p className="text-xs text-destructive">{errors.externalOrderNumber}</p>}
@@ -408,7 +408,7 @@ export function CreateWorkOrderDialog({ open, onOpenChange, onSuccess, trigger }
               value={orderValue}
               onChange={(e) => setOrderValue(e.target.value)}
               placeholder="0.00"
-              className={cn("h-9 text-sm", errors.orderValue && "border-destructive")}
+              className={cn("text-base", errors.orderValue && "border-destructive")}
             />
             {errors.orderValue && <p className="text-xs text-destructive">{errors.orderValue}</p>}
           </div>
