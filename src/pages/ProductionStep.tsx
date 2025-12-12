@@ -107,6 +107,7 @@ const ProductionStep = () => {
       });
 
     return () => {
+      channel.untrack();
       supabase.removeChannel(channel);
     };
   }, [user, itemId, currentUserProfile]);
