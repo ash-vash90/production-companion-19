@@ -18,6 +18,7 @@ import { toast } from '@/hooks/use-toast';
 
 interface Notification {
   id: string;
+  user_id: string;
   type: string;
   title: string;
   message: string;
@@ -60,21 +61,25 @@ export function NotificationCenter() {
   };
 
   useEffect(() => {
+    if (!user?.id) return;
+    
     fetchNotifications();
 
-    // Subscribe to new notifications with real-time toast
+    // Subscribe to new notifications - filter on client side since RLS handles security
     const channel = supabase
-      .channel('notifications-realtime')
+      .channel(`notifications-${user.id}`)
       .on(
         'postgres_changes',
         {
           event: 'INSERT',
           schema: 'public',
           table: 'notifications',
-          filter: `user_id=eq.${user?.id}`,
         },
         (payload) => {
           const newNotification = payload.new as Notification;
+          // Only process if it's for the current user
+          if (newNotification.user_id !== user.id) return;
+          
           setNotifications(prev => [newNotification, ...prev]);
 
           // Show instant toast for non-cancelled notifications
@@ -100,7 +105,7 @@ export function NotificationCenter() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user?.id]);
+  }, [user?.id, pushEnabled, sendNotification]);
 
   const markAsRead = async (id: string) => {
     await supabase

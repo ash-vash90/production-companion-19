@@ -44,6 +44,7 @@ const ProductionReports = () => {
     customerFilter: 'all',
     ageFilter: 'all',
     createdMonthFilter: 'all',
+    batchSizeFilter: 'all',
   });
 
   useEffect(() => {
@@ -178,6 +179,7 @@ const ProductionReports = () => {
       customerFilter: 'all',
       ageFilter: 'all',
       createdMonthFilter: 'all',
+      batchSizeFilter: 'all',
     });
   };
 

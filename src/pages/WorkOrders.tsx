@@ -28,7 +28,8 @@ interface WorkOrderWithItems {
   batch_size: number;
   status: string;
   created_at: string;
-  scheduled_date: string | null;
+  start_date: string | null;
+  shipping_date: string | null;
   customer_name: string | null;
   external_order_number: string | null;
   order_value: number | null;
@@ -61,7 +62,7 @@ type ViewMode = 'cards' | 'table';
 
 const WorkOrders = () => {
   const { user } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { isAdmin } = useUserProfile();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
@@ -127,7 +128,7 @@ const WorkOrders = () => {
     try {
       const { data: workOrdersData, error: woError } = await supabase
         .from('work_orders')
-        .select('id, wo_number, product_type, batch_size, status, created_at, created_by, customer_name, external_order_number, order_value, scheduled_date')
+        .select('id, wo_number, product_type, batch_size, status, created_at, created_by, customer_name, external_order_number, order_value, start_date, shipping_date')
         .neq('status', 'cancelled')
         .order('created_at', { ascending: false });
 
@@ -210,8 +211,8 @@ const WorkOrders = () => {
   const deliveryMonths = useMemo(() => {
     const months = new Set<string>();
     workOrders.forEach(wo => {
-      if (wo.scheduled_date) {
-        months.add(format(parseISO(wo.scheduled_date), 'yyyy-MM'));
+      if (wo.shipping_date) {
+        months.add(format(parseISO(wo.shipping_date), 'yyyy-MM'));
       }
     });
     return Array.from(months).sort().reverse();
@@ -267,8 +268,8 @@ const WorkOrders = () => {
 
     if (filters.deliveryMonthFilter !== 'all') {
       filtered = filtered.filter(wo => {
-        if (!wo.scheduled_date) return false;
-        return format(parseISO(wo.scheduled_date), 'yyyy-MM') === filters.deliveryMonthFilter;
+        if (!wo.shipping_date) return false;
+        return format(parseISO(wo.shipping_date), 'yyyy-MM') === filters.deliveryMonthFilter;
       });
     }
 
@@ -296,7 +297,7 @@ const WorkOrders = () => {
   const getGroupKey = (wo: WorkOrderWithItems, groupOption: GroupByOption): string => {
     switch (groupOption) {
       case 'status': return wo.status;
-      case 'deliveryMonth': return wo.scheduled_date ? format(parseISO(wo.scheduled_date), 'yyyy-MM') : 'unscheduled';
+      case 'deliveryMonth': return wo.shipping_date ? format(parseISO(wo.shipping_date), 'yyyy-MM') : 'unscheduled';
       case 'createdMonth': return format(parseISO(wo.created_at), 'yyyy-MM');
       case 'batchSize': 
         if (wo.batch_size <= 5) return 'small';
@@ -359,8 +360,8 @@ const WorkOrders = () => {
   };
 
   const isOverdue = (wo: WorkOrderWithItems): boolean => {
-    if (!wo.scheduled_date || wo.status === 'completed') return false;
-    return isBefore(parseISO(wo.scheduled_date), new Date());
+    if (!wo.shipping_date || wo.status === 'completed') return false;
+    return isBefore(parseISO(wo.shipping_date), new Date());
   };
 
   const getStatusVariant = (status: string): 'success' | 'warning' | 'info' | 'secondary' | 'destructive' => {
@@ -434,10 +435,16 @@ const WorkOrders = () => {
                 <span className="font-semibold">€{wo.order_value.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}</span>
               </div>
             )}
-            {wo.scheduled_date && (
+            {wo.start_date && (
+              <div className="flex justify-between items-center py-1">
+                <span className="text-muted-foreground">{language === 'nl' ? 'Start' : 'Start'}:</span>
+                <span className="font-medium">{formatDate(wo.start_date)}</span>
+              </div>
+            )}
+            {wo.shipping_date && (
               <div className={`flex justify-between items-center py-1 ${overdue ? 'text-destructive' : ''}`}>
-                <span className="text-muted-foreground">{t('scheduledDate')}:</span>
-                <span className="font-medium">{formatDate(wo.scheduled_date)}</span>
+                <span className="text-muted-foreground">{language === 'nl' ? 'Verzending' : 'Ship'}:</span>
+                <span className="font-medium">{formatDate(wo.shipping_date)}</span>
               </div>
             )}
             {wo.profiles && (
@@ -499,7 +506,7 @@ const WorkOrders = () => {
               <th className="text-left p-3 font-medium">{t('products')}</th>
               <th className="text-left p-3 font-medium">{t('customer')}</th>
               <th className="text-left p-3 font-medium">{t('status')}</th>
-              <th className="text-left p-3 font-medium">{t('scheduledDate')}</th>
+              <th className="text-left p-3 font-medium">{language === 'nl' ? 'Verzending' : 'Ship Date'}</th>
               <th className="text-left p-3 font-medium">{t('createdBy')}</th>
               <th className="text-right p-3 font-medium">{t('actions')}</th>
             </tr>
@@ -532,7 +539,7 @@ const WorkOrders = () => {
                     <Badge variant={getStatusVariant(wo.status)}>{t(wo.status as any)}</Badge>
                   </td>
                   <td className={`p-3 ${overdue ? 'text-destructive font-medium' : 'text-muted-foreground'}`}>
-                    {wo.scheduled_date ? formatDate(wo.scheduled_date) : '-'}
+                    {wo.shipping_date ? formatDate(wo.shipping_date) : '-'}
                   </td>
                   <td className="p-3 text-muted-foreground">{wo.profiles?.full_name || '-'}</td>
                   <td className="p-3 text-right">
