@@ -57,6 +57,7 @@ export function WorkOrderNotes({ workOrderId, workOrderItemId, currentStepNumber
   const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
   const notesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     fetchNotes();
@@ -82,6 +83,15 @@ export function WorkOrderNotes({ workOrderId, workOrderItemId, currentStepNumber
       supabase.removeChannel(channel);
     };
   }, [workOrderId, workOrderItemId]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const fetchUsers = async () => {
     const { data } = await supabase
@@ -194,7 +204,7 @@ export function WorkOrderNotes({ workOrderId, workOrderItemId, currentStepNumber
       setSelectedMentions([]);
       toast.success(language === 'nl' ? 'Opmerking toegevoegd' : 'Comment added');
       
-      setTimeout(() => {
+      scrollTimeoutRef.current = setTimeout(() => {
         notesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
       }, 100);
     } catch (error: any) {
