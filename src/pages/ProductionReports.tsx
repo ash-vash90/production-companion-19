@@ -222,11 +222,11 @@ const ProductionReports = () => {
           ) : (
             <div className="space-y-6">
               {Object.entries(groupedWorkOrders).map(([groupKey, orders]) => (
-                <Card key={groupKey}>
+                <Card key={groupKey} className="overflow-hidden">
                   {groupBy !== 'none' && (
-                    <div className="px-6 py-3 border-b bg-muted/30">
-                      <div className="flex items-center justify-between">
-                        <h3 className="font-semibold">
+                    <div className="px-4 sm:px-6 py-3 border-b bg-muted/30">
+                      <div className="flex items-center justify-between gap-2">
+                        <h3 className="font-semibold text-sm sm:text-base truncate">
                           {groupBy === 'status' ? getStatusLabel(groupKey) : groupKey.replace('_', ' ')}
                         </h3>
                         <Badge variant="secondary">{orders.length}</Badge>
@@ -234,66 +234,68 @@ const ProductionReports = () => {
                     </div>
                   )}
                   <CardContent className="p-0">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>{t('woNumber')}</TableHead>
-                          <TableHead>{t('productType')}</TableHead>
-                          <TableHead>{t('customer')}</TableHead>
-                          <TableHead>{t('batchSize')}</TableHead>
-                          <TableHead>{t('status')}</TableHead>
-                          <TableHead>{t('created')}</TableHead>
-                          <TableHead>{t('completed')}</TableHead>
-                          <TableHead className="text-right">{t('actions')}</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {orders.map((wo) => (
-                          <TableRow key={wo.id}>
-                            <TableCell className="font-mono font-semibold">
-                              {wo.wo_number}
-                            </TableCell>
-                            <TableCell>
-                              {wo.productBreakdown.length > 0 ? (
-                                <div className="flex flex-wrap gap-1">
-                                  {wo.productBreakdown.map((b) => (
-                                    <Badge key={b.type} variant="outline">
-                                      {b.count}× {b.label}
-                                    </Badge>
-                                  ))}
-                                </div>
-                              ) : (
-                                <Badge variant="outline">{wo.batch_size} items</Badge>
-                              )}
-                            </TableCell>
-                            <TableCell className="text-sm text-muted-foreground">
-                              {wo.customer_name || '-'}
-                            </TableCell>
-                            <TableCell className="font-mono">{wo.batch_size}</TableCell>
-                            <TableCell>
-                              <Badge variant={getStatusVariant(wo.status)}>
-                                {getStatusLabel(wo.status)}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-sm">
-                              {format(new Date(wo.created_at), 'dd/MM/yyyy', { locale: language === 'nl' ? nl : enUS })}
-                            </TableCell>
-                            <TableCell className="text-sm">
-                              {wo.completed_at ? format(new Date(wo.completed_at), 'dd/MM/yyyy', { locale: language === 'nl' ? nl : enUS }) : '-'}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => navigate(`/production-reports/${wo.id}`)}
-                              >
-                                {t('viewReport')}
-                              </Button>
-                            </TableCell>
+                    <div className="w-full overflow-x-auto">
+                      <Table className="min-w-[720px]">
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>{t('woNumber')}</TableHead>
+                            <TableHead>{t('productType')}</TableHead>
+                            <TableHead>{t('customer')}</TableHead>
+                            <TableHead>{t('batchSize')}</TableHead>
+                            <TableHead>{t('status')}</TableHead>
+                            <TableHead>{t('created')}</TableHead>
+                            <TableHead>{t('completed')}</TableHead>
+                            <TableHead className="text-right">{t('actions')}</TableHead>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                        </TableHeader>
+                        <TableBody>
+                          {orders.map((wo) => (
+                            <TableRow key={wo.id}>
+                              <TableCell className="font-mono font-semibold whitespace-nowrap">
+                                {wo.wo_number}
+                              </TableCell>
+                              <TableCell>
+                                {wo.productBreakdown.length > 0 ? (
+                                  <div className="flex flex-wrap gap-1">
+                                    {wo.productBreakdown.map((b) => (
+                                      <Badge key={b.type} variant="outline">
+                                        {b.count}× {b.label}
+                                      </Badge>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <Badge variant="outline">{wo.batch_size} items</Badge>
+                                )}
+                              </TableCell>
+                              <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+                                {wo.customer_name || '-'}
+                              </TableCell>
+                              <TableCell className="font-mono whitespace-nowrap">{wo.batch_size}</TableCell>
+                              <TableCell>
+                                <Badge variant={getStatusVariant(wo.status)}>
+                                  {getStatusLabel(wo.status)}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-sm whitespace-nowrap">
+                                {format(new Date(wo.created_at), 'dd/MM/yyyy', { locale: language === 'nl' ? nl : enUS })}
+                              </TableCell>
+                              <TableCell className="text-sm whitespace-nowrap">
+                                {wo.completed_at ? format(new Date(wo.completed_at), 'dd/MM/yyyy', { locale: language === 'nl' ? nl : enUS }) : '-'}
+                              </TableCell>
+                              <TableCell className="text-right whitespace-nowrap">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => navigate(`/production-reports/${wo.id}`)}
+                                >
+                                  {t('viewReport')}
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
                   </CardContent>
                 </Card>
               ))}
