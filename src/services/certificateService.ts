@@ -2,6 +2,7 @@ import { supabase } from '@/integrations/supabase/client';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { triggerWebhook } from '@/lib/webhooks';
+import { getTemplateForProduct, fillTemplate, CertificateTemplate } from './pdfTemplateService';
 
 interface CertificateData {
   workOrderItem: {
@@ -423,6 +424,69 @@ async function generatePDFFromHTML(html: string, serialNumber: string): Promise<
 }
 
 /**
+ * Generate PDF using template or fallback to HTML
+ */
+async function generatePDFWithTemplate(
+  data: CertificateData,
+  template: CertificateTemplate | null
+): Promise<string> {
+  if (template) {
+    // Use template-based generation
+    const templateData = {
+      serialNumber: data.workOrderItem.serial_number,
+      woNumber: data.workOrderItem.work_order.wo_number,
+      productType: data.workOrderItem.work_order.product_type,
+      customerName: '', // Would need to fetch from work_order if needed
+      externalOrderNumber: '',
+      certificateDate: new Date().toLocaleDateString(),
+      generatedBy: data.generatedBy,
+      generatedDate: new Date().toISOString(),
+      measurements: data.measurements.map(m => ({
+        name: m.step_title,
+        value: Object.values(m.measurement_values || {})[0] || '',
+        unit: '',
+      })),
+      batchMaterials: data.batchMaterials.map(b => ({
+        materialType: b.material_type,
+        batchNumber: b.batch_number,
+      })),
+      subAssemblies: data.subAssemblies.map(s => ({
+        componentType: s.component_type,
+        serialNumber: s.child_serial_number,
+      })),
+    };
+
+    try {
+      const pdfBytes = await fillTemplate(template, templateData);
+      
+      // Upload to storage
+      const fileName = `${data.workOrderItem.serial_number}_${Date.now()}.pdf`;
+      const pdfBlob = new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' });
+      const { error } = await supabase.storage
+        .from('certificates')
+        .upload(fileName, pdfBlob, {
+          contentType: 'application/pdf',
+          upsert: false,
+        });
+
+      if (error) throw error;
+
+      const { data: urlData } = supabase.storage
+        .from('certificates')
+        .getPublicUrl(fileName);
+
+      return urlData.publicUrl;
+    } catch (templateError) {
+      console.warn('Template generation failed, falling back to HTML:', templateError);
+    }
+  }
+
+  // Fallback to HTML-based generation
+  const html = generateCertificateHTML(data);
+  return generatePDFFromHTML(html, data.workOrderItem.serial_number);
+}
+
+/**
  * Main function: Generate quality certificate for a work order item
  */
 export async function generateQualityCertificate(
@@ -432,11 +496,11 @@ export async function generateQualityCertificate(
     // 1. Fetch all data
     const data = await fetchCertificateData(itemId);
 
-    // 2. Generate HTML
-    const html = generateCertificateHTML(data);
+    // 2. Check for template
+    const template = await getTemplateForProduct(data.workOrderItem.work_order.product_type);
 
-    // 3. Convert to PDF and upload
-    const pdfUrl = await generatePDFFromHTML(html, data.workOrderItem.serial_number);
+    // 3. Generate PDF (template or HTML fallback)
+    const pdfUrl = await generatePDFWithTemplate(data, template);
 
     // 4. Save certificate record to database
     const userId = (await supabase.auth.getUser()).data.user?.id;

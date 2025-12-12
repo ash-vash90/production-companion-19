@@ -16,12 +16,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Plus, Trash2, Webhook, Loader2, Zap, Hash, Settings2, TestTube } from 'lucide-react';
+import { Plus, Trash2, Webhook, Loader2, Zap, Hash, Settings2, TestTube, FileText } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import AutomationManager from '@/components/settings/AutomationManager';
 import NumberFormatSettings from '@/components/settings/NumberFormatSettings';
+import { CertificateTemplateManager } from '@/components/settings/CertificateTemplateManager';
 
 const Settings = () => {
   const { user } = useAuth();
@@ -199,10 +200,14 @@ const Settings = () => {
           <PageHeader title={t('settingsPage')} description={t('configureWebhooks')} />
 
           <Tabs defaultValue="numbering" className="space-y-6">
-            <TabsList>
+            <TabsList className="flex-wrap h-auto gap-1">
               <TabsTrigger value="numbering" className="gap-2">
                 <Hash className="h-4 w-4" />
                 Number Formats
+              </TabsTrigger>
+              <TabsTrigger value="certificates" className="gap-2">
+                <FileText className="h-4 w-4" />
+                Certificate Templates
               </TabsTrigger>
               <TabsTrigger value="automations" className="gap-2">
                 <Zap className="h-4 w-4" />
@@ -216,6 +221,10 @@ const Settings = () => {
             
             <TabsContent value="numbering">
               <NumberFormatSettings />
+            </TabsContent>
+            
+            <TabsContent value="certificates">
+              <CertificateTemplateManager />
             </TabsContent>
             
             <TabsContent value="automations">

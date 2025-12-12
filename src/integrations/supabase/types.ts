@@ -148,6 +148,51 @@ export type Database = {
           },
         ]
       }
+      certificate_templates: {
+        Row: {
+          active: boolean
+          created_at: string
+          created_by: string
+          description: string | null
+          detected_fields: string[] | null
+          field_mappings: Json
+          id: string
+          is_default: boolean
+          name: string
+          product_type: string | null
+          template_url: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          created_by: string
+          description?: string | null
+          detected_fields?: string[] | null
+          field_mappings?: Json
+          id?: string
+          is_default?: boolean
+          name: string
+          product_type?: string | null
+          template_url: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          detected_fields?: string[] | null
+          field_mappings?: Json
+          id?: string
+          is_default?: boolean
+          name?: string
+          product_type?: string | null
+          template_url?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       checklist_items: {
         Row: {
           created_at: string
