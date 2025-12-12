@@ -196,12 +196,51 @@
     }
   }
 
+  /* Custom Rhosonics scrollbar styling */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--primary) / 0.4) transparent;
+  }
+
+  *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 4px;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background: hsl(var(--primary) / 0.3);
+    border-radius: 4px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--primary) / 0.5);
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+
+  *::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
+  /* Global dialog height constraint */
+  [role="dialog"]:not([data-sidebar="sidebar"]) {
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+
   /* Mobile-specific optimizations */
   @media (max-width: 767px) {
     /* Ensure dialogs fit on mobile screens - but exclude sheet/sidebar */
     [role="dialog"]:not([data-sidebar="sidebar"]) {
       max-width: calc(100vw - 32px);
-      max-height: 90vh;
+      max-height: 80vh;
       margin: 16px;
     }
   }
@@ -215,8 +254,9 @@
     }
 
     /* Ensure dialogs don't take full screen */
-    [role="dialog"] {
+    [role="dialog"]:not([data-sidebar="sidebar"]) {
       max-width: min(90vw, 700px);
+      max-height: 80vh;
     }
   }
 
