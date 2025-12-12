@@ -170,9 +170,9 @@ export default function Inventory() {
           }
         />
 
-        <div className="space-y-6">
+        <div className="space-y-4 md:space-y-6">
           {/* Summary Cards */}
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-3 md:gap-4 grid-cols-1 md:grid-cols-3">
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">
