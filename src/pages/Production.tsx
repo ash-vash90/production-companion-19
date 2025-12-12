@@ -476,14 +476,14 @@ const Production = () => {
             </Card>
           )}
 
-          <Card className="shadow-sm">
+          <Card className="shadow-sm overflow-hidden">
             <CardHeader className="pb-3">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div>
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 flex-1">
                   <CardTitle className="text-xl md:text-2xl">{t('production')} {t('items')}</CardTitle>
                   <CardDescription className="text-sm mt-1">{t('trackItems')}</CardDescription>
                 </div>
-                <Badge className={`${getStatusColor(workOrder.status)} h-8 md:h-10 px-4 text-sm md:text-base font-semibold self-start`}>
+                <Badge className={`${getStatusColor(workOrder.status)} flex-shrink-0`}>
                   {formatStatus(workOrder.status, language as 'en' | 'nl')}
                 </Badge>
               </div>
@@ -493,62 +493,65 @@ const Production = () => {
                 {items.map((item) => (
                   <div
                     key={item.id}
-                    className="flex items-center justify-between p-3 md:p-4 border rounded-lg hover:bg-accent/50 transition-all cursor-pointer active:scale-[0.99] hover:shadow-sm"
-                  onClick={() => navigate(`/production/step/${item.id}`)}
-                >
-                  <div className="flex items-center gap-3 md:gap-4">
-                    <div className="flex flex-col items-center justify-center h-10 w-10 md:h-12 md:w-12 rounded-lg bg-primary text-primary-foreground font-bold text-base md:text-lg shadow-sm">
+                    className="flex items-center gap-2 md:gap-3 p-3 md:p-4 border rounded-lg hover:bg-accent/50 transition-all cursor-pointer active:scale-[0.99] hover:shadow-sm overflow-hidden"
+                    onClick={() => navigate(`/production/step/${item.id}`)}
+                  >
+                    {/* Position badge - fixed size */}
+                    <div className="flex-shrink-0 flex items-center justify-center h-10 w-10 md:h-12 md:w-12 rounded-lg bg-primary text-primary-foreground font-bold text-base md:text-lg shadow-sm">
                       {item.position_in_batch}
                     </div>
-                  <div>
-                      <p className="font-data text-sm md:text-base font-semibold">{item.serial_number}</p>
-                      <p className="text-xs md:text-sm text-muted-foreground font-data">
+                    
+                    {/* Serial number and info - flexible with truncation */}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-data text-sm md:text-base font-semibold truncate">{item.serial_number}</p>
+                      <p className="text-xs md:text-sm text-muted-foreground font-data truncate">
                         {item.product_type || workOrder.product_type} • {t('step')} {item.current_step}
                       </p>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge className={`${getStatusColor(item.status)} h-6 md:h-8 px-2 md:px-3 text-xs md:text-sm font-medium`}>
-                      {formatStatus(item.status, language as 'en' | 'nl')}
-                    </Badge>
-                     {item.status === 'completed' && (
-                      <>
+                    
+                    {/* Actions - fixed size, no shrink */}
+                    <div className="flex-shrink-0 flex items-center gap-1.5 md:gap-2">
+                      <Badge className={`${getStatusColor(item.status)} shrink-0`}>
+                        {formatStatus(item.status, language as 'en' | 'nl')}
+                      </Badge>
+                      {item.status === 'completed' && (
+                        <>
+                          <Button
+                            size="icon"
+                            variant="outline"
+                            className="h-8 w-8 flex-shrink-0"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handlePrintLabel(item.serial_number, item.operator_initials, item.product_type);
+                            }}
+                          >
+                            <Printer className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant={item.certificate_generated ? "default" : "outline"}
+                            className="h-8 w-8 flex-shrink-0"
+                            onClick={(e) => handleGenerateCertificate(item.id, item.serial_number, e)}
+                            disabled={item.certificate_generated}
+                          >
+                            <FileText className="h-4 w-4" />
+                          </Button>
+                        </>
+                      )}
+                      {(item.product_type === 'SENSOR' || (!item.product_type && workOrder.product_type === 'SENSOR')) && item.status === 'in_progress' && (
                         <Button
-                          size="icon"
+                          size="sm"
                           variant="outline"
-                          className="h-8 w-8 md:h-10 md:w-10"
+                          className="h-8 px-2 text-xs flex-shrink-0 hidden sm:flex"
                           onClick={(e) => {
                             e.stopPropagation();
-                            handlePrintLabel(item.serial_number, item.operator_initials, item.product_type);
+                            navigate(`/production/sensor/${item.id}`);
                           }}
                         >
-                          <Printer className="h-4 w-4 md:h-5 md:w-5" />
+                          Sensor
                         </Button>
-                        <Button
-                          size="icon"
-                          variant={item.certificate_generated ? "default" : "outline"}
-                          className="h-8 w-8 md:h-10 md:w-10"
-                          onClick={(e) => handleGenerateCertificate(item.id, item.serial_number, e)}
-                          disabled={item.certificate_generated}
-                        >
-                          <FileText className="h-4 w-4 md:h-5 md:w-5" />
-                        </Button>
-                      </>
-                     )}
-                     {(item.product_type === 'SENSOR' || (!item.product_type && workOrder.product_type === 'SENSOR')) && item.status === 'in_progress' && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-8 md:h-10 px-3 text-xs md:text-sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          navigate(`/production/sensor/${item.id}`);
-                        }}
-                      >
-                        Sensor Workflow
-                      </Button>
-                     )}
-                  </div>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
