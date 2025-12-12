@@ -22,8 +22,24 @@ interface CroppedArea {
 const createImage = (url: string): Promise<HTMLImageElement> =>
   new Promise((resolve, reject) => {
     const image = new Image();
-    image.addEventListener('load', () => resolve(image));
-    image.addEventListener('error', (error) => reject(error));
+
+    const handleLoad = () => {
+      cleanup();
+      resolve(image);
+    };
+
+    const handleError = (error: Event) => {
+      cleanup();
+      reject(error);
+    };
+
+    const cleanup = () => {
+      image.removeEventListener('load', handleLoad);
+      image.removeEventListener('error', handleError);
+    };
+
+    image.addEventListener('load', handleLoad);
+    image.addEventListener('error', handleError);
     image.src = url;
   });
 

@@ -184,6 +184,16 @@
     }
   }
 
+  /* Mobile-specific optimizations */
+  @media (max-width: 767px) {
+    /* Ensure dialogs fit on mobile screens */
+    [role="dialog"] {
+      max-width: calc(100vw - 32px);
+      max-height: 90vh;
+      margin: 16px;
+    }
+  }
+
   /* Tablet-specific breakpoint optimizations */
   @media (min-width: 768px) and (max-width: 1024px) {
     /* Better spacing on tablets */
@@ -194,7 +204,7 @@
 
     /* Ensure dialogs don't take full screen */
     [role="dialog"] {
-      max-width: min(90vw, 700px);
+      max-width: min(90vw, 600px);
     }
   }
 

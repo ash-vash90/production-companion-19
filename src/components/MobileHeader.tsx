@@ -122,7 +122,7 @@ export function MobileHeader({ onSearchClick }: MobileHeaderProps) {
               )}
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-80 p-0" align="end">
+          <PopoverContent className="w-[calc(100vw-24px)] max-w-80 p-0" align="end">
             <div className="flex items-center justify-between px-4 py-3 border-b">
               <h4 className="font-semibold text-sm">{t('notifications')}</h4>
               {unreadCount > 0 && (
@@ -131,7 +131,7 @@ export function MobileHeader({ onSearchClick }: MobileHeaderProps) {
                 </Badge>
               )}
             </div>
-            <ScrollArea className="h-[300px]">
+            <ScrollArea className="max-h-[min(300px,60vh)]">
               {notifications.length === 0 ? (
                 <div className="p-4 text-center text-sm text-muted-foreground">
                   {t('noNotifications') || 'No notifications'}

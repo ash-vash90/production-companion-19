@@ -31,7 +31,15 @@ const Search = lazy(() => import("./pages/Search"));
 const Inventory = lazy(() => import("./pages/Inventory"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // Data considered fresh for 5 minutes
+      gcTime: 10 * 60 * 1000, // Garbage collect unused data after 10 minutes
+      refetchOnWindowFocus: false, // Don't refetch on window focus to reduce unnecessary requests
+    },
+  },
+});
 
 // Loading fallback component
 const PageLoader = () => (

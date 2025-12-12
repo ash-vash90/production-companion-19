@@ -67,6 +67,7 @@ export function useLowStock() {
     queryKey: QUERY_KEYS.lowStock,
     queryFn: getLowStockItems,
     refetchInterval: 5 * 60 * 1000, // Refetch every 5 minutes
+    refetchIntervalInBackground: false, // Stop refetching when tab is inactive
   });
 }
 
