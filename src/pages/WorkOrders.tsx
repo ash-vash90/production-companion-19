@@ -424,9 +424,9 @@ const WorkOrders = () => {
         key={wo.id}
         className={`hover:shadow-md transition-all border flex flex-col ${borderClass}`}
       >
-        <CardHeader className="pb-2 p-3 lg:p-4">
+        <CardHeader className="pb-2 p-3 md:p-4">
           <div className="flex items-center justify-between mb-2 gap-2">
-            <CardTitle className="text-sm font-data truncate">{wo.wo_number}</CardTitle>
+            <CardTitle className="text-xs md:text-sm font-data break-words">{wo.wo_number}</CardTitle>
             <div className="flex items-center gap-1.5 shrink-0">
               {shippingOverdue && (
                 <TooltipProvider>
@@ -483,57 +483,57 @@ const WorkOrders = () => {
           </div>
           <div className="flex flex-wrap gap-1">
             {(wo.isMainAssembly || wo.hasSubassemblies) && (
-              <Badge variant="outline" className="text-[9px] gap-0.5">
+              <Badge variant="outline" className="text-[9px] md:text-[10px] gap-0.5">
                 <Link2 className="h-2.5 w-2.5" />
                 {wo.isMainAssembly ? 'Assembly' : 'Subassembly'}
               </Badge>
             )}
-            {wo.productBreakdown.length > 0 
+            {wo.productBreakdown.length > 0
               ? wo.productBreakdown.map((item, idx) => (
-                  <Badge key={idx} variant="secondary">
+                  <Badge key={idx} variant="secondary" className="text-[10px] md:text-xs">
                     {item.count}× {item.label}
                   </Badge>
                 ))
-              : <span className="text-xs text-muted-foreground">{wo.batch_size} items</span>
+              : <span className="text-xs md:text-sm text-muted-foreground">{wo.batch_size} items</span>
             }
           </div>
         </CardHeader>
-        <CardContent className="p-3 lg:p-4 pt-0 flex-1 flex flex-col">
-          <div className="space-y-1.5 text-xs lg:text-sm flex-1">
+<CardContent className="p-3 md:p-4 pt-0 flex-1 flex flex-col">
+          <div className="space-y-1 md:space-y-1.5 text-xs md:text-sm flex-1">
             {wo.customer_name && (
-              <div className="flex justify-between items-center py-1">
-                <span className="text-muted-foreground">{t('customer')}:</span>
-                <span className="font-medium truncate ml-2 max-w-[120px]">{wo.customer_name}</span>
+              <div className="flex justify-between items-center py-0.5 md:py-1 gap-2">
+                <span className="text-muted-foreground shrink-0">{t('customer')}:</span>
+                <span className="font-medium text-right break-words text-[11px] md:text-sm">{wo.customer_name}</span>
               </div>
             )}
             {wo.external_order_number && (
-              <div className="flex justify-between items-center py-1">
-                <span className="text-muted-foreground">{t('orderNumber')}:</span>
-                <span className="font-medium font-data">{wo.external_order_number}</span>
+              <div className="flex justify-between items-center py-0.5 md:py-1 gap-2">
+                <span className="text-muted-foreground shrink-0">{t('orderNumber')}:</span>
+                <span className="font-medium font-data text-[11px] md:text-sm">{wo.external_order_number}</span>
               </div>
             )}
             {wo.order_value && (
-              <div className="flex justify-between items-center py-1">
-                <span className="text-muted-foreground">{t('value')}:</span>
-                <span className="font-semibold">€{wo.order_value.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}</span>
+              <div className="flex justify-between items-center py-0.5 md:py-1 gap-2">
+                <span className="text-muted-foreground shrink-0">{t('value')}:</span>
+                <span className="font-semibold text-[11px] md:text-sm">€{wo.order_value.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}</span>
               </div>
             )}
             {wo.start_date && (
-              <div className="flex justify-between items-center py-1">
-                <span className="text-muted-foreground">{language === 'nl' ? 'Start' : 'Start'}:</span>
-                <span className="font-medium">{formatDate(wo.start_date)}</span>
+              <div className="flex justify-between items-center py-0.5 md:py-1 gap-2">
+                <span className="text-muted-foreground shrink-0">{language === 'nl' ? 'Start' : 'Start'}:</span>
+                <span className="font-medium text-[11px] md:text-sm">{formatDate(wo.start_date)}</span>
               </div>
             )}
             {wo.shipping_date && (
-              <div className={`flex justify-between items-center py-1 ${shippingOverdue ? 'text-destructive' : shippingApproaching ? 'text-warning' : ''}`}>
-                <span className="text-muted-foreground">{language === 'nl' ? 'Verzending' : 'Ship'}:</span>
-                <span className="font-medium">{formatDate(wo.shipping_date)}</span>
+              <div className={`flex justify-between items-center py-0.5 md:py-1 gap-2 ${shippingOverdue ? 'text-destructive' : shippingApproaching ? 'text-warning' : ''}`}>
+                <span className="text-muted-foreground shrink-0">{language === 'nl' ? 'Verzending' : 'Ship'}:</span>
+                <span className="font-medium text-[11px] md:text-sm">{formatDate(wo.shipping_date)}</span>
               </div>
             )}
             {wo.profiles && (
-              <div className="flex justify-between items-center py-1">
-                <span className="text-muted-foreground">{t('createdBy')}:</span>
-                <span className="font-medium truncate ml-2 max-w-[120px]">{wo.profiles.full_name}</span>
+              <div className="flex justify-between items-center py-0.5 md:py-1 gap-2">
+                <span className="text-muted-foreground shrink-0">{t('createdBy')}:</span>
+                <span className="font-medium text-right break-words text-[11px] md:text-sm">{wo.profiles.full_name}</span>
               </div>
             )}
           </div>
@@ -786,7 +786,7 @@ const WorkOrders = () => {
             )
           ) : groupBy === 'none' ? (
             viewMode === 'cards' ? (
-              <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              <div className="grid gap-2 md:gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
                 {filteredOrders.map(renderWorkOrderCard)}
               </div>
             ) : (
@@ -821,7 +821,7 @@ const WorkOrders = () => {
                     <CollapsibleContent>
                       <CardContent className="pt-0 pb-3">
                         {viewMode === 'cards' ? (
-                          <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                          <div className="grid gap-2 md:gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
                             {orders.map(renderWorkOrderCard)}
                           </div>
                         ) : (

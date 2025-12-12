@@ -198,13 +198,13 @@
   @media (min-width: 768px) and (max-width: 1024px) {
     /* Better spacing on tablets */
     body {
-      font-size: 18px;
-      line-height: 1.6;
+      font-size: 16px;
+      line-height: 1.5;
     }
 
     /* Ensure dialogs don't take full screen */
     [role="dialog"] {
-      max-width: min(90vw, 600px);
+      max-width: min(90vw, 700px);
     }
   }
 
