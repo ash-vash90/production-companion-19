@@ -25,9 +25,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const checkSessionTimeout = () => {
     const sessionStart = localStorage.getItem(SESSION_START_KEY);
-    if (!sessionStart) return false;
+    // If no session start, don't trigger logout - just set it now
+    if (!sessionStart) {
+      localStorage.setItem(SESSION_START_KEY, Date.now().toString());
+      return false;
+    }
     
     const startTime = parseInt(sessionStart, 10);
+    // Guard against invalid timestamps
+    if (isNaN(startTime) || startTime <= 0) {
+      localStorage.setItem(SESSION_START_KEY, Date.now().toString());
+      return false;
+    }
+    
     const now = Date.now();
     return now - startTime > SESSION_TIMEOUT_MS;
   };
