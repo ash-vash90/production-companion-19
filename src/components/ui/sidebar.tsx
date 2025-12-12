@@ -207,24 +207,16 @@ const Sidebar = React.forwardRef<
         className={cn(
           "fixed inset-y-0 z-10 hidden h-svh w-[--sidebar-width] transition-[left,right,width] duration-200 ease-linear md:flex",
           side === "left"
-            ? "left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]"
-            : "right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]",
-          // Adjust the padding for floating and inset variants.
-          variant === "floating" || variant === "inset"
-            ? "p-2 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4)_+2px)]"
-            : "group-data-[collapsible=icon]:w-[--sidebar-width-icon]",
-          // Only add border for non-floating/inset variants
-          variant !== "floating" && variant !== "inset" && (side === "left" ? "border-r border-sidebar-border" : "border-l border-sidebar-border"),
+            ? "left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)] border-r border-sidebar-border"
+            : "right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)] border-l border-sidebar-border",
+          "group-data-[collapsible=icon]:w-[--sidebar-width-icon]",
           className,
         )}
         {...props}
       >
         <div
           data-sidebar="sidebar"
-          className={cn(
-            "flex h-full w-full flex-col bg-sidebar",
-            (variant === "floating" || variant === "inset") && "rounded-lg border border-sidebar-border shadow"
-          )}
+          className="flex h-full w-full flex-col bg-sidebar"
         >
           {children}
         </div>
