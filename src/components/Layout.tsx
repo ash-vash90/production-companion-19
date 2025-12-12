@@ -33,8 +33,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             </div>
           </header>
           
-          <main className="flex-1 p-3 md:p-4 lg:p-6">
-            {children}
+          <main className="flex-1 px-3 md:px-4 lg:px-6 py-3 md:py-4 lg:py-6 w-full overflow-x-hidden">
+            <div className="mx-auto w-full max-w-6xl">
+              {children}
+            </div>
           </main>
         </SidebarInset>
       </div>
