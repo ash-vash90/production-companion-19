@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { isValidWebhookUrl } from '@/lib/validation';
 
 interface WebhookPayload {
   event: string;
@@ -20,6 +21,13 @@ async function sendWebhookWithRetry(
   payload: WebhookPayload,
   maxAttempts = 3
 ): Promise<{ success: boolean; error?: string }> {
+  // Validate webhook URL to prevent SSRF attacks
+  const urlValidation = isValidWebhookUrl(webhook.webhook_url);
+  if (!urlValidation.valid) {
+    console.error(`Webhook ${webhook.name} blocked: ${urlValidation.error}`);
+    return { success: false, error: urlValidation.error };
+  }
+
   const payloadString = JSON.stringify(payload);
 
   // Retry with exponential backoff: 2s, 4s, 8s
