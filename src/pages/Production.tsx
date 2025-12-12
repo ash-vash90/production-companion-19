@@ -301,14 +301,14 @@ const Production = () => {
   return (
     <ProtectedRoute>
       <Layout>
-        <div className="space-y-4 lg:space-y-6 w-full max-w-4xl mx-auto">
-          <div className="flex items-center gap-3 sm:gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/work-orders')} className="h-9 w-9 sm:h-10 sm:w-10 md:h-12 md:w-12 shrink-0">
-              <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" />
+        <div className="space-y-4 lg:space-y-6 p-2 md:p-4 max-w-4xl mx-auto">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="icon" onClick={() => navigate('/work-orders')} className="h-10 w-10 md:h-12 md:w-12">
+              <ArrowLeft className="h-5 w-5 md:h-6 md:w-6" />
             </Button>
-            <div className="space-y-0.5 sm:space-y-1 min-w-0 flex-1">
-              <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold tracking-tight truncate">{workOrder.wo_number}</h1>
-              <p className="text-xs sm:text-sm md:text-base lg:text-lg text-muted-foreground font-data truncate">
+            <div className="space-y-1 flex-1">
+              <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold tracking-tight">{workOrder.wo_number}</h1>
+              <p className="text-sm md:text-base lg:text-lg text-muted-foreground font-data">
                 {workOrder.product_type} • Batch: {workOrder.batch_size}
               </p>
             </div>
@@ -316,19 +316,19 @@ const Production = () => {
 
           {/* Editable Work Order Details Section */}
           {workOrder.status !== 'completed' && (
-            <Card className="shadow-sm border-border/60">
-              <CardContent className="p-3 sm:p-4 md:p-6">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+            <Card className="shadow-sm">
+              <CardContent className="py-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {/* Customer Name */}
-                  <div className="space-y-1.5">
-                    <label className="text-xs sm:text-sm text-muted-foreground flex items-center gap-1.5">
-                      <User className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                  <div className="space-y-1">
+                    <label className="text-xs text-muted-foreground flex items-center gap-1">
+                      <User className="h-3 w-3" />
                       {t('customer')}
                     </label>
                     <Input
                       value={workOrder.customer_name || ''}
                       placeholder={t('enterCustomerName')}
-                      className="h-10 sm:h-9 text-sm sm:text-base"
+                      className="h-8 text-sm"
                       onChange={async (e) => {
                         const newValue = e.target.value;
                         try {
@@ -346,15 +346,15 @@ const Production = () => {
                   </div>
 
                   {/* External Order Number */}
-                  <div className="space-y-1.5">
-                    <label className="text-xs sm:text-sm text-muted-foreground flex items-center gap-1.5">
-                      <FileTextIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                  <div className="space-y-1">
+                    <label className="text-xs text-muted-foreground flex items-center gap-1">
+                      <FileTextIcon className="h-3 w-3" />
                       {t('orderNumber')}
                     </label>
                     <Input
                       value={workOrder.external_order_number || ''}
                       placeholder={t('enterOrderNumber')}
-                      className="h-10 sm:h-9 text-sm sm:text-base font-data"
+                      className="h-8 text-sm font-data"
                       onChange={async (e) => {
                         const newValue = e.target.value;
                         try {
@@ -372,16 +372,16 @@ const Production = () => {
                   </div>
 
                   {/* Order Value */}
-                  <div className="space-y-1.5">
-                    <label className="text-xs sm:text-sm text-muted-foreground flex items-center gap-1.5">
-                      <DollarSign className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                  <div className="space-y-1">
+                    <label className="text-xs text-muted-foreground flex items-center gap-1">
+                      <DollarSign className="h-3 w-3" />
                       {t('value')}
                     </label>
                     <Input
                       type="number"
                       value={workOrder.order_value || ''}
                       placeholder="0.00"
-                      className="h-10 sm:h-9 text-sm sm:text-base"
+                      className="h-8 text-sm"
                       onChange={async (e) => {
                         const newValue = e.target.value ? parseFloat(e.target.value) : null;
                         try {
@@ -399,14 +399,14 @@ const Production = () => {
                   </div>
 
                   {/* Start Date */}
-                  <div className="space-y-1.5">
-                    <label className="text-xs sm:text-sm text-muted-foreground flex items-center gap-1.5">
-                      <CalendarIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                  <div className="space-y-1">
+                    <label className="text-xs text-muted-foreground flex items-center gap-1">
+                      <CalendarIcon className="h-3 w-3" />
                       {t('startDate')}
                     </label>
                     <Popover>
                       <PopoverTrigger asChild>
-                        <Button variant="outline" size="sm" className="w-full h-10 sm:h-9 justify-start text-left font-normal text-sm sm:text-base">
+                        <Button variant="outline" size="sm" className="w-full h-8 justify-start text-left font-normal text-sm">
                           {workOrder.start_date ? formatDate(workOrder.start_date) : t('setDate')}
                         </Button>
                       </PopoverTrigger>
@@ -436,14 +436,14 @@ const Production = () => {
                   </div>
 
                   {/* Shipping Date */}
-                  <div className="space-y-1.5">
-                    <label className="text-xs sm:text-sm text-muted-foreground flex items-center gap-1.5">
-                      <CalendarIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                  <div className="space-y-1">
+                    <label className="text-xs text-muted-foreground flex items-center gap-1">
+                      <CalendarIcon className="h-3 w-3" />
                       {t('shippingDate')}
                     </label>
                     <Popover>
                       <PopoverTrigger asChild>
-                        <Button variant="outline" size="sm" className="w-full h-10 sm:h-9 justify-start text-left font-normal text-sm sm:text-base">
+                        <Button variant="outline" size="sm" className="w-full h-8 justify-start text-left font-normal text-sm">
                           {workOrder.shipping_date ? formatDate(workOrder.shipping_date) : t('setDate')}
                         </Button>
                       </PopoverTrigger>
@@ -476,79 +476,79 @@ const Production = () => {
             </Card>
           )}
 
-          <Card className="shadow-sm border-border/60">
-            <CardHeader className="p-3 sm:p-4 md:p-6 pb-2 sm:pb-3">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3">
-                <div className="space-y-0.5">
-                  <CardTitle className="text-lg sm:text-xl md:text-2xl">{t('production')} {t('items')}</CardTitle>
-                  <CardDescription className="text-xs sm:text-sm">{t('trackItems')}</CardDescription>
+          <Card className="shadow-sm">
+            <CardHeader className="pb-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <CardTitle className="text-xl md:text-2xl">{t('production')} {t('items')}</CardTitle>
+                  <CardDescription className="text-sm mt-1">{t('trackItems')}</CardDescription>
                 </div>
-                <Badge className={`${getStatusColor(workOrder.status)} h-7 sm:h-8 md:h-10 px-3 sm:px-4 text-xs sm:text-sm md:text-base font-semibold self-start sm:self-center whitespace-nowrap`}>
+                <Badge className={`${getStatusColor(workOrder.status)} h-8 md:h-10 px-4 text-sm md:text-base font-semibold self-start`}>
                   {formatStatus(workOrder.status, language as 'en' | 'nl')}
                 </Badge>
               </div>
             </CardHeader>
-            <CardContent className="p-3 sm:p-4 md:p-6 pt-2 sm:pt-3">
-              <div className="space-y-2 sm:space-y-2.5 md:space-y-3">
+            <CardContent>
+              <div className="space-y-2 md:space-y-3">
                 {items.map((item) => (
                   <div
                     key={item.id}
-                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3 p-3 sm:p-4 border rounded-lg hover:bg-accent/50 transition-all cursor-pointer active:scale-[0.99] hover:shadow-sm"
-                    onClick={() => navigate(`/production/step/${item.id}`)}
-                  >
-                    <div className="flex items-center gap-2.5 sm:gap-3 md:gap-4 min-w-0">
-                      <div className="flex flex-col items-center justify-center h-9 w-9 sm:h-10 sm:w-10 md:h-12 md:w-12 rounded-lg bg-primary text-primary-foreground font-bold text-sm sm:text-base md:text-lg shadow-sm shrink-0">
-                        {item.position_in_batch}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="font-data text-sm sm:text-base font-semibold truncate">{item.serial_number}</p>
-                        <p className="text-xs sm:text-sm text-muted-foreground font-data truncate">
-                          {item.product_type || workOrder.product_type} • {t('step')} {item.current_step}
-                        </p>
-                      </div>
+                    className="flex items-center justify-between p-3 md:p-4 border rounded-lg hover:bg-accent/50 transition-all cursor-pointer active:scale-[0.99] hover:shadow-sm"
+                  onClick={() => navigate(`/production/step/${item.id}`)}
+                >
+                  <div className="flex items-center gap-3 md:gap-4">
+                    <div className="flex flex-col items-center justify-center h-10 w-10 md:h-12 md:w-12 rounded-lg bg-primary text-primary-foreground font-bold text-base md:text-lg shadow-sm">
+                      {item.position_in_batch}
                     </div>
-                    <div className="flex items-center gap-1.5 sm:gap-2 pl-11 sm:pl-0 shrink-0">
-                      <Badge className={`${getStatusColor(item.status)} h-6 sm:h-7 md:h-8 px-2 sm:px-2.5 md:px-3 text-[10px] sm:text-xs md:text-sm font-medium whitespace-nowrap`}>
-                        {formatStatus(item.status, language as 'en' | 'nl')}
-                      </Badge>
-                      {item.status === 'completed' && (
-                        <>
-                          <Button
-                            size="icon"
-                            variant="outline"
-                            className="h-7 w-7 sm:h-8 sm:w-8 md:h-10 md:w-10"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handlePrintLabel(item.serial_number, item.operator_initials, item.product_type);
-                            }}
-                          >
-                            <Printer className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5" />
-                          </Button>
-                          <Button
-                            size="icon"
-                            variant={item.certificate_generated ? "default" : "outline"}
-                            className="h-7 w-7 sm:h-8 sm:w-8 md:h-10 md:w-10"
-                            onClick={(e) => handleGenerateCertificate(item.id, item.serial_number, e)}
-                            disabled={item.certificate_generated}
-                          >
-                            <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5" />
-                          </Button>
-                        </>
-                      )}
-                      {(item.product_type === 'SENSOR' || (!item.product_type && workOrder.product_type === 'SENSOR')) && item.status === 'in_progress' && (
+                  <div>
+                      <p className="font-data text-sm md:text-base font-semibold">{item.serial_number}</p>
+                      <p className="text-xs md:text-sm text-muted-foreground font-data">
+                        {item.product_type || workOrder.product_type} • {t('step')} {item.current_step}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge className={`${getStatusColor(item.status)} h-6 md:h-8 px-2 md:px-3 text-xs md:text-sm font-medium`}>
+                      {formatStatus(item.status, language as 'en' | 'nl')}
+                    </Badge>
+                     {item.status === 'completed' && (
+                      <>
                         <Button
-                          size="sm"
+                          size="icon"
                           variant="outline"
-                          className="h-7 sm:h-8 md:h-10 px-2 sm:px-3 text-[10px] sm:text-xs md:text-sm whitespace-nowrap"
+                          className="h-8 w-8 md:h-10 md:w-10"
                           onClick={(e) => {
                             e.stopPropagation();
-                            navigate(`/production/sensor/${item.id}`);
+                            handlePrintLabel(item.serial_number, item.operator_initials, item.product_type);
                           }}
                         >
-                          Sensor Workflow
+                          <Printer className="h-4 w-4 md:h-5 md:w-5" />
                         </Button>
-                      )}
-                    </div>
+                        <Button
+                          size="icon"
+                          variant={item.certificate_generated ? "default" : "outline"}
+                          className="h-8 w-8 md:h-10 md:w-10"
+                          onClick={(e) => handleGenerateCertificate(item.id, item.serial_number, e)}
+                          disabled={item.certificate_generated}
+                        >
+                          <FileText className="h-4 w-4 md:h-5 md:w-5" />
+                        </Button>
+                      </>
+                     )}
+                     {(item.product_type === 'SENSOR' || (!item.product_type && workOrder.product_type === 'SENSOR')) && item.status === 'in_progress' && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 md:h-10 px-3 text-xs md:text-sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/production/sensor/${item.id}`);
+                        }}
+                      >
+                        Sensor Workflow
+                      </Button>
+                     )}
+                  </div>
                   </div>
                 ))}
               </div>

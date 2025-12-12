@@ -73,26 +73,25 @@ export function ReportFilters({
   const hasActiveFilters = activeFilterCount > 0 || groupBy !== 'none';
 
   return (
-    <div className="flex flex-col gap-3 sm:gap-2">
-      {/* Search and Filter Row */}
-      <div className="flex items-center gap-2 w-full">
+    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+      <div className="flex items-center gap-2">
         {/* Search Input */}
-        <div className="relative flex-1 min-w-0 sm:flex-none sm:w-[240px] md:w-[280px]">
+        <div className="relative w-[200px] sm:w-[240px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder={t('searchWorkOrders')}
             value={filters.searchTerm}
             onChange={(e) => updateFilter('searchTerm', e.target.value)}
-            className="pl-9 h-10 sm:h-9 text-sm w-full"
+            className="pl-9 h-9 text-sm"
           />
           {filters.searchTerm && (
             <Button
               variant="ghost"
               size="icon"
-              className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 sm:h-6 sm:w-6"
+              className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6"
               onClick={() => updateFilter('searchTerm', '')}
             >
-              <X className="h-3.5 w-3.5 sm:h-3 sm:w-3" />
+              <X className="h-3 w-3" />
             </Button>
           )}
         </div>
@@ -100,7 +99,7 @@ export function ReportFilters({
         {/* Filter Popover */}
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger asChild>
-            <Button variant="outline" size="sm" className="h-10 sm:h-9 gap-1.5 sm:gap-2 px-3 shrink-0">
+            <Button variant="outline" size="sm" className="h-9 gap-2">
               <Filter className="h-4 w-4" />
               <span className="hidden sm:inline">{t('filter')}</span>
               {activeFilterCount > 0 && (
@@ -236,59 +235,56 @@ export function ReportFilters({
         </Popover>
 
         {hasActiveFilters && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-10 sm:h-8 text-xs text-muted-foreground px-2 sm:px-3 shrink-0"
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="h-8 text-xs text-muted-foreground"
             onClick={clearAllFilters}
           >
-            <RotateCcw className="h-3.5 w-3.5 sm:h-3 sm:w-3 sm:mr-1" />
-            <span className="hidden sm:inline">{t('reset')}</span>
+            <RotateCcw className="h-3 w-3 mr-1" />
+            {t('reset')}
           </Button>
         )}
-      </div>
 
-      {/* Grouping and Active Filters Row */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-3">
-        {/* Grouping Select */}
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <Layers className="h-4 w-4 sm:h-3.5 sm:w-3.5 text-muted-foreground shrink-0" />
-          <Select value={groupBy} onValueChange={onGroupByChange}>
-            <SelectTrigger className="h-10 sm:h-8 flex-1 sm:w-[160px] text-sm sm:text-xs">
-              <SelectValue placeholder={t('groupBy')} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="none">{t('noGrouping') || 'No Grouping'}</SelectItem>
-              <SelectItem value="status">{t('byStatus') || 'By Status'}</SelectItem>
-              <SelectItem value="product">{t('byProduct') || 'By Product'}</SelectItem>
-              <SelectItem value="customer">{t('byCustomer') || 'By Customer'}</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Active filter badges - shown inline on larger screens */}
+        {/* Active filter badges - shown inline */}
         {activeFilterCount > 0 && (
-          <div className="hidden md:flex items-center gap-1.5 flex-wrap">
+          <div className="hidden md:flex items-center gap-1 flex-wrap">
             {filters.statusFilter !== 'all' && (
-              <Badge variant="secondary" className="text-xs h-6 gap-1 cursor-pointer hover:bg-secondary/80">
+              <Badge variant="secondary" className="text-xs h-6 gap-1">
                 {t(filters.statusFilter as any)}
-                <X className="h-3 w-3" onClick={() => updateFilter('statusFilter', 'all')} />
+                <X className="h-3 w-3 cursor-pointer" onClick={() => updateFilter('statusFilter', 'all')} />
               </Badge>
             )}
             {filters.productFilter !== 'all' && (
-              <Badge variant="secondary" className="text-xs h-6 gap-1 cursor-pointer hover:bg-secondary/80">
+              <Badge variant="secondary" className="text-xs h-6 gap-1">
                 {filters.productFilter.replace('_', ' ')}
-                <X className="h-3 w-3" onClick={() => updateFilter('productFilter', 'all')} />
+                <X className="h-3 w-3 cursor-pointer" onClick={() => updateFilter('productFilter', 'all')} />
               </Badge>
             )}
             {filters.customerFilter !== 'all' && (
-              <Badge variant="secondary" className="text-xs h-6 gap-1 cursor-pointer hover:bg-secondary/80">
+              <Badge variant="secondary" className="text-xs h-6 gap-1">
                 {filters.customerFilter}
-                <X className="h-3 w-3" onClick={() => updateFilter('customerFilter', 'all')} />
+                <X className="h-3 w-3 cursor-pointer" onClick={() => updateFilter('customerFilter', 'all')} />
               </Badge>
             )}
           </div>
         )}
+      </div>
+
+      {/* Grouping Select */}
+      <div className="flex items-center gap-2">
+        <Layers className="h-3.5 w-3.5 text-muted-foreground" />
+        <Select value={groupBy} onValueChange={onGroupByChange}>
+          <SelectTrigger className="h-8 w-[140px] text-xs">
+            <SelectValue placeholder={t('groupBy')} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="none">{t('noGrouping') || 'No Grouping'}</SelectItem>
+            <SelectItem value="status">{t('byStatus') || 'By Status'}</SelectItem>
+            <SelectItem value="product">{t('byProduct') || 'By Product'}</SelectItem>
+            <SelectItem value="customer">{t('byCustomer') || 'By Customer'}</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
     </div>
   );

@@ -16,9 +16,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   return (
     <SidebarProvider defaultOpen={true}>
-      <div className="flex min-h-screen w-full bg-background">
+      <div className="flex min-h-screen w-full bg-background overflow-x-hidden">
         <AppSidebar />
-        <SidebarInset className="flex flex-col">
+        <SidebarInset className="flex flex-col overflow-x-hidden">
           {/* Mobile Header - visible on mobile/tablet */}
           <MobileHeader onSearchClick={() => setSearchOpen(true)} />
           
