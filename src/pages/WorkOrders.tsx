@@ -690,8 +690,9 @@ const WorkOrders = () => {
           />
 
           {/* Filters and Grouping Bar */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
+          <div className="flex flex-col gap-3">
+            {/* Search and Filter Row */}
+            <div className="flex items-center gap-2 w-full">
               <WorkOrderFilters
                 filters={filters}
                 onFiltersChange={setFilters}
@@ -700,26 +701,26 @@ const WorkOrders = () => {
                 createdMonths={createdMonths}
               />
               {hasActiveFilters && (
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="h-8 text-xs text-muted-foreground"
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-10 sm:h-8 text-xs text-muted-foreground px-2 sm:px-3 shrink-0"
                   onClick={resetFilters}
                 >
-                  <RotateCcw className="h-3 w-3 mr-1" />
-                  {t('reset')}
+                  <RotateCcw className="h-3.5 w-3.5 sm:h-3 sm:w-3 sm:mr-1" />
+                  <span className="hidden sm:inline">{t('reset')}</span>
                 </Button>
               )}
             </div>
-            
-            {/* View Toggle and Grouping */}
-            <div className="flex items-center gap-3">
+
+            {/* View Toggle and Grouping Row */}
+            <div className="flex items-center justify-between gap-2 sm:gap-3">
               {/* View Mode Toggle */}
-              <div className="flex items-center border rounded-md">
+              <div className="flex items-center border rounded-md shrink-0">
                 <Button
                   variant={viewMode === 'cards' ? 'secondary' : 'ghost'}
                   size="sm"
-                  className="h-8 px-2 rounded-r-none"
+                  className="h-9 sm:h-8 px-2.5 sm:px-2 rounded-r-none"
                   onClick={() => setViewMode('cards')}
                 >
                   <LayoutGrid className="h-4 w-4" />
@@ -727,18 +728,18 @@ const WorkOrders = () => {
                 <Button
                   variant={viewMode === 'table' ? 'secondary' : 'ghost'}
                   size="sm"
-                  className="h-8 px-2 rounded-l-none"
+                  className="h-9 sm:h-8 px-2.5 sm:px-2 rounded-l-none"
                   onClick={() => setViewMode('table')}
                 >
                   <Table className="h-4 w-4" />
                 </Button>
               </div>
-              
+
               {/* Grouping Select */}
-              <div className="flex items-center gap-2">
-                <Layers className="h-3.5 w-3.5 text-muted-foreground" />
+              <div className="flex items-center gap-2 flex-1 sm:flex-initial justify-end">
+                <Layers className="h-4 w-4 sm:h-3.5 sm:w-3.5 text-muted-foreground shrink-0" />
                 <Select value={groupBy} onValueChange={(v) => setGroupBy(v as GroupByOption)}>
-                  <SelectTrigger className="h-8 w-[140px] text-xs">
+                  <SelectTrigger className="h-9 sm:h-8 flex-1 sm:w-[140px] max-w-[180px] text-sm sm:text-xs">
                     <SelectValue placeholder={t('groupBy')} />
                   </SelectTrigger>
                   <SelectContent>
