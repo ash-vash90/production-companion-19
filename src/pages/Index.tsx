@@ -81,34 +81,26 @@ const Index = () => {
   return (
     <ProtectedRoute>
       <Layout>
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6 w-full max-w-full overflow-hidden">
           {/* Header with greeting and weather */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <h1 className="text-xl md:text-2xl lg:text-3xl font-semibold tracking-tight">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4">
+            <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-semibold tracking-tight">
               {getGreetingMessage()}, {getFirstName()}
             </h1>
             <WeatherWidget />
           </div>
 
           {/* Top row: Today's Schedule and Active Colleagues */}
-          <div className="grid gap-4 md:gap-6 grid-cols-1 md:grid-cols-2">
-            <div className="min-w-0">
-              <TodaysSchedule />
-            </div>
-            <div className="min-w-0">
-              <ActiveOperators />
-            </div>
+          <div className="grid gap-3 sm:gap-4 md:gap-6 grid-cols-1 md:grid-cols-2">
+            <TodaysSchedule />
+            <ActiveOperators />
           </div>
 
-          {/* Work Orders - full width on mobile/tablet */}
-          <div className="min-w-0 overflow-hidden">
-            <ProductionOverview />
-          </div>
+          {/* Work Orders - full width */}
+          <ProductionOverview />
 
-          {/* Recent Activity - full width on mobile/tablet */}
-          <div className="min-w-0 overflow-hidden">
-            <RecentActivity />
-          </div>
+          {/* Recent Activity - full width */}
+          <RecentActivity />
         </div>
       </Layout>
     </ProtectedRoute>

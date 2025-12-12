@@ -177,66 +177,68 @@ export function ProductionOverview() {
 
   return (
     <>
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-          <div className="flex items-center gap-3">
-            <CardTitle className="text-base">{t('activeWorkOrdersTitle')}</CardTitle>
-            <Badge variant="warning">{inProgressCount}</Badge>
+      <Card className="w-full">
+        <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-2 sm:space-y-0 pb-3 sm:pb-4 px-3 sm:px-6">
+          <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+            <CardTitle className="text-sm sm:text-base">{t('activeWorkOrdersTitle')}</CardTitle>
+            <Badge variant="warning" className="text-xs">{inProgressCount}</Badge>
             {plannedCount > 0 && !showAll && (
-              <span className="text-sm text-muted-foreground">
+              <span className="text-xs sm:text-sm text-muted-foreground">
                 +{plannedCount} {language === 'nl' ? 'gepland' : 'planned'}
               </span>
             )}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 w-full sm:w-auto">
             {(plannedCount > 0 || showAll) && (
               <Button 
                 variant="ghost" 
                 size="sm"
+                className="text-xs sm:text-sm h-8"
                 onClick={() => setShowAll(!showAll)}
               >
-                <Eye className="h-4 w-4 mr-1.5" />
+                <Eye className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1" />
                 {showAll ? (language === 'nl' ? 'Actief' : 'Active') : (language === 'nl' ? 'Alles' : 'All')}
               </Button>
             )}
-            <Button variant="default" size="sm" onClick={() => setDialogOpen(true)}>
-              <Plus className="mr-1.5 h-4 w-4" />
-              {t('createWorkOrder')}
+            <Button variant="default" size="sm" className="text-xs sm:text-sm h-8 ml-auto sm:ml-0" onClick={() => setDialogOpen(true)}>
+              <Plus className="mr-1 h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">{t('createWorkOrder')}</span>
+              <span className="sm:hidden">{language === 'nl' ? 'Nieuw' : 'New'}</span>
             </Button>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-3 sm:px-6">
           {displayedOrders.length > 0 ? (
-            <div className="space-y-2">
+            <div className="space-y-1.5 sm:space-y-2">
               {displayedOrders.map((wo) => (
                 <div
                   key={wo.id}
                   onClick={() => navigate(`/production/${wo.id}`)}
-                  className="flex items-center justify-between rounded-lg border bg-card p-3 transition-all cursor-pointer hover:bg-accent/50 hover:border-primary/50"
+                  className="flex items-center justify-between rounded-lg border bg-card p-2 sm:p-3 transition-all cursor-pointer hover:bg-accent/50 hover:border-primary/50"
                 >
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono text-sm font-semibold">{wo.wo_number}</span>
-                      <Badge variant={getStatusVariant(wo.status)}>
+                    <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                      <span className="font-mono text-xs sm:text-sm font-semibold">{wo.wo_number}</span>
+                      <Badge variant={getStatusVariant(wo.status)} className="text-[10px] sm:text-xs">
                         {getStatusLabel(wo.status)}
                       </Badge>
                     </div>
-                    <div className="mt-1 text-sm text-muted-foreground truncate">
+                    <div className="mt-0.5 sm:mt-1 text-xs sm:text-sm text-muted-foreground truncate">
                       {wo.productBreakdown.length > 0 
                         ? formatProductBreakdownText(wo.productBreakdown)
                         : `${wo.batch_size} items`
                       }
                       {wo.profiles?.full_name && (
-                        <span className="ml-2 opacity-70">• {wo.profiles.full_name}</span>
+                        <span className="ml-1.5 sm:ml-2 opacity-70 hidden sm:inline">• {wo.profiles.full_name}</span>
                       )}
                     </div>
                   </div>
-                  <ExternalLink className="h-4 w-4 text-muted-foreground shrink-0 ml-3" />
+                  <ExternalLink className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground shrink-0 ml-2 sm:ml-3" />
                 </div>
               ))}
             </div>
           ) : (
-            <div className="py-8 text-center text-sm text-muted-foreground">
+            <div className="py-4 sm:py-8 text-center text-xs sm:text-sm text-muted-foreground">
               {showAll ? t('noActiveWorkOrders') : (language === 'nl' ? 'Geen actieve werkorders' : 'No work orders in progress')}
             </div>
           )}

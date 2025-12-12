@@ -141,40 +141,40 @@ export const ActiveOperators = memo(function ActiveOperators() {
   }
 
   return (
-    <Card className="h-full flex flex-col">
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-base">
-          <Users className="h-5 w-5" />
-          {language === 'nl' ? 'Je Collega\'s' : 'Your Team'}
+    <Card className="h-full flex flex-col w-full">
+      <CardHeader className="pb-2 sm:pb-3 px-3 sm:px-6">
+        <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
+          <Users className="h-4 w-4 sm:h-5 sm:w-5" />
+          <span className="truncate">{language === 'nl' ? 'Je Collega\'s' : 'Your Team'}</span>
           {onlineUsers.length > 0 && (
-            <Badge variant="success" className="ml-auto">
-              <Circle className="h-2 w-2 mr-1 fill-current" />
-              {onlineUsers.length} {language === 'nl' ? 'online' : 'online'}
+            <Badge variant="success" className="ml-auto text-[10px] sm:text-xs">
+              <Circle className="h-1.5 w-1.5 sm:h-2 sm:w-2 mr-1 fill-current" />
+              {onlineUsers.length}
             </Badge>
           )}
         </CardTitle>
       </CardHeader>
-      <CardContent className="flex-1 pt-0">
+      <CardContent className="flex-1 pt-0 px-3 sm:px-6">
         {onlineUsers.length > 0 ? (
-          <div className="space-y-2">
+          <div className="space-y-1.5 sm:space-y-2">
             {onlineUsers.slice(0, 6).map((colleague) => (
               <div
                 key={colleague.id}
-                className="flex items-center gap-3 rounded-lg border bg-card p-3 hover:bg-muted/30 transition-colors"
+                className="flex items-center gap-2 sm:gap-3 rounded-lg border bg-card p-2 sm:p-3 hover:bg-muted/30 transition-colors"
               >
-                <div className="relative">
-                  <Avatar className="h-9 w-9">
+                <div className="relative shrink-0">
+                  <Avatar className="h-7 w-7 sm:h-9 sm:w-9">
                     <AvatarImage src={colleague.avatar_url || undefined} />
-                    <AvatarFallback className="text-xs bg-primary/10 text-primary">
+                    <AvatarFallback className="text-[10px] sm:text-xs bg-primary/10 text-primary">
                       {getInitials(colleague.name)}
                     </AvatarFallback>
                   </Avatar>
-                  <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-success border-2 border-background" />
+                  <span className="absolute bottom-0 right-0 h-2 w-2 sm:h-3 sm:w-3 rounded-full bg-success border-2 border-background" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="font-medium text-sm truncate">{colleague.name}</div>
+                  <div className="font-medium text-xs sm:text-sm truncate">{colleague.name}</div>
                   {colleague.role && (
-                    <Badge variant={getRoleBadgeVariant(colleague.role)} className="text-xs mt-0.5">
+                    <Badge variant={getRoleBadgeVariant(colleague.role)} className="text-[10px] sm:text-xs mt-0.5">
                       {getRoleLabel(colleague.role)}
                     </Badge>
                   )}
@@ -183,7 +183,7 @@ export const ActiveOperators = memo(function ActiveOperators() {
             ))}
           </div>
         ) : (
-          <div className="py-8 text-center text-sm text-muted-foreground">
+          <div className="py-4 sm:py-8 text-center text-xs sm:text-sm text-muted-foreground">
             {language === 'nl' ? 'Niemand anders is online' : 'No one else is online'}
           </div>
         )}

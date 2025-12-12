@@ -142,27 +142,27 @@ export const TodaysSchedule = memo(function TodaysSchedule() {
   }
 
   return (
-    <Card className="h-full flex flex-col">
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-base min-w-0">
-          <Calendar className="h-5 w-5 shrink-0" />
+    <Card className="h-full flex flex-col w-full">
+      <CardHeader className="pb-2 sm:pb-3 px-3 sm:px-6">
+        <CardTitle className="flex items-center gap-2 text-sm sm:text-base min-w-0">
+          <Calendar className="h-4 w-4 sm:h-5 sm:w-5 shrink-0" />
           <span className="truncate">{language === 'nl' ? 'Planning Vandaag' : "Today's Schedule"}</span>
           {workOrders.length > 0 && (
-            <Badge variant="secondary" className="shrink-0">
+            <Badge variant="secondary" className="shrink-0 text-xs">
               {workOrders.length}
             </Badge>
           )}
         </CardTitle>
       </CardHeader>
-      <CardContent className="flex-1 flex flex-col pt-0">
+      <CardContent className="flex-1 flex flex-col pt-0 px-3 sm:px-6">
         {workOrders.length === 0 ? (
-          <div className="text-sm text-muted-foreground py-6 text-center flex-1 flex items-center justify-center">
+          <div className="text-xs sm:text-sm text-muted-foreground py-4 sm:py-6 text-center flex-1 flex items-center justify-center">
             {language === 'nl' 
               ? 'Geen werkorders gepland voor vandaag' 
               : 'No work orders scheduled for today'}
           </div>
         ) : (
-          <div className="space-y-2 flex-1">
+          <div className="space-y-1.5 sm:space-y-2 flex-1">
             {workOrders.slice(0, 4).map((wo) => {
               const productBreakdown = wo.items ? getProductBreakdown(wo.items) : [];
               const breakdownText = formatProductBreakdownText(productBreakdown);
@@ -172,31 +172,31 @@ export const TodaysSchedule = memo(function TodaysSchedule() {
                 <div
                   key={wo.id}
                   className={cn(
-                    "flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors cursor-pointer",
+                    "flex items-center justify-between p-2 sm:p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors cursor-pointer",
                     urgency === 'overdue' && "border-destructive/50 bg-destructive/5",
                     urgency === 'urgent' && "border-warning/50 bg-warning/5"
                   )}
                   onClick={() => navigate(`/production/${wo.id}`)}
                 >
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-sm">{wo.wo_number}</span>
-                      <Badge variant={getStatusVariant(wo.status) as any} className="text-xs">
+                    <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                      <span className="font-medium text-xs sm:text-sm">{wo.wo_number}</span>
+                      <Badge variant={getStatusVariant(wo.status) as any} className="text-[10px] sm:text-xs">
                         {formatStatus(wo.status)}
                       </Badge>
                       {urgency === 'overdue' && (
-                        <AlertTriangle className="h-3.5 w-3.5 text-destructive" />
+                        <AlertTriangle className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-destructive" />
                       )}
                       {urgency === 'urgent' && (
-                        <Clock className="h-3.5 w-3.5 text-warning" />
+                        <Clock className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-warning" />
                       )}
                     </div>
-                    <div className="flex items-center gap-1.5 mt-1 text-sm text-muted-foreground">
-                      <Package className="h-3.5 w-3.5" />
+                    <div className="flex items-center gap-1 sm:gap-1.5 mt-0.5 sm:mt-1 text-xs sm:text-sm text-muted-foreground">
+                      <Package className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
                       <span className="truncate">{breakdownText || formatProductType(wo.product_type)}</span>
                       {wo.shipping_date && (
                         <span className={cn(
-                          "text-xs ml-auto",
+                          "text-[10px] sm:text-xs ml-auto shrink-0",
                           urgency === 'overdue' && "text-destructive font-medium",
                           urgency === 'urgent' && "text-warning font-medium"
                         )}>
@@ -209,20 +209,20 @@ export const TodaysSchedule = memo(function TodaysSchedule() {
               );
             })}
             {workOrders.length > 4 && (
-              <div className="text-sm text-muted-foreground text-center">
+              <div className="text-xs sm:text-sm text-muted-foreground text-center">
                 +{workOrders.length - 4} {language === 'nl' ? 'meer' : 'more'}
               </div>
             )}
           </div>
         )}
-        <div className="pt-4 mt-auto border-t">
+        <div className="pt-3 sm:pt-4 mt-auto border-t">
           <Button 
             variant="outline" 
             size="sm" 
-            className="w-full"
+            className="w-full text-xs sm:text-sm"
             onClick={() => navigate('/calendar')}
           >
-            <Calendar className="h-4 w-4 mr-2" />
+            <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
             {language === 'nl' ? 'Bekijk kalender' : 'View calendar'}
           </Button>
         </div>
