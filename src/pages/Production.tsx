@@ -11,11 +11,12 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Loader2, ArrowLeft, Package, QrCode, Printer, FileText, CalendarIcon } from 'lucide-react';
+import { Loader2, ArrowLeft, Package, Printer, FileText, CalendarIcon, DollarSign, User, FileTextIcon, Link2 } from 'lucide-react';
 import { generateQualityCertificate } from '@/services/certificateService';
-import { format } from 'date-fns';
+import { format, differenceInDays, parseISO, isBefore } from 'date-fns';
 import QRCodeLib from 'qrcode';
-import { formatStatus } from '@/lib/utils';
+import { formatStatus, formatDate } from '@/lib/utils';
+import { Input } from '@/components/ui/input';
 
 const Production = () => {
   const { itemId } = useParams();
@@ -313,51 +314,163 @@ const Production = () => {
             </div>
           </div>
 
-          {/* Scheduled Date Section - Only for non-completed work orders */}
+          {/* Editable Work Order Details Section */}
           {workOrder.status !== 'completed' && (
             <Card className="shadow-sm">
               <CardContent className="py-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <CalendarIcon className="h-5 w-5 text-muted-foreground" />
-                    <div>
-                      <p className="text-sm font-medium">{t('scheduledDate')}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {workOrder.scheduled_date 
-                          ? format(new Date(workOrder.scheduled_date), 'PPP')
-                          : t('notScheduled')}
-                      </p>
-                    </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {/* Customer Name */}
+                  <div className="space-y-1">
+                    <label className="text-xs text-muted-foreground flex items-center gap-1">
+                      <User className="h-3 w-3" />
+                      {t('customer')}
+                    </label>
+                    <Input
+                      value={workOrder.customer_name || ''}
+                      placeholder={t('enterCustomerName')}
+                      className="h-8 text-sm"
+                      onChange={async (e) => {
+                        const newValue = e.target.value;
+                        try {
+                          const { error } = await supabase
+                            .from('work_orders')
+                            .update({ customer_name: newValue })
+                            .eq('id', workOrder.id);
+                          if (error) throw error;
+                          setWorkOrder({ ...workOrder, customer_name: newValue });
+                        } catch (error: any) {
+                          toast.error(t('error'), { description: error.message });
+                        }
+                      }}
+                    />
                   </div>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="outline" size="sm">
-                        {workOrder.scheduled_date ? t('changeDate') : t('setDate')}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="end">
-                      <Calendar
-                        mode="single"
-                        selected={workOrder.scheduled_date ? new Date(workOrder.scheduled_date) : undefined}
-                        onSelect={async (date) => {
-                          if (date) {
-                            try {
-                              const { error } = await supabase
-                                .from('work_orders')
-                                .update({ scheduled_date: format(date, 'yyyy-MM-dd') })
-                                .eq('id', workOrder.id);
-                              if (error) throw error;
-                              toast.success(t('success'), { description: t('scheduledDateUpdated') });
-                              fetchProductionData();
-                            } catch (error: any) {
-                              toast.error(t('error'), { description: error.message });
+
+                  {/* External Order Number */}
+                  <div className="space-y-1">
+                    <label className="text-xs text-muted-foreground flex items-center gap-1">
+                      <FileTextIcon className="h-3 w-3" />
+                      {t('orderNumber')}
+                    </label>
+                    <Input
+                      value={workOrder.external_order_number || ''}
+                      placeholder={t('enterOrderNumber')}
+                      className="h-8 text-sm font-data"
+                      onChange={async (e) => {
+                        const newValue = e.target.value;
+                        try {
+                          const { error } = await supabase
+                            .from('work_orders')
+                            .update({ external_order_number: newValue })
+                            .eq('id', workOrder.id);
+                          if (error) throw error;
+                          setWorkOrder({ ...workOrder, external_order_number: newValue });
+                        } catch (error: any) {
+                          toast.error(t('error'), { description: error.message });
+                        }
+                      }}
+                    />
+                  </div>
+
+                  {/* Order Value */}
+                  <div className="space-y-1">
+                    <label className="text-xs text-muted-foreground flex items-center gap-1">
+                      <DollarSign className="h-3 w-3" />
+                      {t('value')}
+                    </label>
+                    <Input
+                      type="number"
+                      value={workOrder.order_value || ''}
+                      placeholder="0.00"
+                      className="h-8 text-sm"
+                      onChange={async (e) => {
+                        const newValue = e.target.value ? parseFloat(e.target.value) : null;
+                        try {
+                          const { error } = await supabase
+                            .from('work_orders')
+                            .update({ order_value: newValue })
+                            .eq('id', workOrder.id);
+                          if (error) throw error;
+                          setWorkOrder({ ...workOrder, order_value: newValue });
+                        } catch (error: any) {
+                          toast.error(t('error'), { description: error.message });
+                        }
+                      }}
+                    />
+                  </div>
+
+                  {/* Start Date */}
+                  <div className="space-y-1">
+                    <label className="text-xs text-muted-foreground flex items-center gap-1">
+                      <CalendarIcon className="h-3 w-3" />
+                      {t('startDate')}
+                    </label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" size="sm" className="w-full h-8 justify-start text-left font-normal text-sm">
+                          {workOrder.start_date ? formatDate(workOrder.start_date) : t('setDate')}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={workOrder.start_date ? new Date(workOrder.start_date) : undefined}
+                          onSelect={async (date) => {
+                            if (date) {
+                              try {
+                                const { error } = await supabase
+                                  .from('work_orders')
+                                  .update({ start_date: format(date, 'yyyy-MM-dd') })
+                                  .eq('id', workOrder.id);
+                                if (error) throw error;
+                                toast.success(t('success'), { description: t('startDateUpdated') });
+                                setWorkOrder({ ...workOrder, start_date: format(date, 'yyyy-MM-dd') });
+                              } catch (error: any) {
+                                toast.error(t('error'), { description: error.message });
+                              }
                             }
-                          }
-                        }}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
+                          }}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+
+                  {/* Shipping Date */}
+                  <div className="space-y-1">
+                    <label className="text-xs text-muted-foreground flex items-center gap-1">
+                      <CalendarIcon className="h-3 w-3" />
+                      {t('shippingDate')}
+                    </label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" size="sm" className="w-full h-8 justify-start text-left font-normal text-sm">
+                          {workOrder.shipping_date ? formatDate(workOrder.shipping_date) : t('setDate')}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={workOrder.shipping_date ? new Date(workOrder.shipping_date) : undefined}
+                          onSelect={async (date) => {
+                            if (date) {
+                              try {
+                                const { error } = await supabase
+                                  .from('work_orders')
+                                  .update({ shipping_date: format(date, 'yyyy-MM-dd') })
+                                  .eq('id', workOrder.id);
+                                if (error) throw error;
+                                toast.success(t('success'), { description: t('shippingDateUpdated') });
+                                setWorkOrder({ ...workOrder, shipping_date: format(date, 'yyyy-MM-dd') });
+                              } catch (error: any) {
+                                toast.error(t('error'), { description: error.message });
+                              }
+                            }
+                          }}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
                 </div>
               </CardContent>
             </Card>

@@ -455,7 +455,15 @@ export const translations = {
     groupBy: 'Group By',
     noGrouping: 'No Grouping',
     overdue: 'Overdue - past delivery date',
-    
+    shippingOverdue: 'Shipping overdue',
+    shippingSoon: 'Shipping date approaching',
+    startOverdue: 'Start date overdue',
+    startingSoon: 'Starting soon',
+    shippingDate: 'Shipping Date',
+    shippingDateUpdated: 'Shipping date updated',
+    startDateUpdated: 'Start date updated',
+    enterCustomerName: 'Enter customer name',
+    enterOrderNumber: 'Enter order number',
     // Notes & Comments
     notesAndComments: 'Notes & Comments',
     writeNote: 'Write a note...',
@@ -917,7 +925,15 @@ export const translations = {
     groupBy: 'Groeperen Op',
     noGrouping: 'Geen Groepering',
     overdue: 'Achterstallig - voorbij leveringsdatum',
-    
+    shippingOverdue: 'Verzending achterstallig',
+    shippingSoon: 'Verzendingsdatum nadert',
+    startOverdue: 'Startdatum overschreden',
+    startingSoon: 'Start binnenkort',
+    shippingDate: 'Verzenddatum',
+    shippingDateUpdated: 'Verzenddatum bijgewerkt',
+    startDateUpdated: 'Startdatum bijgewerkt',
+    enterCustomerName: 'Voer klantnaam in',
+    enterOrderNumber: 'Voer ordernummer in',
     // Notes & Comments
     notesAndComments: 'Notities & Opmerkingen',
     writeNote: 'Schrijf een notitie...',
