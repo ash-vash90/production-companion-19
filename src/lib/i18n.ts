@@ -50,6 +50,7 @@ export const translations = {
     
     // Status
     planned: 'Planned',
+    plannedLowercase: 'planned',
     inProgressStatus: 'In Progress',
     onHold: 'On Hold',
     completed: 'Completed',
@@ -287,6 +288,10 @@ export const translations = {
     // Dashboard
     realTimeMonitoring: 'Real-time production monitoring and quality control',
     activeWorkOrdersTitle: 'Active Work Orders',
+    showAll: 'Show All',
+    showActive: 'Show Active',
+    new: 'New',
+    noWorkOrdersInProgress: 'No work orders in progress',
     ofTotal: 'of {0} total',
     inProduction: 'In Production',
     itemsActive: 'items active',
@@ -520,6 +525,7 @@ export const translations = {
     
     // Status
     planned: 'Gepland',
+    plannedLowercase: 'gepland',
     inProgressStatus: 'In Uitvoering',
     onHold: 'In de Wacht',
     completed: 'Voltooid',
@@ -757,6 +763,10 @@ export const translations = {
     // Dashboard
     realTimeMonitoring: 'Real-time productiemonitoring en kwaliteitscontrole',
     activeWorkOrdersTitle: 'Actieve Werkorders',
+    showAll: 'Toon Alles',
+    showActive: 'Toon Actieve',
+    new: 'Nieuw',
+    noWorkOrdersInProgress: 'Geen werkorders in uitvoering',
     ofTotal: 'van {0} totaal',
     inProduction: 'In Productie',
     itemsActive: 'items actief',

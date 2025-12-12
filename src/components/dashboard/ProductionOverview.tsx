@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -22,17 +22,14 @@ interface WorkOrderWithItems {
 
 export function ProductionOverview() {
   const navigate = useNavigate();
-  const { t, language } = useLanguage();
+  const { t } = useLanguage();
   const [workOrders, setWorkOrders] = useState<WorkOrderWithItems[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [showAll, setShowAll] = useState(false);
-  const isMountedRef = useRef(true);
-  const isSubscribedRef = useRef(false);
 
   const fetchWorkOrders = useCallback(async () => {
     try {
-      // Fetch work orders with minimal data
       const { data: workOrdersData, error: woError } = await supabase
         .from('work_orders')
         .select('id, wo_number, product_type, batch_size, status, created_at, created_by')
@@ -41,11 +38,9 @@ export function ProductionOverview() {
         .limit(10);
 
       if (woError) throw woError;
-      if (!isMountedRef.current) return;
 
       const woIds = workOrdersData?.map(wo => wo.id) || [];
       
-      // Run parallel fetches for items and profiles
       const [itemsRes, profilesRes] = await Promise.all([
         woIds.length > 0 
           ? supabase
@@ -64,9 +59,6 @@ export function ProductionOverview() {
         })()
       ]);
 
-      if (!isMountedRef.current) return;
-
-      // Build lookup maps
       const itemsMap: Record<string, Array<{ serial_number: string }>> = {};
       for (const item of itemsRes.data || []) {
         if (!itemsMap[item.work_order_id]) {
@@ -80,7 +72,6 @@ export function ProductionOverview() {
         return acc;
       }, {} as Record<string, string>);
 
-      // Merge data
       const enrichedData = (workOrdersData || []).map(wo => ({
         ...wo,
         profiles: wo.created_by && profilesMap[wo.created_by] 
@@ -93,17 +84,14 @@ export function ProductionOverview() {
     } catch (error) {
       console.error('Error fetching work orders:', error);
     } finally {
-      if (isMountedRef.current) {
-        setLoading(false);
-      }
+      setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    isMountedRef.current = true;
+    let isMounted = true;
     fetchWorkOrders();
 
-    // Debounced realtime - don't refetch on every change
     let debounceTimer: NodeJS.Timeout;
     const channel = supabase
       .channel('production-overview-realtime')
@@ -113,16 +101,16 @@ export function ProductionOverview() {
         () => {
           clearTimeout(debounceTimer);
           debounceTimer = setTimeout(() => {
-            if (isMountedRef.current) fetchWorkOrders();
+            if (isMounted) {
+              fetchWorkOrders();
+            }
           }, 500);
         }
       )
       .subscribe();
 
-    isSubscribedRef.current = true;
-
     return () => {
-      isMountedRef.current = false;
+      isMounted = false;
       clearTimeout(debounceTimer);
       supabase.removeChannel(channel);
     };
@@ -184,7 +172,7 @@ export function ProductionOverview() {
             <Badge variant="warning" className="text-xs">{inProgressCount}</Badge>
             {plannedCount > 0 && !showAll && (
               <span className="text-xs sm:text-sm text-muted-foreground">
-                +{plannedCount} {language === 'nl' ? 'gepland' : 'planned'}
+                +{plannedCount} {t('plannedLowercase')}
               </span>
             )}
           </div>
@@ -197,13 +185,13 @@ export function ProductionOverview() {
                 onClick={() => setShowAll(!showAll)}
               >
                 <Eye className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1" />
-                {showAll ? (language === 'nl' ? 'Actief' : 'Active') : (language === 'nl' ? 'Alles' : 'All')}
+                {showAll ? t('showActive') : t('showAll')}
               </Button>
             )}
             <Button variant="default" size="sm" className="text-xs sm:text-sm h-8 ml-auto sm:ml-0" onClick={() => setDialogOpen(true)}>
               <Plus className="mr-1 h-3.5 w-3.5 sm:h-4 sm:w-4" />
               <span className="hidden sm:inline">{t('createWorkOrder')}</span>
-              <span className="sm:hidden">{language === 'nl' ? 'Nieuw' : 'New'}</span>
+              <span className="sm:hidden">{t('new')}</span>
             </Button>
           </div>
         </CardHeader>
@@ -226,7 +214,7 @@ export function ProductionOverview() {
                     <div className="mt-0.5 sm:mt-1 text-xs sm:text-sm text-muted-foreground truncate">
                       {wo.productBreakdown.length > 0 
                         ? formatProductBreakdownText(wo.productBreakdown)
-                        : `${wo.batch_size} items`
+                        : `${wo.batch_size} ${t('items')}`
                       }
                       {wo.profiles?.full_name && (
                         <span className="ml-1.5 sm:ml-2 opacity-70 hidden sm:inline">• {wo.profiles.full_name}</span>
@@ -239,7 +227,7 @@ export function ProductionOverview() {
             </div>
           ) : (
             <div className="py-4 sm:py-8 text-center text-xs sm:text-sm text-muted-foreground">
-              {showAll ? t('noActiveWorkOrders') : (language === 'nl' ? 'Geen actieve werkorders' : 'No work orders in progress')}
+              {showAll ? t('noActiveWorkOrders') : t('noWorkOrdersInProgress')}
             </div>
           )}
         </CardContent>
