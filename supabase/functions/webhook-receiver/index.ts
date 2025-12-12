@@ -5,12 +5,20 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-webhook-secret',
 };
 
-// Helper to get value from nested JSON using dot notation path
+/**
+ * Get value from nested JSON using dot notation path
+ * Supports both natural field names (order.productType) and legacy JSON path ($.data.productType)
+ */
 function getValueByPath(obj: any, path: string): any {
   if (!path || path === '$') return obj;
   
-  // Remove leading $. if present
-  const cleanPath = path.startsWith('$.') ? path.slice(2) : path.startsWith('$') ? path.slice(1) : path;
+  // Remove leading $. if present (legacy JSON path syntax)
+  let cleanPath = path;
+  if (cleanPath.startsWith('$.')) {
+    cleanPath = cleanPath.slice(2);
+  } else if (cleanPath.startsWith('$')) {
+    cleanPath = cleanPath.slice(1);
+  }
   
   if (!cleanPath) return obj;
   
@@ -37,7 +45,55 @@ function getValueByPath(obj: any, path: string): any {
   return value;
 }
 
-// Execute automation rules
+/**
+ * Map natural field names to database column names
+ */
+const FIELD_MAPPINGS: Record<string, Record<string, string>> = {
+  create_work_order: {
+    workOrderNumber: 'wo_number',
+    productType: 'product_type',
+    quantity: 'batch_size',
+    customer: 'customer_name',
+    externalReference: 'external_order_number',
+    startDate: 'start_date',
+    shippingDate: 'shipping_date',
+    notes: 'notes',
+  },
+  update_work_order_status: {
+    workOrderNumber: 'wo_number',
+    status: 'status',
+  },
+  update_item_status: {
+    serialNumber: 'serial_number',
+    status: 'status',
+    currentStep: 'current_step',
+  },
+  log_activity: {
+    action: 'action',
+    entityType: 'entity_type',
+    entityId: 'entity_id',
+    details: 'details_path',
+  },
+  trigger_outgoing_webhook: {
+    webhookUrl: 'webhook_url',
+  },
+};
+
+/**
+ * Get the database key for a field, supporting both natural and legacy field names
+ */
+function getDbKey(actionType: string, fieldKey: string): string {
+  const mapping = FIELD_MAPPINGS[actionType];
+  if (mapping && mapping[fieldKey]) {
+    return mapping[fieldKey];
+  }
+  // If not found in mapping, assume it's already a DB key (legacy)
+  return fieldKey;
+}
+
+/**
+ * Execute automation rules
+ */
 async function executeRules(
   supabase: any,
   rules: any[],
@@ -52,15 +108,31 @@ async function executeRules(
     
     try {
       const mappings = rule.field_mappings || {};
+      const actionType = rule.action_type;
       
-      switch (rule.action_type) {
+      // Helper to get value with natural field name support
+      const getValue = (naturalKey: string, legacyKey?: string): any => {
+        // First try natural key
+        if (mappings[naturalKey]) {
+          return getValueByPath(payload, mappings[naturalKey]);
+        }
+        // Then try legacy key if provided
+        if (legacyKey && mappings[legacyKey]) {
+          return getValueByPath(payload, mappings[legacyKey]);
+        }
+        return undefined;
+      };
+      
+      switch (actionType) {
         case 'create_work_order': {
-          // Map fields from payload
-          const woNumber = getValueByPath(payload, mappings.wo_number) || `WO-${Date.now()}`;
-          const productType = getValueByPath(payload, mappings.product_type) || 'SDM_ECO';
-          const batchSize = parseInt(getValueByPath(payload, mappings.batch_size)) || 1;
-          const notes = getValueByPath(payload, mappings.notes) || '';
-          const scheduledDate = getValueByPath(payload, mappings.scheduled_date);
+          const woNumber = getValue('workOrderNumber', 'wo_number') || `WO-${new Date().toISOString().slice(0,10).replace(/-/g,'')}-${Date.now().toString().slice(-3)}`;
+          const productType = getValue('productType', 'product_type') || 'SDM_ECO';
+          const batchSize = parseInt(getValue('quantity', 'batch_size')) || 1;
+          const customerName = getValue('customer', 'customer_name') || null;
+          const externalOrderNumber = getValue('externalReference', 'external_order_number') || null;
+          const startDate = getValue('startDate', 'start_date') || null;
+          const shippingDate = getValue('shippingDate', 'shipping_date') || null;
+          const notes = getValue('notes') || '';
           
           // Get a system user for created_by (first admin)
           const { data: adminUser } = await supabase
@@ -71,9 +143,11 @@ async function executeRules(
             .single();
           
           if (!adminUser) {
-            errors.push(`Rule ${rule.name}: No admin user found for work order creation`);
+            errors.push(`Rule "${rule.name}": No admin user found for work order creation`);
             continue;
           }
+          
+          console.log(`Creating work order: ${woNumber}, type: ${productType}, size: ${batchSize}`);
           
           // Create work order
           const { data: wo, error: woError } = await supabase
@@ -82,8 +156,11 @@ async function executeRules(
               wo_number: woNumber,
               product_type: productType,
               batch_size: batchSize,
+              customer_name: customerName,
+              external_order_number: externalOrderNumber,
+              start_date: startDate,
+              shipping_date: shippingDate,
               notes: notes,
-              scheduled_date: scheduledDate || null,
               created_by: adminUser.user_id,
               status: 'planned',
             })
@@ -91,7 +168,7 @@ async function executeRules(
             .single();
           
           if (woError) {
-            errors.push(`Rule ${rule.name}: ${woError.message}`);
+            errors.push(`Rule "${rule.name}": ${woError.message}`);
             continue;
           }
           
@@ -102,12 +179,14 @@ async function executeRules(
                               productType === 'HMI' ? 'X' :
                               productType === 'TRANSMITTER' ? 'T' : 'S';
           
+          const timestamp = Date.now().toString().slice(-8);
           for (let i = 0; i < batchSize; i++) {
-            const serialNumber = `${serialPrefix}-${Date.now()}-${String(i + 1).padStart(3, '0')}`;
+            const serialNumber = `${serialPrefix}-${timestamp}-${String(i + 1).padStart(3, '0')}`;
             items.push({
               work_order_id: wo.id,
               serial_number: serialNumber,
               position_in_batch: i + 1,
+              product_type: productType,
               status: 'planned',
               current_step: 1,
             });
@@ -118,42 +197,60 @@ async function executeRules(
             .insert(items);
           
           if (itemsError) {
-            errors.push(`Rule ${rule.name}: Failed to create items - ${itemsError.message}`);
+            errors.push(`Rule "${rule.name}": Failed to create items - ${itemsError.message}`);
           }
           
-          executed.push({ rule: rule.name, action: 'create_work_order', result: { work_order_id: wo.id, wo_number: woNumber } });
+          executed.push({ 
+            rule: rule.name, 
+            action: 'create_work_order', 
+            result: { 
+              workOrderId: wo.id, 
+              workOrderNumber: woNumber,
+              itemCount: batchSize,
+              productType: productType,
+            } 
+          });
+          
+          console.log(`Created work order ${woNumber} with ${batchSize} items`);
           break;
         }
         
         case 'update_work_order_status': {
-          const woNumber = getValueByPath(payload, mappings.wo_number);
-          const newStatus = getValueByPath(payload, mappings.status);
+          const woNumber = getValue('workOrderNumber', 'wo_number');
+          const newStatus = getValue('status');
           
           if (!woNumber || !newStatus) {
-            errors.push(`Rule ${rule.name}: Missing wo_number or status in payload`);
+            errors.push(`Rule "${rule.name}": Missing workOrderNumber or status in payload`);
             continue;
           }
           
-          const { error } = await supabase
+          const { data: updated, error } = await supabase
             .from('work_orders')
             .update({ status: newStatus })
-            .eq('wo_number', woNumber);
+            .eq('wo_number', woNumber)
+            .select('id')
+            .single();
           
           if (error) {
-            errors.push(`Rule ${rule.name}: ${error.message}`);
+            errors.push(`Rule "${rule.name}": ${error.message}`);
           } else {
-            executed.push({ rule: rule.name, action: 'update_work_order_status', result: { wo_number: woNumber, status: newStatus } });
+            executed.push({ 
+              rule: rule.name, 
+              action: 'update_work_order_status', 
+              result: { workOrderNumber: woNumber, status: newStatus } 
+            });
+            console.log(`Updated work order ${woNumber} status to ${newStatus}`);
           }
           break;
         }
         
         case 'update_item_status': {
-          const serialNumber = getValueByPath(payload, mappings.serial_number);
-          const newStatus = getValueByPath(payload, mappings.status);
-          const newStep = getValueByPath(payload, mappings.current_step);
+          const serialNumber = getValue('serialNumber', 'serial_number');
+          const newStatus = getValue('status');
+          const newStep = getValue('currentStep', 'current_step');
           
           if (!serialNumber) {
-            errors.push(`Rule ${rule.name}: Missing serial_number in payload`);
+            errors.push(`Rule "${rule.name}": Missing serialNumber in payload`);
             continue;
           }
           
@@ -162,7 +259,7 @@ async function executeRules(
           if (newStep) updates.current_step = parseInt(newStep);
           
           if (Object.keys(updates).length === 0) {
-            errors.push(`Rule ${rule.name}: No updates specified`);
+            errors.push(`Rule "${rule.name}": No updates specified`);
             continue;
           }
           
@@ -172,18 +269,24 @@ async function executeRules(
             .eq('serial_number', serialNumber);
           
           if (error) {
-            errors.push(`Rule ${rule.name}: ${error.message}`);
+            errors.push(`Rule "${rule.name}": ${error.message}`);
           } else {
-            executed.push({ rule: rule.name, action: 'update_item_status', result: { serial_number: serialNumber, updates } });
+            executed.push({ 
+              rule: rule.name, 
+              action: 'update_item_status', 
+              result: { serialNumber, updates } 
+            });
+            console.log(`Updated item ${serialNumber}:`, updates);
           }
           break;
         }
         
         case 'log_activity': {
-          const action = getValueByPath(payload, mappings.action) || 'webhook_triggered';
-          const entityType = getValueByPath(payload, mappings.entity_type) || 'webhook';
-          const entityId = getValueByPath(payload, mappings.entity_id) || webhookId;
-          const details = mappings.details_path ? getValueByPath(payload, mappings.details_path) : payload;
+          const action = getValue('action') || 'webhook_triggered';
+          const entityType = getValue('entityType', 'entity_type') || 'webhook';
+          const entityId = getValue('entityId', 'entity_id') || webhookId;
+          const detailsPath = getValue('details', 'details_path');
+          const details = detailsPath ? getValueByPath(payload, detailsPath) : payload;
           
           const { error } = await supabase
             .from('activity_logs')
@@ -195,17 +298,22 @@ async function executeRules(
             });
           
           if (error) {
-            errors.push(`Rule ${rule.name}: ${error.message}`);
+            errors.push(`Rule "${rule.name}": ${error.message}`);
           } else {
-            executed.push({ rule: rule.name, action: 'log_activity', result: { action, entity_type: entityType } });
+            executed.push({ 
+              rule: rule.name, 
+              action: 'log_activity', 
+              result: { action, entityType } 
+            });
+            console.log(`Logged activity: ${action} on ${entityType}`);
           }
           break;
         }
         
         case 'trigger_outgoing_webhook': {
-          const webhookUrl = mappings.webhook_url;
+          const webhookUrl = getValue('webhookUrl', 'webhook_url');
           if (!webhookUrl) {
-            errors.push(`Rule ${rule.name}: No webhook_url configured`);
+            errors.push(`Rule "${rule.name}": No webhookUrl configured`);
             continue;
           }
           
@@ -216,15 +324,21 @@ async function executeRules(
               body: JSON.stringify(payload),
             });
             
-            executed.push({ rule: rule.name, action: 'trigger_outgoing_webhook', result: { url: webhookUrl, status: response.status } });
+            executed.push({ 
+              rule: rule.name, 
+              action: 'trigger_outgoing_webhook', 
+              result: { url: webhookUrl, status: response.status } 
+            });
+            console.log(`Forwarded to webhook: ${webhookUrl}, status: ${response.status}`);
           } catch (fetchError: any) {
-            errors.push(`Rule ${rule.name}: Failed to call webhook - ${fetchError.message}`);
+            errors.push(`Rule "${rule.name}": Failed to call webhook - ${fetchError.message}`);
           }
           break;
         }
       }
     } catch (ruleError: any) {
-      errors.push(`Rule ${rule.name}: ${ruleError.message}`);
+      errors.push(`Rule "${rule.name}": ${ruleError.message}`);
+      console.error(`Error executing rule ${rule.name}:`, ruleError);
     }
   }
   
@@ -247,7 +361,11 @@ Deno.serve(async (req) => {
     if (!endpointKey || endpointKey === 'webhook-receiver') {
       console.log('No endpoint key provided');
       return new Response(
-        JSON.stringify({ error: 'Endpoint key required. Use: /webhook-receiver/{your-endpoint-key}' }),
+        JSON.stringify({ 
+          error: 'Endpoint key required',
+          usage: 'POST /webhook-receiver/{your-endpoint-key}',
+          headers: { 'X-Webhook-Secret': 'your-secret-key' }
+        }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }

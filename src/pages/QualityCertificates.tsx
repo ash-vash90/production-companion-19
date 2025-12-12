@@ -12,7 +12,8 @@ import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Loader2, FileText, Download, Search } from 'lucide-react';
+import { Loader2, FileText, Download, Search, Beaker } from 'lucide-react';
+import CertificatePreviewDialog from '@/components/certificates/CertificatePreviewDialog';
 import { format } from 'date-fns';
 import { nl, enUS } from 'date-fns/locale';
 
@@ -69,7 +70,17 @@ const QualityCertificates = () => {
     <ProtectedRoute>
       <Layout>
         <div className="space-y-6">
-          <PageHeader title={t('qualityCertificates')} description={t('viewDownloadCertificates')} />
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <PageHeader title={t('qualityCertificates')} description={t('viewDownloadCertificates')} />
+            <CertificatePreviewDialog 
+              trigger={
+                <Button variant="outline" size="sm">
+                  <Beaker className="mr-2 h-4 w-4" />
+                  {t('testCertificate') || 'Test Certificate'}
+                </Button>
+              }
+            />
+          </div>
 
           <Card>
             <CardHeader>
