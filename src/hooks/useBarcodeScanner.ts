@@ -30,6 +30,9 @@ interface UseBarcodeScanner {
 /**
  * Hook for camera-based barcode scanning using html5-qrcode library.
  * Supports multiple barcode formats including QR, Code128, EAN, UPC.
+ * 
+ * Note: The html5-qrcode library is loaded dynamically at runtime.
+ * If not available, the scanner will show an appropriate error.
  *
  * Usage:
  * ```tsx
@@ -110,8 +113,31 @@ export function useBarcodeScanner(): UseBarcodeScanner {
       setError(null);
       onScanCallbackRef.current = onScan;
 
-      // Dynamically import html5-qrcode to keep bundle size small
-      const { Html5Qrcode } = await import('html5-qrcode');
+      // Load html5-qrcode from CDN if not already loaded
+      let Html5Qrcode = (window as any).Html5Qrcode;
+      
+      if (!Html5Qrcode) {
+        try {
+          await new Promise<void>((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = 'https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js';
+            script.onload = () => resolve();
+            script.onerror = () => reject(new Error('Failed to load scanner library'));
+            document.head.appendChild(script);
+          });
+          Html5Qrcode = (window as any).Html5Qrcode;
+        } catch {
+          setError('Camera scanning library not available. Please enter barcode manually.');
+          setIsScanning(false);
+          return;
+        }
+      }
+
+      if (!Html5Qrcode) {
+        setError('Camera scanning library not loaded. Please enter barcode manually.');
+        setIsScanning(false);
+        return;
+      }
 
       const scanner = new Html5Qrcode(elementId);
       scannerRef.current = scanner;
