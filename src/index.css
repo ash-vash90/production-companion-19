@@ -132,6 +132,8 @@
   html {
     overflow-x: hidden;
     width: 100%;
+    margin: 0;
+    padding: 0;
   }
 
   body {
@@ -139,6 +141,8 @@
     font-family: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
     overflow-x: hidden;
     width: 100%;
+    margin: 0;
+    padding: 0;
   }
   
   /* Typography utilities */
@@ -194,8 +198,8 @@
 
   /* Mobile-specific optimizations */
   @media (max-width: 767px) {
-    /* Ensure dialogs fit on mobile screens */
-    [role="dialog"] {
+    /* Ensure dialogs fit on mobile screens - but exclude sheet/sidebar */
+    [role="dialog"]:not([data-sidebar="sidebar"]) {
       max-width: calc(100vw - 32px);
       max-height: 90vh;
       margin: 16px;
