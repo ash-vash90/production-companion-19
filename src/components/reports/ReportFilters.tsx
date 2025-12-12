@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Separator } from '@/components/ui/separator';
-import { Filter, X, Search, LayoutGrid, List } from 'lucide-react';
+import { Filter, X, Search, Layers, RotateCcw } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 
 export interface ReportFilterState {
@@ -17,6 +17,7 @@ export interface ReportFilterState {
   customerFilter: string;
   ageFilter: string;
   createdMonthFilter: string;
+  batchSizeFilter: string;
 }
 
 interface ReportFiltersProps {
@@ -26,7 +27,18 @@ interface ReportFiltersProps {
   createdMonths: string[];
   groupBy: string;
   onGroupByChange: (groupBy: string) => void;
+  onReset?: () => void;
 }
+
+const DEFAULT_FILTERS: ReportFilterState = {
+  searchTerm: '',
+  statusFilter: 'all',
+  productFilter: 'all',
+  customerFilter: 'all',
+  ageFilter: 'all',
+  createdMonthFilter: 'all',
+  batchSizeFilter: 'all',
+};
 
 export function ReportFilters({
   filters,
@@ -35,6 +47,7 @@ export function ReportFilters({
   createdMonths,
   groupBy,
   onGroupByChange,
+  onReset,
 }: ReportFiltersProps) {
   const { t } = useLanguage();
   const [open, setOpen] = React.useState(false);
@@ -44,14 +57,8 @@ export function ReportFilters({
   };
 
   const clearAllFilters = () => {
-    onFiltersChange({
-      searchTerm: '',
-      statusFilter: 'all',
-      productFilter: 'all',
-      customerFilter: 'all',
-      ageFilter: 'all',
-      createdMonthFilter: 'all',
-    });
+    onFiltersChange(DEFAULT_FILTERS);
+    onGroupByChange('none');
   };
 
   const activeFilterCount = [
@@ -60,188 +67,225 @@ export function ReportFilters({
     filters.customerFilter,
     filters.ageFilter,
     filters.createdMonthFilter,
+    filters.batchSizeFilter,
   ].filter(f => f !== 'all').length;
 
+  const hasActiveFilters = activeFilterCount > 0 || groupBy !== 'none';
+
   return (
-    <div className="flex items-center gap-2 flex-wrap">
-      {/* Search Input */}
-      <div className="relative flex-1 min-w-[200px] max-w-sm">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder={t('searchWorkOrders')}
-          value={filters.searchTerm}
-          onChange={(e) => updateFilter('searchTerm', e.target.value)}
-          className="pl-9 h-9 text-sm"
-        />
-        {filters.searchTerm && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6"
-            onClick={() => updateFilter('searchTerm', '')}
+    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+      <div className="flex items-center gap-2 flex-1 w-full sm:w-auto">
+        {/* Search Input */}
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder={t('searchWorkOrders')}
+            value={filters.searchTerm}
+            onChange={(e) => updateFilter('searchTerm', e.target.value)}
+            className="pl-9 h-9 text-sm"
+          />
+          {filters.searchTerm && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6"
+              onClick={() => updateFilter('searchTerm', '')}
+            >
+              <X className="h-3 w-3" />
+            </Button>
+          )}
+        </div>
+
+        {/* Filter Popover */}
+        <Popover open={open} onOpenChange={setOpen}>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="sm" className="h-9 gap-2">
+              <Filter className="h-4 w-4" />
+              <span className="hidden sm:inline">{t('filter')}</span>
+              {activeFilterCount > 0 && (
+                <Badge variant="secondary" className="h-5 w-5 p-0 flex items-center justify-center text-xs rounded-full">
+                  {activeFilterCount}
+                </Badge>
+              )}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-80 p-4" align="end">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h4 className="font-medium text-sm">{t('filter')}</h4>
+                {activeFilterCount > 0 && (
+                  <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => {
+                    onFiltersChange({...DEFAULT_FILTERS, searchTerm: filters.searchTerm});
+                  }}>
+                    {t('clearFilters')}
+                  </Button>
+                )}
+              </div>
+
+              <Separator />
+
+              {/* Status */}
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground">{t('status')}</Label>
+                <Select value={filters.statusFilter} onValueChange={(v) => updateFilter('statusFilter', v)}>
+                  <SelectTrigger className="h-8 text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{t('allStatuses')}</SelectItem>
+                    <SelectItem value="planned">{t('planned')}</SelectItem>
+                    <SelectItem value="in_progress">{t('inProgressStatus')}</SelectItem>
+                    <SelectItem value="completed">{t('completed')}</SelectItem>
+                    <SelectItem value="on_hold">{t('onHold')}</SelectItem>
+                    <SelectItem value="cancelled">{t('cancelled')}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Product Type */}
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground">{t('productType')}</Label>
+                <Select value={filters.productFilter} onValueChange={(v) => updateFilter('productFilter', v)}>
+                  <SelectTrigger className="h-8 text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{t('allProducts')}</SelectItem>
+                    <SelectItem value="SDM_ECO">SDM ECO</SelectItem>
+                    <SelectItem value="SENSOR">Sensor</SelectItem>
+                    <SelectItem value="MLA">MLA</SelectItem>
+                    <SelectItem value="HMI">HMI</SelectItem>
+                    <SelectItem value="TRANSMITTER">Transmitter</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Customer */}
+              {customers.length > 0 && (
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">{t('customer')}</Label>
+                  <Select value={filters.customerFilter} onValueChange={(v) => updateFilter('customerFilter', v)}>
+                    <SelectTrigger className="h-8 text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">{t('allCustomers')}</SelectItem>
+                      {customers.map(customer => (
+                        <SelectItem key={customer} value={customer!}>{customer}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {/* Age */}
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground">{t('age')}</Label>
+                <Select value={filters.ageFilter} onValueChange={(v) => updateFilter('ageFilter', v)}>
+                  <SelectTrigger className="h-8 text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{t('allAges')}</SelectItem>
+                    <SelectItem value="today">{t('today')}</SelectItem>
+                    <SelectItem value="week">{t('thisWeek')}</SelectItem>
+                    <SelectItem value="month">{t('thisMonth')}</SelectItem>
+                    <SelectItem value="older">{t('olderThan30Days')}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Created Month */}
+              {createdMonths.length > 0 && (
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">{t('createdMonth')}</Label>
+                  <Select value={filters.createdMonthFilter} onValueChange={(v) => updateFilter('createdMonthFilter', v)}>
+                    <SelectTrigger className="h-8 text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">{t('allCreatedMonths')}</SelectItem>
+                      {createdMonths.map(month => (
+                        <SelectItem key={month} value={month}>
+                          {format(parseISO(`${month}-01`), 'MMM yyyy')}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {/* Batch Size */}
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground">{t('batchSize')}</Label>
+                <Select value={filters.batchSizeFilter} onValueChange={(v) => updateFilter('batchSizeFilter', v)}>
+                  <SelectTrigger className="h-8 text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{t('allSizes')}</SelectItem>
+                    <SelectItem value="small">1-5 {t('items')}</SelectItem>
+                    <SelectItem value="medium">6-20 {t('items')}</SelectItem>
+                    <SelectItem value="large">20+ {t('items')}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </PopoverContent>
+        </Popover>
+
+        {hasActiveFilters && (
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="h-8 text-xs text-muted-foreground"
+            onClick={clearAllFilters}
           >
-            <X className="h-3 w-3" />
+            <RotateCcw className="h-3 w-3 mr-1" />
+            {t('reset')}
           </Button>
+        )}
+
+        {/* Active filter badges - shown inline */}
+        {activeFilterCount > 0 && (
+          <div className="hidden md:flex items-center gap-1 flex-wrap">
+            {filters.statusFilter !== 'all' && (
+              <Badge variant="secondary" className="text-xs h-6 gap-1">
+                {t(filters.statusFilter as any)}
+                <X className="h-3 w-3 cursor-pointer" onClick={() => updateFilter('statusFilter', 'all')} />
+              </Badge>
+            )}
+            {filters.productFilter !== 'all' && (
+              <Badge variant="secondary" className="text-xs h-6 gap-1">
+                {filters.productFilter.replace('_', ' ')}
+                <X className="h-3 w-3 cursor-pointer" onClick={() => updateFilter('productFilter', 'all')} />
+              </Badge>
+            )}
+            {filters.customerFilter !== 'all' && (
+              <Badge variant="secondary" className="text-xs h-6 gap-1">
+                {filters.customerFilter}
+                <X className="h-3 w-3 cursor-pointer" onClick={() => updateFilter('customerFilter', 'all')} />
+              </Badge>
+            )}
+          </div>
         )}
       </div>
 
-      {/* Filter Popover */}
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button variant="outline" size="sm" className="h-9 gap-2">
-            <Filter className="h-4 w-4" />
-            <span className="hidden sm:inline">{t('filter')}</span>
-            {activeFilterCount > 0 && (
-              <Badge variant="secondary" className="h-5 w-5 p-0 flex items-center justify-center text-xs rounded-full">
-                {activeFilterCount}
-              </Badge>
-            )}
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-80 p-4" align="end">
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h4 className="font-medium text-sm">{t('filter')}</h4>
-              {activeFilterCount > 0 && (
-                <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={clearAllFilters}>
-                  {t('clearFilters')}
-                </Button>
-              )}
-            </div>
-
-            <Separator />
-
-            {/* Status */}
-            <div className="space-y-2">
-              <Label className="text-xs text-muted-foreground">{t('status')}</Label>
-              <Select value={filters.statusFilter} onValueChange={(v) => updateFilter('statusFilter', v)}>
-                <SelectTrigger className="h-8 text-sm">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">{t('allStatuses')}</SelectItem>
-                  <SelectItem value="planned">{t('planned')}</SelectItem>
-                  <SelectItem value="in_progress">{t('inProgressStatus')}</SelectItem>
-                  <SelectItem value="completed">{t('completed')}</SelectItem>
-                  <SelectItem value="on_hold">{t('onHold')}</SelectItem>
-                  <SelectItem value="cancelled">{t('cancelled')}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Product Type */}
-            <div className="space-y-2">
-              <Label className="text-xs text-muted-foreground">{t('productType')}</Label>
-              <Select value={filters.productFilter} onValueChange={(v) => updateFilter('productFilter', v)}>
-                <SelectTrigger className="h-8 text-sm">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">{t('allProducts')}</SelectItem>
-                  <SelectItem value="SDM_ECO">SDM ECO</SelectItem>
-                  <SelectItem value="SENSOR">Sensor</SelectItem>
-                  <SelectItem value="MLA">MLA</SelectItem>
-                  <SelectItem value="HMI">HMI</SelectItem>
-                  <SelectItem value="TRANSMITTER">Transmitter</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Customer */}
-            {customers.length > 0 && (
-              <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground">{t('customer')}</Label>
-                <Select value={filters.customerFilter} onValueChange={(v) => updateFilter('customerFilter', v)}>
-                  <SelectTrigger className="h-8 text-sm">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">{t('allCustomers')}</SelectItem>
-                    {customers.map(customer => (
-                      <SelectItem key={customer} value={customer!}>{customer}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-
-            {/* Age */}
-            <div className="space-y-2">
-              <Label className="text-xs text-muted-foreground">{t('age')}</Label>
-              <Select value={filters.ageFilter} onValueChange={(v) => updateFilter('ageFilter', v)}>
-                <SelectTrigger className="h-8 text-sm">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">{t('allAges')}</SelectItem>
-                  <SelectItem value="today">{t('today')}</SelectItem>
-                  <SelectItem value="week">{t('thisWeek')}</SelectItem>
-                  <SelectItem value="month">{t('thisMonth')}</SelectItem>
-                  <SelectItem value="older">{t('olderThan30Days')}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Created Month */}
-            {createdMonths.length > 0 && (
-              <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground">{t('createdMonth')}</Label>
-                <Select value={filters.createdMonthFilter} onValueChange={(v) => updateFilter('createdMonthFilter', v)}>
-                  <SelectTrigger className="h-8 text-sm">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">{t('allCreatedMonths')}</SelectItem>
-                    {createdMonths.map(month => (
-                      <SelectItem key={month} value={month}>
-                        {format(parseISO(`${month}-01`), 'MMM yyyy')}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-          </div>
-        </PopoverContent>
-      </Popover>
-
-      {/* Group By */}
-      <Select value={groupBy} onValueChange={onGroupByChange}>
-        <SelectTrigger className="h-9 w-[130px] text-sm">
-          <LayoutGrid className="h-4 w-4 mr-2" />
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="none">{t('noGrouping') || 'No Grouping'}</SelectItem>
-          <SelectItem value="status">{t('byStatus') || 'By Status'}</SelectItem>
-          <SelectItem value="product">{t('byProduct') || 'By Product'}</SelectItem>
-          <SelectItem value="customer">{t('byCustomer') || 'By Customer'}</SelectItem>
-        </SelectContent>
-      </Select>
-
-      {/* Active filter badges */}
-      {activeFilterCount > 0 && (
-        <div className="hidden md:flex items-center gap-1 flex-wrap">
-          {filters.statusFilter !== 'all' && (
-            <Badge variant="secondary" className="text-xs h-6 gap-1">
-              {t(filters.statusFilter as any)}
-              <X className="h-3 w-3 cursor-pointer" onClick={() => updateFilter('statusFilter', 'all')} />
-            </Badge>
-          )}
-          {filters.productFilter !== 'all' && (
-            <Badge variant="secondary" className="text-xs h-6 gap-1">
-              {filters.productFilter.replace('_', ' ')}
-              <X className="h-3 w-3 cursor-pointer" onClick={() => updateFilter('productFilter', 'all')} />
-            </Badge>
-          )}
-          {filters.customerFilter !== 'all' && (
-            <Badge variant="secondary" className="text-xs h-6 gap-1">
-              {filters.customerFilter}
-              <X className="h-3 w-3 cursor-pointer" onClick={() => updateFilter('customerFilter', 'all')} />
-            </Badge>
-          )}
-        </div>
-      )}
+      {/* Grouping Select */}
+      <div className="flex items-center gap-2">
+        <Layers className="h-3.5 w-3.5 text-muted-foreground" />
+        <Select value={groupBy} onValueChange={onGroupByChange}>
+          <SelectTrigger className="h-8 w-[140px] text-xs">
+            <SelectValue placeholder={t('groupBy')} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="none">{t('noGrouping') || 'No Grouping'}</SelectItem>
+            <SelectItem value="status">{t('byStatus') || 'By Status'}</SelectItem>
+            <SelectItem value="product">{t('byProduct') || 'By Product'}</SelectItem>
+            <SelectItem value="customer">{t('byCustomer') || 'By Customer'}</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
     </div>
   );
 }
