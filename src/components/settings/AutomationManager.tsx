@@ -50,19 +50,21 @@ interface WebhookLog {
   created_at: string;
 }
 
+// Natural field name mappings - use readable names that map to database columns
 const ACTION_TYPES = [
   { 
     value: 'create_work_order', 
     label: 'Create Work Order', 
     description: 'Create a new work order with the specified details',
     fields: [
-      { key: 'wo_number', label: 'Work Order Number', required: false, placeholder: '$.data.orderNumber', hint: 'Leave empty for auto-generation' },
-      { key: 'product_type', label: 'Product Type', required: true, placeholder: '$.data.productType', hint: 'Must be: SDM_ECO, SENSOR, MLA, HMI, or TRANSMITTER' },
-      { key: 'batch_size', label: 'Batch Size', required: true, placeholder: '$.data.quantity', hint: 'Number of items to create' },
-      { key: 'customer_name', label: 'Customer Name', required: false, placeholder: '$.data.customer', hint: 'Optional customer reference' },
-      { key: 'external_order_number', label: 'External Order Number', required: false, placeholder: '$.data.externalRef', hint: 'Reference from external system' },
-      { key: 'scheduled_date', label: 'Scheduled Date', required: false, placeholder: '$.data.dueDate', hint: 'Format: YYYY-MM-DD' },
-      { key: 'notes', label: 'Notes', required: false, placeholder: '$.data.notes', hint: 'Additional information' },
+      { key: 'workOrderNumber', dbKey: 'wo_number', label: 'Work Order Number', required: false, placeholder: 'order.number', hint: 'Leave empty for auto-generation' },
+      { key: 'productType', dbKey: 'product_type', label: 'Product Type', required: true, placeholder: 'order.productType', hint: 'Values: SDM_ECO, SENSOR, MLA, HMI, TRANSMITTER' },
+      { key: 'quantity', dbKey: 'batch_size', label: 'Quantity', required: true, placeholder: 'order.quantity', hint: 'Number of items to create' },
+      { key: 'customer', dbKey: 'customer_name', label: 'Customer Name', required: false, placeholder: 'order.customerName', hint: 'Optional customer reference' },
+      { key: 'externalReference', dbKey: 'external_order_number', label: 'External Reference', required: false, placeholder: 'order.externalId', hint: 'Reference from external system' },
+      { key: 'startDate', dbKey: 'start_date', label: 'Start Date', required: false, placeholder: 'order.startDate', hint: 'Format: YYYY-MM-DD' },
+      { key: 'shippingDate', dbKey: 'shipping_date', label: 'Shipping Date', required: false, placeholder: 'order.shippingDate', hint: 'Format: YYYY-MM-DD' },
+      { key: 'notes', dbKey: 'notes', label: 'Notes', required: false, placeholder: 'order.notes', hint: 'Additional information' },
     ]
   },
   { 
@@ -70,18 +72,18 @@ const ACTION_TYPES = [
     label: 'Update Work Order Status',
     description: 'Change the status of an existing work order',
     fields: [
-      { key: 'wo_number', label: 'Work Order Number', required: true, placeholder: '$.data.orderNumber', hint: 'The work order to update' },
-      { key: 'status', label: 'New Status', required: true, placeholder: '$.data.status', hint: 'planned, in_progress, on_hold, completed, or cancelled' },
+      { key: 'workOrderNumber', dbKey: 'wo_number', label: 'Work Order Number', required: true, placeholder: 'order.number', hint: 'The work order to update' },
+      { key: 'status', dbKey: 'status', label: 'New Status', required: true, placeholder: 'order.status', hint: 'Values: planned, in_progress, on_hold, completed, cancelled' },
     ]
   },
   { 
     value: 'update_item_status', 
     label: 'Update Item Status',
-    description: 'Update the status of a specific work order item',
+    description: 'Update the status of a specific work order item by serial number',
     fields: [
-      { key: 'serial_number', label: 'Serial Number', required: true, placeholder: '$.data.serialNumber', hint: 'The item to update' },
-      { key: 'status', label: 'New Status', required: true, placeholder: '$.data.status', hint: 'planned, in_progress, on_hold, completed, or cancelled' },
-      { key: 'current_step', label: 'Current Step', required: false, placeholder: '$.data.step', hint: 'Optional step number override' },
+      { key: 'serialNumber', dbKey: 'serial_number', label: 'Serial Number', required: true, placeholder: 'item.serialNumber', hint: 'The item to update' },
+      { key: 'status', dbKey: 'status', label: 'New Status', required: true, placeholder: 'item.status', hint: 'Values: planned, in_progress, on_hold, completed, cancelled' },
+      { key: 'currentStep', dbKey: 'current_step', label: 'Current Step', required: false, placeholder: 'item.stepNumber', hint: 'Optional step number override' },
     ]
   },
   { 
@@ -89,18 +91,18 @@ const ACTION_TYPES = [
     label: 'Log Activity',
     description: 'Create an activity log entry for audit purposes',
     fields: [
-      { key: 'action', label: 'Action', required: true, placeholder: '$.data.action', hint: 'e.g., "external_update"' },
-      { key: 'entity_type', label: 'Entity Type', required: true, placeholder: '$.data.entityType', hint: 'e.g., "work_order"' },
-      { key: 'entity_id', label: 'Entity ID', required: false, placeholder: '$.data.entityId', hint: 'UUID of related entity' },
-      { key: 'details_path', label: 'Details (JSON)', required: false, placeholder: '$.data.details', hint: 'Additional details' },
+      { key: 'action', dbKey: 'action', label: 'Action Name', required: true, placeholder: 'event.action', hint: 'e.g., "external_sync", "status_change"' },
+      { key: 'entityType', dbKey: 'entity_type', label: 'Entity Type', required: true, placeholder: 'event.entityType', hint: 'e.g., "work_order", "item"' },
+      { key: 'entityId', dbKey: 'entity_id', label: 'Entity ID', required: false, placeholder: 'event.entityId', hint: 'UUID of related entity' },
+      { key: 'details', dbKey: 'details_path', label: 'Details Path', required: false, placeholder: 'event.data', hint: 'JSON path to additional details' },
     ]
   },
   { 
     value: 'trigger_outgoing_webhook', 
-    label: 'Trigger Outgoing Webhook',
-    description: 'Forward the data to another webhook endpoint',
+    label: 'Forward to Webhook',
+    description: 'Forward the incoming data to another webhook endpoint',
     fields: [
-      { key: 'webhook_url', label: 'Webhook URL', required: true, placeholder: 'https://example.com/webhook', hint: 'The URL to send data to' },
+      { key: 'webhookUrl', dbKey: 'webhook_url', label: 'Destination URL', required: true, placeholder: 'https://example.com/webhook', hint: 'The URL to forward data to' },
     ]
   },
 ];
@@ -592,9 +594,11 @@ const AutomationManager = () => {
                                 <Code className="h-4 w-4" />
                                 <Label>Field Mappings</Label>
                               </div>
-                              <p className="text-xs text-muted-foreground">
-                                Map JSON data using path syntax (e.g., $.data.orderNumber)
-                              </p>
+                              <div className="p-3 bg-muted/50 rounded-lg text-xs text-muted-foreground space-y-2">
+                                <p className="font-medium">Map incoming JSON fields using dot notation:</p>
+                                <code className="block bg-background p-2 rounded">order.productType → looks for {"{"}"order": {"{"}"productType": "value"{"}"}{"}"}</code>
+                                <code className="block bg-background p-2 rounded">items[0].name → looks for {"{"}"items": [{"{"}"name": "value"{"}"}]{"}"}</code>
+                              </div>
                               <div className="space-y-3">
                                 {selectedActionType.fields.map(field => (
                                   <div key={field.key} className="space-y-1">
