@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -15,15 +15,13 @@ import { CreateWorkOrderDialog } from '@/components/CreateWorkOrderDialog';
 import { WorkOrderFilters, FilterState } from '@/components/workorders/WorkOrderFilters';
 import { WorkOrderCard } from '@/components/workorders/WorkOrderCard';
 import { WorkOrderTableRow, WorkOrderRowData } from '@/components/workorders/WorkOrderTableRow';
-import { MiniCalendarWidget } from '@/components/workorders/MiniCalendarWidget';
-import { useWorkOrders, invalidateWorkOrdersCache, WorkOrderListItem } from '@/hooks/useWorkOrders';
+import { useWorkOrders, WorkOrderListItem } from '@/hooks/useWorkOrders';
 import { prefetchProductionOnHover } from '@/services/prefetchService';
 import { ResponsiveVirtualizedGrid } from '@/components/VirtualizedList';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { getProductBreakdown } from '@/lib/utils';
 import { Plus, Package, Layers, RotateCcw, LayoutGrid, Table as TableIcon, Filter, Loader2, ChevronDown, ChevronRight } from 'lucide-react';
-import { format, differenceInDays, parseISO, isBefore, isSameDay } from 'date-fns';
+import { format, differenceInDays, parseISO } from 'date-fns';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 // Type alias for backwards compatibility
@@ -45,7 +43,6 @@ const DEFAULT_FILTERS: FilterState = {
 const FILTERS_STORAGE_KEY = 'workorders_filters';
 const GROUPBY_STORAGE_KEY = 'workorders_groupby';
 const VIEWMODE_STORAGE_KEY = 'workorders_viewmode';
-const CALENDAR_DATE_STORAGE_KEY = 'workorders_calendar_date';
 
 type ViewMode = 'cards' | 'table';
 
@@ -56,17 +53,18 @@ const WorkOrders = () => {
   const navigate = useNavigate();
   const [dialogOpen, setDialogOpen] = useState(false);
   
-  // Use the resilient work orders hook
-  const { workOrders, loading, error, refetch, isStale, setupRealtime } = useWorkOrders({
+  // Use the resilient work orders hook - disable realtime to reduce memory/subscriptions
+  const { workOrders, loading, error, refetch } = useWorkOrders({
     excludeCancelled: true,
-    enableRealtime: true,
+    enableRealtime: false,
   });
   
-  // Set up realtime updates
+  // Track if component is mounted to prevent state updates after unmount
+  const isMountedRef = useRef(true);
   useEffect(() => {
-    const cleanup = setupRealtime();
-    return cleanup;
-  }, [setupRealtime]);
+    isMountedRef.current = true;
+    return () => { isMountedRef.current = false; };
+  }, []);
   
   // Load persisted filters from sessionStorage
   const [filters, setFilters] = useState<FilterState>(() => {
@@ -98,16 +96,6 @@ const WorkOrders = () => {
     }
   });
   
-  // Calendar date filter state
-  const [calendarSelectedDate, setCalendarSelectedDate] = useState<Date | null>(() => {
-    try {
-      const saved = sessionStorage.getItem(CALENDAR_DATE_STORAGE_KEY);
-      return saved ? new Date(saved) : null;
-    } catch {
-      return null;
-    }
-  });
-  
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
   // Persist filters to sessionStorage
@@ -124,15 +112,6 @@ const WorkOrders = () => {
   useEffect(() => {
     sessionStorage.setItem(VIEWMODE_STORAGE_KEY, viewMode);
   }, [viewMode]);
-  
-  // Persist calendar date to sessionStorage
-  useEffect(() => {
-    if (calendarSelectedDate) {
-      sessionStorage.setItem(CALENDAR_DATE_STORAGE_KEY, calendarSelectedDate.toISOString());
-    } else {
-      sessionStorage.removeItem(CALENDAR_DATE_STORAGE_KEY);
-    }
-  }, [calendarSelectedDate]);
 
   useEffect(() => {
     if (!user) {
@@ -141,11 +120,10 @@ const WorkOrders = () => {
   }, [user, navigate]);
 
   // Reset all filters
-  const resetFilters = () => {
+  const resetFilters = useCallback(() => {
     setFilters(DEFAULT_FILTERS);
     setGroupBy('none');
-    setCalendarSelectedDate(null);
-  };
+  }, []);
 
   // Check if any filters are active
   const hasActiveFilters = useMemo(() => {
@@ -157,8 +135,7 @@ const WorkOrders = () => {
       filters.deliveryMonthFilter !== 'all' ||
       filters.createdMonthFilter !== 'all' ||
       filters.batchSizeFilter !== 'all' ||
-      groupBy !== 'none' ||
-      calendarSelectedDate !== null;
+      groupBy !== 'none';
   }, [filters, groupBy]);
 
   // Get unique values for filter options
@@ -249,16 +226,8 @@ const WorkOrders = () => {
       });
     }
 
-    // Calendar date filter
-    if (calendarSelectedDate) {
-      filtered = filtered.filter(wo => {
-        if (!wo.start_date) return false;
-        return isSameDay(parseISO(wo.start_date), calendarSelectedDate);
-      });
-    }
-
     return filtered;
-  }, [filters, workOrders, calendarSelectedDate]);
+  }, [filters, workOrders]);
 
   // Grouping logic
   const getGroupKey = (wo: WorkOrderWithItems, groupOption: GroupByOption): string => {
@@ -327,7 +296,7 @@ const WorkOrders = () => {
   };
 
   // Handle cancel work order
-  const handleCancelWorkOrder = async (workOrderId: string) => {
+  const handleCancelWorkOrder = useCallback(async (workOrderId: string) => {
     if (confirm(t('confirmCancelWorkOrder'))) {
       try {
         const { error } = await supabase
@@ -336,15 +305,15 @@ const WorkOrders = () => {
           .eq('id', workOrderId);
         if (error) throw error;
         toast.success(t('success'), { description: t('workOrderCancelled') });
-        refetch();
+        if (isMountedRef.current) refetch();
       } catch (error: any) {
         toast.error(t('error'), { description: error.message });
       }
     }
-  };
+  }, [t, refetch]);
 
   // Transform work order to row data format
-  const toRowData = (wo: WorkOrderWithItems): WorkOrderRowData => ({
+  const toRowData = useCallback((wo: WorkOrderWithItems): WorkOrderRowData => ({
     id: wo.id,
     wo_number: wo.wo_number,
     product_type: wo.product_type,
@@ -358,7 +327,7 @@ const WorkOrders = () => {
     productBreakdown: wo.productBreakdown,
     isMainAssembly: wo.isMainAssembly,
     hasSubassemblies: wo.hasSubassemblies,
-  });
+  }), []);
 
   // Render table view with shared component
   const renderTableView = (orders: WorkOrderWithItems[]) => (
@@ -389,8 +358,8 @@ const WorkOrders = () => {
   );
 
   // Render card view with shared component
-  const renderCardView = (orders: WorkOrderWithItems[]) => (
-    <div className="grid gap-2 md:gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+  const renderCardView = useCallback((orders: WorkOrderWithItems[]) => (
+    <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
       {orders.map((wo) => (
         <WorkOrderCard
           key={wo.id}
@@ -401,7 +370,7 @@ const WorkOrders = () => {
         />
       ))}
     </div>
-  );
+  ), [toRowData, navigate, isAdmin, handleCancelWorkOrder]);
 
   return (
     <ProtectedRoute>
@@ -487,115 +456,103 @@ const WorkOrders = () => {
             </div>
           </div>
 
-          {/* Main content with calendar sidebar */}
-          <div className="flex flex-col lg:flex-row gap-3 lg:gap-4">
-            {/* Calendar Widget - sidebar on desktop, inline on mobile */}
-            <div className="lg:w-64 lg:flex-shrink-0">
-              <MiniCalendarWidget
-                workOrders={workOrders}
-                selectedDate={calendarSelectedDate}
-                onSelectDate={setCalendarSelectedDate}
-              />
-            </div>
-            
-            {/* Work Orders List */}
-            <div className="flex-1 min-w-0">
-              {loading ? (
-                <div className="flex justify-center py-8">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                </div>
-              ) : filteredOrders.length === 0 ? (
-                workOrders.length === 0 ? (
-                  <Card className="shadow-sm">
-                    <CardContent className="py-8 text-center">
-                      <Package className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
-                      <h3 className="text-base font-semibold mb-2">{t('noWorkOrdersYet')}</h3>
-                      <p className="text-xs text-muted-foreground mb-4">{t('createFirstWorkOrder')}</p>
-                      <Button onClick={() => setDialogOpen(true)} variant="default" size="sm">
-                        <Plus className="mr-1.5 h-3.5 w-3.5" />
-                        {t('createWorkOrder')}
-                      </Button>
-                    </CardContent>
-                  </Card>
+          {/* Work Orders List */}
+          <div className="w-full">
+            {loading ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : filteredOrders.length === 0 ? (
+              workOrders.length === 0 ? (
+                <Card className="shadow-sm">
+                  <CardContent className="py-8 text-center">
+                    <Package className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
+                    <h3 className="text-base font-semibold mb-2">{t('noWorkOrdersYet')}</h3>
+                    <p className="text-xs text-muted-foreground mb-4">{t('createFirstWorkOrder')}</p>
+                    <Button onClick={() => setDialogOpen(true)} variant="default" size="sm">
+                      <Plus className="mr-1.5 h-3.5 w-3.5" />
+                      {t('createWorkOrder')}
+                    </Button>
+                  </CardContent>
+                </Card>
+              ) : (
+                <Card className="shadow-sm">
+                  <CardContent className="py-8 text-center">
+                    <Filter className="h-10 w-10 mx-auto mb-4 text-muted-foreground/50" />
+                    <h3 className="text-sm font-semibold mb-2">{t('noMatchingOrders')}</h3>
+                    <p className="text-xs text-muted-foreground mb-4">{t('tryDifferentFilters')}</p>
+                    <Button onClick={resetFilters} variant="outline" size="sm">
+                      <RotateCcw className="h-3 w-3 mr-1" />
+                      {t('clearFilters')}
+                    </Button>
+                  </CardContent>
+                </Card>
+              )
+            ) : groupBy === 'none' ? (
+              viewMode === 'cards' ? (
+                filteredOrders.length > 50 ? (
+                  <ResponsiveVirtualizedGrid
+                    items={filteredOrders}
+                    renderItem={(wo) => (
+                      <WorkOrderCard
+                        workOrder={toRowData(wo)}
+                        onClick={() => navigate(`/production/${wo.id}`)}
+                        onCancel={isAdmin ? () => handleCancelWorkOrder(wo.id) : undefined}
+                        onHover={() => prefetchProductionOnHover(wo.id)}
+                      />
+                    )}
+                    itemHeight={280}
+                    minItemWidth={300}
+                    gap={12}
+                    maxHeight={700}
+                    threshold={50}
+                  />
                 ) : (
-                  <Card className="shadow-sm">
-                    <CardContent className="py-8 text-center">
-                      <Filter className="h-10 w-10 mx-auto mb-4 text-muted-foreground/50" />
-                      <h3 className="text-sm font-semibold mb-2">{t('noMatchingOrders')}</h3>
-                      <p className="text-xs text-muted-foreground mb-4">{t('tryDifferentFilters')}</p>
-                      <Button onClick={resetFilters} variant="outline" size="sm">
-                        <RotateCcw className="h-3 w-3 mr-1" />
-                        {t('clearFilters')}
-                      </Button>
-                    </CardContent>
-                  </Card>
-                )
-              ) : groupBy === 'none' ? (
-                viewMode === 'cards' ? (
-                  filteredOrders.length > 50 ? (
-                    <ResponsiveVirtualizedGrid
-                      items={filteredOrders}
-                      renderItem={(wo) => (
-                        <WorkOrderCard
-                          workOrder={toRowData(wo)}
-                          onClick={() => navigate(`/production/${wo.id}`)}
-                          onCancel={isAdmin ? () => handleCancelWorkOrder(wo.id) : undefined}
-                          onHover={() => prefetchProductionOnHover(wo.id)}
-                        />
-                      )}
-                      itemHeight={280}
-                      minItemWidth={280}
-                      gap={12}
-                      maxHeight={700}
-                      threshold={50}
-                    />
-                  ) : (
-                    renderCardView(filteredOrders)
-                  )
-                ) : (
-                  renderTableView(filteredOrders)
+                  renderCardView(filteredOrders)
                 )
               ) : (
-                <div className="space-y-2">
-                  {Object.entries(groupedOrders).sort().map(([groupKey, orders]) => (
-                    <Collapsible 
-                      key={groupKey} 
-                      open={expandedGroups.has(groupKey)}
-                      onOpenChange={() => toggleGroup(groupKey)}
-                    >
-                      <Card className="shadow-sm">
-                        <CollapsibleTrigger className="w-full">
-                          <CardHeader className="py-2.5 px-3 flex flex-row items-center justify-between hover:bg-muted/50 transition-colors cursor-pointer">
-                            <div className="flex items-center gap-2">
-                              {expandedGroups.has(groupKey) ? (
-                                <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
-                              ) : (
-                                <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
-                              )}
-                              <CardTitle className="text-xs font-medium">
-                                {getGroupLabel(groupKey, groupBy)}
-                              </CardTitle>
-                              <Badge variant="secondary" className="text-[10px]">
-                                {orders.length}
-                              </Badge>
-                            </div>
-                          </CardHeader>
-                        </CollapsibleTrigger>
-                        <CollapsibleContent>
-                          <CardContent className="pt-0 pb-3">
-                            {viewMode === 'cards' ? (
-                              renderCardView(orders)
+                renderTableView(filteredOrders)
+              )
+            ) : (
+              <div className="space-y-2">
+                {Object.entries(groupedOrders).sort().map(([groupKey, orders]) => (
+                  <Collapsible 
+                    key={groupKey} 
+                    open={expandedGroups.has(groupKey)}
+                    onOpenChange={() => toggleGroup(groupKey)}
+                  >
+                    <Card className="shadow-sm">
+                      <CollapsibleTrigger className="w-full">
+                        <CardHeader className="py-2.5 px-3 flex flex-row items-center justify-between hover:bg-muted/50 transition-colors cursor-pointer">
+                          <div className="flex items-center gap-2">
+                            {expandedGroups.has(groupKey) ? (
+                              <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
                             ) : (
-                              renderTableView(orders)
+                              <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
                             )}
-                          </CardContent>
-                        </CollapsibleContent>
-                      </Card>
-                    </Collapsible>
-                  ))}
-                </div>
-              )}
-            </div>
+                            <CardTitle className="text-xs font-medium">
+                              {getGroupLabel(groupKey, groupBy)}
+                            </CardTitle>
+                            <Badge variant="secondary" className="text-[10px]">
+                              {orders.length}
+                            </Badge>
+                          </div>
+                        </CardHeader>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        <CardContent className="pt-0 pb-3">
+                          {viewMode === 'cards' ? (
+                            renderCardView(orders)
+                          ) : (
+                            renderTableView(orders)
+                          )}
+                        </CardContent>
+                      </CollapsibleContent>
+                    </Card>
+                  </Collapsible>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
