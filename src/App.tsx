@@ -9,6 +9,7 @@ import { LanguageProvider } from "./contexts/LanguageContext";
 import { UserProfileProvider } from "./contexts/UserProfileContext";
 import { Loader2 } from "lucide-react";
 import { initializePrefetch } from "./services/prefetchService";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 // Auth page loads eagerly for fast initial login experience
 import Auth from "./pages/Auth";
@@ -66,23 +67,23 @@ const App = () => {
               <UserProfileProvider>
                 <Suspense fallback={<PageLoader />}>
                   <Routes>
-                    <Route path="/" element={<Index />} />
                     <Route path="/auth" element={<Auth />} />
-                    <Route path="/work-orders" element={<WorkOrders />} />
-                    <Route path="/production/:itemId" element={<Production />} />
-                    <Route path="/production/step/:itemId" element={<ProductionStep />} />
-                    <Route path="/production/sensor/:itemId" element={<ProductionSensor />} />
-                    <Route path="/quality-certificates" element={<QualityCertificates />} />
-                    <Route path="/production-reports" element={<ProductionReports />} />
-                    <Route path="/production-reports/:id" element={<ProductionReportDetail />} />
-                    <Route path="/analytics" element={<Analytics />} />
-                    <Route path="/role-management" element={<RoleManagement />} />
-                    <Route path="/calendar" element={<ProductionCalendar />} />
-                    <Route path="/search" element={<Search />} />
-                    <Route path="/genealogy/:serialNumber" element={<Genealogy />} />
-                    <Route path="/settings" element={<Settings />} />
-                    <Route path="/personal-settings" element={<PersonalSettings />} />
-                    <Route path="/inventory" element={<Inventory />} />
+                    <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+                    <Route path="/work-orders" element={<ProtectedRoute><WorkOrders /></ProtectedRoute>} />
+                    <Route path="/production/:itemId" element={<ProtectedRoute><Production /></ProtectedRoute>} />
+                    <Route path="/production/step/:itemId" element={<ProtectedRoute><ProductionStep /></ProtectedRoute>} />
+                    <Route path="/production/sensor/:itemId" element={<ProtectedRoute><ProductionSensor /></ProtectedRoute>} />
+                    <Route path="/quality-certificates" element={<ProtectedRoute><QualityCertificates /></ProtectedRoute>} />
+                    <Route path="/production-reports" element={<ProtectedRoute><ProductionReports /></ProtectedRoute>} />
+                    <Route path="/production-reports/:id" element={<ProtectedRoute><ProductionReportDetail /></ProtectedRoute>} />
+                    <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
+                    <Route path="/role-management" element={<ProtectedRoute><RoleManagement /></ProtectedRoute>} />
+                    <Route path="/calendar" element={<ProtectedRoute><ProductionCalendar /></ProtectedRoute>} />
+                    <Route path="/search" element={<ProtectedRoute><Search /></ProtectedRoute>} />
+                    <Route path="/genealogy/:serialNumber" element={<ProtectedRoute><Genealogy /></ProtectedRoute>} />
+                    <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+                    <Route path="/personal-settings" element={<ProtectedRoute><PersonalSettings /></ProtectedRoute>} />
+                    <Route path="/inventory" element={<ProtectedRoute><Inventory /></ProtectedRoute>} />
                     {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                     <Route path="*" element={<NotFound />} />
                   </Routes>
