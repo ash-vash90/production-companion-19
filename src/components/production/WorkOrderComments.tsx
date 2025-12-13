@@ -135,7 +135,12 @@ export function WorkOrderComments({ workOrderId, workOrderItemId, currentStepNum
         }, {} as Record<string, { name: string; avatar_url: string | null }>);
       }
 
-      const enrichedNotes = (data || []).map(note => ({
+      // Comments = anything with replies or mentions; plain notes live in SimpleNotes
+      const commentData = (data || []).filter((note: any) => 
+        note.reply_to_id !== null || (note.mentions && note.mentions.length > 0)
+      );
+
+      const enrichedNotes = commentData.map((note: any) => ({
         id: note.id,
         content: note.content,
         user_id: note.user_id,
