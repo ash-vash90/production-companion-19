@@ -4,19 +4,20 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import Layout from '@/components/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
-import { PageHeader } from '@/components/PageHeader';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { WorkOrderStatusBadge } from '@/components/workorders/WorkOrderStatusBadge';
 import { ProductBreakdownBadges } from '@/components/workorders/ProductBreakdownBadges';
+import { StepTimeline } from '@/components/reports/StepTimeline';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { 
   Loader2, ArrowLeft, Package, ClipboardList, Users, Clock, CheckCircle2, XCircle, 
-  FileText, Tag, History, Download, Printer, CheckSquare, FileDown
+  FileText, Tag, History, Download, Printer, CheckSquare, FileDown, Calendar
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { nl, enUS } from 'date-fns/locale';
@@ -385,7 +386,7 @@ const ProductionReportDetail = () => {
   return (
     <ProtectedRoute>
       <Layout>
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           {/* Back Button */}
           <Button variant="ghost" size="sm" onClick={() => navigate('/production-reports')} className="gap-2">
             <ArrowLeft className="h-4 w-4" />
@@ -397,7 +398,7 @@ const ProductionReportDetail = () => {
             <CardHeader className="pb-4">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
-                  <CardTitle className="text-2xl font-bold">{data.workOrder.wo_number}</CardTitle>
+                  <CardTitle className="text-xl sm:text-2xl font-bold">{data.workOrder.wo_number}</CardTitle>
                   <CardDescription className="mt-1">
                     {data.workOrder.customer_name && <span>{data.workOrder.customer_name} • </span>}
                     {t('productionReport')}
@@ -416,7 +417,7 @@ const ProductionReportDetail = () => {
                     ) : (
                       <FileDown className="h-4 w-4" />
                     )}
-                    {t('exportPdf')}
+                    <span className="hidden sm:inline">{t('exportPdf')}</span>
                   </Button>
                   <WorkOrderStatusBadge status={data.workOrder.status} />
                 </div>
@@ -428,181 +429,159 @@ const ProductionReportDetail = () => {
           </Card>
 
           {/* Summary Statistics Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-            <Card className="p-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
+            <Card className="p-3 sm:p-4">
               <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                <Package className="h-4 w-4" />
-                <span className="text-xs font-medium uppercase tracking-wide">{t('items')}</span>
+                <Package className="h-4 w-4 flex-shrink-0" />
+                <span className="text-xs font-medium uppercase tracking-wide truncate">{t('items')}</span>
               </div>
-              <p className="text-2xl font-bold">{completedItems}/{data.items.length}</p>
+              <p className="text-xl sm:text-2xl font-bold">{completedItems}/{data.items.length}</p>
               <p className="text-xs text-muted-foreground">{t('completed')}</p>
             </Card>
-            <Card className="p-4">
+            <Card className="p-3 sm:p-4">
               <div className="flex items-center gap-2 text-success mb-1">
-                <CheckCircle2 className="h-4 w-4" />
-                <span className="text-xs font-medium uppercase tracking-wide">{t('passed')}</span>
+                <CheckCircle2 className="h-4 w-4 flex-shrink-0" />
+                <span className="text-xs font-medium uppercase tracking-wide truncate">{t('passed')}</span>
               </div>
-              <p className="text-2xl font-bold text-success">{passedValidations}</p>
+              <p className="text-xl sm:text-2xl font-bold text-success">{passedValidations}</p>
               <p className="text-xs text-muted-foreground">{t('validations')}</p>
             </Card>
-            <Card className="p-4">
+            <Card className="p-3 sm:p-4">
               <div className="flex items-center gap-2 text-destructive mb-1">
-                <XCircle className="h-4 w-4" />
-                <span className="text-xs font-medium uppercase tracking-wide">{t('failed')}</span>
+                <XCircle className="h-4 w-4 flex-shrink-0" />
+                <span className="text-xs font-medium uppercase tracking-wide truncate">{t('failed')}</span>
               </div>
-              <p className="text-2xl font-bold text-destructive">{failedValidations}</p>
+              <p className="text-xl sm:text-2xl font-bold text-destructive">{failedValidations}</p>
               <p className="text-xs text-muted-foreground">{t('validations')}</p>
             </Card>
-            <Card className="p-4">
+            <Card className="p-3 sm:p-4">
               <div className="flex items-center gap-2 text-info mb-1">
-                <FileText className="h-4 w-4" />
-                <span className="text-xs font-medium uppercase tracking-wide">{t('certificates')}</span>
+                <FileText className="h-4 w-4 flex-shrink-0" />
+                <span className="text-xs font-medium uppercase tracking-wide truncate">{t('certificates')}</span>
               </div>
-              <p className="text-2xl font-bold">{data.certificates.length}</p>
+              <p className="text-xl sm:text-2xl font-bold">{data.certificates.length}</p>
               <p className="text-xs text-muted-foreground">{t('issued')}</p>
             </Card>
-            <Card className="p-4">
+            <Card className="p-3 sm:p-4">
               <div className="flex items-center gap-2 text-warning mb-1">
-                <Tag className="h-4 w-4" />
-                <span className="text-xs font-medium uppercase tracking-wide">{t('labels')}</span>
+                <Tag className="h-4 w-4 flex-shrink-0" />
+                <span className="text-xs font-medium uppercase tracking-wide truncate">{t('labels')}</span>
               </div>
-              <p className="text-2xl font-bold">{labelsPrinted}/{data.items.length}</p>
+              <p className="text-xl sm:text-2xl font-bold">{labelsPrinted}/{data.items.length}</p>
               <p className="text-xs text-muted-foreground">{t('printed')}</p>
             </Card>
-            <Card className="p-4">
+            <Card className="p-3 sm:p-4">
               <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                <Users className="h-4 w-4" />
-                <span className="text-xs font-medium uppercase tracking-wide">{t('operators')}</span>
+                <Users className="h-4 w-4 flex-shrink-0" />
+                <span className="text-xs font-medium uppercase tracking-wide truncate">{t('operators')}</span>
               </div>
-              <p className="text-2xl font-bold">{data.operators.length}</p>
+              <p className="text-xl sm:text-2xl font-bold">{data.operators.length}</p>
               <p className="text-xs text-muted-foreground">{t('involved')}</p>
             </Card>
           </div>
 
-          {/* Key Dates Card */}
+          {/* Key Dates Card - Improved */}
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+              <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+                <Calendar className="h-4 w-4" />
                 {t('keyDates')}
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div>
-                  <p className="text-xs text-muted-foreground mb-1">{t('created')}</p>
-                  <p className="font-medium">{formatDate(data.workOrder.created_at)}</p>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">{t('created')}</p>
+                  <p className="font-medium text-sm">{formatDate(data.workOrder.created_at)}</p>
                 </div>
-                <div>
-                  <p className="text-xs text-muted-foreground mb-1">{t('startDate')}</p>
-                  <p className="font-medium">{data.workOrder.start_date ? formatDate(data.workOrder.start_date) : '—'}</p>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">{t('startDate')}</p>
+                  <p className="font-medium text-sm">
+                    {data.workOrder.start_date 
+                      ? formatDate(data.workOrder.start_date) 
+                      : <span className="text-muted-foreground italic">{t('notSet')}</span>
+                    }
+                  </p>
                 </div>
-                <div>
-                  <p className="text-xs text-muted-foreground mb-1">{t('shippingDate')}</p>
-                  <p className="font-medium">{data.workOrder.shipping_date ? formatDate(data.workOrder.shipping_date) : '—'}</p>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">{t('shippingDate')}</p>
+                  <p className="font-medium text-sm">
+                    {data.workOrder.shipping_date 
+                      ? formatDate(data.workOrder.shipping_date) 
+                      : <span className="text-muted-foreground italic">{t('notSet')}</span>
+                    }
+                  </p>
                 </div>
-                <div>
-                  <p className="text-xs text-muted-foreground mb-1">{t('completed')}</p>
-                  <p className="font-medium">{data.workOrder.completed_at ? formatDate(data.workOrder.completed_at) : '—'}</p>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">{t('completed')}</p>
+                  <p className="font-medium text-sm">
+                    {data.workOrder.completed_at 
+                      ? formatDate(data.workOrder.completed_at) 
+                      : <span className="text-muted-foreground italic">{t('notSet')}</span>
+                    }
+                  </p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Tabbed Content */}
+          {/* Tabbed Content - Improved with horizontal scroll on mobile */}
           <Tabs defaultValue="steps" className="space-y-4">
-            <TabsList className="flex-wrap h-auto">
-              <TabsTrigger value="steps" className="gap-1">
-                <ClipboardList className="h-4 w-4" />
-                {t('steps')} ({data.stepExecutions.length})
-              </TabsTrigger>
-              <TabsTrigger value="materials" className="gap-1">
-                <Package className="h-4 w-4" />
-                {t('materials')} ({data.batchMaterials.length})
-              </TabsTrigger>
-              <TabsTrigger value="certificates" className="gap-1">
-                <FileText className="h-4 w-4" />
-                {t('certificates')} ({data.certificates.length})
-              </TabsTrigger>
-              <TabsTrigger value="labels" className="gap-1">
-                <Tag className="h-4 w-4" />
-                {t('labels')} ({labelsPrinted})
-              </TabsTrigger>
-              <TabsTrigger value="checklists" className="gap-1">
-                <CheckSquare className="h-4 w-4" />
-                {t('checklists')} ({data.checklistResponses.length})
-              </TabsTrigger>
-              <TabsTrigger value="operators" className="gap-1">
-                <Users className="h-4 w-4" />
-                {t('operators')} ({data.operators.length})
-              </TabsTrigger>
-              <TabsTrigger value="activity" className="gap-1">
-                <History className="h-4 w-4" />
-                {t('activity')} ({data.activityLog.length})
-              </TabsTrigger>
-            </TabsList>
+            <ScrollArea className="w-full">
+              <TabsList className="inline-flex h-auto p-1 w-max min-w-full sm:min-w-0">
+                <TabsTrigger value="steps" className="gap-1.5 text-xs sm:text-sm whitespace-nowrap">
+                  <ClipboardList className="h-4 w-4" />
+                  <span className="hidden sm:inline">{t('steps')}</span>
+                  <Badge variant="secondary" className="text-[10px] h-5 px-1.5">{data.stepExecutions.length}</Badge>
+                </TabsTrigger>
+                <TabsTrigger value="materials" className="gap-1.5 text-xs sm:text-sm whitespace-nowrap">
+                  <Package className="h-4 w-4" />
+                  <span className="hidden sm:inline">{t('materials')}</span>
+                  <Badge variant="secondary" className="text-[10px] h-5 px-1.5">{data.batchMaterials.length}</Badge>
+                </TabsTrigger>
+                <TabsTrigger value="certificates" className="gap-1.5 text-xs sm:text-sm whitespace-nowrap">
+                  <FileText className="h-4 w-4" />
+                  <span className="hidden sm:inline">{t('certificates')}</span>
+                  <Badge variant="secondary" className="text-[10px] h-5 px-1.5">{data.certificates.length}</Badge>
+                </TabsTrigger>
+                <TabsTrigger value="labels" className="gap-1.5 text-xs sm:text-sm whitespace-nowrap">
+                  <Tag className="h-4 w-4" />
+                  <span className="hidden sm:inline">{t('labels')}</span>
+                  <Badge variant="secondary" className="text-[10px] h-5 px-1.5">{labelsPrinted}</Badge>
+                </TabsTrigger>
+                <TabsTrigger value="checklists" className="gap-1.5 text-xs sm:text-sm whitespace-nowrap">
+                  <CheckSquare className="h-4 w-4" />
+                  <span className="hidden sm:inline">{t('checklists')}</span>
+                  <Badge variant="secondary" className="text-[10px] h-5 px-1.5">{data.checklistResponses.length}</Badge>
+                </TabsTrigger>
+                <TabsTrigger value="operators" className="gap-1.5 text-xs sm:text-sm whitespace-nowrap">
+                  <Users className="h-4 w-4" />
+                  <span className="hidden sm:inline">{t('operators')}</span>
+                  <Badge variant="secondary" className="text-[10px] h-5 px-1.5">{data.operators.length}</Badge>
+                </TabsTrigger>
+                <TabsTrigger value="activity" className="gap-1.5 text-xs sm:text-sm whitespace-nowrap">
+                  <History className="h-4 w-4" />
+                  <span className="hidden sm:inline">{t('activity')}</span>
+                  <Badge variant="secondary" className="text-[10px] h-5 px-1.5">{data.activityLog.length}</Badge>
+                </TabsTrigger>
+              </TabsList>
+              <ScrollBar orientation="horizontal" className="sm:hidden" />
+            </ScrollArea>
 
-            {/* Production Steps Tab */}
+            {/* Production Steps Tab - Now using StepTimeline */}
             <TabsContent value="steps">
               <Card>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-base">{t('productionSteps')}</CardTitle>
                   <CardDescription>{t('allCompletedStepsForThisOrder')}</CardDescription>
                 </CardHeader>
-                <CardContent className="p-0">
-                  {data.stepExecutions.length === 0 ? (
-                    <p className="text-muted-foreground text-center py-8">{t('noStepsCompleted')}</p>
-                  ) : (
-                    <div className="divide-y divide-border">
-                      {data.stepExecutions.map((exec) => (
-                        <div key={exec.id} className="p-4 hover:bg-muted/50 transition-colors">
-                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
-                            <div className="flex items-center gap-3 flex-wrap">
-                              <Badge variant="outline" className="font-mono text-xs">
-                                {exec.serial_number}
-                              </Badge>
-                              <span className="font-medium text-sm">
-                                {t('step')} {exec.step_number}: {exec.step_title}
-                              </span>
-                            </div>
-                            {exec.validation_status && (
-                              <Badge variant={exec.validation_status === 'passed' ? 'success' : exec.validation_status === 'failed' ? 'destructive' : 'secondary'}>
-                                {exec.validation_status.toUpperCase()}
-                              </Badge>
-                            )}
-                          </div>
-                          <div className="flex items-center justify-between text-sm text-muted-foreground">
-                            <div className="flex items-center gap-2">
-                              <Avatar className="h-5 w-5">
-                                <AvatarImage src={exec.operator_avatar || undefined} />
-                                <AvatarFallback className="text-[10px]">
-                                  {exec.operator_initials || getInitials(exec.operator_name)}
-                                </AvatarFallback>
-                              </Avatar>
-                              <span>{exec.operator_name}</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Clock className="h-3 w-3" />
-                              {exec.completed_at && format(new Date(exec.completed_at), 'PPp', { locale: dateLocale })}
-                            </div>
-                          </div>
-                          {Object.keys(exec.measurement_values).length > 0 && (
-                            <div className="mt-3 pt-3 border-t border-dashed text-sm flex flex-wrap gap-x-4 gap-y-1">
-                              {Object.entries(exec.measurement_values).map(([key, value]) => (
-                                <span key={key} className="text-muted-foreground">
-                                  {key}: <span className="font-mono font-medium text-foreground">{String(value)}</span>
-                                </span>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                <CardContent>
+                  <StepTimeline stepExecutions={data.stepExecutions} />
                 </CardContent>
               </Card>
             </TabsContent>
 
-            {/* Batch Materials Tab */}
+            {/* Batch Materials Tab - 2 column on desktop */}
             <TabsContent value="materials">
               <Card>
                 <CardHeader className="pb-2">
@@ -613,16 +592,16 @@ const ProductionReportDetail = () => {
                   {data.batchMaterials.length === 0 ? (
                     <p className="text-muted-foreground text-center py-8">{t('noMaterialsScanned')}</p>
                   ) : (
-                    <div className="divide-y divide-border">
+                    <div className="grid grid-cols-1 lg:grid-cols-2">
                       {data.batchMaterials.map((mat, index) => (
-                        <div key={index} className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors">
-                          <div className="flex items-center gap-3 flex-wrap">
-                            <Badge variant="outline" className="font-mono text-xs">{mat.serial_number}</Badge>
-                            <Badge variant="secondary" className="text-xs">{mat.material_type}</Badge>
-                            <span className="font-mono font-medium text-sm">{mat.batch_number}</span>
+                        <div key={index} className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors border-b lg:odd:border-r last:border-b-0 lg:[&:nth-last-child(2):nth-child(odd)]:border-b-0">
+                          <div className="flex items-center gap-2 flex-wrap min-w-0">
+                            <Badge variant="outline" className="font-mono text-xs flex-shrink-0">{mat.serial_number}</Badge>
+                            <Badge variant="secondary" className="text-xs flex-shrink-0">{mat.material_type}</Badge>
+                            <span className="font-mono font-medium text-sm truncate">{mat.batch_number}</span>
                           </div>
-                          <span className="text-sm text-muted-foreground">
-                            {format(new Date(mat.scanned_at), 'PPp', { locale: dateLocale })}
+                          <span className="text-xs text-muted-foreground flex-shrink-0 ml-2">
+                            {format(new Date(mat.scanned_at), 'MMM d, HH:mm', { locale: dateLocale })}
                           </span>
                         </div>
                       ))}
@@ -632,7 +611,7 @@ const ProductionReportDetail = () => {
               </Card>
             </TabsContent>
 
-            {/* Quality Certificates Tab */}
+            {/* Quality Certificates Tab - 2 column on desktop */}
             <TabsContent value="certificates">
               <Card>
                 <CardHeader className="pb-2">
@@ -643,25 +622,27 @@ const ProductionReportDetail = () => {
                   {data.certificates.length === 0 ? (
                     <p className="text-muted-foreground text-center py-8">{t('noCertificatesGenerated')}</p>
                   ) : (
-                    <div className="divide-y divide-border">
+                    <div className="grid grid-cols-1 lg:grid-cols-2">
                       {data.certificates.map((cert) => (
-                        <div key={cert.id} className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors">
-                          <div className="flex items-center gap-3">
-                            <FileText className="h-4 w-4 text-primary" />
-                            <Badge variant="outline" className="font-mono text-xs">{cert.serial_number}</Badge>
-                            <span className="text-sm text-muted-foreground">
-                              {cert.generated_by_name && `${t('generatedBy')} ${cert.generated_by_name}`}
-                            </span>
+                        <div key={cert.id} className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors border-b lg:odd:border-r last:border-b-0 lg:[&:nth-last-child(2):nth-child(odd)]:border-b-0">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <FileText className="h-4 w-4 text-primary flex-shrink-0" />
+                            <Badge variant="outline" className="font-mono text-xs flex-shrink-0">{cert.serial_number}</Badge>
+                            {cert.generated_by_name && (
+                              <span className="text-xs text-muted-foreground truncate">
+                                {t('generatedBy')} {cert.generated_by_name}
+                              </span>
+                            )}
                           </div>
-                          <div className="flex items-center gap-3">
-                            <span className="text-sm text-muted-foreground">
-                              {cert.generated_at && format(new Date(cert.generated_at), 'PPp', { locale: dateLocale })}
+                          <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                            <span className="text-xs text-muted-foreground hidden sm:block">
+                              {cert.generated_at && format(new Date(cert.generated_at), 'MMM d', { locale: dateLocale })}
                             </span>
                             {cert.pdf_url && (
-                              <Button variant="outline" size="sm" asChild>
+                              <Button variant="outline" size="sm" asChild className="h-7 px-2">
                                 <a href={cert.pdf_url} target="_blank" rel="noopener noreferrer" className="gap-1">
-                                  <Download className="h-4 w-4" />
-                                  PDF
+                                  <Download className="h-3 w-3" />
+                                  <span className="hidden sm:inline">PDF</span>
                                 </a>
                               </Button>
                             )}
@@ -685,18 +666,20 @@ const ProductionReportDetail = () => {
                   {labelsPrinted === 0 ? (
                     <p className="text-muted-foreground text-center py-8">{t('noLabelsPrinted')}</p>
                   ) : (
-                    <div className="divide-y divide-border">
+                    <div className="grid grid-cols-1 lg:grid-cols-2">
                       {data.items.filter(i => i.label_printed).map((item) => (
-                        <div key={item.id} className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors">
-                          <div className="flex items-center gap-3">
-                            <Printer className="h-4 w-4 text-warning" />
-                            <Badge variant="outline" className="font-mono text-xs">{item.serial_number}</Badge>
-                            <span className="text-sm text-muted-foreground">
-                              {item.label_printed_by_name && `${t('printedBy')} ${item.label_printed_by_name}`}
-                            </span>
+                        <div key={item.id} className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors border-b lg:odd:border-r last:border-b-0 lg:[&:nth-last-child(2):nth-child(odd)]:border-b-0">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <Printer className="h-4 w-4 text-warning flex-shrink-0" />
+                            <Badge variant="outline" className="font-mono text-xs flex-shrink-0">{item.serial_number}</Badge>
+                            {item.label_printed_by_name && (
+                              <span className="text-xs text-muted-foreground truncate">
+                                {t('printedBy')} {item.label_printed_by_name}
+                              </span>
+                            )}
                           </div>
-                          <span className="text-sm text-muted-foreground">
-                            {item.label_printed_at && format(new Date(item.label_printed_at), 'PPp', { locale: dateLocale })}
+                          <span className="text-xs text-muted-foreground flex-shrink-0 ml-2">
+                            {item.label_printed_at && format(new Date(item.label_printed_at), 'MMM d, HH:mm', { locale: dateLocale })}
                           </span>
                         </div>
                       ))}
@@ -706,7 +689,7 @@ const ProductionReportDetail = () => {
               </Card>
             </TabsContent>
 
-            {/* Checklist Responses Tab */}
+            {/* Checklist Responses Tab - 2 column on desktop */}
             <TabsContent value="checklists">
               <Card>
                 <CardHeader className="pb-2">
@@ -717,21 +700,20 @@ const ProductionReportDetail = () => {
                   {data.checklistResponses.length === 0 ? (
                     <p className="text-muted-foreground text-center py-8">{t('noChecklistResponses')}</p>
                   ) : (
-                    <div className="divide-y divide-border">
+                    <div className="grid grid-cols-1 lg:grid-cols-2">
                       {data.checklistResponses.map((resp) => (
-                        <div key={resp.id} className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors">
-                          <div className="flex items-center gap-3">
+                        <div key={resp.id} className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors border-b lg:odd:border-r last:border-b-0 lg:[&:nth-last-child(2):nth-child(odd)]:border-b-0">
+                          <div className="flex items-center gap-2 min-w-0">
                             {resp.checked ? (
-                              <CheckCircle2 className="h-4 w-4 text-success" />
+                              <CheckCircle2 className="h-4 w-4 text-success flex-shrink-0" />
                             ) : (
-                              <XCircle className="h-4 w-4 text-destructive" />
+                              <XCircle className="h-4 w-4 text-destructive flex-shrink-0" />
                             )}
-                            <Badge variant="outline" className="font-mono text-xs">{resp.serial_number}</Badge>
-                            <span className="text-sm">{resp.item_text}</span>
+                            <Badge variant="outline" className="font-mono text-xs flex-shrink-0">{resp.serial_number}</Badge>
+                            <span className="text-sm truncate">{resp.item_text}</span>
                           </div>
-                          <div className="text-sm text-muted-foreground text-right">
-                            {resp.checked_by_name && <div>{resp.checked_by_name}</div>}
-                            {resp.checked_at && <div>{format(new Date(resp.checked_at), 'PPp', { locale: dateLocale })}</div>}
+                          <div className="text-xs text-muted-foreground text-right flex-shrink-0 ml-2">
+                            {resp.checked_by_name && <div className="truncate max-w-[80px]">{resp.checked_by_name}</div>}
                           </div>
                         </div>
                       ))}
@@ -752,16 +734,16 @@ const ProductionReportDetail = () => {
                   {data.operators.length === 0 ? (
                     <p className="text-muted-foreground text-center py-8">{t('noOperators')}</p>
                   ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
                       {data.operators.map((op) => (
-                        <div key={op.id} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-                          <Avatar className="h-10 w-10">
+                        <div key={op.id} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 border">
+                          <Avatar className="h-10 w-10 flex-shrink-0">
                             <AvatarImage src={op.avatar_url || undefined} />
                             <AvatarFallback>{getInitials(op.full_name)}</AvatarFallback>
                           </Avatar>
-                          <div>
-                            <p className="font-medium">{op.full_name}</p>
-                            <p className="text-sm text-muted-foreground">
+                          <div className="min-w-0">
+                            <p className="font-medium text-sm truncate">{op.full_name}</p>
+                            <p className="text-xs text-muted-foreground">
                               {op.steps_completed} {t('stepsCompleted')}
                             </p>
                           </div>
@@ -784,25 +766,20 @@ const ProductionReportDetail = () => {
                   {data.activityLog.length === 0 ? (
                     <p className="text-muted-foreground text-center py-8">{t('noActivity')}</p>
                   ) : (
-                    <div className="divide-y divide-border">
+                    <div className="divide-y divide-border max-h-[400px] overflow-y-auto">
                       {data.activityLog.map((log) => (
                         <div key={log.id} className="flex items-start justify-between p-4 hover:bg-muted/50 transition-colors">
-                          <div className="flex items-start gap-3">
-                            <History className="h-4 w-4 text-muted-foreground mt-0.5" />
-                            <div>
+                          <div className="flex items-start gap-3 min-w-0">
+                            <History className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                            <div className="min-w-0">
                               <span className="font-medium text-sm">{log.action}</span>
                               {log.user_name && (
                                 <span className="text-sm text-muted-foreground ml-2">by {log.user_name}</span>
                               )}
-                              {log.details && typeof log.details === 'object' && (
-                                <div className="text-xs text-muted-foreground mt-1 font-mono">
-                                  {JSON.stringify(log.details).slice(0, 100)}...
-                                </div>
-                              )}
                             </div>
                           </div>
-                          <span className="text-sm text-muted-foreground whitespace-nowrap">
-                            {format(new Date(log.created_at), 'PPp', { locale: dateLocale })}
+                          <span className="text-xs text-muted-foreground flex-shrink-0 ml-2">
+                            {format(new Date(log.created_at), 'MMM d, HH:mm', { locale: dateLocale })}
                           </span>
                         </div>
                       ))}
