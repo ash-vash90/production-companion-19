@@ -98,8 +98,8 @@ const Index = () => {
           </div>
         </header>
 
-        {/* Main content - responsive grid with extra breathing room */}
-        <div className="grid gap-8 grid-cols-1 lg:grid-cols-2">
+        {/* Main content - fully card-based, single column */}
+        <div className="space-y-6">
           {/* Today's Schedule Card */}
           <Card className="shadow-sm">
             <CardContent className="p-6">
@@ -114,15 +114,15 @@ const Index = () => {
             </CardContent>
           </Card>
 
-          {/* Active Work Orders Card - spans full width on lg */}
-          <Card className="lg:col-span-2 shadow-sm">
+          {/* Active Work Orders Card */}
+          <Card className="shadow-sm">
             <CardContent className="p-6">
               <ProductionOverview />
             </CardContent>
           </Card>
 
-          {/* Recent Activity Card - spans full width on lg */}
-          <Card className="lg:col-span-2 shadow-sm">
+          {/* Recent Activity Card */}
+          <Card className="shadow-sm">
             <CardContent className="p-6">
               <RecentActivity />
             </CardContent>
