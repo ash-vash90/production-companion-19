@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { CreateWorkOrderDialog } from '@/components/CreateWorkOrderDialog';
-import { WorkOrderFilters, FilterState } from '@/components/workorders/WorkOrderFilters';
+import { WorkOrderFilters, FilterState, GroupByOption } from '@/components/workorders/WorkOrderFilters';
 import { WorkOrderCard } from '@/components/workorders/WorkOrderCard';
 import { WorkOrderTableRow, WorkOrderRowData } from '@/components/workorders/WorkOrderTableRow';
 import { CancelWorkOrderDialog } from '@/components/workorders/CancelWorkOrderDialog';
@@ -23,14 +23,14 @@ import { PullToRefresh } from '@/components/PullToRefresh';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Plus, Package, Layers, RotateCcw, LayoutGrid, Table as TableIcon, Filter, Loader2, ChevronDown, ChevronRight } from 'lucide-react';
+import { Plus, Package, RotateCcw, LayoutGrid, Table as TableIcon, Filter, Loader2, ChevronDown, ChevronRight } from 'lucide-react';
 import { format, differenceInDays, parseISO } from 'date-fns';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 // Type alias for backwards compatibility
 type WorkOrderWithItems = WorkOrderListItem;
 
-type GroupByOption = 'none' | 'status' | 'deliveryMonth' | 'createdMonth' | 'batchSize' | 'customer';
+// GroupByOption is now imported from WorkOrderFilters
 
 const DEFAULT_FILTERS: FilterState = {
   searchTerm: '',
@@ -434,6 +434,8 @@ const WorkOrders = () => {
                 customers={customers}
                 deliveryMonths={deliveryMonths}
                 createdMonths={createdMonths}
+                groupBy={groupBy}
+                onGroupByChange={(v) => setGroupBy(v)}
               />
               {hasActiveFilters && (
                 <Button 
@@ -448,45 +450,24 @@ const WorkOrders = () => {
               )}
             </div>
             
-            {/* View Toggle and Grouping */}
-            <div className="flex items-center gap-3">
-              {/* View Mode Toggle */}
-              <div className="flex items-center border rounded-md">
-                <Button
-                  variant={viewMode === 'cards' ? 'secondary' : 'ghost'}
-                  size="sm"
-                  className="h-8 px-2 rounded-r-none"
-                  onClick={() => setViewMode('cards')}
-                >
-                  <LayoutGrid className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant={viewMode === 'table' ? 'secondary' : 'ghost'}
-                  size="sm"
-                  className="h-8 px-2 rounded-l-none"
-                  onClick={() => setViewMode('table')}
-                >
-                  <TableIcon className="h-4 w-4" />
-                </Button>
-              </div>
-              
-              {/* Grouping Select */}
-              <div className="flex items-center gap-2">
-                <Layers className="h-3.5 w-3.5 text-muted-foreground" />
-                <Select value={groupBy} onValueChange={(v) => setGroupBy(v as GroupByOption)}>
-                  <SelectTrigger className="h-8 w-[140px] text-xs">
-                    <SelectValue placeholder={t('groupBy')} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">{t('noGrouping')}</SelectItem>
-                    <SelectItem value="status">{t('status')}</SelectItem>
-                    <SelectItem value="deliveryMonth">{t('deliveryMonth')}</SelectItem>
-                    <SelectItem value="createdMonth">{t('createdMonth')}</SelectItem>
-                    <SelectItem value="batchSize">{t('batchSize')}</SelectItem>
-                    <SelectItem value="customer">{t('customer')}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            {/* View Toggle */}
+            <div className="flex items-center border rounded-md">
+              <Button
+                variant={viewMode === 'cards' ? 'secondary' : 'ghost'}
+                size="sm"
+                className="h-8 px-2 rounded-r-none"
+                onClick={() => setViewMode('cards')}
+              >
+                <LayoutGrid className="h-4 w-4" />
+              </Button>
+              <Button
+                variant={viewMode === 'table' ? 'secondary' : 'ghost'}
+                size="sm"
+                className="h-8 px-2 rounded-l-none"
+                onClick={() => setViewMode('table')}
+              >
+                <TableIcon className="h-4 w-4" />
+              </Button>
             </div>
           </div>
 
