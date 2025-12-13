@@ -16,22 +16,25 @@ export interface ProductionReportItem {
   created_at: string;
   completed_at: string | null;
   customer_name: string | null;
+  shipping_date: string | null;
+  start_date: string | null;
+  order_value: number | null;
   productBreakdown: ProductBreakdown[];
+  isMainAssembly: boolean;
+  hasSubassemblies: boolean;
 }
-
-type WorkOrderStatus = 'planned' | 'in_progress' | 'completed' | 'on_hold' | 'cancelled';
 
 interface UseProductionReportsOptions {
   limit?: number;
-  statusFilter?: WorkOrderStatus | 'all';
 }
 
 /**
- * Optimized hook for fetching production reports with caching and resilience
+ * Optimized hook for fetching production reports (completed/cancelled orders only)
+ * with caching and resilience
  */
 export function useProductionReports(options: UseProductionReportsOptions = {}) {
-  const { limit, statusFilter } = options;
-  const cacheKey = `reports_${limit}_${statusFilter}`;
+  const { limit } = options;
+  const cacheKey = `reports_${limit}`;
 
   const fetchReports = useCallback(async (): Promise<ProductionReportItem[]> => {
     // Check cache first
@@ -40,14 +43,12 @@ export function useProductionReports(options: UseProductionReportsOptions = {}) 
       return cached.data;
     }
 
+    // Only fetch completed and cancelled orders for production reports
     let query = supabase
       .from('work_orders')
-      .select('id, wo_number, product_type, batch_size, status, created_at, completed_at, customer_name')
-      .order('created_at', { ascending: false });
-
-    if (statusFilter && statusFilter !== 'all') {
-      query = query.eq('status', statusFilter as WorkOrderStatus);
-    }
+      .select('id, wo_number, product_type, batch_size, status, created_at, completed_at, customer_name, shipping_date, start_date, order_value')
+      .in('status', ['completed', 'cancelled'])
+      .order('completed_at', { ascending: false, nullsFirst: false });
 
     if (limit) {
       query = query.limit(limit);
@@ -73,16 +74,24 @@ export function useProductionReports(options: UseProductionReportsOptions = {}) 
       }
     }
 
-    const enrichedData = (workOrdersData || []).map(wo => ({
-      ...wo,
-      productBreakdown: getProductBreakdown(itemsMap[wo.id] || [])
-    })) as ProductionReportItem[];
+    const enrichedData = (workOrdersData || []).map(wo => {
+      const breakdown = getProductBreakdown(itemsMap[wo.id] || []);
+      const hasSDM_ECO = breakdown.some(b => b.type === 'SDM_ECO');
+      const hasSubassemblies = breakdown.some(b => ['SENSOR', 'MLA', 'HMI', 'TRANSMITTER'].includes(b.type));
+      
+      return {
+        ...wo,
+        productBreakdown: breakdown,
+        isMainAssembly: hasSDM_ECO,
+        hasSubassemblies: hasSubassemblies,
+      };
+    }) as ProductionReportItem[];
 
     // Update cache
     reportsCache.set(cacheKey, { data: enrichedData, timestamp: Date.now() });
     
     return enrichedData;
-  }, [cacheKey, limit, statusFilter]);
+  }, [cacheKey, limit]);
 
   const { data, loading, error, refetch, isStale } = useResilientQuery<ProductionReportItem[]>({
     queryFn: fetchReports,
@@ -104,7 +113,7 @@ export function useProductionReports(options: UseProductionReportsOptions = {}) 
  * Prefetch production reports data
  */
 export async function prefetchProductionReports(): Promise<void> {
-  const cacheKey = 'reports_50_undefined';
+  const cacheKey = 'reports_50';
   
   const cached = reportsCache.get(cacheKey);
   if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
@@ -114,8 +123,9 @@ export async function prefetchProductionReports(): Promise<void> {
   try {
     const { data: workOrdersData } = await supabase
       .from('work_orders')
-      .select('id, wo_number, product_type, batch_size, status, created_at, completed_at, customer_name')
-      .order('created_at', { ascending: false })
+      .select('id, wo_number, product_type, batch_size, status, created_at, completed_at, customer_name, shipping_date, start_date, order_value')
+      .in('status', ['completed', 'cancelled'])
+      .order('completed_at', { ascending: false, nullsFirst: false })
       .limit(50);
 
     if (!workOrdersData) return;
@@ -135,10 +145,15 @@ export async function prefetchProductionReports(): Promise<void> {
       }
     }
 
-    const enrichedData = workOrdersData.map(wo => ({
-      ...wo,
-      productBreakdown: getProductBreakdown(itemsMap[wo.id] || [])
-    }));
+    const enrichedData = workOrdersData.map(wo => {
+      const breakdown = getProductBreakdown(itemsMap[wo.id] || []);
+      return {
+        ...wo,
+        productBreakdown: breakdown,
+        isMainAssembly: breakdown.some(b => b.type === 'SDM_ECO'),
+        hasSubassemblies: breakdown.some(b => ['SENSOR', 'MLA', 'HMI', 'TRANSMITTER'].includes(b.type)),
+      };
+    });
 
     reportsCache.set(cacheKey, { data: enrichedData, timestamp: Date.now() });
   } catch (error) {
