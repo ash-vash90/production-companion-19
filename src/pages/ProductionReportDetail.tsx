@@ -4,17 +4,15 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import Layout from '@/components/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { WorkOrderStatusBadge } from '@/components/workorders/WorkOrderStatusBadge';
 import { ProductBreakdownBadges } from '@/components/workorders/ProductBreakdownBadges';
 import { ReportDetailContent } from '@/components/reports/ReportDetailContent';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Loader2, ArrowLeft, Package, FileDown } from 'lucide-react';
+import { Loader2, ArrowLeft, Package } from 'lucide-react';
 import { getProductBreakdown } from '@/lib/utils';
-import { generateProductionReportPdf } from '@/services/reportPdfService';
-
+import { generateProductionReportPdf, ExportSections } from '@/services/reportPdfService';
 interface ReportData {
   workOrder: {
     id: string;
@@ -272,11 +270,11 @@ const ProductionReportDetail = () => {
     }
   };
 
-  const handleExportPdf = async () => {
+  const handleExportPdf = async (sections: ExportSections) => {
     if (!data) return;
     setExporting(true);
     try {
-      await generateProductionReportPdf(data, { language: language as 'en' | 'nl' });
+      await generateProductionReportPdf(data, { language: language as 'en' | 'nl', sections });
       toast.success(t('pdfExported'));
     } catch (error: any) {
       console.error('PDF export error:', error);
@@ -329,42 +327,28 @@ const ProductionReportDetail = () => {
           </Button>
 
           {/* Report Header */}
-          <Card>
-            <CardHeader className="pb-4">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <div>
-                  <CardTitle className="text-xl sm:text-2xl font-bold">{data.workOrder.wo_number}</CardTitle>
-                  <CardDescription className="mt-1">
-                    {data.workOrder.customer_name && <span>{data.workOrder.customer_name} • </span>}
-                    {t('productionReport')}
-                  </CardDescription>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={handleExportPdf}
-                    disabled={exporting}
-                    className="gap-2"
-                  >
-                    {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
-                    <span className="hidden sm:inline">{t('exportPdf')}</span>
-                  </Button>
-                  <WorkOrderStatusBadge status={data.workOrder.status} />
-                </div>
-              </div>
-              <div className="mt-3">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 pb-4 border-b">
+            <div>
+              <h1 className="text-xl sm:text-2xl font-bold">{data.workOrder.wo_number}</h1>
+              <p className="text-muted-foreground mt-1">
+                {data.workOrder.customer_name && <span>{data.workOrder.customer_name} • </span>}
+                {t('productionReport')}
+              </p>
+              <div className="mt-2">
                 <ProductBreakdownBadges breakdown={productBreakdown} />
               </div>
-            </CardHeader>
-          </Card>
+            </div>
+            <div className="flex items-center gap-2">
+              <WorkOrderStatusBadge status={data.workOrder.status} />
+            </div>
+          </div>
 
-          {/* Main Content */}
-          <Card>
-            <CardContent className="p-4 sm:p-6">
-              <ReportDetailContent data={data} />
-            </CardContent>
-          </Card>
+          {/* Main Content - no card wrapper on mobile */}
+          <ReportDetailContent 
+            data={data} 
+            onExportPdf={handleExportPdf}
+            exporting={exporting}
+          />
         </div>
       </Layout>
     </ProtectedRoute>

@@ -53,8 +53,21 @@ interface ReportData {
   }>;
 }
 
+export interface ExportSections {
+  overview: boolean;
+  statistics: boolean;
+  steps: boolean;
+  materials: boolean;
+  certificates: boolean;
+  labels: boolean;
+  checklists: boolean;
+  operators: boolean;
+  activity: boolean;
+}
+
 interface ExportOptions {
   language: 'en' | 'nl';
+  sections?: ExportSections;
 }
 
 const translations = {
@@ -99,6 +112,8 @@ const translations = {
     operators: 'Operators',
     stepsCompleted: 'steps completed',
     notAvailable: 'N/A',
+    labels: 'Labels',
+    printedAt: 'Printed at',
   },
   nl: {
     productionReport: 'Productierapport',
@@ -141,7 +156,21 @@ const translations = {
     operators: 'Operators',
     stepsCompleted: 'stappen voltooid',
     notAvailable: 'N.v.t.',
+    labels: 'Labels',
+    printedAt: 'Afgedrukt op',
   },
+};
+
+const defaultSections: ExportSections = {
+  overview: true,
+  statistics: true,
+  steps: true,
+  materials: true,
+  certificates: true,
+  labels: true,
+  checklists: true,
+  operators: true,
+  activity: true,
 };
 
 export const generateProductionReportPdf = async (
@@ -149,6 +178,7 @@ export const generateProductionReportPdf = async (
   options: ExportOptions
 ): Promise<void> => {
   const t = translations[options.language];
+  const sections = options.sections || defaultSections;
   const pdf = new jsPDF('p', 'mm', 'a4');
   const pageWidth = pdf.internal.pageSize.getWidth();
   const pageHeight = pdf.internal.pageSize.getHeight();
@@ -195,7 +225,7 @@ export const generateProductionReportPdf = async (
     pdf.text(value, margin + xOffset + 35, y);
   };
 
-  // Header
+  // Header (always included)
   pdf.setFontSize(18);
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(30, 30, 30);
@@ -218,75 +248,78 @@ export const generateProductionReportPdf = async (
   pdf.line(margin, y, pageWidth - margin, y);
   y += 8;
 
-  // Work Order Details
-  drawSectionHeader(t.workOrderDetails);
+  // Work Order Details (overview)
+  if (sections.overview) {
+    drawSectionHeader(t.workOrderDetails);
 
-  const col1X = 0;
-  const col2X = contentWidth / 2;
+    const col1X = 0;
+    const col2X = contentWidth / 2;
 
-  drawKeyValue(t.customer + ':', data.workOrder.customer_name || t.notAvailable, col1X);
-  drawKeyValue(t.status + ':', data.workOrder.status.toUpperCase(), col2X);
-  y += 6;
+    drawKeyValue(t.customer + ':', data.workOrder.customer_name || t.notAvailable, col1X);
+    drawKeyValue(t.status + ':', data.workOrder.status.toUpperCase(), col2X);
+    y += 6;
 
-  drawKeyValue(t.batchSize + ':', String(data.workOrder.batch_size), col1X);
-  drawKeyValue(t.created + ':', formatDateStr(data.workOrder.created_at), col2X);
-  y += 6;
+    drawKeyValue(t.batchSize + ':', String(data.workOrder.batch_size), col1X);
+    drawKeyValue(t.created + ':', formatDateStr(data.workOrder.created_at), col2X);
+    y += 6;
 
-  drawKeyValue(t.started + ':', formatDateStr(data.workOrder.start_date), col1X);
-  drawKeyValue(t.shipping + ':', formatDateStr(data.workOrder.shipping_date), col2X);
-  y += 6;
+    drawKeyValue(t.started + ':', formatDateStr(data.workOrder.start_date), col1X);
+    drawKeyValue(t.shipping + ':', formatDateStr(data.workOrder.shipping_date), col2X);
+    y += 6;
 
-  drawKeyValue(t.completed + ':', formatDateStr(data.workOrder.completed_at), col1X);
-  y += 10;
+    drawKeyValue(t.completed + ':', formatDateStr(data.workOrder.completed_at), col1X);
+    y += 10;
+  }
 
   // Summary Statistics
-  const completedItems = data.items.filter(i => i.status === 'completed').length;
-  const passedValidations = data.stepExecutions.filter(e => e.validation_status === 'passed').length;
-  const failedValidations = data.stepExecutions.filter(e => e.validation_status === 'failed').length;
-  const labelsPrinted = data.items.filter(i => i.label_printed).length;
+  if (sections.statistics) {
+    const completedItems = data.items.filter(i => i.status === 'completed').length;
+    const passedValidations = data.stepExecutions.filter(e => e.validation_status === 'passed').length;
+    const failedValidations = data.stepExecutions.filter(e => e.validation_status === 'failed').length;
+    const labelsPrinted = data.items.filter(i => i.label_printed).length;
 
-  drawSectionHeader(t.summaryStatistics);
+    drawSectionHeader(t.summaryStatistics);
 
-  const statWidth = contentWidth / 3;
-  pdf.setFontSize(9);
+    const statWidth = contentWidth / 3;
+    pdf.setFontSize(9);
 
-  // Row 1
-  pdf.setFont('helvetica', 'normal');
-  pdf.setTextColor(100, 100, 100);
-  pdf.text(t.itemsCompleted, margin, y);
-  pdf.text(t.passedValidations, margin + statWidth, y);
-  pdf.text(t.failedValidations, margin + statWidth * 2, y);
-  y += 5;
+    // Row 1
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(100, 100, 100);
+    pdf.text(t.itemsCompleted, margin, y);
+    pdf.text(t.passedValidations, margin + statWidth, y);
+    pdf.text(t.failedValidations, margin + statWidth * 2, y);
+    y += 5;
 
-  pdf.setFont('helvetica', 'bold');
-  pdf.setTextColor(30, 30, 30);
-  pdf.text(`${completedItems}/${data.items.length}`, margin, y);
-  pdf.setTextColor(34, 139, 34);
-  pdf.text(String(passedValidations), margin + statWidth, y);
-  pdf.setTextColor(220, 53, 69);
-  pdf.text(String(failedValidations), margin + statWidth * 2, y);
-  y += 8;
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(30, 30, 30);
+    pdf.text(`${completedItems}/${data.items.length}`, margin, y);
+    pdf.setTextColor(34, 139, 34);
+    pdf.text(String(passedValidations), margin + statWidth, y);
+    pdf.setTextColor(220, 53, 69);
+    pdf.text(String(failedValidations), margin + statWidth * 2, y);
+    y += 8;
 
-  // Row 2
-  pdf.setFont('helvetica', 'normal');
-  pdf.setTextColor(100, 100, 100);
-  pdf.text(t.certificatesIssued, margin, y);
-  pdf.text(t.labelsPrinted, margin + statWidth, y);
-  pdf.text(t.operatorsInvolved, margin + statWidth * 2, y);
-  y += 5;
+    // Row 2
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(100, 100, 100);
+    pdf.text(t.certificatesIssued, margin, y);
+    pdf.text(t.labelsPrinted, margin + statWidth, y);
+    pdf.text(t.operatorsInvolved, margin + statWidth * 2, y);
+    y += 5;
 
-  pdf.setFont('helvetica', 'bold');
-  pdf.setTextColor(30, 30, 30);
-  pdf.text(String(data.certificates.length), margin, y);
-  pdf.text(`${labelsPrinted}/${data.items.length}`, margin + statWidth, y);
-  pdf.text(String(data.operators.length), margin + statWidth * 2, y);
-  y += 12;
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(30, 30, 30);
+    pdf.text(String(data.certificates.length), margin, y);
+    pdf.text(`${labelsPrinted}/${data.items.length}`, margin + statWidth, y);
+    pdf.text(String(data.operators.length), margin + statWidth * 2, y);
+    y += 12;
+  }
 
   // Production Steps
-  if (data.stepExecutions.length > 0) {
+  if (sections.steps && data.stepExecutions.length > 0) {
     drawSectionHeader(t.productionSteps);
 
-    // Table header
     const colWidths = [35, 55, 35, 25, 30];
     pdf.setFillColor(245, 245, 245);
     pdf.rect(margin, y - 2, contentWidth, 6, 'F');
@@ -307,7 +340,7 @@ export const generateProductionReportPdf = async (
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(50, 50, 50);
 
-    for (const exec of data.stepExecutions.slice(0, 30)) { // Limit to 30 for PDF size
+    for (const exec of data.stepExecutions.slice(0, 30)) {
       addNewPageIfNeeded(12);
 
       xPos = margin;
@@ -333,7 +366,6 @@ export const generateProductionReportPdf = async (
 
       y += 5;
 
-      // Measurements
       if (Object.keys(exec.measurement_values).length > 0) {
         pdf.setFontSize(6);
         pdf.setTextColor(80, 80, 80);
@@ -357,7 +389,7 @@ export const generateProductionReportPdf = async (
   }
 
   // Batch Materials
-  if (data.batchMaterials.length > 0) {
+  if (sections.materials && data.batchMaterials.length > 0) {
     drawSectionHeader(t.batchMaterials);
 
     pdf.setFontSize(7);
@@ -378,7 +410,7 @@ export const generateProductionReportPdf = async (
   }
 
   // Certificates
-  if (data.certificates.length > 0) {
+  if (sections.certificates && data.certificates.length > 0) {
     drawSectionHeader(t.qualityCertificates);
 
     pdf.setFontSize(8);
@@ -393,8 +425,56 @@ export const generateProductionReportPdf = async (
     y += 6;
   }
 
+  // Labels
+  if (sections.labels) {
+    const printedLabels = data.items.filter(i => i.label_printed);
+    if (printedLabels.length > 0) {
+      drawSectionHeader(t.labels);
+
+      pdf.setFontSize(8);
+      for (const item of printedLabels.slice(0, 20)) {
+        addNewPageIfNeeded(6);
+        pdf.setTextColor(50, 50, 50);
+        const labelInfo = `${item.serial_number} | ${t.printedAt}: ${formatDateStr(item.label_printed_at)} | ${item.label_printed_by_name || t.notAvailable}`;
+        pdf.text(labelInfo, margin, y);
+        y += 5;
+      }
+
+      if (printedLabels.length > 20) {
+        pdf.setTextColor(100, 100, 100);
+        pdf.text(`... and ${printedLabels.length - 20} more labels`, margin, y);
+        y += 4;
+      }
+
+      y += 6;
+    }
+  }
+
+  // Checklists
+  if (sections.checklists && data.checklistResponses.length > 0) {
+    drawSectionHeader(t.checklistResponses);
+
+    pdf.setFontSize(7);
+    for (const resp of data.checklistResponses.slice(0, 30)) {
+      addNewPageIfNeeded(6);
+      pdf.setTextColor(50, 50, 50);
+      const status = resp.checked ? t.checked : t.unchecked;
+      const respInfo = `${resp.serial_number} | ${status}: ${resp.item_text.slice(0, 50)} | ${resp.checked_by_name || t.notAvailable}`;
+      pdf.text(respInfo, margin, y);
+      y += 4;
+    }
+
+    if (data.checklistResponses.length > 30) {
+      pdf.setTextColor(100, 100, 100);
+      pdf.text(`... and ${data.checklistResponses.length - 30} more items`, margin, y);
+      y += 4;
+    }
+
+    y += 6;
+  }
+
   // Operators
-  if (data.operators.length > 0) {
+  if (sections.operators && data.operators.length > 0) {
     drawSectionHeader(t.operators);
 
     pdf.setFontSize(8);

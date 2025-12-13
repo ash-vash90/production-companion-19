@@ -3,7 +3,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { ChevronDown, ChevronRight, CheckCircle2, XCircle, Clock, Minus } from 'lucide-react';
+import { ChevronDown, CheckCircle2, XCircle, Clock, Minus } from 'lucide-react';
 import { format } from 'date-fns';
 import { nl, enUS } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -48,8 +48,8 @@ export function StepTimeline({ stepExecutions }: StepTimelineProps) {
 
   const serialNumbers = Object.keys(groupedBySerial).sort();
   const [openItems, setOpenItems] = useState<Set<string>>(() => {
-    // Open first 3 by default
-    return new Set(serialNumbers.slice(0, 3));
+    // Open first 2 by default
+    return new Set(serialNumbers.slice(0, 2));
   });
 
   const toggleItem = (serial: string) => {
@@ -70,29 +70,27 @@ export function StepTimeline({ stepExecutions }: StepTimelineProps) {
 
   const getValidationBadge = (exec: StepExecution) => {
     if (exec.validation_status === 'passed') {
-      return <Badge variant="success" className="text-xs">{t('passed')}</Badge>;
+      return <Badge variant="success" className="text-[10px] h-5">{t('passed')}</Badge>;
     }
     if (exec.validation_status === 'failed') {
-      return <Badge variant="destructive" className="text-xs">{t('failed')}</Badge>;
+      return <Badge variant="destructive" className="text-[10px] h-5">{t('failed')}</Badge>;
     }
-    // For completed steps without validation, show "Completed"
-    return <Badge variant="secondary" className="text-xs bg-info/20 text-info border-info/30">{t('completed')}</Badge>;
+    return <Badge variant="secondary" className="text-[10px] h-5 bg-info/20 text-info border-info/30">{t('completed')}</Badge>;
   };
 
   const getValidationIcon = (exec: StepExecution) => {
     if (exec.validation_status === 'passed') {
-      return <CheckCircle2 className="h-4 w-4 text-success" />;
+      return <CheckCircle2 className="h-3.5 w-3.5 text-success" />;
     }
     if (exec.validation_status === 'failed') {
-      return <XCircle className="h-4 w-4 text-destructive" />;
+      return <XCircle className="h-3.5 w-3.5 text-destructive" />;
     }
-    return <CheckCircle2 className="h-4 w-4 text-info" />;
+    return <CheckCircle2 className="h-3.5 w-3.5 text-info" />;
   };
 
   const getSummary = (steps: StepExecution[]) => {
     const passed = steps.filter(s => s.validation_status === 'passed').length;
     const failed = steps.filter(s => s.validation_status === 'failed').length;
-    const other = steps.length - passed - failed;
 
     if (failed > 0) {
       return { color: 'text-destructive', label: `${passed} ${t('passed')}, ${failed} ${t('failed')}` };
@@ -100,7 +98,7 @@ export function StepTimeline({ stepExecutions }: StepTimelineProps) {
     if (passed === steps.length) {
       return { color: 'text-success', label: t('allPassed') };
     }
-    return { color: 'text-info', label: `${steps.length} ${t('stepsCompleted')}` };
+    return { color: 'text-muted-foreground', label: `${steps.length} ${t('stepsCompleted')}` };
   };
 
   if (serialNumbers.length === 0) {
@@ -112,7 +110,7 @@ export function StepTimeline({ stepExecutions }: StepTimelineProps) {
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+    <div className="space-y-1">
       {serialNumbers.map((serial) => {
         const steps = groupedBySerial[serial];
         const isOpen = openItems.has(serial);
@@ -123,77 +121,71 @@ export function StepTimeline({ stepExecutions }: StepTimelineProps) {
             key={serial}
             open={isOpen}
             onOpenChange={() => toggleItem(serial)}
-            className="border rounded-lg bg-card overflow-hidden"
+            className="border-b border-border/50"
           >
-            <CollapsibleTrigger className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors text-left">
-              <div className="flex items-center gap-3 min-w-0">
-                {isOpen ? (
-                  <ChevronDown className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                ) : (
-                  <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                )}
-                <Badge variant="outline" className="font-mono text-xs flex-shrink-0">
+            <CollapsibleTrigger className="w-full flex items-center justify-between py-2.5 hover:bg-muted/30 transition-colors -mx-1 px-1 rounded text-left">
+              <div className="flex items-center gap-2 min-w-0">
+                <ChevronDown className={cn(
+                  "h-4 w-4 text-muted-foreground transition-transform flex-shrink-0",
+                  isOpen && "rotate-180"
+                )} />
+                <Badge variant="outline" className="font-mono text-xs">
                   {serial}
                 </Badge>
-                <span className={cn("text-sm font-medium", summary.color)}>
+                <span className={cn("text-sm", summary.color)}>
                   {summary.label}
                 </span>
               </div>
-              <Badge variant="secondary" className="text-xs flex-shrink-0">
-                {steps.length} {steps.length === 1 ? t('step') : t('steps')}
+              <Badge variant="secondary" className="text-[10px] h-5 flex-shrink-0">
+                {steps.length}
               </Badge>
             </CollapsibleTrigger>
 
             <CollapsibleContent>
-              <div className="px-4 pb-4 space-y-0">
-                {/* Timeline */}
-                <div className="relative pl-6 border-l-2 border-border ml-2 space-y-4">
-                  {steps.map((exec, index) => (
-                    <div key={exec.id} className="relative">
-                      {/* Timeline dot */}
-                      <div className="absolute -left-[25px] top-1 bg-background">
-                        {getValidationIcon(exec)}
+              <div className="pl-6 pb-3 space-y-2">
+                {steps.map((exec) => (
+                  <div key={exec.id} className="flex items-start gap-2 py-1.5">
+                    <div className="mt-0.5">
+                      {getValidationIcon(exec)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-sm font-medium truncate">
+                          {exec.step_number}. {exec.step_title}
+                        </span>
+                        {getValidationBadge(exec)}
                       </div>
 
-                      <div className="pb-2">
-                        <div className="flex items-center justify-between gap-2 mb-1">
-                          <span className="font-medium text-sm">
-                            {t('step')} {exec.step_number}: {exec.step_title}
-                          </span>
-                          {getValidationBadge(exec)}
-                        </div>
-
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <Avatar className="h-4 w-4">
-                            <AvatarImage src={exec.operator_avatar || undefined} />
-                            <AvatarFallback className="text-[8px]">
-                              {exec.operator_initials || getInitials(exec.operator_name)}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span>{exec.operator_name}</span>
-                          {exec.completed_at && (
-                            <>
-                              <Minus className="h-3 w-3" />
-                              <Clock className="h-3 w-3" />
-                              <span>{format(new Date(exec.completed_at), 'MMM d, HH:mm', { locale: dateLocale })}</span>
-                            </>
-                          )}
-                        </div>
-
-                        {/* Measurements - compact inline display */}
-                        {Object.keys(exec.measurement_values).length > 0 && (
-                          <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs">
-                            {Object.entries(exec.measurement_values).map(([key, value]) => (
-                              <span key={key} className="text-muted-foreground">
-                                {key}: <span className="font-mono font-medium text-foreground">{String(value)}</span>
-                              </span>
-                            ))}
-                          </div>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+                        <Avatar className="h-4 w-4">
+                          <AvatarImage src={exec.operator_avatar || undefined} />
+                          <AvatarFallback className="text-[8px]">
+                            {exec.operator_initials || getInitials(exec.operator_name)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span>{exec.operator_name}</span>
+                        {exec.completed_at && (
+                          <>
+                            <Minus className="h-3 w-3" />
+                            <Clock className="h-3 w-3" />
+                            <span>{format(new Date(exec.completed_at), 'MMM d, HH:mm', { locale: dateLocale })}</span>
+                          </>
                         )}
                       </div>
+
+                      {/* Measurements - compact inline */}
+                      {Object.keys(exec.measurement_values).length > 0 && (
+                        <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-xs">
+                          {Object.entries(exec.measurement_values).map(([key, value]) => (
+                            <span key={key} className="text-muted-foreground">
+                              {key}: <span className="font-mono text-foreground">{String(value)}</span>
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                  ))}
-                </div>
+                  </div>
+                ))}
               </div>
             </CollapsibleContent>
           </Collapsible>
