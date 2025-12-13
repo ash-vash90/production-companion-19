@@ -26,6 +26,7 @@ interface WorkOrderCardProps {
   workOrder: WorkOrderCardData;
   onClick?: () => void;
   onCancel?: () => void;
+  onHover?: () => void;
   showActions?: boolean;
   showUrgency?: boolean;
   linkTo?: string;
@@ -35,6 +36,7 @@ export function WorkOrderCard({
   workOrder,
   onClick,
   onCancel,
+  onHover,
   showActions = true,
   showUrgency = true,
   linkTo,
@@ -88,6 +90,7 @@ export function WorkOrderCard({
     <div
       className={`group relative rounded-lg border border-l-4 bg-card p-3 md:p-4 transition-all cursor-pointer hover:shadow-md hover:border-primary/30 ${urgencyClass}`}
       onClick={handleClick}
+      onMouseEnter={onHover}
     >
       {/* Header row */}
       <div className="flex items-start justify-between gap-2 mb-2">

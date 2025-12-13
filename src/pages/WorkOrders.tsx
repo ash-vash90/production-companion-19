@@ -9,28 +9,24 @@ import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { CreateWorkOrderDialog } from '@/components/CreateWorkOrderDialog';
 import { WorkOrderFilters, FilterState } from '@/components/workorders/WorkOrderFilters';
+import { WorkOrderCard } from '@/components/workorders/WorkOrderCard';
+import { WorkOrderTableRow, WorkOrderRowData } from '@/components/workorders/WorkOrderTableRow';
 import { useWorkOrders, invalidateWorkOrdersCache, WorkOrderListItem } from '@/hooks/useWorkOrders';
 import { prefetchProductionOnHover } from '@/services/prefetchService';
 import { ResponsiveVirtualizedGrid } from '@/components/VirtualizedList';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { formatDate, getProductBreakdown, ProductBreakdown } from '@/lib/utils';
-import { Plus, Package, Eye, AlertTriangle, ChevronDown, ChevronRight, Layers, RotateCcw, LayoutGrid, Table, Clock, Link2, RefreshCw, AlertCircle, Loader2, Filter } from 'lucide-react';
+import { getProductBreakdown } from '@/lib/utils';
+import { Plus, Package, Layers, RotateCcw, LayoutGrid, Table as TableIcon, Filter, Loader2, ChevronDown, ChevronRight } from 'lucide-react';
 import { format, differenceInDays, parseISO, isBefore } from 'date-fns';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Skeleton } from '@/components/ui/skeleton';
 
 // Type alias for backwards compatibility
 type WorkOrderWithItems = WorkOrderListItem;
-
-const getInitials = (name: string) => {
-  return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-};
 
 type GroupByOption = 'none' | 'status' | 'deliveryMonth' | 'createdMonth' | 'batchSize' | 'customer';
 
@@ -299,229 +295,82 @@ const WorkOrders = () => {
     setExpandedGroups(newExpanded);
   };
 
-  // Check if shipping date is overdue (not completed)
-  const isShippingOverdue = (wo: WorkOrderWithItems): boolean => {
-    if (!wo.shipping_date || wo.status === 'completed') return false;
-    return isBefore(parseISO(wo.shipping_date), new Date());
+  // Handle cancel work order
+  const handleCancelWorkOrder = async (workOrderId: string) => {
+    if (confirm(t('confirmCancelWorkOrder'))) {
+      try {
+        const { error } = await supabase
+          .from('work_orders')
+          .update({ status: 'cancelled' })
+          .eq('id', workOrderId);
+        if (error) throw error;
+        toast.success(t('success'), { description: t('workOrderCancelled') });
+        refetch();
+      } catch (error: any) {
+        toast.error(t('error'), { description: error.message });
+      }
+    }
   };
 
-  // Check if shipping date is approaching (within 3 days, not completed)
-  const isShippingApproaching = (wo: WorkOrderWithItems): boolean => {
-    if (!wo.shipping_date || wo.status === 'completed') return false;
-    const daysUntil = differenceInDays(parseISO(wo.shipping_date), new Date());
-    return daysUntil >= 0 && daysUntil <= 3;
-  };
+  // Transform work order to row data format
+  const toRowData = (wo: WorkOrderWithItems): WorkOrderRowData => ({
+    id: wo.id,
+    wo_number: wo.wo_number,
+    product_type: wo.product_type,
+    batch_size: wo.batch_size,
+    status: wo.status,
+    created_at: wo.created_at,
+    customer_name: wo.customer_name,
+    shipping_date: wo.shipping_date,
+    start_date: wo.start_date,
+    order_value: wo.order_value,
+    productBreakdown: wo.productBreakdown,
+    isMainAssembly: wo.isMainAssembly,
+    hasSubassemblies: wo.hasSubassemblies,
+  });
 
-  // Check if start date is overdue (only for planned orders)
-  const isStartOverdue = (wo: WorkOrderWithItems): boolean => {
-    if (!wo.start_date || wo.status !== 'planned') return false;
-    return isBefore(parseISO(wo.start_date), new Date());
-  };
-
-  // Check if start date is approaching (within 2 days, only for planned)
-  const isStartApproaching = (wo: WorkOrderWithItems): boolean => {
-    if (!wo.start_date || wo.status !== 'planned') return false;
-    const daysUntil = differenceInDays(parseISO(wo.start_date), new Date());
-    return daysUntil >= 0 && daysUntil <= 2;
-  };
-
-  const getStatusVariant = (status: string): 'success' | 'warning' | 'info' | 'secondary' | 'destructive' => {
-    const variants: Record<string, 'success' | 'warning' | 'info' | 'secondary' | 'destructive'> = {
-      planned: 'info',
-      in_progress: 'warning',
-      completed: 'success',
-      on_hold: 'secondary',
-      cancelled: 'destructive',
-    };
-    return variants[status] || 'secondary';
-  };
-
-  const renderWorkOrderCard = (wo: WorkOrderWithItems) => {
-    const shippingOverdue = isShippingOverdue(wo);
-    const shippingApproaching = isShippingApproaching(wo);
-    const startOverdue = isStartOverdue(wo);
-    const startApproaching = isStartApproaching(wo);
-    
-    let urgencyClass = '';
-    if (shippingOverdue) urgencyClass = 'border-l-destructive bg-destructive/5';
-    else if (startOverdue) urgencyClass = 'border-l-warning bg-warning/5';
-    else if (shippingApproaching) urgencyClass = 'border-l-warning/50';
-    else if (startApproaching) urgencyClass = 'border-l-info/50';
-    
-    return (
-      <div
-        key={wo.id}
-        className={`group relative rounded-lg border border-l-4 bg-card p-3 md:p-4 transition-all cursor-pointer hover:shadow-md hover:border-primary/30 ${urgencyClass}`}
-        onClick={() => navigate(`/production/${wo.id}`)}
-        onMouseEnter={() => prefetchProductionOnHover(wo.id)}
-      >
-        {/* Header row */}
-        <div className="flex items-start justify-between gap-2 mb-2">
-          <div className="flex items-center gap-2 min-w-0">
-            <span className="font-mono font-semibold text-sm truncate">{wo.wo_number}</span>
-            {shippingOverdue && <AlertTriangle className="h-3.5 w-3.5 text-destructive shrink-0" />}
-            {startOverdue && !shippingOverdue && <Clock className="h-3.5 w-3.5 text-warning shrink-0" />}
-          </div>
-          <Badge variant={getStatusVariant(wo.status)} className="shrink-0">
-            {t(wo.status as any)}
-          </Badge>
-        </div>
-
-        {/* Product badges */}
-        <div className="flex flex-wrap gap-1 mb-2">
-          {(wo.isMainAssembly || wo.hasSubassemblies) && (
-            <Badge variant="outline" className="gap-0.5 text-[10px]">
-              <Link2 className="h-2.5 w-2.5" />
-              {wo.isMainAssembly ? 'Assembly' : 'Sub'}
-            </Badge>
-          )}
-          {wo.productBreakdown.length > 0
-            ? wo.productBreakdown.slice(0, 2).map((item, idx) => (
-                <Badge key={idx} variant="secondary" className="text-[10px]">
-                  {item.count}× {item.label}
-                </Badge>
-              ))
-            : <span className="text-xs text-muted-foreground">{wo.batch_size} items</span>
-          }
-          {wo.productBreakdown.length > 2 && (
-            <Badge variant="secondary" className="text-[10px]">+{wo.productBreakdown.length - 2}</Badge>
-          )}
-        </div>
-
-        {/* Details - compact list */}
-        <div className="space-y-0.5 text-xs text-muted-foreground">
-          {wo.customer_name && (
-            <div className="truncate">{wo.customer_name}</div>
-          )}
-          <div className="flex items-center gap-3">
-            {wo.shipping_date && (
-              <span className={shippingOverdue ? 'text-destructive font-medium' : ''}>
-                {t('ship')}: {formatDate(wo.shipping_date)}
-              </span>
-            )}
-            {wo.order_value && (
-              <span className="font-medium text-foreground">€{wo.order_value.toLocaleString('nl-NL')}</span>
-            )}
-          </div>
-        </div>
-
-        {/* Hover actions */}
-        <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
-          <Button
-            variant="secondary"
-            size="sm"
-            className="h-7 text-xs"
-            onClick={(e) => {
-              e.stopPropagation();
-              navigate(`/production/${wo.id}`);
-            }}
-          >
-            <Eye className="h-3 w-3 mr-1" />
-            {t('view')}
-          </Button>
-          {isAdmin && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 text-xs text-destructive hover:text-destructive"
-              onClick={async (e) => {
-                e.stopPropagation();
-                if (confirm(t('confirmCancelWorkOrder'))) {
-                  try {
-                    const { error } = await supabase
-                      .from('work_orders')
-                      .update({ status: 'cancelled' })
-                      .eq('id', wo.id);
-                    if (error) throw error;
-                    toast.success(t('success'), { description: t('workOrderCancelled') });
-                    refetch();
-                  } catch (error: any) {
-                    toast.error(t('error'), { description: error.message });
-                  }
-                }
-              }}
-            >
-              {t('cancel')}
-            </Button>
-          )}
-        </div>
-      </div>
-    );
-  };
-
+  // Render table view with shared component
   const renderTableView = (orders: WorkOrderWithItems[]) => (
     <div className="rounded-lg border overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead className="bg-muted/30 border-b">
-            <tr>
-              <th className="text-left p-3 font-medium text-xs text-muted-foreground">{t('workOrderNumber')}</th>
-              <th className="text-left p-3 font-medium text-xs text-muted-foreground">{t('products')}</th>
-              <th className="text-left p-3 font-medium text-xs text-muted-foreground hidden md:table-cell">{t('customer')}</th>
-              <th className="text-left p-3 font-medium text-xs text-muted-foreground">{t('status')}</th>
-              <th className="text-left p-3 font-medium text-xs text-muted-foreground hidden lg:table-cell">{language === 'nl' ? 'Verzending' : 'Ship'}</th>
-              <th className="text-right p-3 font-medium text-xs text-muted-foreground">{t('actions')}</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
-            {orders.map((wo) => {
-              const shippingOverdue = isShippingOverdue(wo);
-              const startOverdue = isStartOverdue(wo);
-              return (
-                <tr 
-                  key={wo.id} 
-                  className={`hover:bg-muted/30 cursor-pointer transition-colors ${shippingOverdue ? 'bg-destructive/5' : startOverdue ? 'bg-warning/5' : ''}`}
-                  onClick={() => navigate(`/production/${wo.id}`)}
-                >
-                  <td className="p-3 font-mono font-medium text-sm">
-                    <div className="flex items-center gap-2">
-                      {shippingOverdue && <AlertTriangle className="h-3.5 w-3.5 text-destructive shrink-0" />}
-                      {startOverdue && !shippingOverdue && <Clock className="h-3.5 w-3.5 text-warning shrink-0" />}
-                      {wo.wo_number}
-                    </div>
-                  </td>
-                  <td className="p-3">
-                    <div className="flex flex-wrap gap-1">
-                      {wo.productBreakdown.length > 0 
-                        ? wo.productBreakdown.slice(0, 2).map((item, idx) => (
-                            <Badge key={idx} variant="secondary" className="text-[10px]">
-                              {item.count}× {item.label}
-                            </Badge>
-                          ))
-                        : <span className="text-muted-foreground text-xs">{wo.batch_size} items</span>
-                      }
-                    </div>
-                  </td>
-                  <td className="p-3 text-muted-foreground text-xs hidden md:table-cell">{wo.customer_name || '—'}</td>
-                  <td className="p-3">
-                    <Badge variant={getStatusVariant(wo.status)} className="text-[10px]">{t(wo.status as any)}</Badge>
-                  </td>
-                  <td className={`p-3 text-xs hidden lg:table-cell ${shippingOverdue ? 'text-destructive font-medium' : 'text-muted-foreground'}`}>
-                    {wo.shipping_date ? formatDate(wo.shipping_date) : '—'}
-                  </td>
-                  <td className="p-3 text-right">
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="h-7"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigate(`/production/${wo.id}`);
-                      }}
-                    >
-                      <Eye className="h-3.5 w-3.5" />
-                    </Button>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+      <Table>
+        <TableHeader>
+          <TableRow className="bg-muted/30">
+            <TableHead className="text-xs">{t('workOrderNumber')}</TableHead>
+            <TableHead className="text-xs">{t('products')}</TableHead>
+            <TableHead className="text-xs hidden md:table-cell">{t('customer')}</TableHead>
+            <TableHead className="text-xs">{t('status')}</TableHead>
+            <TableHead className="text-xs hidden lg:table-cell">{language === 'nl' ? 'Verzending' : 'Ship'}</TableHead>
+            <TableHead className="text-xs text-right">{t('actions')}</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {orders.map((wo) => (
+            <WorkOrderTableRow
+              key={wo.id}
+              workOrder={toRowData(wo)}
+              linkTo={`/production/${wo.id}`}
+              onCancel={isAdmin ? () => handleCancelWorkOrder(wo.id) : undefined}
+            />
+          ))}
+        </TableBody>
+      </Table>
     </div>
   );
 
-  if (!user) return null;
+  // Render card view with shared component
+  const renderCardView = (orders: WorkOrderWithItems[]) => (
+    <div className="grid gap-2 md:gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+      {orders.map((wo) => (
+        <WorkOrderCard
+          key={wo.id}
+          workOrder={toRowData(wo)}
+          onClick={() => navigate(`/production/${wo.id}`)}
+          onCancel={isAdmin ? () => handleCancelWorkOrder(wo.id) : undefined}
+          onHover={() => prefetchProductionOnHover(wo.id)}
+        />
+      ))}
+    </div>
+  );
 
   return (
     <ProtectedRoute>
@@ -583,7 +432,7 @@ const WorkOrders = () => {
                   className="h-8 px-2 rounded-l-none"
                   onClick={() => setViewMode('table')}
                 >
-                  <Table className="h-4 w-4" />
+                  <TableIcon className="h-4 w-4" />
                 </Button>
               </div>
               
@@ -642,7 +491,14 @@ const WorkOrders = () => {
               filteredOrders.length > 50 ? (
                 <ResponsiveVirtualizedGrid
                   items={filteredOrders}
-                  renderItem={(wo, index) => renderWorkOrderCard(wo)}
+                  renderItem={(wo) => (
+                    <WorkOrderCard
+                      workOrder={toRowData(wo)}
+                      onClick={() => navigate(`/production/${wo.id}`)}
+                      onCancel={isAdmin ? () => handleCancelWorkOrder(wo.id) : undefined}
+                      onHover={() => prefetchProductionOnHover(wo.id)}
+                    />
+                  )}
                   itemHeight={280}
                   minItemWidth={280}
                   gap={12}
@@ -650,9 +506,7 @@ const WorkOrders = () => {
                   threshold={50}
                 />
               ) : (
-                <div className="grid gap-2 md:gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
-                  {filteredOrders.map(renderWorkOrderCard)}
-                </div>
+                renderCardView(filteredOrders)
               )
             ) : (
               renderTableView(filteredOrders)
@@ -686,9 +540,7 @@ const WorkOrders = () => {
                     <CollapsibleContent>
                       <CardContent className="pt-0 pb-3">
                         {viewMode === 'cards' ? (
-                          <div className="grid gap-2 md:gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
-                            {orders.map(renderWorkOrderCard)}
-                          </div>
+                          renderCardView(orders)
                         ) : (
                           renderTableView(orders)
                         )}
