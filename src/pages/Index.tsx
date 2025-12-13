@@ -61,10 +61,7 @@ const Index = () => {
     return (
       <Layout>
         <div className="flex items-center justify-center min-h-[50vh]">
-          <div className="flex flex-col items-center gap-3">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="text-sm text-muted-foreground animate-pulse">Loading...</p>
-          </div>
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
         </div>
       </Layout>
     );
@@ -74,34 +71,37 @@ const Index = () => {
 
   return (
     <Layout>
-      <div className="space-y-8 w-full max-w-full overflow-hidden animate-fade-in">
-        {/* Header with greeting */}
-        <header className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4">
-          <div>
+      <div className="space-y-10 animate-fade-in">
+        {/* Hero header */}
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center justify-between">
             <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">
               {getGreetingMessage()}, <span className="text-primary">{getFirstName()}</span>
             </h1>
-            <p className="text-muted-foreground mt-1">
-              Here's what's happening with your production today.
-            </p>
+            <WeatherWidget />
           </div>
-          <WeatherWidget />
-        </header>
-
-        {/* Quick Stats - inline row */}
-        <DashboardStats />
-
-        {/* Two column layout for schedule and team */}
-        <div className="grid gap-8 lg:gap-12 grid-cols-1 lg:grid-cols-2">
-          <TodaysSchedule />
-          <ActiveOperators />
+          <p className="text-sm text-muted-foreground">
+            Here's what's happening today.
+          </p>
         </div>
 
-        {/* Work Orders */}
-        <ProductionOverview />
+        {/* Stats row - no cards, just numbers */}
+        <DashboardStats />
 
-        {/* Recent Activity */}
-        <RecentActivity />
+        {/* Main content grid */}
+        <div className="grid gap-10 lg:grid-cols-3">
+          {/* Left column - schedule & team stacked */}
+          <div className="lg:col-span-1 space-y-10">
+            <TodaysSchedule />
+            <ActiveOperators />
+          </div>
+          
+          {/* Right column - work orders & activity */}
+          <div className="lg:col-span-2 space-y-10">
+            <ProductionOverview />
+            <RecentActivity />
+          </div>
+        </div>
       </div>
     </Layout>
   );
