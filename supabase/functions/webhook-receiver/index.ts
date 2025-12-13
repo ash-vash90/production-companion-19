@@ -317,21 +317,54 @@ async function executeRules(
             continue;
           }
           
-          try {
-            const response = await fetch(webhookUrl, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(payload),
-            });
-            
-            executed.push({ 
-              rule: rule.name, 
-              action: 'trigger_outgoing_webhook', 
-              result: { url: webhookUrl, status: response.status } 
-            });
-            console.log(`Forwarded to webhook: ${webhookUrl}, status: ${response.status}`);
-          } catch (fetchError: any) {
-            errors.push(`Rule "${rule.name}": Failed to call webhook - ${fetchError.message}`);
+          // Retry logic with exponential backoff
+          const maxRetries = 3;
+          let lastError: string | null = null;
+          let success = false;
+          
+          for (let attempt = 1; attempt <= maxRetries && !success; attempt++) {
+            try {
+              const controller = new AbortController();
+              const timeout = setTimeout(() => controller.abort(), 10000); // 10s timeout
+              
+              const response = await fetch(webhookUrl, {
+                method: 'POST',
+                headers: { 
+                  'Content-Type': 'application/json',
+                  'X-Webhook-Attempt': attempt.toString(),
+                },
+                body: JSON.stringify(payload),
+                signal: controller.signal,
+              });
+              
+              clearTimeout(timeout);
+              
+              if (response.ok) {
+                executed.push({ 
+                  rule: rule.name, 
+                  action: 'trigger_outgoing_webhook', 
+                  result: { url: webhookUrl, status: response.status, attempts: attempt } 
+                });
+                console.log(`Forwarded to webhook: ${webhookUrl}, status: ${response.status}, attempts: ${attempt}`);
+                success = true;
+              } else {
+                lastError = `HTTP ${response.status}: ${response.statusText}`;
+                if (attempt < maxRetries) {
+                  // Wait before retry: 1s, 2s, 4s
+                  await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt - 1) * 1000));
+                }
+              }
+            } catch (fetchError: any) {
+              lastError = fetchError.message;
+              console.error(`Webhook attempt ${attempt} failed:`, lastError);
+              if (attempt < maxRetries) {
+                await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt - 1) * 1000));
+              }
+            }
+          }
+          
+          if (!success) {
+            errors.push(`Rule "${rule.name}": Failed after ${maxRetries} attempts - ${lastError}`);
           }
           break;
         }

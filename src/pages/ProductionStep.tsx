@@ -10,7 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Loader2, ArrowLeft, CheckCircle2, AlertCircle, ScanBarcode, History, XCircle, Users } from 'lucide-react';
+import { Loader2, ArrowLeft, CheckCircle2, AlertCircle, ScanBarcode, History, XCircle, Users, Link2 } from 'lucide-react';
 import { formatDateTime } from '@/lib/utils';
 import MeasurementDialog from '@/components/production/MeasurementDialog';
 import ChecklistDialog from '@/components/production/ChecklistDialog';
@@ -18,6 +18,7 @@ import BatchScanDialog from '@/components/production/BatchScanDialog';
 import ValidationHistoryDialog from '@/components/production/ValidationHistoryDialog';
 import StepDetailDialog from '@/components/production/StepDetailDialog';
 import StepEditDialog from '@/components/production/StepEditDialog';
+import SubAssemblyLinkDialog from '@/components/production/SubAssemblyLinkDialog';
 import { WorkOrderNotes } from '@/components/production/WorkOrderNotes';
 import { generateQualityCertificate } from '@/services/certificateService';
 
@@ -56,12 +57,14 @@ const ProductionStep = () => {
   const [showValidationHistory, setShowValidationHistory] = useState(false);
   const [showStepDetail, setShowStepDetail] = useState(false);
   const [showStepEdit, setShowStepEdit] = useState(false);
+  const [showSubAssemblyLink, setShowSubAssemblyLink] = useState(false);
   const [viewingStepNumber, setViewingStepNumber] = useState<number | null>(null);
   const [editingStepNumber, setEditingStepNumber] = useState<number | null>(null);
   const [failedSteps, setFailedSteps] = useState<Set<number>>(new Set());
   const [stepCompletions, setStepCompletions] = useState<Map<number, StepCompletionInfo>>(new Map());
   const [presentUsers, setPresentUsers] = useState<PresenceUser[]>([]);
   const [currentUserProfile, setCurrentUserProfile] = useState<any>(null);
+  const [expectedLinkType, setExpectedLinkType] = useState<'SENSOR' | 'MLA' | 'HMI' | 'TRANSMITTER'>('SENSOR');
 
   // Fetch current user profile
   useEffect(() => {
@@ -321,7 +324,25 @@ const ProductionStep = () => {
       }
       
       // Show appropriate dialog based on step requirements
-      if (currentStep.requires_batch_number) {
+      // For SDM_ECO linking steps (barcode scan steps that link components)
+      const itemProductType = item.product_type || workOrder.product_type;
+      if (itemProductType === 'SDM_ECO' && currentStep.requires_barcode_scan) {
+        // Determine which component type to link based on step title
+        const stepTitle = currentStep.title_en.toLowerCase();
+        if (stepTitle.includes('sensor')) {
+          setExpectedLinkType('SENSOR');
+          setShowSubAssemblyLink(true);
+        } else if (stepTitle.includes('mla')) {
+          setExpectedLinkType('MLA');
+          setShowSubAssemblyLink(true);
+        } else if (stepTitle.includes('hmi')) {
+          setExpectedLinkType('HMI');
+          setShowSubAssemblyLink(true);
+        } else if (stepTitle.includes('transmitter')) {
+          setExpectedLinkType('TRANSMITTER');
+          setShowSubAssemblyLink(true);
+        }
+      } else if (currentStep.requires_batch_number) {
         setShowBatchScanDialog(true);
       } else if (currentStep.requires_value_input || currentStep.measurement_fields) {
         setShowMeasurementDialog(true);
@@ -585,6 +606,26 @@ const ProductionStep = () => {
               </Button>
             ) : (
               <div className="space-y-4">
+                {/* SDM_ECO component linking button */}
+                {(item.product_type || workOrder.product_type) === 'SDM_ECO' && currentStep.requires_barcode_scan && (
+                  <Button 
+                    onClick={() => {
+                      const stepTitle = currentStep.title_en.toLowerCase();
+                      if (stepTitle.includes('sensor')) setExpectedLinkType('SENSOR');
+                      else if (stepTitle.includes('mla')) setExpectedLinkType('MLA');
+                      else if (stepTitle.includes('hmi')) setExpectedLinkType('HMI');
+                      else if (stepTitle.includes('transmitter')) setExpectedLinkType('TRANSMITTER');
+                      setShowSubAssemblyLink(true);
+                    }} 
+                    variant="outline" 
+                    size="lg" 
+                    className="w-full"
+                  >
+                    <Link2 className="mr-2 h-5 w-5" />
+                    {t('linkComponent') || 'Link Component'}
+                  </Button>
+                )}
+                
                 {currentStep.requires_batch_number && (
                   <Button onClick={() => setShowBatchScanDialog(true)} variant="outline" size="lg" className="w-full">
                     <ScanBarcode className="mr-2" />
@@ -710,6 +751,19 @@ const ProductionStep = () => {
             onComplete={fetchData}
           />
         </>
+      )}
+
+      {/* SubAssembly linking dialog for SDM_ECO */}
+      {stepExecution && (
+        <SubAssemblyLinkDialog
+          open={showSubAssemblyLink}
+          onOpenChange={setShowSubAssemblyLink}
+          parentItemId={item.id}
+          parentSerialNumber={item.serial_number}
+          expectedComponentType={expectedLinkType}
+          stepExecutionId={stepExecution.id}
+          onComplete={fetchData}
+        />
       )}
 
       {/* Always show validation history dialog - not dependent on stepExecution */}
