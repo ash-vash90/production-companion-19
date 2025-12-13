@@ -174,41 +174,39 @@ export const RecentActivity = memo(function RecentActivity() {
       </div>
 
       {displayActivities.length > 0 ? (
-        <div className="space-y-1">
+        <div className="divide-y divide-border">
           {displayActivities.map((activity) => {
             const detailsText = formatActivityDetails(activity);
             
             return (
               <div
                 key={activity.id}
-                className="flex items-start gap-3 py-2.5 px-2 -mx-2 rounded-lg hover:bg-muted/30 transition-colors"
+                className="flex items-center gap-4 py-3"
               >
-                <Badge className={`${getActionColor(activity.action)} text-[10px] shrink-0 mt-0.5`}>
+                <Badge className={`${getActionColor(activity.action)} text-[10px] shrink-0 whitespace-nowrap`}>
                   {getActionLabel(activity.action)}
                 </Badge>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    {detailsText && (
-                      <span className="text-sm font-mono font-medium">
-                        {detailsText}
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+                  {detailsText && (
+                    <p className="text-sm font-medium truncate">
+                      {detailsText}
+                    </p>
+                  )}
+                  <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-0.5">
                     {activity.user_name && (
-                      <span className="flex items-center gap-1">
-                        <User className="h-3 w-3" />
-                        {activity.user_name}
-                      </span>
+                      <>
+                        <User className="h-3 w-3 shrink-0" />
+                        <span className="truncate">{activity.user_name}</span>
+                      </>
                     )}
-                    <span>
-                      {formatDistanceToNow(new Date(activity.created_at), { 
-                        addSuffix: true,
-                        locale: language === 'nl' ? nl : enUS
-                      })}
-                    </span>
-                  </div>
+                  </p>
                 </div>
+                <span className="text-xs text-muted-foreground whitespace-nowrap shrink-0">
+                  {formatDistanceToNow(new Date(activity.created_at), { 
+                    addSuffix: true,
+                    locale: language === 'nl' ? nl : enUS
+                  })}
+                </span>
               </div>
             );
           })}
