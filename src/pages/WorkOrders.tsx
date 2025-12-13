@@ -341,253 +341,176 @@ const WorkOrders = () => {
     const shippingApproaching = isShippingApproaching(wo);
     const startOverdue = isStartOverdue(wo);
     const startApproaching = isStartApproaching(wo);
-    const hasUrgency = shippingOverdue || shippingApproaching || startOverdue || startApproaching;
     
-    let borderClass = '';
-    if (shippingOverdue) borderClass = 'border-destructive/50 bg-destructive/5';
-    else if (startOverdue) borderClass = 'border-warning/50 bg-warning/5';
-    else if (shippingApproaching) borderClass = 'border-warning/30 bg-warning/5';
-    else if (startApproaching) borderClass = 'border-info/30 bg-info/5';
+    let urgencyClass = '';
+    if (shippingOverdue) urgencyClass = 'border-l-destructive bg-destructive/5';
+    else if (startOverdue) urgencyClass = 'border-l-warning bg-warning/5';
+    else if (shippingApproaching) urgencyClass = 'border-l-warning/50';
+    else if (startApproaching) urgencyClass = 'border-l-info/50';
     
     return (
-      <Card
+      <div
         key={wo.id}
-        className={`hover:shadow-md transition-all border flex flex-col overflow-hidden ${borderClass}`}
+        className={`group relative rounded-lg border border-l-4 bg-card p-3 md:p-4 transition-all cursor-pointer hover:shadow-md hover:border-primary/30 ${urgencyClass}`}
+        onClick={() => navigate(`/production/${wo.id}`)}
+        onMouseEnter={() => prefetchProductionOnHover(wo.id)}
       >
-        <CardHeader className="pb-2 p-3 md:p-4">
-          <div className="flex items-start justify-between mb-2 gap-2">
-            <CardTitle className="text-xs md:text-sm font-data truncate min-w-0">{wo.wo_number}</CardTitle>
-            <div className="flex items-center gap-1.5 flex-shrink-0">
-              {shippingOverdue && (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger>
-                      <AlertTriangle className="h-4 w-4 text-destructive flex-shrink-0" />
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>{t('shippingOverdue')}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              )}
-              {startOverdue && !shippingOverdue && (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger>
-                      <Clock className="h-4 w-4 text-warning flex-shrink-0" />
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>{t('startOverdue')}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              )}
-              {shippingApproaching && !shippingOverdue && (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger>
-                      <AlertTriangle className="h-4 w-4 text-warning flex-shrink-0" />
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>{t('shippingSoon')}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              )}
-              {startApproaching && !startOverdue && !shippingApproaching && !shippingOverdue && (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger>
-                      <Clock className="h-4 w-4 text-info flex-shrink-0" />
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>{t('startingSoon')}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              )}
-              <Badge variant={getStatusVariant(wo.status)}>
-                {t(wo.status as any)}
-              </Badge>
-            </div>
+        {/* Header row */}
+        <div className="flex items-start justify-between gap-2 mb-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="font-mono font-semibold text-sm truncate">{wo.wo_number}</span>
+            {shippingOverdue && <AlertTriangle className="h-3.5 w-3.5 text-destructive shrink-0" />}
+            {startOverdue && !shippingOverdue && <Clock className="h-3.5 w-3.5 text-warning shrink-0" />}
           </div>
-          <div className="flex flex-wrap gap-1">
-            {(wo.isMainAssembly || wo.hasSubassemblies) && (
-              <Badge variant="outline" className="gap-0.5">
-                <Link2 className="h-2.5 w-2.5" />
-                {wo.isMainAssembly ? 'Assembly' : 'Subassembly'}
-              </Badge>
-            )}
-            {wo.productBreakdown.length > 0
-              ? wo.productBreakdown.map((item, idx) => (
-                  <Badge key={idx} variant="secondary">
-                    {item.count}× {item.label}
-                  </Badge>
-                ))
-              : <span className="text-xs text-muted-foreground">{wo.batch_size} items</span>
-            }
-          </div>
-        </CardHeader>
-<CardContent className="p-3 md:p-4 pt-0 flex-1 flex flex-col min-w-0">
-          <div className="space-y-1 text-xs flex-1 min-w-0">
-            {wo.customer_name && (
-              <div className="flex justify-between items-center py-0.5 gap-2 min-w-0">
-                <span className="text-muted-foreground flex-shrink-0">{t('customer')}:</span>
-                <span className="font-medium truncate min-w-0">{wo.customer_name}</span>
-              </div>
-            )}
-            {wo.external_order_number && (
-              <div className="flex justify-between items-center py-0.5 gap-2 min-w-0">
-                <span className="text-muted-foreground flex-shrink-0">{t('orderNumber')}:</span>
-                <span className="font-medium font-data truncate min-w-0">{wo.external_order_number}</span>
-              </div>
+          <Badge variant={getStatusVariant(wo.status)} className="shrink-0">
+            {t(wo.status as any)}
+          </Badge>
+        </div>
+
+        {/* Product badges */}
+        <div className="flex flex-wrap gap-1 mb-2">
+          {(wo.isMainAssembly || wo.hasSubassemblies) && (
+            <Badge variant="outline" className="gap-0.5 text-[10px]">
+              <Link2 className="h-2.5 w-2.5" />
+              {wo.isMainAssembly ? 'Assembly' : 'Sub'}
+            </Badge>
+          )}
+          {wo.productBreakdown.length > 0
+            ? wo.productBreakdown.slice(0, 2).map((item, idx) => (
+                <Badge key={idx} variant="secondary" className="text-[10px]">
+                  {item.count}× {item.label}
+                </Badge>
+              ))
+            : <span className="text-xs text-muted-foreground">{wo.batch_size} items</span>
+          }
+          {wo.productBreakdown.length > 2 && (
+            <Badge variant="secondary" className="text-[10px]">+{wo.productBreakdown.length - 2}</Badge>
+          )}
+        </div>
+
+        {/* Details - compact list */}
+        <div className="space-y-0.5 text-xs text-muted-foreground">
+          {wo.customer_name && (
+            <div className="truncate">{wo.customer_name}</div>
+          )}
+          <div className="flex items-center gap-3">
+            {wo.shipping_date && (
+              <span className={shippingOverdue ? 'text-destructive font-medium' : ''}>
+                {t('ship')}: {formatDate(wo.shipping_date)}
+              </span>
             )}
             {wo.order_value && (
-              <div className="flex justify-between items-center py-0.5 gap-2">
-                <span className="text-muted-foreground flex-shrink-0">{t('value')}:</span>
-                <span className="font-semibold">€{wo.order_value.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}</span>
-              </div>
-            )}
-            {wo.start_date && (
-              <div className="flex justify-between items-center py-0.5 gap-2">
-                <span className="text-muted-foreground flex-shrink-0">{t('start')}:</span>
-                <span className="font-medium">{formatDate(wo.start_date)}</span>
-              </div>
-            )}
-            {wo.shipping_date && (
-              <div className={`flex justify-between items-center py-0.5 gap-2 ${shippingOverdue ? 'text-destructive' : shippingApproaching ? 'text-warning' : ''}`}>
-                <span className="text-muted-foreground flex-shrink-0">{t('ship')}:</span>
-                <span className="font-medium">{formatDate(wo.shipping_date)}</span>
-              </div>
-            )}
-            {wo.profiles && (
-              <div className="flex justify-between items-center py-0.5 gap-2 min-w-0">
-                <span className="text-muted-foreground flex-shrink-0">{t('createdBy')}:</span>
-                <span className="font-medium truncate min-w-0">{wo.profiles.full_name}</span>
-              </div>
+              <span className="font-medium text-foreground">€{wo.order_value.toLocaleString('nl-NL')}</span>
             )}
           </div>
-          <div className="flex gap-2 mt-3 pt-3 border-t">
+        </div>
+
+        {/* Hover actions */}
+        <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+          <Button
+            variant="secondary"
+            size="sm"
+            className="h-7 text-xs"
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate(`/production/${wo.id}`);
+            }}
+          >
+            <Eye className="h-3 w-3 mr-1" />
+            {t('view')}
+          </Button>
+          {isAdmin && (
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
-              className="flex-1"
-              onClick={() => navigate(`/production/${wo.id}`)}
-            >
-              <Eye className="h-4 w-4 mr-1.5" />
-              {t('view')}
-            </Button>
-            {isAdmin && (
-              <Button
-                variant="destructive"
-                size="sm"
-                className="flex-1"
-                onClick={async (e) => {
-                  e.stopPropagation();
-                  if (confirm(t('confirmCancelWorkOrder'))) {
-                    try {
-                      const { error } = await supabase
-                        .from('work_orders')
-                        .update({ status: 'cancelled' })
-                        .eq('id', wo.id);
-                      if (error) throw error;
-                      
-                      toast.success(t('success'), { description: t('workOrderCancelled') });
-                      refetch();
-                    } catch (error: any) {
-                      toast.error(t('error'), { description: error.message });
-                    }
+              className="h-7 text-xs text-destructive hover:text-destructive"
+              onClick={async (e) => {
+                e.stopPropagation();
+                if (confirm(t('confirmCancelWorkOrder'))) {
+                  try {
+                    const { error } = await supabase
+                      .from('work_orders')
+                      .update({ status: 'cancelled' })
+                      .eq('id', wo.id);
+                    if (error) throw error;
+                    toast.success(t('success'), { description: t('workOrderCancelled') });
+                    refetch();
+                  } catch (error: any) {
+                    toast.error(t('error'), { description: error.message });
                   }
-                }}
-              >
-                {t('cancel')}
-              </Button>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+                }
+              }}
+            >
+              {t('cancel')}
+            </Button>
+          )}
+        </div>
+      </div>
     );
   };
 
   const renderTableView = (orders: WorkOrderWithItems[]) => (
-    <Card className="shadow-sm overflow-hidden">
+    <div className="rounded-lg border overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="bg-muted/50 border-b">
+          <thead className="bg-muted/30 border-b">
             <tr>
-              <th className="text-left p-3 font-medium">{t('workOrderNumber')}</th>
-              <th className="text-left p-3 font-medium">{t('products')}</th>
-              <th className="text-left p-3 font-medium">{t('customer')}</th>
-              <th className="text-left p-3 font-medium">{t('status')}</th>
-              <th className="text-left p-3 font-medium">{language === 'nl' ? 'Verzending' : 'Ship Date'}</th>
-              <th className="text-left p-3 font-medium">{t('createdBy')}</th>
-              <th className="text-right p-3 font-medium">{t('actions')}</th>
+              <th className="text-left p-3 font-medium text-xs text-muted-foreground">{t('workOrderNumber')}</th>
+              <th className="text-left p-3 font-medium text-xs text-muted-foreground">{t('products')}</th>
+              <th className="text-left p-3 font-medium text-xs text-muted-foreground hidden md:table-cell">{t('customer')}</th>
+              <th className="text-left p-3 font-medium text-xs text-muted-foreground">{t('status')}</th>
+              <th className="text-left p-3 font-medium text-xs text-muted-foreground hidden lg:table-cell">{language === 'nl' ? 'Verzending' : 'Ship'}</th>
+              <th className="text-right p-3 font-medium text-xs text-muted-foreground">{t('actions')}</th>
             </tr>
           </thead>
-          <tbody className="divide-y">
+          <tbody className="divide-y divide-border">
             {orders.map((wo) => {
               const shippingOverdue = isShippingOverdue(wo);
               const startOverdue = isStartOverdue(wo);
-              const hasUrgency = shippingOverdue || startOverdue;
               return (
-                <tr key={wo.id} className={`hover:bg-muted/30 ${shippingOverdue ? 'bg-destructive/5' : startOverdue ? 'bg-warning/5' : ''}`}>
-                  <td className="p-3 font-data font-medium">
+                <tr 
+                  key={wo.id} 
+                  className={`hover:bg-muted/30 cursor-pointer transition-colors ${shippingOverdue ? 'bg-destructive/5' : startOverdue ? 'bg-warning/5' : ''}`}
+                  onClick={() => navigate(`/production/${wo.id}`)}
+                >
+                  <td className="p-3 font-mono font-medium text-sm">
                     <div className="flex items-center gap-2">
-                      {shippingOverdue && <AlertTriangle className="h-4 w-4 text-destructive" />}
-                      {startOverdue && !shippingOverdue && <Clock className="h-4 w-4 text-warning" />}
+                      {shippingOverdue && <AlertTriangle className="h-3.5 w-3.5 text-destructive shrink-0" />}
+                      {startOverdue && !shippingOverdue && <Clock className="h-3.5 w-3.5 text-warning shrink-0" />}
                       {wo.wo_number}
                     </div>
                   </td>
                   <td className="p-3">
                     <div className="flex flex-wrap gap-1">
                       {wo.productBreakdown.length > 0 
-                        ? wo.productBreakdown.map((item, idx) => (
-                            <Badge key={idx} variant="secondary" className="text-xs">
+                        ? wo.productBreakdown.slice(0, 2).map((item, idx) => (
+                            <Badge key={idx} variant="secondary" className="text-[10px]">
                               {item.count}× {item.label}
                             </Badge>
                           ))
-                        : <span className="text-muted-foreground">{wo.batch_size} items</span>
+                        : <span className="text-muted-foreground text-xs">{wo.batch_size} items</span>
                       }
                     </div>
                   </td>
-                  <td className="p-3 text-muted-foreground">{wo.customer_name || '-'}</td>
+                  <td className="p-3 text-muted-foreground text-xs hidden md:table-cell">{wo.customer_name || '—'}</td>
                   <td className="p-3">
-                    <Badge variant={getStatusVariant(wo.status)}>{t(wo.status as any)}</Badge>
+                    <Badge variant={getStatusVariant(wo.status)} className="text-[10px]">{t(wo.status as any)}</Badge>
                   </td>
-                  <td className={`p-3 ${shippingOverdue ? 'text-destructive font-medium' : 'text-muted-foreground'}`}>
-                    {wo.shipping_date ? formatDate(wo.shipping_date) : '-'}
+                  <td className={`p-3 text-xs hidden lg:table-cell ${shippingOverdue ? 'text-destructive font-medium' : 'text-muted-foreground'}`}>
+                    {wo.shipping_date ? formatDate(wo.shipping_date) : '—'}
                   </td>
-                  <td className="p-3 text-muted-foreground">{wo.profiles?.full_name || '-'}</td>
                   <td className="p-3 text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button variant="outline" size="sm" onClick={() => navigate(`/production/${wo.id}`)}>
-                        <Eye className="h-4 w-4 mr-1" />
-                        {t('view')}
-                      </Button>
-                      {isAdmin && (
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={async () => {
-                            if (confirm(t('confirmCancelWorkOrder'))) {
-                              try {
-                                const { error } = await supabase
-                                  .from('work_orders')
-                                  .update({ status: 'cancelled' })
-                                  .eq('id', wo.id);
-                                if (error) throw error;
-                                toast.success(t('success'), { description: t('workOrderCancelled') });
-                                refetch();
-                              } catch (error: any) {
-                                toast.error(t('error'), { description: error.message });
-                              }
-                            }
-                          }}
-                        >
-                          {t('cancel')}
-                        </Button>
-                      )}
-                    </div>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-7"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/production/${wo.id}`);
+                      }}
+                    >
+                      <Eye className="h-3.5 w-3.5" />
+                    </Button>
                   </td>
                 </tr>
               );
@@ -595,7 +518,7 @@ const WorkOrders = () => {
           </tbody>
         </table>
       </div>
-    </Card>
+    </div>
   );
 
   if (!user) return null;

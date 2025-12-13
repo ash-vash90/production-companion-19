@@ -1,5 +1,4 @@
 import React, { memo } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
@@ -37,14 +36,12 @@ export const RecentActivity = memo(function RecentActivity() {
         .from('activity_logs')
         .select('*')
         .order('created_at', { ascending: false })
-        .limit(10);
+        .limit(8);
 
       if (error) throw error;
       
-      // Get unique user IDs
       const userIds = [...new Set((data || []).map(a => a.user_id).filter(Boolean))];
       
-      // Fetch user profiles
       let profilesMap: Record<string, string> = {};
       if (userIds.length > 0) {
         const { data: profiles } = await supabase
@@ -58,7 +55,6 @@ export const RecentActivity = memo(function RecentActivity() {
         }, {} as Record<string, string>);
       }
 
-      // Enrich activities with user names
       return (data || []).map(activity => ({
         id: activity.id,
         action: activity.action,
@@ -88,13 +84,13 @@ export const RecentActivity = memo(function RecentActivity() {
 
   const getActionColor = (action: string) => {
     const colors: Record<string, string> = {
-      create_work_order: 'bg-primary text-primary-foreground',
-      complete_step: 'bg-success text-success-foreground',
-      record_measurement: 'bg-info text-info-foreground',
-      scan_batch: 'bg-warning text-warning-foreground',
+      create_work_order: 'bg-primary/10 text-primary',
+      complete_step: 'bg-success/10 text-success',
+      record_measurement: 'bg-info/10 text-info',
+      scan_batch: 'bg-warning/10 text-warning',
       print_label: 'bg-secondary text-secondary-foreground',
     };
-    return colors[action] || 'bg-secondary text-secondary-foreground';
+    return colors[action] || 'bg-muted text-muted-foreground';
   };
 
   const formatActivityDetails = (activity: ActivityLog): string | null => {
@@ -120,114 +116,108 @@ export const RecentActivity = memo(function RecentActivity() {
     return null;
   };
 
-  if (loading) {
-    return (
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base">{t('recentActivityTitle')}</CardTitle>
-          <CardDescription className="text-sm">{t('latestProductionEvents')}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="flex items-start gap-3 rounded-lg border bg-card p-2.5">
-                <Skeleton className="h-4 w-4 rounded" />
-                <div className="flex-1 space-y-2">
-                  <Skeleton className="h-5 w-24" />
-                  <Skeleton className="h-3 w-32" />
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (error && (!activities || activities.length === 0)) {
-    return (
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base">{t('recentActivityTitle')}</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col items-center justify-center py-6 gap-3">
-          <AlertCircle className="h-6 w-6 text-muted-foreground" />
-          <p className="text-sm text-muted-foreground">Failed to load activity</p>
-          <Button variant="outline" size="sm" onClick={() => refetch()}>
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Retry
-          </Button>
-        </CardContent>
-      </Card>
-    );
-  }
-
   const displayActivities = activities || [];
 
-  return (
-    <Card>
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="text-base">{t('recentActivityTitle')}</CardTitle>
-            <CardDescription className="text-sm">{t('latestProductionEvents')}</CardDescription>
-          </div>
-          {isStale && (
-            <Button variant="ghost" size="sm" className="h-7" onClick={() => refetch()}>
-              <RefreshCw className="h-3 w-3 mr-1" />
-              Refresh
-            </Button>
-          )}
+  if (loading) {
+    return (
+      <section>
+        <div className="flex items-center gap-2 mb-4">
+          <Activity className="h-5 w-5 text-muted-foreground" />
+          <h2 className="font-semibold">{t('recentActivityTitle')}</h2>
         </div>
-      </CardHeader>
-      <CardContent>
-        {displayActivities.length > 0 ? (
-          <div className="space-y-2">
-            {displayActivities.map((activity) => {
-              const detailsText = formatActivityDetails(activity);
-              
-              return (
-                <div
-                  key={activity.id}
-                  className="flex items-start gap-3 rounded-lg border bg-card p-2.5 hover:bg-muted/30 transition-colors"
-                >
-                  <Activity className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
-                  <div className="flex-1 min-w-0 space-y-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <Badge className={`${getActionColor(activity.action)} text-xs h-5 px-2`}>
-                        {getActionLabel(activity.action)}
-                      </Badge>
-                      {detailsText && (
-                        <span className="text-xs font-mono font-medium text-foreground">
-                          {detailsText}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                      {activity.user_name && (
-                        <span className="flex items-center gap-1">
-                          <User className="h-3 w-3" />
-                          {activity.user_name}
-                        </span>
-                      )}
-                      <span>
-                        {formatDistanceToNow(new Date(activity.created_at), { 
-                          addSuffix: true,
-                          locale: language === 'nl' ? nl : enUS
-                        })}
+        <div className="space-y-3">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="flex items-start gap-3 py-2">
+              <Skeleton className="h-5 w-20 rounded-full" />
+              <div className="space-y-1.5 flex-1">
+                <Skeleton className="h-3 w-24" />
+                <Skeleton className="h-3 w-16" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+    );
+  }
+
+  if (error && displayActivities.length === 0) {
+    return (
+      <section>
+        <div className="flex items-center gap-2 mb-4">
+          <Activity className="h-5 w-5 text-muted-foreground" />
+          <h2 className="font-semibold">{t('recentActivityTitle')}</h2>
+        </div>
+        <div className="flex items-center justify-center py-8 gap-3 text-muted-foreground">
+          <AlertCircle className="h-5 w-5" />
+          <span className="text-sm">Failed to load activity</span>
+          <Button variant="ghost" size="sm" onClick={() => refetch()}>
+            <RefreshCw className="h-4 w-4" />
+          </Button>
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section>
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <Activity className="h-5 w-5 text-muted-foreground" />
+          <h2 className="font-semibold">{t('recentActivityTitle')}</h2>
+        </div>
+        {isStale && (
+          <Button variant="ghost" size="sm" className="h-7" onClick={() => refetch()}>
+            <RefreshCw className="h-3 w-3 mr-1" />
+            Refresh
+          </Button>
+        )}
+      </div>
+
+      {displayActivities.length > 0 ? (
+        <div className="space-y-1">
+          {displayActivities.map((activity) => {
+            const detailsText = formatActivityDetails(activity);
+            
+            return (
+              <div
+                key={activity.id}
+                className="flex items-start gap-3 py-2.5 px-2 -mx-2 rounded-lg hover:bg-muted/30 transition-colors"
+              >
+                <Badge className={`${getActionColor(activity.action)} text-[10px] shrink-0 mt-0.5`}>
+                  {getActionLabel(activity.action)}
+                </Badge>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {detailsText && (
+                      <span className="text-sm font-mono font-medium">
+                        {detailsText}
                       </span>
-                    </div>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+                    {activity.user_name && (
+                      <span className="flex items-center gap-1">
+                        <User className="h-3 w-3" />
+                        {activity.user_name}
+                      </span>
+                    )}
+                    <span>
+                      {formatDistanceToNow(new Date(activity.created_at), { 
+                        addSuffix: true,
+                        locale: language === 'nl' ? nl : enUS
+                      })}
+                    </span>
                   </div>
                 </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="py-6 text-center text-sm text-muted-foreground">
-            {t('noRecentActivity')}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="py-12 text-center text-sm text-muted-foreground">
+          {t('noRecentActivity')}
+        </div>
+      )}
+    </section>
   );
 });

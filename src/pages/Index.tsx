@@ -7,6 +7,7 @@ import { RecentActivity } from '@/components/dashboard/RecentActivity';
 import { ActiveOperators } from '@/components/dashboard/ActiveOperators';
 import { TodaysSchedule } from '@/components/dashboard/TodaysSchedule';
 import { WeatherWidget } from '@/components/dashboard/WeatherWidget';
+import { DashboardStats } from '@/components/dashboard/DashboardStats';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2 } from 'lucide-react';
 
@@ -56,7 +57,6 @@ const Index = () => {
     return t('goodEvening');
   };
 
-  // Show loading while profile is being fetched
   if (authLoading || profileLoading) {
     return (
       <Layout>
@@ -74,35 +74,34 @@ const Index = () => {
 
   return (
     <Layout>
-      <div className="space-y-6 sm:space-y-8 w-full max-w-full overflow-hidden animate-fade-in">
-        {/* Header with greeting and weather */}
-        <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
-          <div className="space-y-1">
-            <h1 className="text-hero">
+      <div className="space-y-8 w-full max-w-full overflow-hidden animate-fade-in">
+        {/* Header with greeting */}
+        <header className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">
               {getGreetingMessage()}, <span className="text-primary">{getFirstName()}</span>
             </h1>
-            <p className="text-body text-muted-foreground">
+            <p className="text-muted-foreground mt-1">
               Here's what's happening with your production today.
             </p>
           </div>
           <WeatherWidget />
         </header>
 
-        {/* Top row: Today's Schedule and Active Colleagues */}
-        <div className="grid gap-4 md:gap-6 grid-cols-1 md:grid-cols-2 stagger-children">
+        {/* Quick Stats - inline row */}
+        <DashboardStats />
+
+        {/* Two column layout for schedule and team */}
+        <div className="grid gap-8 lg:gap-12 grid-cols-1 lg:grid-cols-2">
           <TodaysSchedule />
           <ActiveOperators />
         </div>
 
-        {/* Work Orders - full width */}
-        <section className="animate-slide-up" style={{ animationDelay: '150ms' }}>
-          <ProductionOverview />
-        </section>
+        {/* Work Orders */}
+        <ProductionOverview />
 
-        {/* Recent Activity - full width */}
-        <section className="animate-slide-up" style={{ animationDelay: '200ms' }}>
-          <RecentActivity />
-        </section>
+        {/* Recent Activity */}
+        <RecentActivity />
       </div>
     </Layout>
   );
