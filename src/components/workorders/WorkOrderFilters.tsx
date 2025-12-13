@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Separator } from '@/components/ui/separator';
-import { Filter, X, Search } from 'lucide-react';
+import { Filter, X, Search, Layers } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 
 export interface FilterState {
@@ -21,12 +21,16 @@ export interface FilterState {
   batchSizeFilter: string;
 }
 
+export type GroupByOption = 'none' | 'status' | 'deliveryMonth' | 'createdMonth' | 'batchSize' | 'customer';
+
 interface WorkOrderFiltersProps {
   filters: FilterState;
   onFiltersChange: (filters: FilterState) => void;
   customers: (string | null)[];
   deliveryMonths: string[];
   createdMonths: string[];
+  groupBy: GroupByOption;
+  onGroupByChange: (value: GroupByOption) => void;
 }
 
 export function WorkOrderFilters({
@@ -35,9 +39,12 @@ export function WorkOrderFilters({
   customers,
   deliveryMonths,
   createdMonths,
+  groupBy,
+  onGroupByChange,
 }: WorkOrderFiltersProps) {
   const { t } = useLanguage();
-  const [open, setOpen] = React.useState(false);
+  const [filterOpen, setFilterOpen] = React.useState(false);
+  const [groupOpen, setGroupOpen] = React.useState(false);
 
   const updateFilter = <K extends keyof FilterState>(key: K, value: FilterState[K]) => {
     onFiltersChange({ ...filters, [key]: value });
@@ -66,6 +73,15 @@ export function WorkOrderFilters({
     filters.batchSizeFilter,
   ].filter(f => f !== 'all').length;
 
+  const groupByOptions = [
+    { value: 'none', label: t('noGrouping') || 'No Grouping' },
+    { value: 'status', label: t('status') || 'Status' },
+    { value: 'deliveryMonth', label: t('deliveryMonth') || 'Delivery Month' },
+    { value: 'createdMonth', label: t('createdMonth') || 'Created Month' },
+    { value: 'batchSize', label: t('batchSize') || 'Batch Size' },
+    { value: 'customer', label: t('customer') || 'Customer' },
+  ];
+
   return (
     <div className="flex items-center gap-2">
       {/* Search Input */}
@@ -90,7 +106,7 @@ export function WorkOrderFilters({
       </div>
 
       {/* Filter Popover */}
-      <Popover open={open} onOpenChange={setOpen}>
+      <Popover open={filterOpen} onOpenChange={setFilterOpen}>
         <PopoverTrigger asChild>
           <Button variant="outline" size="sm" className="h-9 gap-2">
             <Filter className="h-4 w-4" />
@@ -102,7 +118,7 @@ export function WorkOrderFilters({
             )}
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-80 p-4" align="end">
+        <PopoverContent className="w-80 p-4 bg-popover" align="start">
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h4 className="font-medium text-sm">{t('filter')}</h4>
@@ -240,6 +256,39 @@ export function WorkOrderFilters({
                 </SelectContent>
               </Select>
             </div>
+          </div>
+        </PopoverContent>
+      </Popover>
+
+      {/* Group Popover */}
+      <Popover open={groupOpen} onOpenChange={setGroupOpen}>
+        <PopoverTrigger asChild>
+          <Button variant="outline" size="sm" className="h-9 gap-2">
+            <Layers className="h-4 w-4" />
+            <span className="hidden sm:inline">{t('groupBy') || 'Group'}</span>
+            {groupBy !== 'none' && (
+              <Badge variant="secondary" className="h-5 px-1.5 flex items-center justify-center text-xs rounded-full">
+                1
+              </Badge>
+            )}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-48 p-2 bg-popover" align="start">
+          <div className="space-y-1">
+            {groupByOptions.map(option => (
+              <Button
+                key={option.value}
+                variant={groupBy === option.value ? 'secondary' : 'ghost'}
+                size="sm"
+                className="w-full justify-start text-sm h-8"
+                onClick={() => {
+                  onGroupByChange(option.value as GroupByOption);
+                  setGroupOpen(false);
+                }}
+              >
+                {option.label}
+              </Button>
+            ))}
           </div>
         </PopoverContent>
       </Popover>
