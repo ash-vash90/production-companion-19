@@ -23,7 +23,7 @@ import { format, isToday, isThisWeek, isThisMonth, subDays } from 'date-fns';
 import { ReportFilters, ReportFilterState } from '@/components/reports/ReportFilters';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ResponsiveVirtualizedGrid } from '@/components/VirtualizedList';
-import { generateProductionReportPdf } from '@/services/reportPdfService';
+import { generateProductionReportPdf, ExportSections } from '@/services/reportPdfService';
 import { getProductBreakdown, formatDate } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
@@ -394,11 +394,11 @@ const ProductionReports = () => {
   }, [isMobile, navigate, fetchReportDetail]);
 
   // Handle PDF export
-  const handleExportPdf = async () => {
+  const handleExportPdf = async (sections?: ExportSections) => {
     if (!selectedReportData) return;
     setExporting(true);
     try {
-      await generateProductionReportPdf(selectedReportData, { language: language as 'en' | 'nl' });
+      await generateProductionReportPdf(selectedReportData, { language: language as 'en' | 'nl', sections });
       toast.success(t('pdfExported'));
     } catch (error: any) {
       console.error('PDF export error:', error);
