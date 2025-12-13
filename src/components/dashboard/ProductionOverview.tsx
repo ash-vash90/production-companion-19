@@ -6,8 +6,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getProductBreakdown, formatProductBreakdownText, ProductBreakdown } from '@/lib/utils';
-import { ExternalLink, Loader2, Plus, Eye } from 'lucide-react';
+import { ExternalLink, Plus, Eye, AlertCircle, RefreshCw } from 'lucide-react';
 import { CreateWorkOrderDialog } from '@/components/CreateWorkOrderDialog';
+import { useResilientQuery } from '@/hooks/useResilientQuery';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface WorkOrderWithItems {
   id: string;
@@ -23,20 +25,11 @@ interface WorkOrderWithItems {
 export function ProductionOverview() {
   const navigate = useNavigate();
   const { t, language } = useLanguage();
-  const [workOrders, setWorkOrders] = useState<WorkOrderWithItems[]>([]);
-  const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [showAll, setShowAll] = useState(false);
-  const isMountedRef = useRef(true);
-  const isSubscribedRef = useRef(false);
 
-  const fetchWorkOrders = useCallback(async () => {
-    // Timeout after 8 seconds
-    const timeoutId = setTimeout(() => {
-      if (isMountedRef.current) setLoading(false);
-    }, 8000);
-
-    try {
+  const { data: workOrders, loading, error, refetch, isStale } = useResilientQuery<WorkOrderWithItems[]>({
+    queryFn: async () => {
       // Fetch work orders with minimal data
       const { data: workOrdersData, error: woError } = await supabase
         .from('work_orders')
@@ -46,7 +39,6 @@ export function ProductionOverview() {
         .limit(10);
 
       if (woError) throw woError;
-      if (!isMountedRef.current) return;
 
       const woIds = workOrdersData?.map(wo => wo.id) || [];
       
@@ -69,8 +61,6 @@ export function ProductionOverview() {
         })()
       ]);
 
-      if (!isMountedRef.current) return;
-
       // Build lookup maps
       const itemsMap: Record<string, Array<{ serial_number: string }>> = {};
       for (const item of itemsRes.data || []) {
@@ -86,30 +76,21 @@ export function ProductionOverview() {
       }, {} as Record<string, string>);
 
       // Merge data
-      const enrichedData = (workOrdersData || []).map(wo => ({
+      return (workOrdersData || []).map(wo => ({
         ...wo,
         profiles: wo.created_by && profilesMap[wo.created_by] 
           ? { full_name: profilesMap[wo.created_by] } 
           : null,
         productBreakdown: getProductBreakdown(itemsMap[wo.id] || [])
-      }));
+      })) as WorkOrderWithItems[];
+    },
+    fallbackData: [],
+    timeout: 12000,
+    retryCount: 3,
+  });
 
-      setWorkOrders(enrichedData as WorkOrderWithItems[]);
-    } catch (error) {
-      console.error('Error fetching work orders:', error);
-    } finally {
-      clearTimeout(timeoutId);
-      if (isMountedRef.current) {
-        setLoading(false);
-      }
-    }
-  }, []);
-
+  // Set up realtime subscription separately for updates
   useEffect(() => {
-    isMountedRef.current = true;
-    fetchWorkOrders();
-
-    // Debounced realtime - don't refetch on every change
     let debounceTimer: NodeJS.Timeout;
     const channel = supabase
       .channel('production-overview-realtime')
@@ -119,20 +100,17 @@ export function ProductionOverview() {
         () => {
           clearTimeout(debounceTimer);
           debounceTimer = setTimeout(() => {
-            if (isMountedRef.current) fetchWorkOrders();
+            refetch();
           }, 500);
         }
       )
       .subscribe();
 
-    isSubscribedRef.current = true;
-
     return () => {
-      isMountedRef.current = false;
       clearTimeout(debounceTimer);
       supabase.removeChannel(channel);
     };
-  }, [fetchWorkOrders]);
+  }, [refetch]);
 
   const getStatusVariant = useCallback((status: string): 'default' | 'secondary' | 'success' | 'warning' | 'info' | 'destructive' | 'outline' => {
     const variants: Record<string, 'default' | 'secondary' | 'success' | 'warning' | 'info' | 'destructive' | 'outline'> = {
@@ -156,15 +134,15 @@ export function ProductionOverview() {
 
   // Memoize displayed orders and counts
   const { displayedOrders, inProgressCount, plannedCount } = useMemo(() => {
-    const inProgress = workOrders.filter(wo => wo.status === 'in_progress');
-    const planned = workOrders.filter(wo => wo.status === 'planned');
+    const orders = workOrders || [];
+    const inProgress = orders.filter(wo => wo.status === 'in_progress');
+    const planned = orders.filter(wo => wo.status === 'planned');
     return {
-      displayedOrders: showAll ? workOrders : inProgress,
+      displayedOrders: showAll ? orders : inProgress,
       inProgressCount: inProgress.length,
       plannedCount: planned.length,
     };
   }, [workOrders, showAll]);
-
 
   if (loading) {
     return (
@@ -173,9 +151,35 @@ export function ProductionOverview() {
           <CardTitle className="text-base">{t('activeWorkOrdersTitle')}</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex justify-center py-8">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          <div className="space-y-2">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="flex items-center justify-between rounded-lg border p-3">
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-3 w-32" />
+                </div>
+                <Skeleton className="h-4 w-4" />
+              </div>
+            ))}
           </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error && (!workOrders || workOrders.length === 0)) {
+    return (
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">{t('activeWorkOrdersTitle')}</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col items-center justify-center py-8 gap-3">
+          <AlertCircle className="h-8 w-8 text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">Failed to load work orders</p>
+          <Button variant="outline" size="sm" onClick={() => refetch()}>
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Retry
+          </Button>
         </CardContent>
       </Card>
     );
@@ -192,6 +196,11 @@ export function ProductionOverview() {
               <span className="text-xs sm:text-sm text-muted-foreground">
                 +{plannedCount} {language === 'nl' ? 'gepland' : 'planned'}
               </span>
+            )}
+            {isStale && (
+              <Button variant="ghost" size="sm" className="h-6 px-2" onClick={() => refetch()}>
+                <RefreshCw className="h-3 w-3" />
+              </Button>
             )}
           </div>
           <div className="flex items-center gap-1.5 sm:gap-2 w-full sm:w-auto">
@@ -255,7 +264,7 @@ export function ProductionOverview() {
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         onSuccess={() => {
-          fetchWorkOrders();
+          refetch();
         }}
       />
     </>
