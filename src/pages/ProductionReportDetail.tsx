@@ -16,11 +16,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { 
   Loader2, ArrowLeft, Package, ClipboardList, Users, Clock, CheckCircle2, XCircle, 
-  FileText, Tag, History, Download, Printer, CheckSquare
+  FileText, Tag, History, Download, Printer, CheckSquare, FileDown
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { nl, enUS } from 'date-fns/locale';
 import { formatProductType, getProductBreakdown, formatDate } from '@/lib/utils';
+import { generateProductionReportPdf } from '@/services/reportPdfService';
 
 interface ReportData {
   workOrder: {
@@ -100,6 +101,7 @@ const ProductionReportDetail = () => {
   const { t, language } = useLanguage();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
   const [data, setData] = useState<ReportData | null>(null);
 
   const dateLocale = language === 'nl' ? nl : enUS;
@@ -330,6 +332,20 @@ const ProductionReportDetail = () => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };
 
+  const handleExportPdf = async () => {
+    if (!data) return;
+    setExporting(true);
+    try {
+      await generateProductionReportPdf(data, { language: language as 'en' | 'nl' });
+      toast.success(t('pdfExported'));
+    } catch (error: any) {
+      console.error('PDF export error:', error);
+      toast.error(t('error'), { description: error.message || 'Failed to export PDF' });
+    } finally {
+      setExporting(false);
+    }
+  };
+
   if (!user) return null;
 
   if (loading) {
@@ -387,7 +403,23 @@ const ProductionReportDetail = () => {
                     {t('productionReport')}
                   </CardDescription>
                 </div>
-                <WorkOrderStatusBadge status={data.workOrder.status} />
+                <div className="flex items-center gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={handleExportPdf}
+                    disabled={exporting}
+                    className="gap-2"
+                  >
+                    {exporting ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <FileDown className="h-4 w-4" />
+                    )}
+                    {t('exportPdf')}
+                  </Button>
+                  <WorkOrderStatusBadge status={data.workOrder.status} />
+                </div>
               </div>
               <div className="mt-3">
                 <ProductBreakdownBadges breakdown={productBreakdown} />
