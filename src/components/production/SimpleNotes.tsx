@@ -95,14 +95,17 @@ export function SimpleNotes({ workOrderId, workOrderItemId, currentStepNumber }:
         }, {} as Record<string, string>);
       }
 
-      const enrichedNotes = (data || []).map(note => ({
-        id: note.id,
-        content: note.content,
-        user_id: note.user_id,
-        step_number: note.step_number,
-        created_at: note.created_at,
-        user_name: profilesMap[note.user_id] || 'Unknown',
-      }));
+      const enrichedNotes = (data || [])
+        // Only keep pure notes without mentions (comments with @mentions live in WorkOrderComments)
+        .filter((note: any) => !note.mentions || note.mentions.length === 0)
+        .map((note: any) => ({
+          id: note.id,
+          content: note.content,
+          user_id: note.user_id,
+          step_number: note.step_number,
+          created_at: note.created_at,
+          user_name: profilesMap[note.user_id] || 'Unknown',
+        }));
 
       setNotes(enrichedNotes);
     } catch (error) {
