@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -28,62 +29,66 @@ export function ProductionOverview() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [showAll, setShowAll] = useState(false);
 
-  const { data: workOrders, loading, error, refetch, isStale } = useResilientQuery<WorkOrderWithItems[]>({
-    queryFn: async () => {
-      const { data: workOrdersData, error: woError } = await supabase
-        .from('work_orders')
-        .select('id, wo_number, product_type, batch_size, status, created_at, created_by')
-        .in('status', ['planned', 'in_progress'])
-        .order('created_at', { ascending: false })
-        .limit(10);
+  const { data: workOrders, loading, error, refetch, isStale } =
+    useResilientQuery<WorkOrderWithItems[]>({
+      queryFn: async () => {
+        const { data: workOrdersData, error: woError } = await supabase
+          .from('work_orders')
+          .select('id, wo_number, product_type, batch_size, status, created_at, created_by')
+          .in('status', ['planned', 'in_progress'])
+          .order('created_at', { ascending: false })
+          .limit(10);
 
-      if (woError) throw woError;
+        if (woError) throw woError;
 
-      const woIds = workOrdersData?.map(wo => wo.id) || [];
-      
-      const [itemsRes, profilesRes] = await Promise.all([
-        woIds.length > 0 
-          ? supabase
-              .from('work_order_items')
-              .select('work_order_id, serial_number')
-              .in('work_order_id', woIds)
-          : { data: [] },
-        (() => {
-          const creatorIds = [...new Set(workOrdersData?.map(wo => wo.created_by).filter(Boolean) || [])];
-          return creatorIds.length > 0
+        const woIds = workOrdersData?.map((wo) => wo.id) || [];
+
+        const [itemsRes, profilesRes] = await Promise.all([
+          woIds.length > 0
             ? supabase
-                .from('profiles')
-                .select('id, full_name')
-                .in('id', creatorIds)
-            : { data: [] };
-        })()
-      ]);
+                .from('work_order_items')
+                .select('work_order_id, serial_number')
+                .in('work_order_id', woIds)
+            : { data: [] },
+          (() => {
+            const creatorIds = [
+              ...new Set(workOrdersData?.map((wo) => wo.created_by).filter(Boolean) || []),
+            ];
+            return creatorIds.length > 0
+              ? supabase
+                  .from('profiles')
+                  .select('id, full_name')
+                  .in('id', creatorIds)
+              : { data: [] };
+          })(),
+        ]);
 
-      const itemsMap: Record<string, Array<{ serial_number: string }>> = {};
-      for (const item of itemsRes.data || []) {
-        if (!itemsMap[item.work_order_id]) {
-          itemsMap[item.work_order_id] = [];
+        const itemsMap: Record<string, Array<{ serial_number: string }>> = {};
+        for (const item of itemsRes.data || []) {
+          if (!itemsMap[item.work_order_id]) {
+            itemsMap[item.work_order_id] = [];
+          }
+          itemsMap[item.work_order_id].push({ serial_number: item.serial_number });
         }
-        itemsMap[item.work_order_id].push({ serial_number: item.serial_number });
-      }
 
-      const profilesMap = (profilesRes.data || []).reduce((acc, p) => {
-        acc[p.id] = p.full_name;
-        return acc;
-      }, {} as Record<string, string>);
+        const profilesMap = (profilesRes.data || []).reduce((acc, p) => {
+          acc[p.id] = p.full_name;
+          return acc;
+        }, {} as Record<string, string>);
 
-      return (workOrdersData || []).map(wo => ({
-        ...wo,
-        profiles: wo.created_by && profilesMap[wo.created_by] 
-          ? { full_name: profilesMap[wo.created_by] } 
-          : null,
-        productBreakdown: getProductBreakdown(itemsMap[wo.id] || [])
-      })) as WorkOrderWithItems[];
-    },
-    fallbackData: [],
-    timeout: 12000,
-    retryCount: 3,
-  });
+        return (workOrdersData || []).map((wo) => ({
+          ...wo,
+          profiles:
+            wo.created_by && profilesMap[wo.created_by]
+              ? { full_name: profilesMap[wo.created_by] }
+              : null,
+          productBreakdown: getProductBreakdown(itemsMap[wo.id] || []),
+        })) as WorkOrderWithItems[];
+      },
+      fallbackData: [],
+      timeout: 12000,
+      retryCount: 3,
+    });
 
   useEffect(() => {
     let debounceTimer: NodeJS.Timeout;
@@ -97,7 +102,7 @@ export function ProductionOverview() {
           debounceTimer = setTimeout(() => {
             refetch();
           }, 500);
-        }
+        },
       )
       .subscribe();
 
@@ -107,30 +112,41 @@ export function ProductionOverview() {
     };
   }, [refetch]);
 
-  const getStatusVariant = useCallback((status: string): 'default' | 'secondary' | 'success' | 'warning' | 'info' | 'destructive' | 'outline' => {
-    const variants: Record<string, 'default' | 'secondary' | 'success' | 'warning' | 'info' | 'destructive' | 'outline'> = {
-      planned: 'info',
-      in_progress: 'warning',
-      completed: 'success',
-      on_hold: 'secondary',
-      cancelled: 'destructive',
-    };
-    return variants[status] || 'secondary';
-  }, []);
+  const getStatusVariant = useCallback(
+    (
+      status: string,
+    ): 'default' | 'secondary' | 'success' | 'warning' | 'info' | 'destructive' | 'outline' => {
+      const variants: Record<
+        string,
+        'default' | 'secondary' | 'success' | 'warning' | 'info' | 'destructive' | 'outline'
+      > = {
+        planned: 'info',
+        in_progress: 'warning',
+        completed: 'success',
+        on_hold: 'secondary',
+        cancelled: 'destructive',
+      };
+      return variants[status] || 'secondary';
+    },
+    [],
+  );
 
-  const getStatusLabel = useCallback((status: string) => {
-    if (status === 'in_progress') return t('inProgressStatus');
-    if (status === 'planned') return t('planned');
-    if (status === 'completed') return t('completed');
-    if (status === 'on_hold') return t('onHold');
-    if (status === 'cancelled') return t('cancelled');
-    return status;
-  }, [t]);
+  const getStatusLabel = useCallback(
+    (status: string) => {
+      if (status === 'in_progress') return t('inProgressStatus');
+      if (status === 'planned') return t('planned');
+      if (status === 'completed') return t('completed');
+      if (status === 'on_hold') return t('onHold');
+      if (status === 'cancelled') return t('cancelled');
+      return status;
+    },
+    [t],
+  );
 
   const { displayedOrders, inProgressCount, plannedCount } = useMemo(() => {
     const orders = workOrders || [];
-    const inProgress = orders.filter(wo => wo.status === 'in_progress');
-    const planned = orders.filter(wo => wo.status === 'planned');
+    const inProgress = orders.filter((wo) => wo.status === 'in_progress');
+    const planned = orders.filter((wo) => wo.status === 'planned');
     return {
       displayedOrders: showAll ? orders : inProgress,
       inProgressCount: inProgress.length,
@@ -199,13 +215,15 @@ export function ProductionOverview() {
           </div>
           <div className="flex items-center gap-2">
             {(plannedCount > 0 || showAll) && (
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={() => setShowAll(!showAll)}
-              >
+              <Button variant="ghost" size="sm" onClick={() => setShowAll(!showAll)}>
                 <Eye className="h-4 w-4 mr-1.5" />
-                {showAll ? (language === 'nl' ? 'Actief' : 'Active') : (language === 'nl' ? 'Alles' : 'All')}
+                {showAll
+                  ? language === 'nl'
+                    ? 'Actief'
+                    : 'Active'
+                  : language === 'nl'
+                    ? 'Alles'
+                    : 'All'}
               </Button>
             )}
             <Button variant="default" size="sm" onClick={() => setDialogOpen(true)}>
@@ -216,37 +234,42 @@ export function ProductionOverview() {
         </div>
 
         {displayedOrders.length > 0 ? (
-          <div className="divide-y divide-border">
+          <div className="space-y-3">
             {displayedOrders.map((wo) => (
-              <div
+              <Card
                 key={wo.id}
                 onClick={() => navigate(`/production/${wo.id}`)}
-                className="group flex items-center gap-4 py-3 cursor-pointer transition-colors hover:bg-muted/30 -mx-2 px-2 rounded-lg"
+                className="group cursor-pointer hover:-translate-y-[1px] transition-transform"
               >
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-mono font-medium text-sm">{wo.wo_number}</span>
-                    <Badge variant={getStatusVariant(wo.status)} className="text-[10px]">
-                      {getStatusLabel(wo.status)}
-                    </Badge>
+                <div className="flex items-center gap-4 p-3 sm:p-4">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-mono font-medium text-sm">{wo.wo_number}</span>
+                      <Badge variant={getStatusVariant(wo.status)} className="text-[10px]">
+                        {getStatusLabel(wo.status)}
+                      </Badge>
+                    </div>
+                    <div className="mt-0.5 text-xs text-muted-foreground truncate">
+                      {wo.productBreakdown.length > 0
+                        ? formatProductBreakdownText(wo.productBreakdown)
+                        : `${wo.batch_size} items`}
+                      {wo.profiles?.full_name && (
+                        <span className="ml-2 opacity-70">• {wo.profiles.full_name}</span>
+                      )}
+                    </div>
                   </div>
-                  <div className="mt-0.5 text-xs text-muted-foreground truncate">
-                    {wo.productBreakdown.length > 0 
-                      ? formatProductBreakdownText(wo.productBreakdown)
-                      : `${wo.batch_size} items`
-                    }
-                    {wo.profiles?.full_name && (
-                      <span className="ml-2 opacity-70">• {wo.profiles.full_name}</span>
-                    )}
-                  </div>
+                  <ExternalLink className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
                 </div>
-                <ExternalLink className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
-              </div>
+              </Card>
             ))}
           </div>
         ) : (
           <div className="py-12 text-center text-sm text-muted-foreground">
-            {showAll ? t('noActiveWorkOrders') : (language === 'nl' ? 'Geen actieve werkorders' : 'No work orders in progress')}
+            {showAll
+              ? t('noActiveWorkOrders')
+              : language === 'nl'
+                ? 'Geen actieve werkorders'
+                : 'No work orders in progress'}
           </div>
         )}
       </section>
