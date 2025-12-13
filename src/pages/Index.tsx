@@ -74,34 +74,38 @@ const Index = () => {
 
   return (
     <Layout>
-      <div className="space-y-8 w-full max-w-full overflow-hidden animate-fade-in">
-        {/* Header with greeting */}
-        <header className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4">
+      <div className="space-y-6 w-full max-w-full overflow-hidden">
+        {/* Compact header */}
+        <header className="flex items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">
+            <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">
               {getGreetingMessage()}, <span className="text-primary">{getFirstName()}</span>
             </h1>
-            <p className="text-muted-foreground mt-1">
-              Here's what's happening with your production today.
-            </p>
           </div>
           <WeatherWidget />
         </header>
 
-        {/* Quick Stats - inline row */}
+        {/* Inline stats bar */}
         <DashboardStats />
 
-        {/* Two column layout for schedule and team */}
-        <div className="grid gap-8 lg:gap-12 grid-cols-1 lg:grid-cols-2">
-          <TodaysSchedule />
-          <ActiveOperators />
+        {/* Main content - flat sections with dividers */}
+        <div className="grid gap-6 lg:gap-8 grid-cols-1 lg:grid-cols-5">
+          {/* Left column - Schedule & Production */}
+          <div className="lg:col-span-3 space-y-6">
+            <TodaysSchedule />
+            <div className="border-t border-border/50 pt-6">
+              <ProductionOverview />
+            </div>
+          </div>
+
+          {/* Right column - Team & Activity */}
+          <div className="lg:col-span-2 space-y-6 lg:border-l lg:border-border/50 lg:pl-8">
+            <ActiveOperators />
+            <div className="border-t border-border/50 pt-6">
+              <RecentActivity />
+            </div>
+          </div>
         </div>
-
-        {/* Work Orders */}
-        <ProductionOverview />
-
-        {/* Recent Activity */}
-        <RecentActivity />
       </div>
     </Layout>
   );

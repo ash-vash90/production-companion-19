@@ -25,31 +25,6 @@ const defaultStats: StatsData = {
   totalSteps: 0,
 };
 
-interface StatItemProps {
-  label: string;
-  value: number;
-  subtext?: string;
-  icon: React.ReactNode;
-  accentColor?: string;
-}
-
-function StatItem({ label, value, subtext, icon, accentColor = 'text-primary' }: StatItemProps) {
-  return (
-    <div className="flex items-center gap-3">
-      <div className={cn("p-2.5 rounded-xl bg-muted/50", accentColor.replace('text-', 'text-opacity-100 '))}>
-        {icon}
-      </div>
-      <div className="min-w-0">
-        <div className="flex items-baseline gap-2">
-          <span className="text-2xl font-semibold font-mono tabular-nums">{value}</span>
-          {subtext && <span className="text-xs text-muted-foreground">{subtext}</span>}
-        </div>
-        <p className="text-xs text-muted-foreground truncate">{label}</p>
-      </div>
-    </div>
-  );
-}
-
 export function DashboardStats() {
   const { t } = useLanguage();
   
@@ -79,14 +54,11 @@ export function DashboardStats() {
 
   if (loading) {
     return (
-      <div className="grid gap-6 grid-cols-2 lg:grid-cols-4">
+      <div className="flex flex-wrap items-center gap-x-8 gap-y-3 py-2 border-b border-border/50">
         {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="flex items-center gap-3">
-            <Skeleton className="h-10 w-10 rounded-xl" />
-            <div className="space-y-1.5">
-              <Skeleton className="h-6 w-12" />
-              <Skeleton className="h-3 w-20" />
-            </div>
+          <div key={i} className="flex items-center gap-2">
+            <Skeleton className="h-4 w-4" />
+            <Skeleton className="h-5 w-16" />
           </div>
         ))}
       </div>
@@ -95,55 +67,55 @@ export function DashboardStats() {
 
   if (error && !stats) {
     return (
-      <div className="flex items-center justify-center py-6 gap-3 text-muted-foreground">
-        <AlertCircle className="h-5 w-5" />
+      <div className="flex items-center gap-3 py-2 text-muted-foreground border-b border-border/50">
+        <AlertCircle className="h-4 w-4" />
         <span className="text-sm">Failed to load stats</span>
-        <Button variant="ghost" size="sm" onClick={() => refetch()}>
-          <RefreshCw className="h-4 w-4" />
+        <Button variant="ghost" size="sm" className="h-6 px-2" onClick={() => refetch()}>
+          <RefreshCw className="h-3 w-3" />
         </Button>
       </div>
     );
   }
 
   return (
-    <div className="relative">
-      {isStale && (
-        <div className="absolute -top-6 right-0 flex items-center gap-2 text-xs text-muted-foreground">
-          <AlertCircle className="h-3 w-3" />
-          <span>Cached</span>
-          <Button variant="ghost" size="sm" className="h-5 px-1.5" onClick={() => refetch()}>
-            <RefreshCw className="h-3 w-3" />
-          </Button>
-        </div>
-      )}
-      <div className="grid gap-6 sm:gap-8 grid-cols-2 lg:grid-cols-4">
-        <StatItem
-          label={t('activeWorkOrdersTitle')}
-          value={displayStats.activeWorkOrders}
-          subtext={`/ ${displayStats.totalWorkOrders}`}
-          icon={<Clock className="h-5 w-5 text-primary" />}
-          accentColor="text-primary"
-        />
-        <StatItem
-          label={t('inProduction')}
-          value={displayStats.inProgressItems}
-          subtext={t('itemsActive')}
-          icon={<Factory className="h-5 w-5 text-warning" />}
-          accentColor="text-warning"
-        />
-        <StatItem
-          label={t('completedUnits')}
-          value={displayStats.completedItems}
-          icon={<CheckCircle2 className="h-5 w-5 text-success" />}
-          accentColor="text-success"
-        />
-        <StatItem
-          label={t('stepExecutions')}
-          value={displayStats.totalSteps}
-          icon={<TrendingUp className="h-5 w-5 text-muted-foreground" />}
-          accentColor="text-muted-foreground"
-        />
+    <div className="flex flex-wrap items-center gap-x-8 gap-y-3 py-3 border-b border-border/50">
+      {/* Active Work Orders */}
+      <div className="flex items-center gap-2">
+        <Clock className="h-4 w-4 text-primary" />
+        <span className="text-sm text-muted-foreground">{t('activeWorkOrdersTitle')}:</span>
+        <span className="font-semibold font-mono tabular-nums">
+          {displayStats.activeWorkOrders}
+          <span className="text-muted-foreground font-normal">/{displayStats.totalWorkOrders}</span>
+        </span>
       </div>
+
+      {/* In Production */}
+      <div className="flex items-center gap-2">
+        <Factory className="h-4 w-4 text-warning" />
+        <span className="text-sm text-muted-foreground">{t('inProduction')}:</span>
+        <span className="font-semibold font-mono tabular-nums">{displayStats.inProgressItems}</span>
+      </div>
+
+      {/* Completed */}
+      <div className="flex items-center gap-2">
+        <CheckCircle2 className="h-4 w-4 text-success" />
+        <span className="text-sm text-muted-foreground">{t('completedUnits')}:</span>
+        <span className="font-semibold font-mono tabular-nums">{displayStats.completedItems}</span>
+      </div>
+
+      {/* Steps */}
+      <div className="flex items-center gap-2">
+        <TrendingUp className="h-4 w-4 text-muted-foreground" />
+        <span className="text-sm text-muted-foreground">{t('stepExecutions')}:</span>
+        <span className="font-semibold font-mono tabular-nums">{displayStats.totalSteps}</span>
+      </div>
+
+      {isStale && (
+        <Button variant="ghost" size="sm" className="h-6 px-2 ml-auto" onClick={() => refetch()}>
+          <RefreshCw className="h-3 w-3 mr-1" />
+          <span className="text-xs">Refresh</span>
+        </Button>
+      )}
     </div>
   );
 }
