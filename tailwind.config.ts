@@ -7,8 +7,12 @@ export default {
   theme: {
     container: {
       center: true,
-      padding: "2rem",
+      padding: "1rem",
       screens: {
+        sm: "640px",
+        md: "768px",
+        lg: "1024px",
+        xl: "1280px",
         "2xl": "1400px",
       },
     },
@@ -84,6 +88,16 @@ export default {
         rhosonics: {
           green: "hsl(var(--rhosonics-green))",
           "green-light": "hsl(var(--rhosonics-green-light))",
+          "green-glow": "hsl(var(--rhosonics-green-glow))",
+        },
+        lime: {
+          DEFAULT: "hsl(var(--lime-accent))",
+          light: "hsl(var(--lime-accent-light))",
+        },
+        eco: {
+          surface: "hsl(var(--eco-surface))",
+          "surface-hover": "hsl(var(--eco-surface-hover))",
+          border: "hsl(var(--eco-border))",
         },
       },
       borderRadius: {
@@ -92,21 +106,93 @@ export default {
         sm: "calc(var(--radius) - 4px)",
       },
       boxShadow: {
-        card: "0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)",
+        "xs": "var(--shadow-xs)",
+        "card": "var(--shadow-sm)",
+        "card-hover": "var(--shadow-md)",
+        "elevated": "var(--shadow-lg)",
+        "prominent": "var(--shadow-xl)",
+        "glow": "var(--shadow-glow)",
+        "glow-lg": "var(--shadow-glow-lg)",
       },
       keyframes: {
         "accordion-down": {
-          from: { height: "0" },
-          to: { height: "var(--radix-accordion-content-height)" },
+          from: { height: "0", opacity: "0" },
+          to: { height: "var(--radix-accordion-content-height)", opacity: "1" },
         },
         "accordion-up": {
-          from: { height: "var(--radix-accordion-content-height)" },
-          to: { height: "0" },
+          from: { height: "var(--radix-accordion-content-height)", opacity: "1" },
+          to: { height: "0", opacity: "0" },
+        },
+        "fade-in": {
+          from: { opacity: "0" },
+          to: { opacity: "1" },
+        },
+        "fade-out": {
+          from: { opacity: "1" },
+          to: { opacity: "0" },
+        },
+        "slide-up": {
+          from: { opacity: "0", transform: "translateY(10px)" },
+          to: { opacity: "1", transform: "translateY(0)" },
+        },
+        "slide-down": {
+          from: { opacity: "0", transform: "translateY(-10px)" },
+          to: { opacity: "1", transform: "translateY(0)" },
+        },
+        "slide-in-right": {
+          from: { opacity: "0", transform: "translateX(20px)" },
+          to: { opacity: "1", transform: "translateX(0)" },
+        },
+        "slide-in-left": {
+          from: { opacity: "0", transform: "translateX(-20px)" },
+          to: { opacity: "1", transform: "translateX(0)" },
+        },
+        "scale-in": {
+          from: { opacity: "0", transform: "scale(0.95)" },
+          to: { opacity: "1", transform: "scale(1)" },
+        },
+        "scale-out": {
+          from: { opacity: "1", transform: "scale(1)" },
+          to: { opacity: "0", transform: "scale(0.95)" },
+        },
+        "pulse-glow": {
+          "0%, 100%": { boxShadow: "0 0 10px hsl(var(--primary) / 0.2)" },
+          "50%": { boxShadow: "0 0 20px hsl(var(--primary) / 0.4)" },
+        },
+        "shimmer": {
+          "0%": { backgroundPosition: "-200% 0" },
+          "100%": { backgroundPosition: "200% 0" },
+        },
+        "spin-slow": {
+          from: { transform: "rotate(0deg)" },
+          to: { transform: "rotate(360deg)" },
         },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "fade-in": "fade-in 0.3s ease-out forwards",
+        "fade-out": "fade-out 0.3s ease-out forwards",
+        "slide-up": "slide-up 0.3s ease-out forwards",
+        "slide-down": "slide-down 0.3s ease-out forwards",
+        "slide-in-right": "slide-in-right 0.3s ease-out forwards",
+        "slide-in-left": "slide-in-left 0.3s ease-out forwards",
+        "scale-in": "scale-in 0.2s ease-out forwards",
+        "scale-out": "scale-out 0.2s ease-out forwards",
+        "pulse-glow": "pulse-glow 2s ease-in-out infinite",
+        "shimmer": "shimmer 2s linear infinite",
+        "spin-slow": "spin-slow 3s linear infinite",
+      },
+      transitionDuration: {
+        "quick": "150ms",
+        "normal": "200ms",
+        "standard": "300ms",
+        "emphasis": "500ms",
+      },
+      transitionTimingFunction: {
+        "out": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "spring": "cubic-bezier(0.34, 1.56, 0.64, 1)",
+        "smooth": "cubic-bezier(0.4, 0, 0.2, 1)",
       },
     },
   },
