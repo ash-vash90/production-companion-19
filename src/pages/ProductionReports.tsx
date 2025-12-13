@@ -502,7 +502,7 @@ const ProductionReports = () => {
                 </CardContent>
               </Card>
             ) : (
-              <ScrollArea className="flex-1">
+              <ScrollArea className="flex-1 touch-pan-x">
                 <div className="space-y-4 pr-4">
                   {Object.entries(groupedWorkOrders).map(([groupKey, orders]) => (
                     <div key={groupKey} className="space-y-2">
