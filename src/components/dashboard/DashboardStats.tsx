@@ -1,11 +1,11 @@
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { CheckCircle2, Clock, TrendingUp, Factory, AlertCircle, RefreshCw } from 'lucide-react';
 import { useResilientQuery } from '@/hooks/useResilientQuery';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 interface StatsData {
   activeWorkOrders: number;
@@ -24,6 +24,31 @@ const defaultStats: StatsData = {
   totalItems: 0,
   totalSteps: 0,
 };
+
+interface StatItemProps {
+  label: string;
+  value: number;
+  subtext?: string;
+  icon: React.ReactNode;
+  accentColor?: string;
+}
+
+function StatItem({ label, value, subtext, icon, accentColor = 'text-primary' }: StatItemProps) {
+  return (
+    <div className="flex items-center gap-3">
+      <div className={cn("p-2.5 rounded-xl bg-muted/50", accentColor.replace('text-', 'text-opacity-100 '))}>
+        {icon}
+      </div>
+      <div className="min-w-0">
+        <div className="flex items-baseline gap-2">
+          <span className="text-2xl font-semibold font-mono tabular-nums">{value}</span>
+          {subtext && <span className="text-xs text-muted-foreground">{subtext}</span>}
+        </div>
+        <p className="text-xs text-muted-foreground truncate">{label}</p>
+      </div>
+    </div>
+  );
+}
 
 export function DashboardStats() {
   const { t } = useLanguage();
@@ -54,17 +79,15 @@ export function DashboardStats() {
 
   if (loading) {
     return (
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-6 grid-cols-2 lg:grid-cols-4">
         {[1, 2, 3, 4].map((i) => (
-          <Card key={i}>
-            <CardHeader className="pb-2">
-              <Skeleton className="h-4 w-24" />
-            </CardHeader>
-            <CardContent>
-              <Skeleton className="h-8 w-16 mb-2" />
+          <div key={i} className="flex items-center gap-3">
+            <Skeleton className="h-10 w-10 rounded-xl" />
+            <div className="space-y-1.5">
+              <Skeleton className="h-6 w-12" />
               <Skeleton className="h-3 w-20" />
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         ))}
       </div>
     );
@@ -72,73 +95,55 @@ export function DashboardStats() {
 
   if (error && !stats) {
     return (
-      <Card className="border-destructive/50">
-        <CardContent className="flex flex-col items-center justify-center py-8 gap-3">
-          <AlertCircle className="h-8 w-8 text-destructive" />
-          <p className="text-sm text-muted-foreground">Failed to load stats</p>
-          <Button variant="outline" size="sm" onClick={() => refetch()}>
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Retry
-          </Button>
-        </CardContent>
-      </Card>
+      <div className="flex items-center justify-center py-6 gap-3 text-muted-foreground">
+        <AlertCircle className="h-5 w-5" />
+        <span className="text-sm">Failed to load stats</span>
+        <Button variant="ghost" size="sm" onClick={() => refetch()}>
+          <RefreshCw className="h-4 w-4" />
+        </Button>
+      </div>
     );
   }
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <div className="relative">
       {isStale && (
-        <div className="col-span-full flex items-center justify-center gap-2 text-xs text-muted-foreground py-1">
+        <div className="absolute -top-6 right-0 flex items-center gap-2 text-xs text-muted-foreground">
           <AlertCircle className="h-3 w-3" />
-          <span>Showing cached data</span>
-          <Button variant="ghost" size="sm" className="h-6 px-2" onClick={() => refetch()}>
+          <span>Cached</span>
+          <Button variant="ghost" size="sm" className="h-5 px-1.5" onClick={() => refetch()}>
             <RefreshCw className="h-3 w-3" />
           </Button>
         </div>
       )}
-      <Card className="border-l-4 border-l-primary">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">{t('activeWorkOrdersTitle')}</CardTitle>
-          <Clock className="h-4 w-4 text-primary" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-3xl font-bold font-mono">{displayStats.activeWorkOrders}</div>
-          <p className="mt-1 text-xs text-muted-foreground">{t('ofTotal').replace('{0}', String(displayStats.totalWorkOrders))}</p>
-        </CardContent>
-      </Card>
-
-      <Card className="border-l-4 border-l-accent">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">{t('inProduction')}</CardTitle>
-          <Factory className="h-4 w-4 text-accent" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-3xl font-bold font-mono">{displayStats.inProgressItems}</div>
-          <p className="mt-1 text-xs text-muted-foreground">{t('itemsActive')}</p>
-        </CardContent>
-      </Card>
-
-      <Card className="border-l-4 border-l-secondary">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">{t('completedUnits')}</CardTitle>
-          <CheckCircle2 className="h-4 w-4 text-secondary" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-3xl font-bold font-mono">{displayStats.completedItems}</div>
-          <p className="mt-1 text-xs text-muted-foreground">{t('readyForShipment')}</p>
-        </CardContent>
-      </Card>
-
-      <Card className="border-l-4 border-l-muted">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">{t('stepExecutions')}</CardTitle>
-          <TrendingUp className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-3xl font-bold font-mono">{displayStats.totalSteps}</div>
-          <p className="mt-1 text-xs text-muted-foreground">{t('qualityCheckpoints')}</p>
-        </CardContent>
-      </Card>
+      <div className="grid gap-6 sm:gap-8 grid-cols-2 lg:grid-cols-4">
+        <StatItem
+          label={t('activeWorkOrdersTitle')}
+          value={displayStats.activeWorkOrders}
+          subtext={`/ ${displayStats.totalWorkOrders}`}
+          icon={<Clock className="h-5 w-5 text-primary" />}
+          accentColor="text-primary"
+        />
+        <StatItem
+          label={t('inProduction')}
+          value={displayStats.inProgressItems}
+          subtext={t('itemsActive')}
+          icon={<Factory className="h-5 w-5 text-warning" />}
+          accentColor="text-warning"
+        />
+        <StatItem
+          label={t('completedUnits')}
+          value={displayStats.completedItems}
+          icon={<CheckCircle2 className="h-5 w-5 text-success" />}
+          accentColor="text-success"
+        />
+        <StatItem
+          label={t('stepExecutions')}
+          value={displayStats.totalSteps}
+          icon={<TrendingUp className="h-5 w-5 text-muted-foreground" />}
+          accentColor="text-muted-foreground"
+        />
+      </div>
     </div>
   );
 }
