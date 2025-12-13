@@ -1,14 +1,16 @@
-import { useState, useEffect, useCallback, useRef, memo } from 'react';
+import { useEffect, useCallback, memo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Calendar, Package, AlertTriangle, Clock, ArrowRight } from 'lucide-react';
+import { Calendar, Package, AlertTriangle, Clock, ArrowRight, RefreshCw, AlertCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { formatProductType, formatStatus, getProductBreakdown, formatProductBreakdownText } from '@/lib/utils';
 import { format, parseISO, differenceInDays, isAfter } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import { useResilientQuery } from '@/hooks/useResilientQuery';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface WorkOrderItem {
   id: string;
@@ -27,19 +29,11 @@ interface WorkOrder {
 }
 
 export const TodaysSchedule = memo(function TodaysSchedule() {
-  const { language, t } = useLanguage();
+  const { language } = useLanguage();
   const navigate = useNavigate();
-  const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
-  const [loading, setLoading] = useState(true);
-  const isMountedRef = useRef(true);
 
-  const fetchTodaysWorkOrders = useCallback(async () => {
-    // Timeout after 8 seconds
-    const timeoutId = setTimeout(() => {
-      if (isMountedRef.current) setLoading(false);
-    }, 8000);
-
-    try {
+  const { data: workOrders, loading, error, refetch, isStale } = useResilientQuery<WorkOrder[]>({
+    queryFn: async () => {
       const today = format(new Date(), 'yyyy-MM-dd');
       
       const { data: woData, error: woError } = await supabase
@@ -49,18 +43,10 @@ export const TodaysSchedule = memo(function TodaysSchedule() {
         .neq('status', 'cancelled')
         .order('wo_number', { ascending: true });
 
-      if (woError) {
-        console.error('Error fetching work orders:', woError);
-        clearTimeout(timeoutId);
-        if (isMountedRef.current) setLoading(false);
-        return;
-      }
+      if (woError) throw woError;
 
-      if (!woData || woData.length === 0 || !isMountedRef.current) {
-        setWorkOrders([]);
-        clearTimeout(timeoutId);
-        setLoading(false);
-        return;
+      if (!woData || woData.length === 0) {
+        return [];
       }
 
       const woIds = woData.map(wo => wo.id);
@@ -69,27 +55,18 @@ export const TodaysSchedule = memo(function TodaysSchedule() {
         .select('id, serial_number, work_order_id')
         .in('work_order_id', woIds);
 
-      if (!isMountedRef.current) return;
-
-      const workOrdersWithItems = woData.map(wo => ({
+      return woData.map(wo => ({
         ...wo,
         items: itemsData?.filter(item => item.work_order_id === wo.id) || [],
       }));
+    },
+    fallbackData: [],
+    timeout: 10000,
+    retryCount: 3,
+  });
 
-      setWorkOrders(workOrdersWithItems);
-    } catch (error) {
-      console.error('Error fetching work orders:', error);
-    } finally {
-      clearTimeout(timeoutId);
-      if (isMountedRef.current) setLoading(false);
-    }
-  }, []);
-
+  // Set up realtime subscription
   useEffect(() => {
-    isMountedRef.current = true;
-    fetchTodaysWorkOrders();
-
-    // Debounced realtime
     let debounceTimer: NodeJS.Timeout;
     const channel = supabase
       .channel('todays-schedule-realtime')
@@ -99,18 +76,17 @@ export const TodaysSchedule = memo(function TodaysSchedule() {
         () => {
           clearTimeout(debounceTimer);
           debounceTimer = setTimeout(() => {
-            if (isMountedRef.current) fetchTodaysWorkOrders();
+            refetch();
           }, 500);
         }
       )
       .subscribe();
 
     return () => {
-      isMountedRef.current = false;
       clearTimeout(debounceTimer);
       supabase.removeChannel(channel);
     };
-  }, [fetchTodaysWorkOrders]);
+  }, [refetch]);
 
   const getStatusVariant = useCallback((status: string) => {
     switch (status) {
@@ -150,13 +126,41 @@ export const TodaysSchedule = memo(function TodaysSchedule() {
         <CardContent>
           <div className="space-y-2">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-16 rounded-lg bg-muted/50 animate-pulse" />
+              <div key={i} className="rounded-lg border p-3">
+                <Skeleton className="h-4 w-24 mb-2" />
+                <Skeleton className="h-3 w-32" />
+              </div>
             ))}
           </div>
         </CardContent>
       </Card>
     );
   }
+
+  if (error && (!workOrders || workOrders.length === 0)) {
+    return (
+      <Card className="h-full">
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center gap-2">
+            <div className="p-2 rounded-lg bg-primary/10">
+              <Calendar className="h-4 w-4 text-primary" />
+            </div>
+            <span>{language === 'nl' ? 'Planning Vandaag' : "Today's Schedule"}</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col items-center justify-center py-6 gap-3">
+          <AlertCircle className="h-6 w-6 text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">Failed to load schedule</p>
+          <Button variant="outline" size="sm" onClick={() => refetch()}>
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Retry
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const displayWorkOrders = workOrders || [];
 
   return (
     <Card className="h-full flex flex-col w-full">
@@ -166,15 +170,20 @@ export const TodaysSchedule = memo(function TodaysSchedule() {
             <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
           </div>
           <span className="truncate">{language === 'nl' ? 'Planning Vandaag' : "Today's Schedule"}</span>
-          {workOrders.length > 0 && (
+          {displayWorkOrders.length > 0 && (
             <Badge variant="secondary" className="ml-auto">
-              {workOrders.length}
+              {displayWorkOrders.length}
             </Badge>
+          )}
+          {isStale && (
+            <Button variant="ghost" size="sm" className="h-6 px-2" onClick={() => refetch()}>
+              <RefreshCw className="h-3 w-3" />
+            </Button>
           )}
         </CardTitle>
       </CardHeader>
       <CardContent className="flex-1 flex flex-col pt-0 px-4 sm:px-6">
-        {workOrders.length === 0 ? (
+        {displayWorkOrders.length === 0 ? (
           <div className="flex-1 flex flex-col items-center justify-center py-8 text-center">
             <div className="p-3 rounded-full bg-muted/50 mb-3">
               <Calendar className="h-6 w-6 text-muted-foreground" />
@@ -187,7 +196,7 @@ export const TodaysSchedule = memo(function TodaysSchedule() {
           </div>
         ) : (
           <div className="space-y-2 flex-1">
-            {workOrders.slice(0, 4).map((wo, index) => {
+            {displayWorkOrders.slice(0, 4).map((wo, index) => {
               const productBreakdown = wo.items ? getProductBreakdown(wo.items) : [];
               const breakdownText = formatProductBreakdownText(productBreakdown);
               const urgency = getShippingUrgency(wo.shipping_date);
@@ -235,9 +244,9 @@ export const TodaysSchedule = memo(function TodaysSchedule() {
                 </div>
               );
             })}
-            {workOrders.length > 4 && (
+            {displayWorkOrders.length > 4 && (
               <div className="text-sm text-muted-foreground text-center py-2">
-                +{workOrders.length - 4} {language === 'nl' ? 'meer' : 'more'}
+                +{displayWorkOrders.length - 4} {language === 'nl' ? 'meer' : 'more'}
               </div>
             )}
           </div>

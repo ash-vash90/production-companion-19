@@ -1,11 +1,14 @@
-import React, { useEffect, useState, useCallback, useRef, memo } from 'react';
+import React, { memo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { Loader2, Activity, User, Package } from 'lucide-react';
+import { Activity, User, AlertCircle, RefreshCw } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { nl, enUS } from 'date-fns/locale';
+import { useResilientQuery } from '@/hooks/useResilientQuery';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface ActivityDetails {
   step_number?: number;
@@ -27,17 +30,9 @@ interface ActivityLog {
 
 export const RecentActivity = memo(function RecentActivity() {
   const { t, language } = useLanguage();
-  const [activities, setActivities] = useState<ActivityLog[]>([]);
-  const [loading, setLoading] = useState(true);
-  const isMountedRef = useRef(true);
 
-  const fetchActivities = useCallback(async () => {
-    // Timeout after 8 seconds
-    const timeoutId = setTimeout(() => {
-      if (isMountedRef.current) setLoading(false);
-    }, 8000);
-
-    try {
+  const { data: activities, loading, error, refetch, isStale } = useResilientQuery<ActivityLog[]>({
+    queryFn: async () => {
       const { data, error } = await supabase
         .from('activity_logs')
         .select('*')
@@ -45,7 +40,6 @@ export const RecentActivity = memo(function RecentActivity() {
         .limit(10);
 
       if (error) throw error;
-      if (!isMountedRef.current) return;
       
       // Get unique user IDs
       const userIds = [...new Set((data || []).map(a => a.user_id).filter(Boolean))];
@@ -64,10 +58,8 @@ export const RecentActivity = memo(function RecentActivity() {
         }, {} as Record<string, string>);
       }
 
-      if (!isMountedRef.current) return;
-
       // Enrich activities with user names
-      const enrichedActivities: ActivityLog[] = (data || []).map(activity => ({
+      return (data || []).map(activity => ({
         id: activity.id,
         action: activity.action,
         entity_type: activity.entity_type,
@@ -77,26 +69,11 @@ export const RecentActivity = memo(function RecentActivity() {
         created_at: activity.created_at,
         user_name: activity.user_id ? profilesMap[activity.user_id] : undefined
       }));
-
-      setActivities(enrichedActivities);
-    } catch (error) {
-      console.error('Error fetching activities:', error);
-    } finally {
-      clearTimeout(timeoutId);
-      if (isMountedRef.current) {
-        setLoading(false);
-      }
-    }
-  }, []);
-
-  useEffect(() => {
-    isMountedRef.current = true;
-    fetchActivities();
-    
-    return () => {
-      isMountedRef.current = false;
-    };
-  }, [fetchActivities]);
+    },
+    fallbackData: [],
+    timeout: 10000,
+    retryCount: 3,
+  });
 
   const getActionLabel = (action: string) => {
     const labels: Record<string, string> = {
@@ -151,24 +128,62 @@ export const RecentActivity = memo(function RecentActivity() {
           <CardDescription className="text-sm">{t('latestProductionEvents')}</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex justify-center py-6">
-            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          <div className="space-y-2">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="flex items-start gap-3 rounded-lg border bg-card p-2.5">
+                <Skeleton className="h-4 w-4 rounded" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-5 w-24" />
+                  <Skeleton className="h-3 w-32" />
+                </div>
+              </div>
+            ))}
           </div>
         </CardContent>
       </Card>
     );
   }
 
+  if (error && (!activities || activities.length === 0)) {
+    return (
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">{t('recentActivityTitle')}</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col items-center justify-center py-6 gap-3">
+          <AlertCircle className="h-6 w-6 text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">Failed to load activity</p>
+          <Button variant="outline" size="sm" onClick={() => refetch()}>
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Retry
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const displayActivities = activities || [];
+
   return (
     <Card>
       <CardHeader className="pb-3">
-        <CardTitle className="text-base">{t('recentActivityTitle')}</CardTitle>
-        <CardDescription className="text-sm">{t('latestProductionEvents')}</CardDescription>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="text-base">{t('recentActivityTitle')}</CardTitle>
+            <CardDescription className="text-sm">{t('latestProductionEvents')}</CardDescription>
+          </div>
+          {isStale && (
+            <Button variant="ghost" size="sm" className="h-7" onClick={() => refetch()}>
+              <RefreshCw className="h-3 w-3 mr-1" />
+              Refresh
+            </Button>
+          )}
+        </div>
       </CardHeader>
       <CardContent>
-        {activities.length > 0 ? (
+        {displayActivities.length > 0 ? (
           <div className="space-y-2">
-            {activities.map((activity) => {
+            {displayActivities.map((activity) => {
               const detailsText = formatActivityDetails(activity);
               
               return (

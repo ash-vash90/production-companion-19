@@ -1,12 +1,14 @@
 import React, { useEffect, useState, useRef, memo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { Loader2, Users, Circle, UserCircle } from 'lucide-react';
+import { Users, Circle, UserCircle, AlertCircle, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface OnlineUser {
   id: string;
@@ -21,6 +23,7 @@ export const ActiveOperators = memo(function ActiveOperators() {
   const { user } = useAuth();
   const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
   const [currentUserProfile, setCurrentUserProfile] = useState<any>(null);
   const isMountedRef = useRef(true);
 
@@ -40,20 +43,25 @@ export const ActiveOperators = memo(function ActiveOperators() {
       }
       
       try {
-        const { data } = await supabase
+        const { data, error: profileError } = await supabase
           .from('profiles')
           .select('*')
           .eq('id', user.id)
           .single();
+        
+        if (profileError) throw profileError;
         
         clearTimeout(timeoutId);
         if (isMountedRef.current) {
           setCurrentUserProfile(data);
           setLoading(false);
         }
-      } catch {
+      } catch (err) {
         clearTimeout(timeoutId);
-        if (isMountedRef.current) setLoading(false);
+        if (isMountedRef.current) {
+          setError(err instanceof Error ? err : new Error('Failed to load profile'));
+          setLoading(false);
+        }
       }
     };
 
@@ -142,6 +150,26 @@ export const ActiveOperators = memo(function ActiveOperators() {
     return labels[role]?.[language] || role;
   };
 
+  const handleRetry = async () => {
+    setLoading(true);
+    setError(null);
+    if (user) {
+      try {
+        const { data } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+        if (isMountedRef.current) {
+          setCurrentUserProfile(data);
+          setLoading(false);
+        }
+      } catch {
+        if (isMountedRef.current) setLoading(false);
+      }
+    }
+  };
+
   if (loading) {
     return (
       <Card className="h-full">
@@ -156,9 +184,38 @@ export const ActiveOperators = memo(function ActiveOperators() {
         <CardContent>
           <div className="space-y-2">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-14 rounded-lg bg-muted/50 animate-pulse" />
+              <div key={i} className="flex items-center gap-3 rounded-lg border p-3">
+                <Skeleton className="h-9 w-9 rounded-full" />
+                <div className="space-y-2 flex-1">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-4 w-16" />
+                </div>
+              </div>
             ))}
           </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card className="h-full">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-success/10">
+              <Users className="h-4 w-4 sm:h-5 sm:w-5 text-success" />
+            </div>
+            <span>{language === 'nl' ? 'Je Collega\'s' : 'Your Team'}</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col items-center justify-center py-6 gap-3">
+          <AlertCircle className="h-6 w-6 text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">Failed to load team</p>
+          <Button variant="outline" size="sm" onClick={handleRetry}>
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Retry
+          </Button>
         </CardContent>
       </Card>
     );
