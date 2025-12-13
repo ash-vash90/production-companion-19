@@ -14,30 +14,18 @@ import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/comp
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { CreateWorkOrderDialog } from '@/components/CreateWorkOrderDialog';
 import { WorkOrderFilters, FilterState } from '@/components/workorders/WorkOrderFilters';
+import { useWorkOrders, invalidateWorkOrdersCache, WorkOrderListItem } from '@/hooks/useWorkOrders';
+import { prefetchProductionOnHover } from '@/services/prefetchService';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { getProductBreakdown, ProductBreakdown, formatDate } from '@/lib/utils';
-import { Loader2, Plus, Package, Filter, Eye, AlertTriangle, ChevronDown, ChevronRight, Layers, RotateCcw, LayoutGrid, Table, Clock, Link2 } from 'lucide-react';
+import { formatDate, getProductBreakdown, ProductBreakdown } from '@/lib/utils';
+import { Plus, Package, Eye, AlertTriangle, ChevronDown, ChevronRight, Layers, RotateCcw, LayoutGrid, Table, Clock, Link2, RefreshCw, AlertCircle, Loader2, Filter } from 'lucide-react';
 import { format, differenceInDays, parseISO, isBefore } from 'date-fns';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Skeleton } from '@/components/ui/skeleton';
 
-interface WorkOrderWithItems {
-  id: string;
-  wo_number: string;
-  product_type: string;
-  batch_size: number;
-  status: string;
-  created_at: string;
-  start_date: string | null;
-  shipping_date: string | null;
-  customer_name: string | null;
-  external_order_number: string | null;
-  order_value: number | null;
-  profiles: { full_name: string; avatar_url: string | null } | null;
-  productBreakdown: ProductBreakdown[];
-  isMainAssembly: boolean;
-  hasSubassemblies: boolean;
-}
+// Type alias for backwards compatibility
+type WorkOrderWithItems = WorkOrderListItem;
 
 const getInitials = (name: string) => {
   return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
@@ -67,9 +55,19 @@ const WorkOrders = () => {
   const { t, language } = useLanguage();
   const { isAdmin } = useUserProfile();
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
-  const [workOrders, setWorkOrders] = useState<WorkOrderWithItems[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
+  
+  // Use the resilient work orders hook
+  const { workOrders, loading, error, refetch, isStale, setupRealtime } = useWorkOrders({
+    excludeCancelled: true,
+    enableRealtime: true,
+  });
+  
+  // Set up realtime updates
+  useEffect(() => {
+    const cleanup = setupRealtime();
+    return cleanup;
+  }, [setupRealtime]);
   
   // Load persisted filters from sessionStorage
   const [filters, setFilters] = useState<FilterState>(() => {
@@ -121,77 +119,8 @@ const WorkOrders = () => {
   useEffect(() => {
     if (!user) {
       navigate('/auth');
-      return;
     }
-    fetchWorkOrders();
   }, [user, navigate]);
-
-  const fetchWorkOrders = async () => {
-    try {
-      const { data: workOrdersData, error: woError } = await supabase
-        .from('work_orders')
-        .select('id, wo_number, product_type, batch_size, status, created_at, created_by, customer_name, external_order_number, order_value, start_date, shipping_date')
-        .neq('status', 'cancelled')
-        .order('created_at', { ascending: false });
-
-      if (woError) throw woError;
-
-      const woIds = workOrdersData?.map(wo => wo.id) || [];
-      
-      let itemsMap: Record<string, Array<{ serial_number: string }>> = {};
-      if (woIds.length > 0) {
-        const { data: itemsData } = await supabase
-          .from('work_order_items')
-          .select('work_order_id, serial_number')
-          .in('work_order_id', woIds);
-        
-        for (const item of itemsData || []) {
-          if (!itemsMap[item.work_order_id]) {
-            itemsMap[item.work_order_id] = [];
-          }
-          itemsMap[item.work_order_id].push({ serial_number: item.serial_number });
-        }
-      }
-
-      const creatorIds = [...new Set(workOrdersData?.map(wo => wo.created_by).filter(Boolean) || [])];
-      let profilesMap: Record<string, { full_name: string; avatar_url: string | null }> = {};
-      
-      if (creatorIds.length > 0) {
-        const { data: profilesData } = await supabase
-          .from('profiles')
-          .select('id, full_name, avatar_url')
-          .in('id', creatorIds);
-        
-        profilesMap = (profilesData || []).reduce((acc, p) => {
-          acc[p.id] = { full_name: p.full_name, avatar_url: p.avatar_url };
-          return acc;
-        }, {} as Record<string, { full_name: string; avatar_url: string | null }>);
-      }
-
-      const enrichedData = (workOrdersData || []).map(wo => {
-        const breakdown = getProductBreakdown(itemsMap[wo.id] || []);
-        const hasSDM_ECO = breakdown.some(b => b.type === 'SDM_ECO');
-        const hasSubassemblies = breakdown.some(b => ['SENSOR', 'MLA', 'HMI', 'TRANSMITTER'].includes(b.type));
-        
-        return {
-          ...wo,
-          profiles: wo.created_by && profilesMap[wo.created_by] 
-            ? profilesMap[wo.created_by] 
-            : null,
-          productBreakdown: breakdown,
-          isMainAssembly: hasSDM_ECO,
-          hasSubassemblies: hasSubassemblies
-        };
-      });
-
-      setWorkOrders(enrichedData as WorkOrderWithItems[]);
-    } catch (error) {
-      console.error('Error fetching work orders:', error);
-      toast.error(t('error'), { description: t('failedLoadWorkOrders') });
-    } finally {
-      setLoading(false);
-    }
-  };
 
   // Reset all filters
   const resetFilters = () => {
@@ -563,7 +492,7 @@ const WorkOrders = () => {
                       if (error) throw error;
                       
                       toast.success(t('success'), { description: t('workOrderCancelled') });
-                      fetchWorkOrders();
+                      refetch();
                     } catch (error: any) {
                       toast.error(t('error'), { description: error.message });
                     }
@@ -647,7 +576,7 @@ const WorkOrders = () => {
                                   .eq('id', wo.id);
                                 if (error) throw error;
                                 toast.success(t('success'), { description: t('workOrderCancelled') });
-                                fetchWorkOrders();
+                                refetch();
                               } catch (error: any) {
                                 toast.error(t('error'), { description: error.message });
                               }
@@ -839,7 +768,7 @@ const WorkOrders = () => {
         <CreateWorkOrderDialog 
           open={dialogOpen} 
           onOpenChange={setDialogOpen} 
-          onSuccess={fetchWorkOrders}
+          onSuccess={refetch}
         />
       </Layout>
     </ProtectedRoute>
