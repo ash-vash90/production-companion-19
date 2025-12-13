@@ -13,32 +13,41 @@ export function WeatherWidget() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchWeather();
-  }, []);
+    let isMounted = true;
+    
+    const fetchWeather = async () => {
+      // Timeout after 5 seconds
+      const timeoutId = setTimeout(() => {
+        if (isMounted) setLoading(false);
+      }, 5000);
 
-  const fetchWeather = async () => {
-    try {
-      // Using Open-Meteo API (free, no API key required)
-      // Putten, Netherlands coordinates: 52.26, 5.61
-      const response = await fetch(
-        'https://api.open-meteo.com/v1/forecast?latitude=52.26&longitude=5.61&current=temperature_2m,weather_code&timezone=Europe/Amsterdam'
-      );
-      const data = await response.json();
-      
-      if (data.current) {
-        const weatherCode = data.current.weather_code;
-        setWeather({
-          temperature: Math.round(data.current.temperature_2m),
-          condition: getWeatherCondition(weatherCode),
-          description: getWeatherDescription(weatherCode)
-        });
+      try {
+        // Using Open-Meteo API (free, no API key required)
+        // Putten, Netherlands coordinates: 52.26, 5.61
+        const response = await fetch(
+          'https://api.open-meteo.com/v1/forecast?latitude=52.26&longitude=5.61&current=temperature_2m,weather_code&timezone=Europe/Amsterdam'
+        );
+        const data = await response.json();
+        
+        if (data.current && isMounted) {
+          const weatherCode = data.current.weather_code;
+          setWeather({
+            temperature: Math.round(data.current.temperature_2m),
+            condition: getWeatherCondition(weatherCode),
+            description: getWeatherDescription(weatherCode)
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching weather:', error);
+      } finally {
+        clearTimeout(timeoutId);
+        if (isMounted) setLoading(false);
       }
-    } catch (error) {
-      console.error('Error fetching weather:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
+
+    fetchWeather();
+    return () => { isMounted = false; };
+  }, []);
 
   const getWeatherCondition = (code: number): string => {
     if (code === 0) return 'clear';

@@ -32,6 +32,11 @@ export const RecentActivity = memo(function RecentActivity() {
   const isMountedRef = useRef(true);
 
   const fetchActivities = useCallback(async () => {
+    // Timeout after 8 seconds
+    const timeoutId = setTimeout(() => {
+      if (isMountedRef.current) setLoading(false);
+    }, 8000);
+
     try {
       const { data, error } = await supabase
         .from('activity_logs')
@@ -77,6 +82,7 @@ export const RecentActivity = memo(function RecentActivity() {
     } catch (error) {
       console.error('Error fetching activities:', error);
     } finally {
+      clearTimeout(timeoutId);
       if (isMountedRef.current) {
         setLoading(false);
       }

@@ -34,42 +34,55 @@ export const TodaysSchedule = memo(function TodaysSchedule() {
   const isMountedRef = useRef(true);
 
   const fetchTodaysWorkOrders = useCallback(async () => {
-    const today = format(new Date(), 'yyyy-MM-dd');
-    
-    const { data: woData, error: woError } = await supabase
-      .from('work_orders')
-      .select('id, wo_number, status, product_type, batch_size, start_date, shipping_date')
-      .eq('start_date', today)
-      .neq('status', 'cancelled')
-      .order('wo_number', { ascending: true });
-
-    if (woError) {
-      console.error('Error fetching work orders:', woError);
+    // Timeout after 8 seconds
+    const timeoutId = setTimeout(() => {
       if (isMountedRef.current) setLoading(false);
-      return;
+    }, 8000);
+
+    try {
+      const today = format(new Date(), 'yyyy-MM-dd');
+      
+      const { data: woData, error: woError } = await supabase
+        .from('work_orders')
+        .select('id, wo_number, status, product_type, batch_size, start_date, shipping_date')
+        .eq('start_date', today)
+        .neq('status', 'cancelled')
+        .order('wo_number', { ascending: true });
+
+      if (woError) {
+        console.error('Error fetching work orders:', woError);
+        clearTimeout(timeoutId);
+        if (isMountedRef.current) setLoading(false);
+        return;
+      }
+
+      if (!woData || woData.length === 0 || !isMountedRef.current) {
+        setWorkOrders([]);
+        clearTimeout(timeoutId);
+        setLoading(false);
+        return;
+      }
+
+      const woIds = woData.map(wo => wo.id);
+      const { data: itemsData } = await supabase
+        .from('work_order_items')
+        .select('id, serial_number, work_order_id')
+        .in('work_order_id', woIds);
+
+      if (!isMountedRef.current) return;
+
+      const workOrdersWithItems = woData.map(wo => ({
+        ...wo,
+        items: itemsData?.filter(item => item.work_order_id === wo.id) || [],
+      }));
+
+      setWorkOrders(workOrdersWithItems);
+    } catch (error) {
+      console.error('Error fetching work orders:', error);
+    } finally {
+      clearTimeout(timeoutId);
+      if (isMountedRef.current) setLoading(false);
     }
-
-    if (!woData || woData.length === 0 || !isMountedRef.current) {
-      setWorkOrders([]);
-      setLoading(false);
-      return;
-    }
-
-    const woIds = woData.map(wo => wo.id);
-    const { data: itemsData } = await supabase
-      .from('work_order_items')
-      .select('id, serial_number, work_order_id')
-      .in('work_order_id', woIds);
-
-    if (!isMountedRef.current) return;
-
-    const workOrdersWithItems = woData.map(wo => ({
-      ...wo,
-      items: itemsData?.filter(item => item.work_order_id === wo.id) || [],
-    }));
-
-    setWorkOrders(workOrdersWithItems);
-    setLoading(false);
   }, []);
 
   useEffect(() => {
