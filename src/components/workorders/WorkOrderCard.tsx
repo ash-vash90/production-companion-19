@@ -16,6 +16,7 @@ export interface WorkOrderCardData {
   shipping_date?: string | null;
   start_date?: string | null;
   order_value?: number | null;
+  cancellation_reason?: string | null;
   productBreakdown: ProductBreakdown[];
   isMainAssembly?: boolean;
   hasSubassemblies?: boolean;
@@ -127,6 +128,13 @@ export function WorkOrderCard({
           compact
         />
       </div>
+
+      {/* Cancellation reason for cancelled orders */}
+      {workOrder.status === 'cancelled' && workOrder.cancellation_reason && (
+        <div className="mb-2 text-xs text-destructive/80 italic">
+          "{workOrder.cancellation_reason}"
+        </div>
+      )}
 
       {/* Details - compact list */}
       <div className="flex items-end justify-between gap-2">
