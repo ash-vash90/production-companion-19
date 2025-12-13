@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import { UserProfileProvider } from "./contexts/UserProfileContext";
@@ -50,6 +50,36 @@ const PageLoader = () => (
   </div>
 );
 
+// Persist and restore the last non-auth route so hard refresh keeps you on the same page
+const LAST_ROUTE_KEY = "last_route";
+
+const RoutePersistence = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // Store the last visited route (excluding the auth page)
+  useEffect(() => {
+    if (location.pathname !== "/auth") {
+      const fullPath = `${location.pathname}${location.search}${location.hash}`;
+      localStorage.setItem(LAST_ROUTE_KEY, fullPath);
+    }
+  }, [location]);
+
+  // On initial load, if we land on root but have a last route, restore it
+  useEffect(() => {
+    if (location.pathname === "/") {
+      const lastRoute = localStorage.getItem(LAST_ROUTE_KEY);
+      if (lastRoute && lastRoute !== "/" && lastRoute !== "/auth") {
+        navigate(lastRoute, { replace: true });
+      }
+    }
+    // We intentionally run this only once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return null;
+};
+
 const App = () => {
   // Initialize prefetch on app load
   useEffect(() => {
@@ -62,6 +92,8 @@ const App = () => {
         <Toaster />
         <Sonner />
         <BrowserRouter>
+          {/* Ensure we restore last route on hard refresh */}
+          <RoutePersistence />
           <AuthProvider>
             <LanguageProvider>
               <UserProfileProvider>
