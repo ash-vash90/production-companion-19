@@ -475,6 +475,19 @@ export const translations = {
     onlineColleagues: 'Online Colleagues',
     colleaguesCurrentlyOnline: 'Colleagues currently online',
     noOneElseOnline: 'No one else is online',
+    
+    // Automations
+    automations: 'Automations',
+    incomingWebhooks: 'Incoming Webhooks',
+    incomingWebhooksDesc: 'Receive data from external systems',
+    outgoingWebhooks: 'Outgoing Webhooks',
+    createEndpoint: 'Create',
+    createWebhookEndpoint: 'Create Webhook Endpoint',
+    createWebhookEndpointDesc: 'Create a new endpoint to receive incoming webhooks',
+    name: 'Name',
+    description: 'Description',
+    noWebhooksYet: 'No webhook endpoints yet',
+    createFirstEndpoint: 'Create Endpoint',
   },
   nl: {
     // Navigation
@@ -947,6 +960,19 @@ export const translations = {
     onlineColleagues: 'Online Collega\'s',
     colleaguesCurrentlyOnline: 'Collega\'s die nu online zijn',
     noOneElseOnline: 'Niemand anders is online',
+    
+    // Automations
+    automations: 'Automatiseringen',
+    incomingWebhooks: 'Inkomende Webhooks',
+    incomingWebhooksDesc: 'Ontvang gegevens van externe systemen',
+    outgoingWebhooks: 'Uitgaande Webhooks',
+    createEndpoint: 'Aanmaken',
+    createWebhookEndpoint: 'Webhook Endpoint Aanmaken',
+    createWebhookEndpointDesc: 'Maak een nieuw endpoint aan om webhooks te ontvangen',
+    name: 'Naam',
+    description: 'Beschrijving',
+    noWebhooksYet: 'Nog geen webhook endpoints',
+    createFirstEndpoint: 'Endpoint Aanmaken',
   },
 };
 
