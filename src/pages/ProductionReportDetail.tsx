@@ -6,22 +6,13 @@ import Layout from '@/components/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { WorkOrderStatusBadge } from '@/components/workorders/WorkOrderStatusBadge';
 import { ProductBreakdownBadges } from '@/components/workorders/ProductBreakdownBadges';
-import { StepTimeline } from '@/components/reports/StepTimeline';
+import { ReportDetailContent } from '@/components/reports/ReportDetailContent';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { 
-  Loader2, ArrowLeft, Package, ClipboardList, Users, Clock, CheckCircle2, XCircle, 
-  FileText, Tag, History, Download, Printer, CheckSquare, FileDown, Calendar
-} from 'lucide-react';
-import { format } from 'date-fns';
-import { nl, enUS } from 'date-fns/locale';
-import { formatProductType, getProductBreakdown, formatDate } from '@/lib/utils';
+import { Loader2, ArrowLeft, Package, FileDown } from 'lucide-react';
+import { getProductBreakdown } from '@/lib/utils';
 import { generateProductionReportPdf } from '@/services/reportPdfService';
 
 interface ReportData {
@@ -105,8 +96,6 @@ const ProductionReportDetail = () => {
   const [exporting, setExporting] = useState(false);
   const [data, setData] = useState<ReportData | null>(null);
 
-  const dateLocale = language === 'nl' ? nl : enUS;
-
   useEffect(() => {
     if (!user) {
       navigate('/auth');
@@ -121,7 +110,6 @@ const ProductionReportDetail = () => {
     try {
       setLoading(true);
 
-      // Fetch work order
       const { data: wo, error: woError } = await supabase
         .from('work_orders')
         .select('id, wo_number, product_type, batch_size, status, created_at, completed_at, start_date, shipping_date, customer_name')
@@ -130,7 +118,6 @@ const ProductionReportDetail = () => {
 
       if (woError) throw woError;
 
-      // Fetch items with label info
       const { data: items, error: itemsError } = await supabase
         .from('work_order_items')
         .select('id, serial_number, status, completed_at, label_printed, label_printed_at, label_printed_by')
@@ -141,51 +128,30 @@ const ProductionReportDetail = () => {
 
       const itemIds = items?.map(i => i.id) || [];
 
-      // Parallel fetch all related data
-      const [
-        executionsResult,
-        materialsResult,
-        certificatesResult,
-        checklistResult,
-        activityResult
-      ] = await Promise.all([
-        // Step executions
+      const [executionsResult, materialsResult, certificatesResult, checklistResult, activityResult] = await Promise.all([
         itemIds.length > 0 ? supabase
           .from('step_executions')
-          .select(`
-            id, status, completed_at, measurement_values, validation_status, operator_initials, executed_by, work_order_item_id,
-            production_step:production_steps(step_number, title_en, title_nl)
-          `)
+          .select(`id, status, completed_at, measurement_values, validation_status, operator_initials, executed_by, work_order_item_id, production_step:production_steps(step_number, title_en, title_nl)`)
           .in('work_order_item_id', itemIds)
           .eq('status', 'completed')
           .order('completed_at', { ascending: true }) : { data: [] },
         
-        // Batch materials
         itemIds.length > 0 ? supabase
           .from('batch_materials')
           .select('material_type, batch_number, scanned_at, work_order_item_id')
           .in('work_order_item_id', itemIds)
           .order('scanned_at', { ascending: true }) : { data: [] },
         
-        // Quality certificates
         itemIds.length > 0 ? supabase
           .from('quality_certificates')
           .select('id, work_order_item_id, generated_at, generated_by, pdf_url')
           .in('work_order_item_id', itemIds) : { data: [] },
         
-        // Checklist responses
         itemIds.length > 0 ? supabase
           .from('checklist_responses')
-          .select(`
-            id, checked, checked_at, checked_by, step_execution_id,
-            checklist_item:checklist_items(item_text_en, item_text_nl)
-          `)
-          .in('step_execution_id', (await supabase
-            .from('step_executions')
-            .select('id')
-            .in('work_order_item_id', itemIds)).data?.map(e => e.id) || []) : { data: [] },
+          .select(`id, checked, checked_at, checked_by, step_execution_id, checklist_item:checklist_items(item_text_en, item_text_nl)`)
+          .in('step_execution_id', (await supabase.from('step_executions').select('id').in('work_order_item_id', itemIds)).data?.map(e => e.id) || []) : { data: [] },
         
-        // Activity log
         supabase
           .from('activity_logs')
           .select('id, action, created_at, user_id, details')
@@ -195,7 +161,6 @@ const ProductionReportDetail = () => {
           .limit(50)
       ]);
 
-      // Get all user IDs we need to look up
       const userIds = new Set<string>();
       (executionsResult.data || []).forEach(e => e.executed_by && userIds.add(e.executed_by));
       (certificatesResult.data || []).forEach(c => c.generated_by && userIds.add(c.generated_by));
@@ -203,32 +168,23 @@ const ProductionReportDetail = () => {
       (activityResult.data || []).forEach(a => a.user_id && userIds.add(a.user_id));
       (items || []).forEach(i => i.label_printed_by && userIds.add(i.label_printed_by));
 
-      // Fetch all profiles at once
       let profilesMap: Record<string, { full_name: string; avatar_url: string | null }> = {};
       if (userIds.size > 0) {
-        const { data: profiles } = await supabase
-          .from('profiles')
-          .select('id, full_name, avatar_url')
-          .in('id', Array.from(userIds));
-        
+        const { data: profiles } = await supabase.from('profiles').select('id, full_name, avatar_url').in('id', Array.from(userIds));
         for (const p of profiles || []) {
           profilesMap[p.id] = { full_name: p.full_name, avatar_url: p.avatar_url };
         }
       }
 
-      // Map items to serial numbers
       const itemSerialMap: Record<string, string> = {};
       for (const item of items || []) {
         itemSerialMap[item.id] = item.serial_number;
       }
 
-      // Process step executions
       const stepExecutions = (executionsResult.data || []).map(e => {
         const step = e.production_step as any;
         const operator = e.executed_by ? profilesMap[e.executed_by] : null;
-        const measurementVals = typeof e.measurement_values === 'object' && e.measurement_values !== null && !Array.isArray(e.measurement_values)
-          ? e.measurement_values as Record<string, unknown>
-          : {};
+        const measurementVals = typeof e.measurement_values === 'object' && e.measurement_values !== null && !Array.isArray(e.measurement_values) ? e.measurement_values as Record<string, unknown> : {};
         return {
           id: e.id,
           step_number: step?.step_number || 0,
@@ -244,7 +200,6 @@ const ProductionReportDetail = () => {
         };
       });
 
-      // Process batch materials
       const batchMaterials = (materialsResult.data || []).map(m => ({
         material_type: m.material_type,
         batch_number: m.batch_number,
@@ -252,7 +207,6 @@ const ProductionReportDetail = () => {
         scanned_at: m.scanned_at,
       }));
 
-      // Process certificates
       const certificates = (certificatesResult.data || []).map(c => ({
         id: c.id,
         serial_number: itemSerialMap[c.work_order_item_id] || 'Unknown',
@@ -261,14 +215,11 @@ const ProductionReportDetail = () => {
         pdf_url: c.pdf_url,
       }));
 
-      // Get step execution IDs for checklist lookup
-      const stepExecIds = (executionsResult.data || []).map(e => e.id);
       const stepExecToItem: Record<string, string> = {};
       for (const e of executionsResult.data || []) {
         stepExecToItem[e.id] = e.work_order_item_id;
       }
 
-      // Process checklist responses
       const checklistResponses = (checklistResult.data || []).map(c => {
         const item = c.checklist_item as any;
         return {
@@ -281,7 +232,6 @@ const ProductionReportDetail = () => {
         };
       });
 
-      // Process activity log
       const activityLog = (activityResult.data || []).map(a => ({
         id: a.id,
         action: a.action,
@@ -290,22 +240,15 @@ const ProductionReportDetail = () => {
         details: a.details,
       }));
 
-      // Calculate operator stats
       const operatorStats: Record<string, { id: string; full_name: string; avatar_url: string | null; steps_completed: number }> = {};
       for (const exec of stepExecutions) {
         const key = exec.operator_name;
         if (!operatorStats[key]) {
-          operatorStats[key] = {
-            id: key,
-            full_name: exec.operator_name,
-            avatar_url: exec.operator_avatar,
-            steps_completed: 0,
-          };
+          operatorStats[key] = { id: key, full_name: exec.operator_name, avatar_url: exec.operator_avatar, steps_completed: 0 };
         }
         operatorStats[key].steps_completed++;
       }
 
-      // Add label printed by names
       const itemsWithNames = (items || []).map(item => ({
         ...item,
         label_printed_by_name: item.label_printed_by ? profilesMap[item.label_printed_by]?.full_name : undefined,
@@ -327,10 +270,6 @@ const ProductionReportDetail = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const getInitials = (name: string) => {
-    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };
 
   const handleExportPdf = async () => {
@@ -377,23 +316,19 @@ const ProductionReportDetail = () => {
     );
   }
 
-  const completedItems = data.items.filter(i => i.status === 'completed').length;
-  const passedValidations = data.stepExecutions.filter(e => e.validation_status === 'passed').length;
-  const failedValidations = data.stepExecutions.filter(e => e.validation_status === 'failed').length;
-  const labelsPrinted = data.items.filter(i => i.label_printed).length;
   const productBreakdown = getProductBreakdown(data.items.map(i => ({ serial_number: i.serial_number })));
 
   return (
     <ProtectedRoute>
       <Layout>
-        <div className="space-y-4 sm:space-y-6">
+        <div className="space-y-4">
           {/* Back Button */}
           <Button variant="ghost" size="sm" onClick={() => navigate('/production-reports')} className="gap-2">
             <ArrowLeft className="h-4 w-4" />
             {t('backToReports')}
           </Button>
 
-          {/* Report Header Card */}
+          {/* Report Header */}
           <Card>
             <CardHeader className="pb-4">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -412,11 +347,7 @@ const ProductionReportDetail = () => {
                     disabled={exporting}
                     className="gap-2"
                   >
-                    {exporting ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <FileDown className="h-4 w-4" />
-                    )}
+                    {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
                     <span className="hidden sm:inline">{t('exportPdf')}</span>
                   </Button>
                   <WorkOrderStatusBadge status={data.workOrder.status} />
@@ -428,367 +359,12 @@ const ProductionReportDetail = () => {
             </CardHeader>
           </Card>
 
-          {/* Summary Statistics Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
-            <Card className="p-3 sm:p-4">
-              <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                <Package className="h-4 w-4 flex-shrink-0" />
-                <span className="text-xs font-medium uppercase tracking-wide truncate">{t('items')}</span>
-              </div>
-              <p className="text-xl sm:text-2xl font-bold">{completedItems}/{data.items.length}</p>
-              <p className="text-xs text-muted-foreground">{t('completed')}</p>
-            </Card>
-            <Card className="p-3 sm:p-4">
-              <div className="flex items-center gap-2 text-success mb-1">
-                <CheckCircle2 className="h-4 w-4 flex-shrink-0" />
-                <span className="text-xs font-medium uppercase tracking-wide truncate">{t('passed')}</span>
-              </div>
-              <p className="text-xl sm:text-2xl font-bold text-success">{passedValidations}</p>
-              <p className="text-xs text-muted-foreground">{t('validations')}</p>
-            </Card>
-            <Card className="p-3 sm:p-4">
-              <div className="flex items-center gap-2 text-destructive mb-1">
-                <XCircle className="h-4 w-4 flex-shrink-0" />
-                <span className="text-xs font-medium uppercase tracking-wide truncate">{t('failed')}</span>
-              </div>
-              <p className="text-xl sm:text-2xl font-bold text-destructive">{failedValidations}</p>
-              <p className="text-xs text-muted-foreground">{t('validations')}</p>
-            </Card>
-            <Card className="p-3 sm:p-4">
-              <div className="flex items-center gap-2 text-info mb-1">
-                <FileText className="h-4 w-4 flex-shrink-0" />
-                <span className="text-xs font-medium uppercase tracking-wide truncate">{t('certificates')}</span>
-              </div>
-              <p className="text-xl sm:text-2xl font-bold">{data.certificates.length}</p>
-              <p className="text-xs text-muted-foreground">{t('issued')}</p>
-            </Card>
-            <Card className="p-3 sm:p-4">
-              <div className="flex items-center gap-2 text-warning mb-1">
-                <Tag className="h-4 w-4 flex-shrink-0" />
-                <span className="text-xs font-medium uppercase tracking-wide truncate">{t('labels')}</span>
-              </div>
-              <p className="text-xl sm:text-2xl font-bold">{labelsPrinted}/{data.items.length}</p>
-              <p className="text-xs text-muted-foreground">{t('printed')}</p>
-            </Card>
-            <Card className="p-3 sm:p-4">
-              <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                <Users className="h-4 w-4 flex-shrink-0" />
-                <span className="text-xs font-medium uppercase tracking-wide truncate">{t('operators')}</span>
-              </div>
-              <p className="text-xl sm:text-2xl font-bold">{data.operators.length}</p>
-              <p className="text-xs text-muted-foreground">{t('involved')}</p>
-            </Card>
-          </div>
-
-          {/* Key Dates Card - Improved */}
+          {/* Main Content */}
           <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">
-                <Calendar className="h-4 w-4" />
-                {t('keyDates')}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="space-y-1">
-                  <p className="text-xs text-muted-foreground">{t('created')}</p>
-                  <p className="font-medium text-sm">{formatDate(data.workOrder.created_at)}</p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-xs text-muted-foreground">{t('startDate')}</p>
-                  <p className="font-medium text-sm">
-                    {data.workOrder.start_date 
-                      ? formatDate(data.workOrder.start_date) 
-                      : <span className="text-muted-foreground italic">{t('notSet')}</span>
-                    }
-                  </p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-xs text-muted-foreground">{t('shippingDate')}</p>
-                  <p className="font-medium text-sm">
-                    {data.workOrder.shipping_date 
-                      ? formatDate(data.workOrder.shipping_date) 
-                      : <span className="text-muted-foreground italic">{t('notSet')}</span>
-                    }
-                  </p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-xs text-muted-foreground">{t('completed')}</p>
-                  <p className="font-medium text-sm">
-                    {data.workOrder.completed_at 
-                      ? formatDate(data.workOrder.completed_at) 
-                      : <span className="text-muted-foreground italic">{t('notSet')}</span>
-                    }
-                  </p>
-                </div>
-              </div>
+            <CardContent className="p-4 sm:p-6">
+              <ReportDetailContent data={data} />
             </CardContent>
           </Card>
-
-          {/* Tabbed Content - Improved with horizontal scroll on mobile */}
-          <Tabs defaultValue="steps" className="space-y-4">
-            <ScrollArea className="w-full">
-              <TabsList className="inline-flex h-auto p-1 w-max min-w-full sm:min-w-0">
-                <TabsTrigger value="steps" className="gap-1.5 text-xs sm:text-sm whitespace-nowrap">
-                  <ClipboardList className="h-4 w-4" />
-                  <span className="hidden sm:inline">{t('steps')}</span>
-                  <Badge variant="secondary" className="text-[10px] h-5 px-1.5">{data.stepExecutions.length}</Badge>
-                </TabsTrigger>
-                <TabsTrigger value="materials" className="gap-1.5 text-xs sm:text-sm whitespace-nowrap">
-                  <Package className="h-4 w-4" />
-                  <span className="hidden sm:inline">{t('materials')}</span>
-                  <Badge variant="secondary" className="text-[10px] h-5 px-1.5">{data.batchMaterials.length}</Badge>
-                </TabsTrigger>
-                <TabsTrigger value="certificates" className="gap-1.5 text-xs sm:text-sm whitespace-nowrap">
-                  <FileText className="h-4 w-4" />
-                  <span className="hidden sm:inline">{t('certificates')}</span>
-                  <Badge variant="secondary" className="text-[10px] h-5 px-1.5">{data.certificates.length}</Badge>
-                </TabsTrigger>
-                <TabsTrigger value="labels" className="gap-1.5 text-xs sm:text-sm whitespace-nowrap">
-                  <Tag className="h-4 w-4" />
-                  <span className="hidden sm:inline">{t('labels')}</span>
-                  <Badge variant="secondary" className="text-[10px] h-5 px-1.5">{labelsPrinted}</Badge>
-                </TabsTrigger>
-                <TabsTrigger value="checklists" className="gap-1.5 text-xs sm:text-sm whitespace-nowrap">
-                  <CheckSquare className="h-4 w-4" />
-                  <span className="hidden sm:inline">{t('checklists')}</span>
-                  <Badge variant="secondary" className="text-[10px] h-5 px-1.5">{data.checklistResponses.length}</Badge>
-                </TabsTrigger>
-                <TabsTrigger value="operators" className="gap-1.5 text-xs sm:text-sm whitespace-nowrap">
-                  <Users className="h-4 w-4" />
-                  <span className="hidden sm:inline">{t('operators')}</span>
-                  <Badge variant="secondary" className="text-[10px] h-5 px-1.5">{data.operators.length}</Badge>
-                </TabsTrigger>
-                <TabsTrigger value="activity" className="gap-1.5 text-xs sm:text-sm whitespace-nowrap">
-                  <History className="h-4 w-4" />
-                  <span className="hidden sm:inline">{t('activity')}</span>
-                  <Badge variant="secondary" className="text-[10px] h-5 px-1.5">{data.activityLog.length}</Badge>
-                </TabsTrigger>
-              </TabsList>
-              <ScrollBar orientation="horizontal" className="sm:hidden" />
-            </ScrollArea>
-
-            {/* Production Steps Tab - Now using StepTimeline */}
-            <TabsContent value="steps">
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base">{t('productionSteps')}</CardTitle>
-                  <CardDescription>{t('allCompletedStepsForThisOrder')}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <StepTimeline stepExecutions={data.stepExecutions} />
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* Batch Materials Tab - 2 column on desktop */}
-            <TabsContent value="materials">
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base">{t('batchMaterials')}</CardTitle>
-                  <CardDescription>{t('materialsScannedDuringProduction')}</CardDescription>
-                </CardHeader>
-                <CardContent className="p-0">
-                  {data.batchMaterials.length === 0 ? (
-                    <p className="text-muted-foreground text-center py-8">{t('noMaterialsScanned')}</p>
-                  ) : (
-                    <div className="grid grid-cols-1 lg:grid-cols-2">
-                      {data.batchMaterials.map((mat, index) => (
-                        <div key={index} className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors border-b lg:odd:border-r last:border-b-0 lg:[&:nth-last-child(2):nth-child(odd)]:border-b-0">
-                          <div className="flex items-center gap-2 flex-wrap min-w-0">
-                            <Badge variant="outline" className="font-mono text-xs flex-shrink-0">{mat.serial_number}</Badge>
-                            <Badge variant="secondary" className="text-xs flex-shrink-0">{mat.material_type}</Badge>
-                            <span className="font-mono font-medium text-sm truncate">{mat.batch_number}</span>
-                          </div>
-                          <span className="text-xs text-muted-foreground flex-shrink-0 ml-2">
-                            {format(new Date(mat.scanned_at), 'MMM d, HH:mm', { locale: dateLocale })}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* Quality Certificates Tab - 2 column on desktop */}
-            <TabsContent value="certificates">
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base">{t('qualityCertificates')}</CardTitle>
-                  <CardDescription>{t('certificatesIssuedForThisOrder')}</CardDescription>
-                </CardHeader>
-                <CardContent className="p-0">
-                  {data.certificates.length === 0 ? (
-                    <p className="text-muted-foreground text-center py-8">{t('noCertificatesGenerated')}</p>
-                  ) : (
-                    <div className="grid grid-cols-1 lg:grid-cols-2">
-                      {data.certificates.map((cert) => (
-                        <div key={cert.id} className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors border-b lg:odd:border-r last:border-b-0 lg:[&:nth-last-child(2):nth-child(odd)]:border-b-0">
-                          <div className="flex items-center gap-2 min-w-0">
-                            <FileText className="h-4 w-4 text-primary flex-shrink-0" />
-                            <Badge variant="outline" className="font-mono text-xs flex-shrink-0">{cert.serial_number}</Badge>
-                            {cert.generated_by_name && (
-                              <span className="text-xs text-muted-foreground truncate">
-                                {t('generatedBy')} {cert.generated_by_name}
-                              </span>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-                            <span className="text-xs text-muted-foreground hidden sm:block">
-                              {cert.generated_at && format(new Date(cert.generated_at), 'MMM d', { locale: dateLocale })}
-                            </span>
-                            {cert.pdf_url && (
-                              <Button variant="outline" size="sm" asChild className="h-7 px-2">
-                                <a href={cert.pdf_url} target="_blank" rel="noopener noreferrer" className="gap-1">
-                                  <Download className="h-3 w-3" />
-                                  <span className="hidden sm:inline">PDF</span>
-                                </a>
-                              </Button>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* Labels Printed Tab */}
-            <TabsContent value="labels">
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base">{t('labelsPrinted')}</CardTitle>
-                  <CardDescription>{t('serialNumberLabelsPrinted')}</CardDescription>
-                </CardHeader>
-                <CardContent className="p-0">
-                  {labelsPrinted === 0 ? (
-                    <p className="text-muted-foreground text-center py-8">{t('noLabelsPrinted')}</p>
-                  ) : (
-                    <div className="grid grid-cols-1 lg:grid-cols-2">
-                      {data.items.filter(i => i.label_printed).map((item) => (
-                        <div key={item.id} className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors border-b lg:odd:border-r last:border-b-0 lg:[&:nth-last-child(2):nth-child(odd)]:border-b-0">
-                          <div className="flex items-center gap-2 min-w-0">
-                            <Printer className="h-4 w-4 text-warning flex-shrink-0" />
-                            <Badge variant="outline" className="font-mono text-xs flex-shrink-0">{item.serial_number}</Badge>
-                            {item.label_printed_by_name && (
-                              <span className="text-xs text-muted-foreground truncate">
-                                {t('printedBy')} {item.label_printed_by_name}
-                              </span>
-                            )}
-                          </div>
-                          <span className="text-xs text-muted-foreground flex-shrink-0 ml-2">
-                            {item.label_printed_at && format(new Date(item.label_printed_at), 'MMM d, HH:mm', { locale: dateLocale })}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* Checklist Responses Tab - 2 column on desktop */}
-            <TabsContent value="checklists">
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base">{t('checklistResponses')}</CardTitle>
-                  <CardDescription>{t('allChecklistItemsForThisOrder')}</CardDescription>
-                </CardHeader>
-                <CardContent className="p-0">
-                  {data.checklistResponses.length === 0 ? (
-                    <p className="text-muted-foreground text-center py-8">{t('noChecklistResponses')}</p>
-                  ) : (
-                    <div className="grid grid-cols-1 lg:grid-cols-2">
-                      {data.checklistResponses.map((resp) => (
-                        <div key={resp.id} className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors border-b lg:odd:border-r last:border-b-0 lg:[&:nth-last-child(2):nth-child(odd)]:border-b-0">
-                          <div className="flex items-center gap-2 min-w-0">
-                            {resp.checked ? (
-                              <CheckCircle2 className="h-4 w-4 text-success flex-shrink-0" />
-                            ) : (
-                              <XCircle className="h-4 w-4 text-destructive flex-shrink-0" />
-                            )}
-                            <Badge variant="outline" className="font-mono text-xs flex-shrink-0">{resp.serial_number}</Badge>
-                            <span className="text-sm truncate">{resp.item_text}</span>
-                          </div>
-                          <div className="text-xs text-muted-foreground text-right flex-shrink-0 ml-2">
-                            {resp.checked_by_name && <div className="truncate max-w-[80px]">{resp.checked_by_name}</div>}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* Operators Tab */}
-            <TabsContent value="operators">
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base">{t('operatorsInvolved')}</CardTitle>
-                  <CardDescription>{t('teamMembersWhoWorkedOnThisOrder')}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {data.operators.length === 0 ? (
-                    <p className="text-muted-foreground text-center py-8">{t('noOperators')}</p>
-                  ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-                      {data.operators.map((op) => (
-                        <div key={op.id} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 border">
-                          <Avatar className="h-10 w-10 flex-shrink-0">
-                            <AvatarImage src={op.avatar_url || undefined} />
-                            <AvatarFallback>{getInitials(op.full_name)}</AvatarFallback>
-                          </Avatar>
-                          <div className="min-w-0">
-                            <p className="font-medium text-sm truncate">{op.full_name}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {op.steps_completed} {t('stepsCompleted')}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* Activity Log Tab */}
-            <TabsContent value="activity">
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base">{t('activityLog')}</CardTitle>
-                  <CardDescription>{t('chronologicalHistoryOfActions')}</CardDescription>
-                </CardHeader>
-                <CardContent className="p-0">
-                  {data.activityLog.length === 0 ? (
-                    <p className="text-muted-foreground text-center py-8">{t('noActivity')}</p>
-                  ) : (
-                    <div className="divide-y divide-border max-h-[400px] overflow-y-auto">
-                      {data.activityLog.map((log) => (
-                        <div key={log.id} className="flex items-start justify-between p-4 hover:bg-muted/50 transition-colors">
-                          <div className="flex items-start gap-3 min-w-0">
-                            <History className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-                            <div className="min-w-0">
-                              <span className="font-medium text-sm">{log.action}</span>
-                              {log.user_name && (
-                                <span className="text-sm text-muted-foreground ml-2">by {log.user_name}</span>
-                              )}
-                            </div>
-                          </div>
-                          <span className="text-xs text-muted-foreground flex-shrink-0 ml-2">
-                            {format(new Date(log.created_at), 'MMM d, HH:mm', { locale: dateLocale })}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
         </div>
       </Layout>
     </ProtectedRoute>
