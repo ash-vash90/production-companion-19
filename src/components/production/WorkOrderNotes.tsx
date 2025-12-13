@@ -412,9 +412,15 @@ export function WorkOrderNotes({ workOrderId, workOrderItemId, currentStepNumber
   };
 
   return (
-    <Card className="border-0 shadow-none bg-transparent">
+    <Card className="border shadow-sm">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-lg flex items-center gap-2">
+          <MessageSquare className="h-5 w-5" />
+          {language === 'nl' ? 'Notities' : 'Notes'}
+        </CardTitle>
+      </CardHeader>
       {/* Input Area - Top */}
-      <CardContent className="p-0 pb-6">
+      <CardContent className="pt-0 pb-6">
         <div className="bg-muted/50 rounded-lg p-4">
           <div className="relative">
             <Textarea
@@ -422,7 +428,7 @@ export function WorkOrderNotes({ workOrderId, workOrderItemId, currentStepNumber
               value={newNote}
               onChange={(e) => setNewNote(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder={language === 'nl' ? 'Voeg opmerking toe...' : 'Add comment...'}
+              placeholder={language === 'nl' ? 'Voeg notitie toe...' : 'Add note...'}
               className="min-h-[80px] resize-none text-sm bg-background border-0 focus-visible:ring-1 pr-10"
               disabled={submitting}
             />

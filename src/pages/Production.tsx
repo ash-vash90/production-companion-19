@@ -9,9 +9,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Loader2, ArrowLeft, Package, Printer, FileText, CalendarIcon, DollarSign, User, FileTextIcon, Link2 } from 'lucide-react';
+import { Loader2, ArrowLeft, Package, Printer, FileText, CalendarIcon, DollarSign, User, FileTextIcon, Link2, CheckCircle2 } from 'lucide-react';
 import { generateQualityCertificate } from '@/services/certificateService';
 import { format, differenceInDays, parseISO, isBefore } from 'date-fns';
 import QRCodeLib from 'qrcode';
@@ -26,6 +27,7 @@ const Production = () => {
   const [loading, setLoading] = useState(true);
   const [workOrder, setWorkOrder] = useState<any>(null);
   const [items, setItems] = useState<any[]>([]);
+  const [linkedCounts, setLinkedCounts] = useState<Record<string, number>>({});
 
   useEffect(() => {
     if (!user) {

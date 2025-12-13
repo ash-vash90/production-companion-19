@@ -71,6 +71,8 @@ export const translations = {
     printLabel: 'Print Label',
     saveProgress: 'Save Progress',
     continueProduction: 'Continue Production',
+    linkComponent: 'Link Component',
+    linkSubassemblyInstruction: 'Scan the component serial number to link',
     
     // Actions
     create: 'Create',
@@ -610,6 +612,8 @@ export const translations = {
     printLabel: 'Label Afdrukken',
     saveProgress: 'Voortgang Opslaan',
     continueProduction: 'Productie Voortzetten',
+    linkComponent: 'Koppel Component',
+    linkSubassemblyInstruction: 'Scan het serienummer van het component om te koppelen',
     
     // Actions
     create: 'Aanmaken',
