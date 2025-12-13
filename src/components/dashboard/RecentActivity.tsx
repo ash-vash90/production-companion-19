@@ -174,16 +174,16 @@ export const RecentActivity = memo(function RecentActivity() {
       </div>
 
       {displayActivities.length > 0 ? (
-        <div className="divide-y divide-border">
+        <div className="space-y-3">
           {displayActivities.map((activity) => {
             const detailsText = formatActivityDetails(activity);
             
             return (
               <div
                 key={activity.id}
-                className="flex items-center gap-4 py-3"
+                className="flex items-center gap-4 p-3 rounded-xl border bg-card shadow-sm"
               >
-                <Badge className={`${getActionColor(activity.action)} text-[10px] shrink-0 whitespace-nowrap`}>
+                <Badge className={`${getActionColor(activity.action)} rounded-full px-3 py-1 text-[10px] font-semibold tracking-wide shrink-0 whitespace-nowrap`}>
                   {getActionLabel(activity.action)}
                 </Badge>
                 <div className="flex-1 min-w-0">
