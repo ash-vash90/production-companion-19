@@ -57,6 +57,16 @@ const Index = () => {
     return t('goodEvening');
   };
 
+  const getRoleHint = () => {
+    if (!profile?.role) return t('operatorDashboardHint');
+    switch (profile.role) {
+      case 'admin': return t('adminDashboardHint');
+      case 'supervisor': return t('supervisorDashboardHint');
+      case 'logistics': return t('logisticsDashboardHint');
+      default: return t('operatorDashboardHint');
+    }
+  };
+
   if (authLoading || profileLoading) {
     return (
       <Layout>
@@ -77,11 +87,14 @@ const Index = () => {
       <div className="space-y-6 w-full max-w-full overflow-hidden">
         {/* Header with greeting and weather */}
         <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-          <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">
-              {getGreetingMessage()}, <span className="text-primary">{getFirstName()}</span>
-            </h1>
-            <WeatherWidget />
+          <div>
+            <div className="flex items-center gap-3 flex-wrap">
+              <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">
+                {getGreetingMessage()}, <span className="text-primary">{getFirstName()}</span>
+              </h1>
+              <WeatherWidget />
+            </div>
+            <p className="text-sm text-muted-foreground mt-1">{getRoleHint()}</p>
           </div>
         </header>
 
