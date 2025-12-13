@@ -145,6 +145,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signOut = async () => {
     localStorage.removeItem(SESSION_START_KEY);
+    // Clear route restoration flag so next login can restore properly
+    sessionStorage.removeItem('route_restored');
     try {
       await supabase.auth.signOut();
     } catch (error) {

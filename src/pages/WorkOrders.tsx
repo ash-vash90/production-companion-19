@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -16,6 +16,7 @@ import { CreateWorkOrderDialog } from '@/components/CreateWorkOrderDialog';
 import { WorkOrderFilters, FilterState } from '@/components/workorders/WorkOrderFilters';
 import { useWorkOrders, invalidateWorkOrdersCache, WorkOrderListItem } from '@/hooks/useWorkOrders';
 import { prefetchProductionOnHover } from '@/services/prefetchService';
+import { ResponsiveVirtualizedGrid } from '@/components/VirtualizedList';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { formatDate, getProductBreakdown, ProductBreakdown } from '@/lib/utils';
@@ -715,9 +716,21 @@ const WorkOrders = () => {
             )
           ) : groupBy === 'none' ? (
             viewMode === 'cards' ? (
-              <div className="grid gap-2 md:gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
-                {filteredOrders.map(renderWorkOrderCard)}
-              </div>
+              filteredOrders.length > 50 ? (
+                <ResponsiveVirtualizedGrid
+                  items={filteredOrders}
+                  renderItem={(wo, index) => renderWorkOrderCard(wo)}
+                  itemHeight={280}
+                  minItemWidth={280}
+                  gap={12}
+                  maxHeight={700}
+                  threshold={50}
+                />
+              ) : (
+                <div className="grid gap-2 md:gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+                  {filteredOrders.map(renderWorkOrderCard)}
+                </div>
+              )
             ) : (
               renderTableView(filteredOrders)
             )

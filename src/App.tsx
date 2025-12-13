@@ -52,6 +52,7 @@ const PageLoader = () => (
 
 // Persist and restore the last non-auth route so hard refresh keeps you on the same page
 const LAST_ROUTE_KEY = "last_route";
+const ROUTE_RESTORED_KEY = "route_restored";
 
 const RoutePersistence = () => {
   const location = useLocation();
@@ -59,6 +60,7 @@ const RoutePersistence = () => {
 
   // Store the last visited route (excluding the auth page)
   useEffect(() => {
+    // Don't store auth page or during initial restoration
     if (location.pathname !== "/auth") {
       const fullPath = `${location.pathname}${location.search}${location.hash}`;
       localStorage.setItem(LAST_ROUTE_KEY, fullPath);
@@ -66,18 +68,34 @@ const RoutePersistence = () => {
   }, [location]);
 
   // On initial load, if we land on root but have a last route, restore it
+  // Only do this once per session to avoid conflicts with auth redirects
   useEffect(() => {
+    // Check if we already restored in this session
+    const alreadyRestored = sessionStorage.getItem(ROUTE_RESTORED_KEY);
+    if (alreadyRestored) return;
+
+    // Mark as restored for this session
+    sessionStorage.setItem(ROUTE_RESTORED_KEY, "true");
+
     if (location.pathname === "/") {
       const lastRoute = localStorage.getItem(LAST_ROUTE_KEY);
       if (lastRoute && lastRoute !== "/" && lastRoute !== "/auth") {
-        navigate(lastRoute, { replace: true });
+        // Use a small delay to ensure auth state is settled
+        const timer = setTimeout(() => {
+          navigate(lastRoute, { replace: true });
+        }, 50);
+        return () => clearTimeout(timer);
       }
     }
-    // We intentionally run this only once on mount
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return null;
+};
+
+// Clear the route restored flag on logout so next login can restore properly
+export const clearRouteRestoredFlag = () => {
+  sessionStorage.removeItem(ROUTE_RESTORED_KEY);
 };
 
 const App = () => {

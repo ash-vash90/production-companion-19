@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -9,33 +9,22 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
-import { Loader2, BarChart3 } from 'lucide-react';
+import { VirtualizedList } from '@/components/VirtualizedList';
+import { useProductionReports, ProductionReportItem } from '@/hooks/useProductionReports';
+import { Loader2, BarChart3, RefreshCw, AlertCircle } from 'lucide-react';
 import { format, isToday, isThisWeek, isThisMonth, subDays } from 'date-fns';
 import { nl, enUS } from 'date-fns/locale';
-import { getProductBreakdown, ProductBreakdown } from '@/lib/utils';
 import { ReportFilters, ReportFilterState } from '@/components/reports/ReportFilters';
-
-interface WorkOrderWithItems {
-  id: string;
-  wo_number: string;
-  product_type: string;
-  batch_size: number;
-  status: string;
-  created_at: string;
-  completed_at: string | null;
-  customer_name: string | null;
-  productBreakdown: ProductBreakdown[];
-}
+import { Skeleton } from '@/components/ui/skeleton';
 
 const ProductionReports = () => {
   const { user } = useAuth();
   const { t, language } = useLanguage();
   const navigate = useNavigate();
   
-  const [loading, setLoading] = useState(true);
-  const [workOrders, setWorkOrders] = useState<WorkOrderWithItems[]>([]);
+  // Use resilient hook instead of manual fetching
+  const { reports: workOrders, loading, error, refetch, isStale } = useProductionReports();
+  
   const [groupBy, setGroupBy] = useState('none');
   const [filters, setFilters] = useState<ReportFilterState>({
     searchTerm: '',
@@ -46,54 +35,6 @@ const ProductionReports = () => {
     createdMonthFilter: 'all',
     batchSizeFilter: 'all',
   });
-
-  useEffect(() => {
-    if (!user) {
-      navigate('/auth');
-      return;
-    }
-    fetchWorkOrders();
-  }, [user, navigate]);
-
-  const fetchWorkOrders = async () => {
-    try {
-      const { data: workOrdersData, error } = await supabase
-        .from('work_orders')
-        .select('id, wo_number, product_type, batch_size, status, created_at, completed_at, customer_name')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
-      const woIds = workOrdersData?.map(wo => wo.id) || [];
-      
-      let itemsMap: Record<string, Array<{ serial_number: string }>> = {};
-      if (woIds.length > 0) {
-        const { data: itemsData } = await supabase
-          .from('work_order_items')
-          .select('work_order_id, serial_number')
-          .in('work_order_id', woIds);
-        
-        for (const item of itemsData || []) {
-          if (!itemsMap[item.work_order_id]) {
-            itemsMap[item.work_order_id] = [];
-          }
-          itemsMap[item.work_order_id].push({ serial_number: item.serial_number });
-        }
-      }
-
-      const enrichedData = (workOrdersData || []).map(wo => ({
-        ...wo,
-        productBreakdown: getProductBreakdown(itemsMap[wo.id] || [])
-      }));
-
-      setWorkOrders(enrichedData as WorkOrderWithItems[]);
-    } catch (error) {
-      console.error('Error fetching work orders:', error);
-      toast.error(t('error'), { description: t('failedLoadWorkOrders') });
-    } finally {
-      setLoading(false);
-    }
-  };
 
   // Extract unique customers and months for filter options
   const customers = useMemo(() => {
@@ -148,7 +89,7 @@ const ProductionReports = () => {
       if (!acc[key]) acc[key] = [];
       acc[key].push(wo);
       return acc;
-    }, {} as Record<string, WorkOrderWithItems[]>);
+    }, {} as Record<string, ProductionReportItem[]>);
   }, [filteredWorkOrders, groupBy]);
 
   const getStatusVariant = (status: string): 'info' | 'warning' | 'success' | 'secondary' | 'destructive' => {
@@ -183,13 +124,96 @@ const ProductionReports = () => {
     });
   };
 
+  const renderTableRow = (wo: ProductionReportItem) => (
+    <TableRow key={wo.id}>
+      <TableCell className="font-mono font-semibold whitespace-nowrap">
+        {wo.wo_number}
+      </TableCell>
+      <TableCell>
+        {wo.productBreakdown.length > 0 ? (
+          <div className="flex flex-wrap gap-1">
+            {wo.productBreakdown.map((b) => (
+              <Badge key={b.type} variant="outline">
+                {b.count}× {b.label}
+              </Badge>
+            ))}
+          </div>
+        ) : (
+          <Badge variant="outline">{wo.batch_size} items</Badge>
+        )}
+      </TableCell>
+      <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+        {wo.customer_name || '-'}
+      </TableCell>
+      <TableCell className="font-mono whitespace-nowrap">{wo.batch_size}</TableCell>
+      <TableCell>
+        <Badge variant={getStatusVariant(wo.status)}>
+          {getStatusLabel(wo.status)}
+        </Badge>
+      </TableCell>
+      <TableCell className="text-sm whitespace-nowrap">
+        {format(new Date(wo.created_at), 'dd/MM/yyyy', { locale: language === 'nl' ? nl : enUS })}
+      </TableCell>
+      <TableCell className="text-sm whitespace-nowrap">
+        {wo.completed_at ? format(new Date(wo.completed_at), 'dd/MM/yyyy', { locale: language === 'nl' ? nl : enUS }) : '-'}
+      </TableCell>
+      <TableCell className="text-right whitespace-nowrap">
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => navigate(`/production-reports/${wo.id}`)}
+        >
+          {t('viewReport')}
+        </Button>
+      </TableCell>
+    </TableRow>
+  );
+
   if (!user) return null;
+
+  // Loading skeleton
+  if (loading && workOrders.length === 0) {
+    return (
+      <ProtectedRoute>
+        <Layout>
+          <div className="space-y-6">
+            <PageHeader title={t('productionReports')} description={t('viewAnalyzeProduction')} />
+            <div className="space-y-4">
+              {[1, 2, 3].map(i => (
+                <Card key={i}>
+                  <CardContent className="py-4">
+                    <div className="flex items-center gap-4">
+                      <Skeleton className="h-6 w-32" />
+                      <Skeleton className="h-6 w-24" />
+                      <Skeleton className="h-6 w-20" />
+                      <Skeleton className="h-6 flex-1" />
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        </Layout>
+      </ProtectedRoute>
+    );
+  }
 
   return (
     <ProtectedRoute>
       <Layout>
         <div className="space-y-6">
-          <PageHeader title={t('productionReports')} description={t('viewAnalyzeProduction')} />
+          <div className="flex items-center justify-between">
+            <PageHeader title={t('productionReports')} description={t('viewAnalyzeProduction')} />
+            {(isStale || error) && (
+              <div className="flex items-center gap-2">
+                {error && <AlertCircle className="h-4 w-4 text-destructive" />}
+                <Button variant="outline" size="sm" onClick={refetch}>
+                  <RefreshCw className="h-4 w-4 mr-1" />
+                  {t('refresh')}
+                </Button>
+              </div>
+            )}
+          </div>
 
           <ReportFilters
             filters={filters}
@@ -200,11 +224,7 @@ const ProductionReports = () => {
             onGroupByChange={setGroupBy}
           />
 
-          {loading ? (
-            <div className="flex justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-          ) : filteredWorkOrders.length === 0 ? (
+          {filteredWorkOrders.length === 0 ? (
             <Card>
               <CardContent className="py-16 text-center">
                 <BarChart3 className="h-16 w-16 mx-auto mb-6 text-muted-foreground/50" />
@@ -249,50 +269,16 @@ const ProductionReports = () => {
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {orders.map((wo) => (
-                            <TableRow key={wo.id}>
-                              <TableCell className="font-mono font-semibold whitespace-nowrap">
-                                {wo.wo_number}
-                              </TableCell>
-                              <TableCell>
-                                {wo.productBreakdown.length > 0 ? (
-                                  <div className="flex flex-wrap gap-1">
-                                    {wo.productBreakdown.map((b) => (
-                                      <Badge key={b.type} variant="outline">
-                                        {b.count}× {b.label}
-                                      </Badge>
-                                    ))}
-                                  </div>
-                                ) : (
-                                  <Badge variant="outline">{wo.batch_size} items</Badge>
-                                )}
-                              </TableCell>
-                              <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
-                                {wo.customer_name || '-'}
-                              </TableCell>
-                              <TableCell className="font-mono whitespace-nowrap">{wo.batch_size}</TableCell>
-                              <TableCell>
-                                <Badge variant={getStatusVariant(wo.status)}>
-                                  {getStatusLabel(wo.status)}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="text-sm whitespace-nowrap">
-                                {format(new Date(wo.created_at), 'dd/MM/yyyy', { locale: language === 'nl' ? nl : enUS })}
-                              </TableCell>
-                              <TableCell className="text-sm whitespace-nowrap">
-                                {wo.completed_at ? format(new Date(wo.completed_at), 'dd/MM/yyyy', { locale: language === 'nl' ? nl : enUS }) : '-'}
-                              </TableCell>
-                              <TableCell className="text-right whitespace-nowrap">
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => navigate(`/production-reports/${wo.id}`)}
-                                >
-                                  {t('viewReport')}
-                                </Button>
-                              </TableCell>
-                            </TableRow>
-                          ))}
+                          {orders.length > 100 ? (
+                            <VirtualizedList
+                              items={orders}
+                              renderItem={(wo) => renderTableRow(wo)}
+                              itemHeight={52}
+                              maxHeight={500}
+                            />
+                          ) : (
+                            orders.map((wo) => renderTableRow(wo))
+                          )}
                         </TableBody>
                       </Table>
                     </div>
