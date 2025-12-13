@@ -75,46 +75,49 @@ const Index = () => {
   return (
     <Layout>
       <div className="space-y-6 w-full max-w-full overflow-hidden">
-        {/* Header with greeting */}
-        <header>
-          <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">
-            {getGreetingMessage()}, <span className="text-primary">{getFirstName()}</span>
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            {t('dashboardSubtitle')}
-          </p>
+        {/* Header with greeting and weather */}
+        <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">
+              {getGreetingMessage()}, <span className="text-primary">{getFirstName()}</span>
+            </h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              {t('realTimeMonitoring')}
+            </p>
+          </div>
+          <WeatherWidget />
         </header>
 
-        {/* Weather Widget */}
-        <WeatherWidget />
+        {/* Main content - responsive grid */}
+        <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
+          {/* Today's Schedule Card */}
+          <Card>
+            <CardContent className="pt-6">
+              <TodaysSchedule />
+            </CardContent>
+          </Card>
 
-        {/* Today's Schedule Card */}
-        <Card>
-          <CardContent className="pt-6">
-            <TodaysSchedule />
-          </CardContent>
-        </Card>
+          {/* Your Team Card */}
+          <Card>
+            <CardContent className="pt-6">
+              <ActiveOperators />
+            </CardContent>
+          </Card>
 
-        {/* Your Team Card */}
-        <Card>
-          <CardContent className="pt-6">
-            <ActiveOperators />
-          </CardContent>
-        </Card>
+          {/* Active Work Orders Card - spans full width on lg */}
+          <Card className="lg:col-span-2">
+            <CardContent className="pt-6">
+              <ProductionOverview />
+            </CardContent>
+          </Card>
 
-        {/* Active Work Orders Card */}
-        <Card>
-          <CardContent className="pt-6">
-            <ProductionOverview />
-          </CardContent>
-        </Card>
-
-        {/* Recent Activity Card */}
-        <Card>
-          <CardContent className="pt-6">
-            <RecentActivity />
-          </CardContent>
-        </Card>
+          {/* Recent Activity Card - spans full width on lg */}
+          <Card className="lg:col-span-2">
+            <CardContent className="pt-6">
+              <RecentActivity />
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </Layout>
   );
