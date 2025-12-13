@@ -19,7 +19,8 @@ import ValidationHistoryDialog from '@/components/production/ValidationHistoryDi
 import StepDetailDialog from '@/components/production/StepDetailDialog';
 import StepEditDialog from '@/components/production/StepEditDialog';
 import SubAssemblyLinkDialog from '@/components/production/SubAssemblyLinkDialog';
-import { WorkOrderNotes } from '@/components/production/WorkOrderNotes';
+import { SimpleNotes } from '@/components/production/SimpleNotes';
+import { WorkOrderComments } from '@/components/production/WorkOrderComments';
 import { generateQualityCertificate } from '@/services/certificateService';
 
 
@@ -716,8 +717,15 @@ const ProductionStep = () => {
           </CardContent>
         </Card>
 
-        {/* Notes section */}
-        <WorkOrderNotes 
+        {/* Notes section - quick annotations */}
+        <SimpleNotes 
+          workOrderId={item.work_order_id} 
+          workOrderItemId={item.id}
+          currentStepNumber={item.current_step}
+        />
+
+        {/* Comments section - threaded discussions */}
+        <WorkOrderComments 
           workOrderId={item.work_order_id} 
           workOrderItemId={item.id}
           currentStepNumber={item.current_step}

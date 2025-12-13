@@ -35,13 +35,13 @@ interface UserOption {
   avatar_url: string | null;
 }
 
-interface WorkOrderNotesProps {
+interface WorkOrderCommentsProps {
   workOrderId: string;
   workOrderItemId?: string;
   currentStepNumber?: number;
 }
 
-export function WorkOrderNotes({ workOrderId, workOrderItemId, currentStepNumber }: WorkOrderNotesProps) {
+export function WorkOrderComments({ workOrderId, workOrderItemId, currentStepNumber }: WorkOrderCommentsProps) {
   const { user } = useAuth();
   const { t, language } = useLanguage();
   const [notes, setNotes] = useState<Note[]>([]);
@@ -416,7 +416,7 @@ export function WorkOrderNotes({ workOrderId, workOrderItemId, currentStepNumber
       <CardHeader className="pb-3">
         <CardTitle className="text-lg flex items-center gap-2">
           <MessageSquare className="h-5 w-5" />
-          {language === 'nl' ? 'Notities' : 'Notes'}
+          {language === 'nl' ? 'Discussie' : 'Comments'}
         </CardTitle>
       </CardHeader>
       {/* Input Area - Top */}
