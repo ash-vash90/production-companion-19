@@ -1,26 +1,48 @@
+/* Rhosonics Design System v2.0 */
 /* Fonts loaded via index.html with non-render-blocking pattern */
-
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  /* Rhosonics brand colors */
+  /* ========================================
+     RHOSONICS BRAND COLORS
+     ======================================== */
   --rhosonics-green: 142 76% 36%;
   --rhosonics-green-light: 142 76% 45%;
+  --rhosonics-green-glow: 142 76% 55%;
   
-  /* Obsidian/Slate palette from reference */
+  /* Lime accent for highlights */
+  --lime-accent: 82 85% 45%;
+  --lime-accent-light: 82 85% 55%;
+  
+  /* ========================================
+     OBSIDIAN/SLATE PALETTE
+     ======================================== */
   --obsidian: 228 25% 10%;
+  --obsidian-light: 228 20% 15%;
   --slate-50: 210 40% 98%;
   --slate-100: 210 40% 96%;
   --slate-200: 214 32% 91%;
+  --slate-300: 213 27% 84%;
   --slate-400: 215 16% 62%;
   --slate-500: 215 16% 47%;
+  --slate-600: 215 19% 35%;
+  --slate-700: 217 26% 27%;
   --slate-800: 217 33% 17%;
   --slate-900: 222 47% 11%;
   
-  /* Base colors - clean industrial aesthetic using slate */
+  /* ========================================
+     ECO SURFACE COLORS (for cards, panels)
+     ======================================== */
+  --eco-surface: 142 10% 98%;
+  --eco-surface-hover: 142 15% 96%;
+  --eco-border: 142 10% 90%;
+  
+  /* ========================================
+     SEMANTIC COLOR TOKENS
+     ======================================== */
   --background: 210 40% 98%;
   --foreground: 228 25% 10%;
   --card: 0 0% 100%;
@@ -36,11 +58,11 @@
   --secondary: 210 40% 96%;
   --secondary-foreground: 228 25% 10%;
   
-  /* Muted elements - slate */
+  /* Muted elements */
   --muted: 214 32% 91%;
   --muted-foreground: 215 16% 47%;
   
-  /* Accent - subtle slate */
+  /* Accent */
   --accent: 210 40% 96%;
   --accent-foreground: 228 25% 10%;
   
@@ -56,20 +78,20 @@
   --info: 200 70% 50%;
   --info-foreground: 0 0% 100%;
   
-  /* Borders and inputs - slate */
+  /* Borders and inputs */
   --border: 214 32% 91%;
   --input: 214 32% 91%;
   --ring: 142 76% 36%;
   
-  /* Charts */
+  /* Charts - brand-aligned */
   --chart-1: 142 76% 36%;
   --chart-2: 200 70% 50%;
-  --chart-3: 280 60% 50%;
-  --chart-4: 40 90% 50%;
-  --chart-5: 0 84% 60%;
+  --chart-3: 82 85% 45%;
+  --chart-4: 45 93% 47%;
+  --chart-5: 0 70% 55%;
   
   /* Radius */
-  --radius: 0.375rem;
+  --radius: 0.5rem;
   
   /* Sidebar - obsidian dark */
   --sidebar: 228 25% 10%;
@@ -80,23 +102,45 @@
   --sidebar-accent-foreground: 210 40% 98%;
   --sidebar-border: 217 33% 17%;
   --sidebar-ring: 142 76% 36%;
+  
+  /* ========================================
+     MOTION TIMING TOKENS
+     ======================================== */
+  --duration-quick: 150ms;
+  --duration-normal: 200ms;
+  --duration-standard: 300ms;
+  --duration-emphasis: 500ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+  
+  /* ========================================
+     SHADOW TOKENS
+     ======================================== */
+  --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  --shadow-glow: 0 0 20px hsl(var(--primary) / 0.15);
+  --shadow-glow-lg: 0 0 40px hsl(var(--primary) / 0.2);
 }
 
 .dark {
   /* Dark mode using obsidian/slate palette */
   --background: 228 25% 10%;
   --foreground: 210 40% 98%;
-  --card: 217 33% 17%;
+  --card: 217 33% 14%;
   --card-foreground: 210 40% 98%;
-  --popover: 217 33% 17%;
+  --popover: 217 33% 14%;
   --popover-foreground: 210 40% 98%;
   --primary: 142 76% 45%;
   --primary-foreground: 228 25% 10%;
   --secondary: 222 47% 11%;
   --secondary-foreground: 210 40% 98%;
-  --muted: 222 47% 11%;
+  --muted: 222 47% 15%;
   --muted-foreground: 215 16% 62%;
-  --accent: 222 47% 11%;
+  --accent: 222 47% 15%;
   --accent-foreground: 210 40% 98%;
   --destructive: 0 62% 50%;
   --destructive-foreground: 210 40% 98%;
@@ -111,17 +155,27 @@
   --ring: 142 76% 45%;
   --chart-1: 142 76% 45%;
   --chart-2: 200 70% 60%;
-  --chart-3: 280 60% 60%;
-  --chart-4: 40 90% 60%;
+  --chart-3: 82 85% 55%;
+  --chart-4: 45 93% 55%;
   --chart-5: 0 70% 60%;
-  --sidebar: 222 47% 11%;
+  
+  /* Dark eco surface */
+  --eco-surface: 217 33% 14%;
+  --eco-surface-hover: 217 33% 18%;
+  --eco-border: 217 33% 22%;
+  
+  --sidebar: 222 47% 8%;
   --sidebar-foreground: 210 40% 98%;
   --sidebar-primary: 142 76% 45%;
   --sidebar-primary-foreground: 228 25% 10%;
-  --sidebar-accent: 217 33% 17%;
+  --sidebar-accent: 217 33% 14%;
   --sidebar-accent-foreground: 210 40% 98%;
   --sidebar-border: 217 33% 22%;
   --sidebar-ring: 142 76% 45%;
+  
+  /* Dark shadows */
+  --shadow-glow: 0 0 20px hsl(var(--primary) / 0.25);
+  --shadow-glow-lg: 0 0 40px hsl(var(--primary) / 0.35);
 }
 
 @layer base {
@@ -134,6 +188,7 @@
     width: 100%;
     margin: 0;
     padding: 0;
+    scroll-behavior: smooth;
   }
 
   body {
@@ -145,7 +200,9 @@
     padding: 0;
   }
   
-  /* Typography utilities */
+  /* ========================================
+     TYPOGRAPHY UTILITIES
+     ======================================== */
   .font-logo {
     font-family: 'Unbounded', sans-serif;
     font-weight: 500;
@@ -160,11 +217,173 @@
     font-family: 'JetBrains Mono', monospace;
     font-weight: 500;
     letter-spacing: 0.02em;
+    font-feature-settings: 'tnum' 1;
   }
   
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Instrument Sans', sans-serif;
     font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  
+  /* Typography Scale Classes */
+  .text-display {
+    @apply text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight;
+    line-height: 1.1;
+  }
+  
+  .text-hero {
+    @apply text-2xl sm:text-3xl md:text-4xl font-semibold tracking-tight;
+    line-height: 1.2;
+  }
+  
+  .text-section {
+    @apply text-xl sm:text-2xl font-semibold tracking-tight;
+    line-height: 1.3;
+  }
+  
+  .text-card-title {
+    @apply text-lg font-semibold tracking-tight;
+    line-height: 1.4;
+  }
+  
+  .text-body-lg {
+    @apply text-base font-normal;
+    line-height: 1.6;
+  }
+  
+  .text-body {
+    @apply text-sm font-normal;
+    line-height: 1.5;
+  }
+  
+  .text-caption {
+    @apply text-xs font-medium text-muted-foreground;
+    line-height: 1.4;
+    letter-spacing: 0.01em;
+  }
+  
+  .text-data {
+    @apply font-data text-sm;
+    letter-spacing: 0.02em;
+  }
+  
+  .text-data-lg {
+    @apply font-data text-lg sm:text-xl;
+    letter-spacing: 0.02em;
+  }
+  
+  .text-data-xl {
+    @apply font-data text-2xl sm:text-3xl font-semibold;
+    letter-spacing: 0.02em;
+  }
+}
+
+@layer components {
+  /* ========================================
+     CARD SURFACE STYLES
+     ======================================== */
+  .card-surface {
+    @apply bg-card border border-border rounded-lg;
+    box-shadow: var(--shadow-sm);
+    transition: box-shadow var(--duration-normal) var(--ease-out),
+                transform var(--duration-normal) var(--ease-out);
+  }
+  
+  .card-surface:hover {
+    box-shadow: var(--shadow-md);
+  }
+  
+  .card-surface-interactive {
+    @apply card-surface cursor-pointer;
+  }
+  
+  .card-surface-interactive:hover {
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-2px);
+  }
+  
+  .card-surface-interactive:active {
+    transform: translateY(0) scale(0.99);
+  }
+  
+  /* ========================================
+     GLASS EFFECT
+     ======================================== */
+  .glass {
+    @apply bg-background/80 backdrop-blur-md border border-border/50;
+  }
+  
+  .glass-dark {
+    @apply bg-sidebar/90 backdrop-blur-md border border-sidebar-border/50;
+  }
+  
+  /* ========================================
+     GLOW EFFECTS
+     ======================================== */
+  .glow-primary {
+    box-shadow: var(--shadow-glow);
+  }
+  
+  .glow-primary-lg {
+    box-shadow: var(--shadow-glow-lg);
+  }
+  
+  .hover-glow:hover {
+    box-shadow: var(--shadow-glow);
+  }
+  
+  /* ========================================
+     STATUS INDICATOR STYLES
+     ======================================== */
+  .status-dot {
+    @apply w-2 h-2 rounded-full flex-shrink-0;
+  }
+  
+  .status-dot-success {
+    @apply status-dot bg-success;
+    box-shadow: 0 0 8px hsl(var(--success) / 0.5);
+  }
+  
+  .status-dot-warning {
+    @apply status-dot bg-warning;
+    box-shadow: 0 0 8px hsl(var(--warning) / 0.5);
+  }
+  
+  .status-dot-destructive {
+    @apply status-dot bg-destructive;
+    box-shadow: 0 0 8px hsl(var(--destructive) / 0.5);
+  }
+  
+  .status-dot-info {
+    @apply status-dot bg-info;
+    box-shadow: 0 0 8px hsl(var(--info) / 0.5);
+  }
+  
+  /* ========================================
+     DATA DISPLAY STYLES
+     ======================================== */
+  .data-value {
+    @apply font-data text-foreground;
+  }
+  
+  .data-label {
+    @apply text-xs font-medium text-muted-foreground uppercase tracking-wider;
+  }
+  
+  .data-cell {
+    @apply px-3 py-2 bg-muted/30 rounded-md;
+  }
+  
+  /* ========================================
+     BUTTON ENHANCEMENTS
+     ======================================== */
+  .btn-gradient {
+    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--rhosonics-green-light)) 100%);
+  }
+  
+  .btn-gradient:hover {
+    background: linear-gradient(135deg, hsl(var(--rhosonics-green-light)) 0%, hsl(var(--primary)) 100%);
   }
 }
 
@@ -172,27 +391,158 @@
   .text-balance {
     text-wrap: balance;
   }
+  
+  /* ========================================
+     ANIMATION UTILITIES
+     ======================================== */
+  .animate-in {
+    animation: fade-in var(--duration-standard) var(--ease-out) forwards;
+  }
+  
+  .animate-slide-up {
+    animation: slide-up var(--duration-standard) var(--ease-out) forwards;
+  }
+  
+  .animate-slide-down {
+    animation: slide-down var(--duration-standard) var(--ease-out) forwards;
+  }
+  
+  .animate-scale-in {
+    animation: scale-in var(--duration-normal) var(--ease-spring) forwards;
+  }
+  
+  .animate-fade-in {
+    animation: fade-in var(--duration-standard) var(--ease-out) forwards;
+  }
+  
+  /* Stagger children animations */
+  .stagger-children > * {
+    opacity: 0;
+    animation: fade-in var(--duration-standard) var(--ease-out) forwards;
+  }
+  
+  .stagger-children > *:nth-child(1) { animation-delay: 0ms; }
+  .stagger-children > *:nth-child(2) { animation-delay: 50ms; }
+  .stagger-children > *:nth-child(3) { animation-delay: 100ms; }
+  .stagger-children > *:nth-child(4) { animation-delay: 150ms; }
+  .stagger-children > *:nth-child(5) { animation-delay: 200ms; }
+  .stagger-children > *:nth-child(6) { animation-delay: 250ms; }
+  
+  /* Hover lift effect */
+  .hover-lift {
+    transition: transform var(--duration-normal) var(--ease-out),
+                box-shadow var(--duration-normal) var(--ease-out);
+  }
+  
+  .hover-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+  }
+  
+  /* Transition utilities */
+  .transition-fast {
+    transition-duration: var(--duration-quick);
+    transition-timing-function: var(--ease-out);
+  }
+  
+  .transition-normal {
+    transition-duration: var(--duration-normal);
+    transition-timing-function: var(--ease-out);
+  }
+  
+  .transition-slow {
+    transition-duration: var(--duration-standard);
+    transition-timing-function: var(--ease-out);
+  }
 }
 
-/* Tablet and Touch Optimizations */
+/* ========================================
+   KEYFRAME ANIMATIONS
+   ======================================== */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-down {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 10px hsl(var(--primary) / 0.2);
+  }
+  50% {
+    box-shadow: 0 0 20px hsl(var(--primary) / 0.4);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* ========================================
+   TABLET AND TOUCH OPTIMIZATIONS
+   ======================================== */
 @layer base {
-  /* Improve touch target sizes for better usability on tablets */
   @media (hover: none) and (pointer: coarse) {
-    /* Touch device detected - optimize for finger taps */
     button, a, [role="button"], input[type="checkbox"], input[type="radio"] {
       min-height: 44px;
       min-width: 44px;
     }
 
-    /* Larger tap areas for interactive elements */
     .cursor-pointer {
       cursor: pointer;
       -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
-    }
-
-    /* Remove hover effects on touch devices */
-    .hover\:shadow-xl:hover {
-      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
     }
   }
 
@@ -229,38 +579,31 @@
     background: transparent;
   }
 
-  /* Global dialog height constraint - use dvh for mobile browser compatibility */
+  /* Global dialog height constraint */
   [role="dialog"]:not([data-sidebar="sidebar"]) {
     max-height: calc(100dvh - 2rem);
     overflow-y: auto;
   }
 
-  /* Mobile-specific optimizations */
   @media (max-width: 767px) {
-    /* Ensure dialogs fit on mobile screens - but exclude sheet/sidebar */
-    /* Don't set margin here - let the dialog use its transform centering */
     [role="dialog"]:not([data-sidebar="sidebar"]) {
       max-width: calc(100dvw - 2rem);
       max-height: calc(100dvh - 2rem);
     }
   }
 
-  /* Tablet-specific breakpoint optimizations */
   @media (min-width: 768px) and (max-width: 1024px) {
-    /* Better spacing on tablets */
     body {
       font-size: 16px;
       line-height: 1.5;
     }
 
-    /* Ensure dialogs don't take full screen */
     [role="dialog"]:not([data-sidebar="sidebar"]) {
       max-width: min(90vw, 700px);
       max-height: calc(100dvh - 2rem);
     }
   }
 
-  /* Prevent text selection on buttons for better UX */
   button, .cursor-pointer {
     -webkit-user-select: none;
     -moz-user-select: none;
@@ -268,18 +611,11 @@
     user-select: none;
   }
 
-  /* Smooth scrolling for better tablet experience */
-  html {
-    scroll-behavior: smooth;
-  }
-
-  /* Better focus indicators for accessibility */
   button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible {
-    outline: 3px solid hsl(var(--ring));
+    outline: 2px solid hsl(var(--ring));
     outline-offset: 2px;
   }
 
-  /* Optimize number inputs for tablets */
   input[type="number"] {
     -moz-appearance: textfield;
     appearance: textfield;
@@ -291,7 +627,6 @@
     margin: 0;
   }
 
-  /* Active states for better feedback on touch */
   .active\:scale-\[0\.98\]:active {
     transform: scale(0.98);
   }

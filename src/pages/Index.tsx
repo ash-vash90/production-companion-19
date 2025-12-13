@@ -69,7 +69,10 @@ const Index = () => {
       <ProtectedRoute>
         <Layout>
           <div className="flex items-center justify-center min-h-[50vh]">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <div className="flex flex-col items-center gap-3">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <p className="text-sm text-muted-foreground animate-pulse">Loading...</p>
+            </div>
           </div>
         </Layout>
       </ProtectedRoute>
@@ -81,26 +84,35 @@ const Index = () => {
   return (
     <ProtectedRoute>
       <Layout>
-        <div className="space-y-4 sm:space-y-6 w-full max-w-full overflow-hidden">
+        <div className="space-y-6 sm:space-y-8 w-full max-w-full overflow-hidden animate-fade-in">
           {/* Header with greeting and weather */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4">
-            <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-semibold tracking-tight">
-              {getGreetingMessage()}, {getFirstName()}
-            </h1>
+          <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+            <div className="space-y-1">
+              <h1 className="text-hero">
+                {getGreetingMessage()}, <span className="text-primary">{getFirstName()}</span>
+              </h1>
+              <p className="text-body text-muted-foreground">
+                Here's what's happening with your production today.
+              </p>
+            </div>
             <WeatherWidget />
-          </div>
+          </header>
 
           {/* Top row: Today's Schedule and Active Colleagues */}
-          <div className="grid gap-3 md:gap-4 lg:gap-6 grid-cols-1 md:grid-cols-2">
+          <div className="grid gap-4 md:gap-6 grid-cols-1 md:grid-cols-2 stagger-children">
             <TodaysSchedule />
             <ActiveOperators />
           </div>
 
           {/* Work Orders - full width */}
-          <ProductionOverview />
+          <section className="animate-slide-up" style={{ animationDelay: '150ms' }}>
+            <ProductionOverview />
+          </section>
 
           {/* Recent Activity - full width */}
-          <RecentActivity />
+          <section className="animate-slide-up" style={{ animationDelay: '200ms' }}>
+            <RecentActivity />
+          </section>
         </div>
       </Layout>
     </ProtectedRoute>

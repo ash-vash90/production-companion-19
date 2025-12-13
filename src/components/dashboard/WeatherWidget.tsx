@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Cloud, Sun, CloudRain, CloudSnow, CloudLightning, Wind } from 'lucide-react';
+import { Cloud, Sun, CloudRain, CloudSnow, CloudLightning, Wind, Droplets } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface WeatherData {
   temperature: number;
@@ -63,35 +64,46 @@ export function WeatherWidget() {
     return 'Cloudy';
   };
 
-  const WeatherIcon = () => {
-    if (!weather) return <Cloud className="h-5 w-5" />;
+  const getWeatherStyles = () => {
+    if (!weather) return { icon: Cloud, color: 'text-muted-foreground', bg: 'bg-muted/50' };
     
     switch (weather.condition) {
-      case 'clear': return <Sun className="h-5 w-5 text-yellow-500" />;
-      case 'rain': return <CloudRain className="h-5 w-5 text-blue-400" />;
-      case 'snow': return <CloudSnow className="h-5 w-5 text-blue-200" />;
-      case 'thunderstorm': return <CloudLightning className="h-5 w-5 text-yellow-400" />;
-      case 'fog': return <Wind className="h-5 w-5 text-muted-foreground" />;
-      default: return <Cloud className="h-5 w-5 text-muted-foreground" />;
+      case 'clear': 
+        return { icon: Sun, color: 'text-yellow-500', bg: 'bg-yellow-500/10' };
+      case 'rain': 
+        return { icon: CloudRain, color: 'text-blue-400', bg: 'bg-blue-400/10' };
+      case 'snow': 
+        return { icon: CloudSnow, color: 'text-blue-200', bg: 'bg-blue-200/10' };
+      case 'thunderstorm': 
+        return { icon: CloudLightning, color: 'text-yellow-400', bg: 'bg-yellow-400/10' };
+      case 'fog': 
+        return { icon: Droplets, color: 'text-slate-400', bg: 'bg-slate-400/10' };
+      default: 
+        return { icon: Cloud, color: 'text-muted-foreground', bg: 'bg-muted/50' };
     }
   };
 
   if (loading) {
     return (
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <Cloud className="h-4 w-4 animate-pulse" />
-        <span>Loading...</span>
+      <div className="flex items-center gap-2 text-sm text-muted-foreground px-3 py-1.5 rounded-full bg-muted/30 animate-pulse">
+        <Cloud className="h-4 w-4" />
+        <span className="text-xs">Loading...</span>
       </div>
     );
   }
 
   if (!weather) return null;
 
+  const { icon: WeatherIcon, color, bg } = getWeatherStyles();
+
   return (
-    <div className="flex items-center gap-2 text-sm">
-      <WeatherIcon />
-      <span className="font-medium">{weather.temperature}°C</span>
-      <span className="text-muted-foreground hidden sm:inline">Putten</span>
+    <div className={cn(
+      "flex items-center gap-2 px-3 py-1.5 rounded-full transition-all duration-normal",
+      bg
+    )}>
+      <WeatherIcon className={cn("h-4 w-4", color)} />
+      <span className="font-data text-sm font-semibold">{weather.temperature}°C</span>
+      <span className="text-xs text-muted-foreground hidden sm:inline">Putten</span>
     </div>
   );
 }

@@ -1,8 +1,8 @@
-import { useState, useEffect, useCallback, useMemo, useRef, memo } from 'react';
+import { useState, useEffect, useCallback, useRef, memo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Calendar, Package, AlertTriangle, Clock } from 'lucide-react';
+import { Calendar, Package, AlertTriangle, Clock, ArrowRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { formatProductType, formatStatus, getProductBreakdown, formatProductBreakdownText } from '@/lib/utils';
@@ -104,8 +104,8 @@ export const TodaysSchedule = memo(function TodaysSchedule() {
       case 'completed': return 'success';
       case 'in_progress': return 'warning';
       case 'planned': return 'info';
-      case 'on_hold': return 'secondary';
-      default: return 'secondary';
+      case 'on_hold': return 'muted';
+      default: return 'muted';
     }
   }, []);
 
@@ -127,14 +127,18 @@ export const TodaysSchedule = memo(function TodaysSchedule() {
     return (
       <Card className="h-full">
         <CardHeader className="pb-2">
-          <CardTitle className="flex items-center gap-2 text-sm">
-            <Calendar className="h-4 w-4" />
-            {language === 'nl' ? 'Planning Vandaag' : "Today's Schedule"}
+          <CardTitle className="flex items-center gap-2">
+            <div className="p-2 rounded-lg bg-primary/10">
+              <Calendar className="h-4 w-4 text-primary" />
+            </div>
+            <span>{language === 'nl' ? 'Planning Vandaag' : "Today's Schedule"}</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-xs text-muted-foreground">
-            {language === 'nl' ? 'Laden...' : 'Loading...'}
+          <div className="space-y-2">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-16 rounded-lg bg-muted/50 animate-pulse" />
+            ))}
           </div>
         </CardContent>
       </Card>
@@ -143,27 +147,34 @@ export const TodaysSchedule = memo(function TodaysSchedule() {
 
   return (
     <Card className="h-full flex flex-col w-full">
-      <CardHeader className="pb-2 sm:pb-3 px-3 sm:px-6">
-        <CardTitle className="flex items-center gap-2 text-sm sm:text-base min-w-0">
-          <Calendar className="h-4 w-4 sm:h-5 sm:w-5 shrink-0" />
+      <CardHeader className="pb-2 sm:pb-3 px-4 sm:px-6">
+        <CardTitle className="flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-primary/10">
+            <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+          </div>
           <span className="truncate">{language === 'nl' ? 'Planning Vandaag' : "Today's Schedule"}</span>
           {workOrders.length > 0 && (
-            <Badge variant="secondary" className="shrink-0 text-xs">
+            <Badge variant="secondary" className="ml-auto">
               {workOrders.length}
             </Badge>
           )}
         </CardTitle>
       </CardHeader>
-      <CardContent className="flex-1 flex flex-col pt-0 px-3 sm:px-6">
+      <CardContent className="flex-1 flex flex-col pt-0 px-4 sm:px-6">
         {workOrders.length === 0 ? (
-          <div className="text-xs sm:text-sm text-muted-foreground py-4 sm:py-6 text-center flex-1 flex items-center justify-center">
-            {language === 'nl' 
-              ? 'Geen werkorders gepland voor vandaag' 
-              : 'No work orders scheduled for today'}
+          <div className="flex-1 flex flex-col items-center justify-center py-8 text-center">
+            <div className="p-3 rounded-full bg-muted/50 mb-3">
+              <Calendar className="h-6 w-6 text-muted-foreground" />
+            </div>
+            <p className="text-sm text-muted-foreground">
+              {language === 'nl' 
+                ? 'Geen werkorders gepland voor vandaag' 
+                : 'No work orders scheduled for today'}
+            </p>
           </div>
         ) : (
-          <div className="space-y-1.5 sm:space-y-2 flex-1">
-            {workOrders.slice(0, 4).map((wo) => {
+          <div className="space-y-2 flex-1">
+            {workOrders.slice(0, 4).map((wo, index) => {
               const productBreakdown = wo.items ? getProductBreakdown(wo.items) : [];
               const breakdownText = formatProductBreakdownText(productBreakdown);
               const urgency = getShippingUrgency(wo.shipping_date);
@@ -172,31 +183,33 @@ export const TodaysSchedule = memo(function TodaysSchedule() {
                 <div
                   key={wo.id}
                   className={cn(
-                    "flex items-center justify-between p-2 sm:p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors cursor-pointer",
+                    "group flex items-center justify-between p-3 rounded-lg border bg-card",
+                    "hover:shadow-card-hover hover:border-primary/20 transition-all duration-normal cursor-pointer",
                     urgency === 'overdue' && "border-destructive/50 bg-destructive/5",
                     urgency === 'urgent' && "border-warning/50 bg-warning/5"
                   )}
+                  style={{ animationDelay: `${index * 50}ms` }}
                   onClick={() => navigate(`/production/${wo.id}`)}
                 >
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-                      <span className="font-medium text-xs sm:text-sm">{wo.wo_number}</span>
-                      <Badge variant={getStatusVariant(wo.status) as any} className="text-[10px] sm:text-xs">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-data font-semibold text-sm">{wo.wo_number}</span>
+                      <Badge variant={getStatusVariant(wo.status) as any}>
                         {formatStatus(wo.status)}
                       </Badge>
                       {urgency === 'overdue' && (
-                        <AlertTriangle className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-destructive" />
+                        <AlertTriangle className="h-3.5 w-3.5 text-destructive" />
                       )}
                       {urgency === 'urgent' && (
-                        <Clock className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-warning" />
+                        <Clock className="h-3.5 w-3.5 text-warning" />
                       )}
                     </div>
-                    <div className="flex items-center gap-1 sm:gap-1.5 mt-0.5 sm:mt-1 text-xs sm:text-sm text-muted-foreground">
-                      <Package className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
+                    <div className="flex items-center gap-1.5 mt-1 text-sm text-muted-foreground">
+                      <Package className="h-3.5 w-3.5 shrink-0" />
                       <span className="truncate">{breakdownText || formatProductType(wo.product_type)}</span>
                       {wo.shipping_date && (
                         <span className={cn(
-                          "text-[10px] sm:text-xs ml-auto shrink-0",
+                          "text-xs ml-auto shrink-0 font-data",
                           urgency === 'overdue' && "text-destructive font-medium",
                           urgency === 'urgent' && "text-warning font-medium"
                         )}>
@@ -205,25 +218,27 @@ export const TodaysSchedule = memo(function TodaysSchedule() {
                       )}
                     </div>
                   </div>
+                  <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity ml-2" />
                 </div>
               );
             })}
             {workOrders.length > 4 && (
-              <div className="text-xs sm:text-sm text-muted-foreground text-center">
+              <div className="text-sm text-muted-foreground text-center py-2">
                 +{workOrders.length - 4} {language === 'nl' ? 'meer' : 'more'}
               </div>
             )}
           </div>
         )}
-        <div className="pt-3 sm:pt-4 mt-auto border-t">
+        <div className="pt-4 mt-auto border-t">
           <Button 
             variant="outline" 
             size="sm" 
-            className="w-full text-xs sm:text-sm"
+            className="w-full group"
             onClick={() => navigate('/calendar')}
           >
-            <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
+            <Calendar className="h-4 w-4 mr-2" />
             {language === 'nl' ? 'Bekijk kalender' : 'View calendar'}
+            <ArrowRight className="h-4 w-4 ml-auto opacity-50 group-hover:opacity-100 transition-opacity" />
           </Button>
         </div>
       </CardContent>
