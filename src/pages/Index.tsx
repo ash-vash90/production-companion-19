@@ -84,7 +84,7 @@ const Index = () => {
 
   return (
     <Layout>
-      <div className="space-y-8 w-full max-w-full overflow-hidden">
+      <div className="space-y-6 w-full max-w-full overflow-hidden">
         {/* Header with greeting and weather */}
         <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div className="space-y-1">
