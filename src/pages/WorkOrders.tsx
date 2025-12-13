@@ -15,6 +15,7 @@ import { CreateWorkOrderDialog } from '@/components/CreateWorkOrderDialog';
 import { WorkOrderFilters, FilterState } from '@/components/workorders/WorkOrderFilters';
 import { WorkOrderCard } from '@/components/workorders/WorkOrderCard';
 import { WorkOrderTableRow, WorkOrderRowData } from '@/components/workorders/WorkOrderTableRow';
+import { CancelWorkOrderDialog } from '@/components/workorders/CancelWorkOrderDialog';
 import { useWorkOrders, invalidateWorkOrdersCache, WorkOrderListItem } from '@/hooks/useWorkOrders';
 import { prefetchProductionOnHover } from '@/services/prefetchService';
 import { ResponsiveVirtualizedGrid } from '@/components/VirtualizedList';
@@ -54,6 +55,9 @@ const WorkOrders = () => {
   const { isAdmin } = useUserProfile();
   const navigate = useNavigate();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [cancellingWorkOrder, setCancellingWorkOrder] = useState<{ id: string; wo_number: string } | null>(null);
+  const [isCancelling, setIsCancelling] = useState(false);
   
   // Use the resilient work orders hook - disable realtime to reduce memory/subscriptions
   const { workOrders, loading, error, refetch } = useWorkOrders({
@@ -297,22 +301,36 @@ const WorkOrders = () => {
     setExpandedGroups(newExpanded);
   };
 
-  // Handle cancel work order
-  const handleCancelWorkOrder = useCallback(async (workOrderId: string) => {
-    if (confirm(t('confirmCancelWorkOrder'))) {
-      try {
-        const { error } = await supabase
-          .from('work_orders')
-          .update({ status: 'cancelled' })
-          .eq('id', workOrderId);
-        if (error) throw error;
-        toast.success(t('success'), { description: t('workOrderCancelled') });
-        if (isMountedRef.current) refetch();
-      } catch (error: any) {
-        toast.error(t('error'), { description: error.message });
-      }
+  // Open cancel dialog
+  const openCancelDialog = useCallback((workOrder: { id: string; wo_number: string }) => {
+    setCancellingWorkOrder(workOrder);
+    setCancelDialogOpen(true);
+  }, []);
+
+  // Handle cancel work order with reason
+  const handleCancelWorkOrder = useCallback(async (reason: string) => {
+    if (!cancellingWorkOrder) return;
+    
+    setIsCancelling(true);
+    try {
+      const { error } = await supabase
+        .from('work_orders')
+        .update({ 
+          status: 'cancelled',
+          cancellation_reason: reason 
+        })
+        .eq('id', cancellingWorkOrder.id);
+      if (error) throw error;
+      toast.success(t('success'), { description: t('workOrderCancelled') });
+      setCancelDialogOpen(false);
+      setCancellingWorkOrder(null);
+      if (isMountedRef.current) refetch();
+    } catch (error: any) {
+      toast.error(t('error'), { description: error.message });
+    } finally {
+      setIsCancelling(false);
     }
-  }, [t, refetch]);
+  }, [cancellingWorkOrder, t, refetch]);
 
   // Transform work order to row data format
   const toRowData = useCallback((wo: WorkOrderWithItems): WorkOrderRowData => ({
@@ -351,7 +369,7 @@ const WorkOrders = () => {
               key={wo.id}
               workOrder={toRowData(wo)}
               linkTo={`/production/${wo.id}`}
-              onCancel={isAdmin ? () => handleCancelWorkOrder(wo.id) : undefined}
+              onCancel={isAdmin ? () => openCancelDialog({ id: wo.id, wo_number: wo.wo_number }) : undefined}
             />
           ))}
         </TableBody>
@@ -367,12 +385,12 @@ const WorkOrders = () => {
           key={wo.id}
           workOrder={toRowData(wo)}
           onClick={() => navigate(`/production/${wo.id}`)}
-          onCancel={isAdmin ? () => handleCancelWorkOrder(wo.id) : undefined}
+          onCancel={isAdmin ? () => openCancelDialog({ id: wo.id, wo_number: wo.wo_number }) : undefined}
           onHover={() => prefetchProductionOnHover(wo.id)}
         />
       ))}
     </div>
-  ), [toRowData, navigate, isAdmin, handleCancelWorkOrder]);
+  ), [toRowData, navigate, isAdmin, openCancelDialog]);
 
   const isMobile = useIsMobile();
 
@@ -577,6 +595,17 @@ const WorkOrders = () => {
           open={dialogOpen} 
           onOpenChange={setDialogOpen} 
           onSuccess={refetch}
+        />
+
+        <CancelWorkOrderDialog
+          open={cancelDialogOpen}
+          onOpenChange={(open) => {
+            setCancelDialogOpen(open);
+            if (!open) setCancellingWorkOrder(null);
+          }}
+          woNumber={cancellingWorkOrder?.wo_number || ''}
+          onConfirm={handleCancelWorkOrder}
+          isLoading={isCancelling}
         />
       </Layout>
     </ProtectedRoute>

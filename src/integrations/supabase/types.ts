@@ -1069,6 +1069,7 @@ export type Database = {
         Row: {
           assigned_to: string | null
           batch_size: number
+          cancellation_reason: string | null
           completed_at: string | null
           created_at: string
           created_by: string
@@ -1090,6 +1091,7 @@ export type Database = {
         Insert: {
           assigned_to?: string | null
           batch_size: number
+          cancellation_reason?: string | null
           completed_at?: string | null
           created_at?: string
           created_by: string
@@ -1111,6 +1113,7 @@ export type Database = {
         Update: {
           assigned_to?: string | null
           batch_size?: number
+          cancellation_reason?: string | null
           completed_at?: string | null
           created_at?: string
           created_by?: string
