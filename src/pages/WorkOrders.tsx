@@ -15,11 +15,13 @@ import { CreateWorkOrderDialog } from '@/components/CreateWorkOrderDialog';
 import { WorkOrderFilters, FilterState } from '@/components/workorders/WorkOrderFilters';
 import { WorkOrderCard } from '@/components/workorders/WorkOrderCard';
 import { WorkOrderTableRow, WorkOrderRowData } from '@/components/workorders/WorkOrderTableRow';
-import { useWorkOrders, WorkOrderListItem } from '@/hooks/useWorkOrders';
+import { useWorkOrders, invalidateWorkOrdersCache, WorkOrderListItem } from '@/hooks/useWorkOrders';
 import { prefetchProductionOnHover } from '@/services/prefetchService';
 import { ResponsiveVirtualizedGrid } from '@/components/VirtualizedList';
+import { PullToRefresh } from '@/components/PullToRefresh';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { Plus, Package, Layers, RotateCcw, LayoutGrid, Table as TableIcon, Filter, Loader2, ChevronDown, ChevronRight } from 'lucide-react';
 import { format, differenceInDays, parseISO } from 'date-fns';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -372,9 +374,23 @@ const WorkOrders = () => {
     </div>
   ), [toRowData, navigate, isAdmin, handleCancelWorkOrder]);
 
+  const isMobile = useIsMobile();
+
+  // Pull to refresh handler
+  const handlePullRefresh = useCallback(async () => {
+    invalidateWorkOrdersCache();
+    await refetch();
+    toast.success(t('refreshed') || 'Refreshed');
+  }, [refetch, t]);
+
   return (
     <ProtectedRoute>
       <Layout>
+        <PullToRefresh 
+          onRefresh={handlePullRefresh} 
+          disabled={!isMobile || loading}
+          className="h-full"
+        >
         <div className="space-y-3 lg:space-y-4">
           <PageHeader
             title={t('workOrders')}
@@ -555,6 +571,7 @@ const WorkOrders = () => {
             )}
           </div>
         </div>
+        </PullToRefresh>
 
         <CreateWorkOrderDialog 
           open={dialogOpen} 
