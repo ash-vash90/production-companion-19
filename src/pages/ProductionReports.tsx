@@ -8,22 +8,36 @@ import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { VirtualizedList } from '@/components/VirtualizedList';
+import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { WorkOrderCard } from '@/components/workorders/WorkOrderCard';
+import { WorkOrderTableRow } from '@/components/workorders/WorkOrderTableRow';
 import { useProductionReports, ProductionReportItem } from '@/hooks/useProductionReports';
-import { Loader2, BarChart3, RefreshCw, AlertCircle } from 'lucide-react';
+import { LayoutGrid, Table as TableIcon, RefreshCw, AlertCircle, BarChart3 } from 'lucide-react';
 import { format, isToday, isThisWeek, isThisMonth, subDays } from 'date-fns';
-import { nl, enUS } from 'date-fns/locale';
 import { ReportFilters, ReportFilterState } from '@/components/reports/ReportFilters';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ResponsiveVirtualizedGrid } from '@/components/VirtualizedList';
+
+type ViewMode = 'cards' | 'table';
+
+const VIEWMODE_STORAGE_KEY = 'productionreports_viewmode';
 
 const ProductionReports = () => {
   const { user } = useAuth();
   const { t, language } = useLanguage();
   const navigate = useNavigate();
   
-  // Use resilient hook instead of manual fetching
+  // Use resilient hook - now only fetches completed/cancelled orders
   const { reports: workOrders, loading, error, refetch, isStale } = useProductionReports();
+  
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    try {
+      const saved = sessionStorage.getItem(VIEWMODE_STORAGE_KEY);
+      return (saved as ViewMode) || 'table';
+    } catch {
+      return 'table';
+    }
+  });
   
   const [groupBy, setGroupBy] = useState('none');
   const [filters, setFilters] = useState<ReportFilterState>({
@@ -35,6 +49,11 @@ const ProductionReports = () => {
     createdMonthFilter: 'all',
     batchSizeFilter: 'all',
   });
+
+  // Persist view mode
+  React.useEffect(() => {
+    sessionStorage.setItem(VIEWMODE_STORAGE_KEY, viewMode);
+  }, [viewMode]);
 
   // Extract unique customers and months for filter options
   const customers = useMemo(() => {
@@ -92,24 +111,11 @@ const ProductionReports = () => {
     }, {} as Record<string, ProductionReportItem[]>);
   }, [filteredWorkOrders, groupBy]);
 
-  const getStatusVariant = (status: string): 'info' | 'warning' | 'success' | 'secondary' | 'destructive' => {
-    switch (status) {
-      case 'planned': return 'info';
-      case 'in_progress': return 'warning';
-      case 'completed': return 'success';
-      case 'on_hold': return 'secondary';
-      case 'cancelled': return 'destructive';
-      default: return 'secondary';
+  const getGroupLabel = (key: string): string => {
+    if (groupBy === 'status') {
+      return t(key as any);
     }
-  };
-
-  const getStatusLabel = (status: string) => {
-    if (status === 'in_progress') return t('inProgressStatus');
-    if (status === 'planned') return t('planned');
-    if (status === 'completed') return t('completed');
-    if (status === 'on_hold') return t('onHold');
-    if (status === 'cancelled') return t('cancelled');
-    return status;
+    return key === 'all' ? '' : key;
   };
 
   const clearAllFilters = () => {
@@ -123,51 +129,6 @@ const ProductionReports = () => {
       batchSizeFilter: 'all',
     });
   };
-
-  const renderTableRow = (wo: ProductionReportItem) => (
-    <TableRow key={wo.id}>
-      <TableCell className="font-mono font-semibold whitespace-nowrap">
-        {wo.wo_number}
-      </TableCell>
-      <TableCell>
-        {wo.productBreakdown.length > 0 ? (
-          <div className="flex flex-wrap gap-1">
-            {wo.productBreakdown.map((b) => (
-              <Badge key={b.type} variant="outline">
-                {b.count}× {b.label}
-              </Badge>
-            ))}
-          </div>
-        ) : (
-          <Badge variant="outline">{wo.batch_size} items</Badge>
-        )}
-      </TableCell>
-      <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
-        {wo.customer_name || '-'}
-      </TableCell>
-      <TableCell className="font-mono whitespace-nowrap">{wo.batch_size}</TableCell>
-      <TableCell>
-        <Badge variant={getStatusVariant(wo.status)}>
-          {getStatusLabel(wo.status)}
-        </Badge>
-      </TableCell>
-      <TableCell className="text-sm whitespace-nowrap">
-        {format(new Date(wo.created_at), 'dd/MM/yyyy', { locale: language === 'nl' ? nl : enUS })}
-      </TableCell>
-      <TableCell className="text-sm whitespace-nowrap">
-        {wo.completed_at ? format(new Date(wo.completed_at), 'dd/MM/yyyy', { locale: language === 'nl' ? nl : enUS }) : '-'}
-      </TableCell>
-      <TableCell className="text-right whitespace-nowrap">
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => navigate(`/production-reports/${wo.id}`)}
-        >
-          {t('viewReport')}
-        </Button>
-      </TableCell>
-    </TableRow>
-  );
 
   if (!user) return null;
 
@@ -202,17 +163,36 @@ const ProductionReports = () => {
     <ProtectedRoute>
       <Layout>
         <div className="space-y-6">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <PageHeader title={t('productionReports')} description={t('viewAnalyzeProduction')} />
-            {(isStale || error) && (
-              <div className="flex items-center gap-2">
-                {error && <AlertCircle className="h-4 w-4 text-destructive" />}
+            <div className="flex items-center gap-2">
+              {/* View mode toggle */}
+              <div className="flex border rounded-lg overflow-hidden">
+                <Button
+                  variant={viewMode === 'cards' ? 'secondary' : 'ghost'}
+                  size="sm"
+                  className="rounded-none"
+                  onClick={() => setViewMode('cards')}
+                >
+                  <LayoutGrid className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant={viewMode === 'table' ? 'secondary' : 'ghost'}
+                  size="sm"
+                  className="rounded-none"
+                  onClick={() => setViewMode('table')}
+                >
+                  <TableIcon className="h-4 w-4" />
+                </Button>
+              </div>
+              {(isStale || error) && (
                 <Button variant="outline" size="sm" onClick={refetch}>
+                  {error && <AlertCircle className="h-4 w-4 mr-1 text-destructive" />}
                   <RefreshCw className="h-4 w-4 mr-1" />
                   {t('refresh')}
                 </Button>
-              </div>
-            )}
+              )}
+            </div>
           </div>
 
           <ReportFilters
@@ -242,48 +222,65 @@ const ProductionReports = () => {
           ) : (
             <div className="space-y-6">
               {Object.entries(groupedWorkOrders).map(([groupKey, orders]) => (
-                <Card key={groupKey} className="overflow-hidden">
+                <div key={groupKey} className="space-y-3">
                   {groupBy !== 'none' && (
-                    <div className="px-4 sm:px-6 py-3 border-b bg-muted/30">
-                      <div className="flex items-center justify-between gap-2">
-                        <h3 className="font-semibold text-sm sm:text-base truncate">
-                          {groupBy === 'status' ? getStatusLabel(groupKey) : groupKey.replace('_', ' ')}
-                        </h3>
-                        <Badge variant="secondary">{orders.length}</Badge>
-                      </div>
+                    <div className="flex items-center justify-between gap-2">
+                      <h3 className="font-semibold text-sm sm:text-base">
+                        {getGroupLabel(groupKey)}
+                      </h3>
+                      <Badge variant="secondary">{orders.length}</Badge>
                     </div>
                   )}
-                  <CardContent className="p-0">
-                    <div className="w-full overflow-x-auto">
-                      <Table className="min-w-[720px]">
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>{t('woNumber')}</TableHead>
-                            <TableHead>{t('productType')}</TableHead>
-                            <TableHead>{t('customer')}</TableHead>
-                            <TableHead>{t('batchSize')}</TableHead>
-                            <TableHead>{t('status')}</TableHead>
-                            <TableHead>{t('created')}</TableHead>
-                            <TableHead>{t('completed')}</TableHead>
-                            <TableHead className="text-right">{t('actions')}</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {orders.length > 100 ? (
-                            <VirtualizedList
-                              items={orders}
-                              renderItem={(wo) => renderTableRow(wo)}
-                              itemHeight={52}
-                              maxHeight={500}
-                            />
-                          ) : (
-                            orders.map((wo) => renderTableRow(wo))
-                          )}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  </CardContent>
-                </Card>
+                  
+                  {viewMode === 'cards' ? (
+                    <ResponsiveVirtualizedGrid
+                      items={orders}
+                      renderItem={(wo) => (
+                        <WorkOrderCard
+                          key={wo.id}
+                          workOrder={wo}
+                          showUrgency={false}
+                          showActions={false}
+                          linkTo={`/production-reports/${wo.id}`}
+                        />
+                      )}
+                      itemHeight={140}
+                      minItemWidth={300}
+                    />
+                  ) : (
+                    <Card className="overflow-hidden">
+                      <CardContent className="p-0">
+                        <div className="w-full overflow-x-auto">
+                          <Table className="min-w-[720px]">
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>{t('woNumber')}</TableHead>
+                                <TableHead>{t('productType')}</TableHead>
+                                <TableHead className="hidden md:table-cell">{t('customer')}</TableHead>
+                                <TableHead>{t('status')}</TableHead>
+                                <TableHead className="hidden lg:table-cell">{t('ship')}</TableHead>
+                                <TableHead>{t('completed')}</TableHead>
+                                <TableHead className="text-right">{t('actions')}</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {orders.map((wo) => (
+                                <WorkOrderTableRow
+                                  key={wo.id}
+                                  workOrder={wo}
+                                  showUrgency={false}
+                                  showCompletedDate={true}
+                                  linkTo={`/production-reports/${wo.id}`}
+                                  actionLabel={t('viewReport')}
+                                />
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
               ))}
             </div>
           )}
