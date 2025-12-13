@@ -174,32 +174,28 @@ export const RecentActivity = memo(function RecentActivity() {
       </div>
 
       {displayActivities.length > 0 ? (
-        <div className="space-y-3">
+        <div className="divide-y divide-border">
           {displayActivities.map((activity) => {
             const detailsText = formatActivityDetails(activity);
             
             return (
               <div
                 key={activity.id}
-                className="flex items-center gap-4 p-3 rounded-xl border bg-card shadow-sm"
+                className="flex items-center gap-3 py-3 first:pt-0 last:pb-0"
               >
-                <Badge className={`${getActionColor(activity.action)} rounded-full px-3 py-1 text-[10px] font-semibold tracking-wide shrink-0 whitespace-nowrap`}>
+                <Badge className={`${getActionColor(activity.action)} text-[10px] shrink-0 whitespace-nowrap`}>
                   {getActionLabel(activity.action)}
                 </Badge>
                 <div className="flex-1 min-w-0">
                   {detailsText && (
-                    <p className="text-sm font-medium truncate">
-                      {detailsText}
+                    <p className="text-sm font-medium truncate">{detailsText}</p>
+                  )}
+                  {activity.user_name && (
+                    <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                      <User className="h-3 w-3 shrink-0" />
+                      <span className="truncate">{activity.user_name}</span>
                     </p>
                   )}
-                  <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-0.5">
-                    {activity.user_name && (
-                      <>
-                        <User className="h-3 w-3 shrink-0" />
-                        <span className="truncate">{activity.user_name}</span>
-                      </>
-                    )}
-                  </p>
                 </div>
                 <span className="text-xs text-muted-foreground whitespace-nowrap shrink-0">
                   {formatDistanceToNow(new Date(activity.created_at), { 

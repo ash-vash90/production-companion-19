@@ -99,31 +99,31 @@ const Index = () => {
         </header>
 
         {/* Main content - fully card-based, single column */}
-        <div className="space-y-6">
+        <div className="space-y-4">
           {/* Today's Schedule Card */}
-          <Card className="shadow-sm">
-            <CardContent className="p-6">
+          <Card className="rounded-xl shadow-sm border">
+            <CardContent className="p-5">
               <TodaysSchedule />
             </CardContent>
           </Card>
 
           {/* Your Team Card */}
-          <Card className="shadow-sm">
-            <CardContent className="p-6">
+          <Card className="rounded-xl shadow-sm border">
+            <CardContent className="p-5">
               <ActiveOperators />
             </CardContent>
           </Card>
 
           {/* Active Work Orders Card */}
-          <Card className="shadow-sm">
-            <CardContent className="p-6">
+          <Card className="rounded-xl shadow-sm border">
+            <CardContent className="p-5">
               <ProductionOverview />
             </CardContent>
           </Card>
 
           {/* Recent Activity Card */}
-          <Card className="shadow-sm">
-            <CardContent className="p-6">
+          <Card className="rounded-xl shadow-sm border">
+            <CardContent className="p-5">
               <RecentActivity />
             </CardContent>
           </Card>
