@@ -76,16 +76,13 @@ const Index = () => {
     <Layout>
       <div className="space-y-6 w-full max-w-full overflow-hidden">
         {/* Header with greeting and weather */}
-        <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div>
+        <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">
               {getGreetingMessage()}, <span className="text-primary">{getFirstName()}</span>
             </h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              {t('realTimeMonitoring')}
-            </p>
+            <WeatherWidget />
           </div>
-          <WeatherWidget />
         </header>
 
         {/* Main content - responsive grid */}

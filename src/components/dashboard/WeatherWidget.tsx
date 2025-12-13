@@ -107,7 +107,7 @@ export function WeatherWidget() {
 
   return (
     <div className={cn(
-      "flex items-center gap-2 px-3 py-1.5 rounded-full transition-all duration-normal",
+      "inline-flex items-center gap-2 px-3 py-1.5 rounded-full transition-all duration-normal shrink-0",
       bg
     )}>
       <WeatherIcon className={cn("h-4 w-4", color)} />
