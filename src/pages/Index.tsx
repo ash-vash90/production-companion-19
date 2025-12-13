@@ -7,9 +7,9 @@ import { RecentActivity } from '@/components/dashboard/RecentActivity';
 import { ActiveOperators } from '@/components/dashboard/ActiveOperators';
 import { TodaysSchedule } from '@/components/dashboard/TodaysSchedule';
 import { WeatherWidget } from '@/components/dashboard/WeatherWidget';
-import { DashboardStats } from '@/components/dashboard/DashboardStats';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Calendar, Users, Package, Activity } from 'lucide-react';
 
 const Index = () => {
   const { user, loading: authLoading } = useAuth();
@@ -75,37 +75,46 @@ const Index = () => {
   return (
     <Layout>
       <div className="space-y-6 w-full max-w-full overflow-hidden">
-        {/* Compact header */}
-        <header className="flex items-center justify-between gap-4">
-          <div>
-            <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">
-              {getGreetingMessage()}, <span className="text-primary">{getFirstName()}</span>
-            </h1>
-          </div>
-          <WeatherWidget />
+        {/* Header with greeting */}
+        <header>
+          <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">
+            {getGreetingMessage()}, <span className="text-primary">{getFirstName()}</span>
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            {t('dashboardSubtitle')}
+          </p>
         </header>
 
-        {/* Inline stats bar */}
-        <DashboardStats />
+        {/* Weather Widget */}
+        <WeatherWidget />
 
-        {/* Main content - flat sections with dividers */}
-        <div className="grid gap-6 lg:gap-8 grid-cols-1 lg:grid-cols-5">
-          {/* Left column - Schedule & Production */}
-          <div className="lg:col-span-3 space-y-6">
+        {/* Today's Schedule Card */}
+        <Card>
+          <CardContent className="pt-6">
             <TodaysSchedule />
-            <div className="border-t border-border/50 pt-6">
-              <ProductionOverview />
-            </div>
-          </div>
+          </CardContent>
+        </Card>
 
-          {/* Right column - Team & Activity */}
-          <div className="lg:col-span-2 space-y-6 lg:border-l lg:border-border/50 lg:pl-8">
+        {/* Your Team Card */}
+        <Card>
+          <CardContent className="pt-6">
             <ActiveOperators />
-            <div className="border-t border-border/50 pt-6">
-              <RecentActivity />
-            </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
+
+        {/* Active Work Orders Card */}
+        <Card>
+          <CardContent className="pt-6">
+            <ProductionOverview />
+          </CardContent>
+        </Card>
+
+        {/* Recent Activity Card */}
+        <Card>
+          <CardContent className="pt-6">
+            <RecentActivity />
+          </CardContent>
+        </Card>
       </div>
     </Layout>
   );
