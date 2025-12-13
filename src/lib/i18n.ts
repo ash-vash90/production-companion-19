@@ -531,6 +531,17 @@ export const translations = {
     description: 'Description',
     noWebhooksYet: 'No webhook endpoints yet',
     createFirstEndpoint: 'Create Endpoint',
+    // Export Dialog
+    selectSections: 'Select sections to include',
+    selectAll: 'All',
+    selectNone: 'None',
+    sectionsSelected: 'sections',
+    estimatedPages: 'pages',
+    required: 'required',
+    summaryStatistics: 'Summary Statistics',
+    overview: 'Overview',
+    teamInvolved: 'Team',
+    openFullPage: 'Open Full Page',
   },
   nl: {
     // Navigation
@@ -1059,6 +1070,17 @@ export const translations = {
     description: 'Beschrijving',
     noWebhooksYet: 'Nog geen webhook endpoints',
     createFirstEndpoint: 'Endpoint Aanmaken',
+    // Export Dialog
+    selectSections: 'Selecteer secties om op te nemen',
+    selectAll: 'Alles',
+    selectNone: 'Niets',
+    sectionsSelected: 'secties',
+    estimatedPages: 'pagina\'s',
+    required: 'vereist',
+    summaryStatistics: 'Samenvatting Statistieken',
+    overview: 'Overzicht',
+    teamInvolved: 'Team',
+    openFullPage: 'Open Volledige Pagina',
   },
 };
 
