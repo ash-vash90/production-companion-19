@@ -16,9 +16,10 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { toast } from 'sonner';
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, parseISO, addWeeks, subWeeks, differenceInDays, isWithinInterval, addMonths, subMonths } from 'date-fns';
-import { ChevronLeft, ChevronRight, Package, CalendarIcon, LayoutGrid, List, ArrowRight, Play, Flag, Plus, GanttChartSquare } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Package, CalendarIcon, LayoutGrid, List, ArrowRight, Play, Flag, Plus, GanttChartSquare, X } from 'lucide-react';
 import { cn, formatProductType } from '@/lib/utils';
 import { CreateWorkOrderDialogWithDate } from '@/components/calendar/CreateWorkOrderFromCalendar';
+import { CancelWorkOrderDialog } from '@/components/workorders/CancelWorkOrderDialog';
 
 interface WorkOrder {
   id: string;
@@ -61,6 +62,10 @@ const ProductionCalendar = () => {
   // Create new work order from calendar
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [createForDate, setCreateForDate] = useState<Date | null>(null);
+  
+  // Cancel dialog state
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -292,6 +297,33 @@ const ProductionCalendar = () => {
 
   const formatStatus = (status: string) => {
     return status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+  };
+
+  const handleCancelWorkOrder = async (reason: string) => {
+    if (!selectedOrder) return;
+    
+    setIsCancelling(true);
+    try {
+      const { error } = await supabase
+        .from('work_orders')
+        .update({ 
+          status: 'cancelled',
+          cancellation_reason: reason 
+        })
+        .eq('id', selectedOrder.id);
+
+      if (error) throw error;
+
+      toast.success(t('success'), { description: language === 'nl' ? 'Werkorder geannuleerd' : 'Work order cancelled' });
+      setCancelDialogOpen(false);
+      setDialogOpen(false);
+      fetchWorkOrders();
+    } catch (error) {
+      console.error('Error cancelling work order:', error);
+      toast.error(t('error'), { description: language === 'nl' ? 'Kon werkorder niet annuleren' : 'Failed to cancel work order' });
+    } finally {
+      setIsCancelling(false);
+    }
   };
 
   // Timeline view component
@@ -759,19 +791,30 @@ const ProductionCalendar = () => {
                 </div>
               )}
             </div>
-            <DialogFooter className="gap-2 sm:gap-2">
+            <DialogFooter className="flex-col sm:flex-row gap-2">
               <Button 
-                variant="outline" 
-                onClick={() => {
-                  setDialogOpen(false);
-                  navigate(`/production/${selectedOrder?.id}`);
-                }}
+                variant="destructive" 
+                onClick={() => setCancelDialogOpen(true)}
+                className="w-full sm:w-auto order-last sm:order-first"
               >
-                {t('viewWorkOrder')}
+                <X className="h-4 w-4 mr-1" />
+                {t('cancel')}
               </Button>
-              <Button onClick={handleSaveDate} disabled={updating}>
-                {t('save')}
-              </Button>
+              <div className="flex gap-2 w-full sm:w-auto">
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setDialogOpen(false);
+                    navigate(`/production/${selectedOrder?.id}`);
+                  }}
+                  className="flex-1 sm:flex-none"
+                >
+                  {t('viewWorkOrder')}
+                </Button>
+                <Button onClick={handleSaveDate} disabled={updating} className="flex-1 sm:flex-none">
+                  {t('save')}
+                </Button>
+              </div>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -851,6 +894,15 @@ const ProductionCalendar = () => {
           onOpenChange={setCreateDialogOpen}
           onSuccess={handleWorkOrderCreated}
           initialStartDate={createForDate}
+        />
+        
+        {/* Cancel Work Order Dialog */}
+        <CancelWorkOrderDialog
+          open={cancelDialogOpen}
+          onOpenChange={setCancelDialogOpen}
+          onConfirm={handleCancelWorkOrder}
+          woNumber={selectedOrder?.wo_number || ''}
+          isLoading={isCancelling}
         />
       </div>
     </Layout>
