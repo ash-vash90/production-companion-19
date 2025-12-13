@@ -566,7 +566,7 @@ const ProductionReports = () => {
                       ) : (
                         <Card className="overflow-hidden">
                           <CardContent className="p-0">
-                            <div className="w-full overflow-x-auto">
+                            <div className="w-full overflow-x-auto touch-pan-x">
                               <Table className="min-w-[720px]">
                                 <TableHeader>
                                   <TableRow>
