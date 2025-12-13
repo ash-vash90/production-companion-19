@@ -50,7 +50,8 @@ export function ReportFilters({
   onReset,
 }: ReportFiltersProps) {
   const { t } = useLanguage();
-  const [open, setOpen] = React.useState(false);
+  const [filterOpen, setFilterOpen] = React.useState(false);
+  const [groupOpen, setGroupOpen] = React.useState(false);
 
   const updateFilter = <K extends keyof ReportFilterState>(key: K, value: ReportFilterState[K]) => {
     onFiltersChange({ ...filters, [key]: value });
@@ -97,7 +98,7 @@ export function ReportFilters({
         </div>
 
         {/* Filter Popover */}
-        <Popover open={open} onOpenChange={setOpen}>
+        <Popover open={filterOpen} onOpenChange={setFilterOpen}>
           <PopoverTrigger asChild>
             <Button variant="outline" size="sm" className="h-9 gap-2">
               <Filter className="h-4 w-4" />
@@ -109,7 +110,7 @@ export function ReportFilters({
               )}
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-80 p-4" align="end">
+          <PopoverContent className="w-80 p-4 bg-popover" align="start">
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <h4 className="font-medium text-sm">{t('filter')}</h4>
@@ -234,6 +235,44 @@ export function ReportFilters({
           </PopoverContent>
         </Popover>
 
+        {/* Group Popover */}
+        <Popover open={groupOpen} onOpenChange={setGroupOpen}>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="sm" className="h-9 gap-2">
+              <Layers className="h-4 w-4" />
+              <span className="hidden sm:inline">{t('groupBy') || 'Group'}</span>
+              {groupBy !== 'none' && (
+                <Badge variant="secondary" className="h-5 px-1.5 flex items-center justify-center text-xs rounded-full">
+                  1
+                </Badge>
+              )}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-48 p-2 bg-popover" align="start">
+            <div className="space-y-1">
+              {[
+                { value: 'none', label: t('noGrouping') || 'No Grouping' },
+                { value: 'status', label: t('byStatus') || 'By Status' },
+                { value: 'product', label: t('byProduct') || 'By Product' },
+                { value: 'customer', label: t('byCustomer') || 'By Customer' },
+              ].map(option => (
+                <Button
+                  key={option.value}
+                  variant={groupBy === option.value ? 'secondary' : 'ghost'}
+                  size="sm"
+                  className="w-full justify-start text-sm h-8"
+                  onClick={() => {
+                    onGroupByChange(option.value);
+                    setGroupOpen(false);
+                  }}
+                >
+                  {option.label}
+                </Button>
+              ))}
+            </div>
+          </PopoverContent>
+        </Popover>
+
         {hasActiveFilters && (
           <Button 
             variant="ghost" 
@@ -269,22 +308,6 @@ export function ReportFilters({
             )}
           </div>
         )}
-      </div>
-
-      {/* Grouping Select */}
-      <div className="flex items-center gap-2">
-        <Layers className="h-3.5 w-3.5 text-muted-foreground" />
-        <Select value={groupBy} onValueChange={onGroupByChange}>
-          <SelectTrigger className="h-8 w-[140px] text-xs">
-            <SelectValue placeholder={t('groupBy')} />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="none">{t('noGrouping') || 'No Grouping'}</SelectItem>
-            <SelectItem value="status">{t('byStatus') || 'By Status'}</SelectItem>
-            <SelectItem value="product">{t('byProduct') || 'By Product'}</SelectItem>
-            <SelectItem value="customer">{t('byCustomer') || 'By Customer'}</SelectItem>
-          </SelectContent>
-        </Select>
       </div>
     </div>
   );
