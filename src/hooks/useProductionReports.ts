@@ -19,6 +19,7 @@ export interface ProductionReportItem {
   shipping_date: string | null;
   start_date: string | null;
   order_value: number | null;
+  cancellation_reason: string | null;
   productBreakdown: ProductBreakdown[];
   isMainAssembly: boolean;
   hasSubassemblies: boolean;
@@ -46,7 +47,7 @@ export function useProductionReports(options: UseProductionReportsOptions = {}) 
     // Only fetch completed and cancelled orders for production reports
     let query = supabase
       .from('work_orders')
-      .select('id, wo_number, product_type, batch_size, status, created_at, completed_at, customer_name, shipping_date, start_date, order_value')
+      .select('id, wo_number, product_type, batch_size, status, created_at, completed_at, customer_name, shipping_date, start_date, order_value, cancellation_reason')
       .in('status', ['completed', 'cancelled'])
       .order('completed_at', { ascending: false, nullsFirst: false });
 
@@ -123,7 +124,7 @@ export async function prefetchProductionReports(): Promise<void> {
   try {
     const { data: workOrdersData } = await supabase
       .from('work_orders')
-      .select('id, wo_number, product_type, batch_size, status, created_at, completed_at, customer_name, shipping_date, start_date, order_value')
+      .select('id, wo_number, product_type, batch_size, status, created_at, completed_at, customer_name, shipping_date, start_date, order_value, cancellation_reason')
       .in('status', ['completed', 'cancelled'])
       .order('completed_at', { ascending: false, nullsFirst: false })
       .limit(50);

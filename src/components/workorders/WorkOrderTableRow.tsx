@@ -20,6 +20,7 @@ export interface WorkOrderRowData {
   shipping_date?: string | null;
   start_date?: string | null;
   order_value?: number | null;
+  cancellation_reason?: string | null;
   productBreakdown: ProductBreakdown[];
   isMainAssembly?: boolean;
   hasSubassemblies?: boolean;
@@ -95,7 +96,14 @@ export function WorkOrderTableRow({
         {workOrder.customer_name || '-'}
       </TableCell>
       <TableCell>
-        <WorkOrderStatusBadge status={workOrder.status} />
+        <div className="flex flex-col gap-0.5">
+          <WorkOrderStatusBadge status={workOrder.status} />
+          {workOrder.status === 'cancelled' && workOrder.cancellation_reason && (
+            <span className="text-xs text-destructive/80 italic truncate max-w-[150px]" title={workOrder.cancellation_reason}>
+              "{workOrder.cancellation_reason}"
+            </span>
+          )}
+        </div>
       </TableCell>
       <TableCell className="text-sm whitespace-nowrap hidden lg:table-cell">
         {workOrder.shipping_date ? (
