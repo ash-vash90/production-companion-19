@@ -1,0 +1,492 @@
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { Loader2, Plus, Trash2, RefreshCw, CalendarIcon } from 'lucide-react';
+import { formatProductType, cn } from '@/lib/utils';
+import { SettingsService, SerialPrefixes } from '@/services/settingsService';
+import { format } from 'date-fns';
+
+type ProductType = 'SDM_ECO' | 'SENSOR' | 'MLA' | 'HMI' | 'TRANSMITTER';
+
+interface ProductBatch {
+  id: string;
+  productType: ProductType;
+  quantity: number;
+}
+
+interface CreateWorkOrderDialogWithDateProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSuccess: () => void;
+  initialStartDate?: Date | null;
+}
+
+const PRODUCT_TYPES: ProductType[] = ['SDM_ECO', 'SENSOR', 'MLA', 'HMI', 'TRANSMITTER'];
+
+export function CreateWorkOrderDialogWithDate({ 
+  open, 
+  onOpenChange, 
+  onSuccess,
+  initialStartDate 
+}: CreateWorkOrderDialogWithDateProps) {
+  const { user } = useAuth();
+  const { t, language } = useLanguage();
+  const [creating, setCreating] = useState(false);
+  const [woNumber, setWoNumber] = useState('');
+  const [generatingWO, setGeneratingWO] = useState(false);
+  const [serialPrefixes, setSerialPrefixes] = useState<SerialPrefixes | null>(null);
+  const [startDate, setStartDate] = useState<Date | undefined>(undefined);
+  const [shippingDate, setShippingDate] = useState<Date | undefined>(undefined);
+  const [customerName, setCustomerName] = useState('');
+  const [externalOrderNumber, setExternalOrderNumber] = useState('');
+  const [orderValue, setOrderValue] = useState('');
+  const [productBatches, setProductBatches] = useState<ProductBatch[]>([
+    { id: crypto.randomUUID(), productType: 'SDM_ECO', quantity: 1 }
+  ]);
+
+  const [errors, setErrors] = useState<{
+    startDate?: string;
+    shippingDate?: string;
+    customerName?: string;
+    externalOrderNumber?: string;
+    orderValue?: string;
+  }>({});
+
+  useEffect(() => {
+    if (open) {
+      generateWONumber();
+      loadSerialPrefixes();
+      // Pre-fill start date from calendar click
+      setStartDate(initialStartDate || undefined);
+      setShippingDate(undefined);
+      setCustomerName('');
+      setExternalOrderNumber('');
+      setOrderValue('');
+      setProductBatches([{ id: crypto.randomUUID(), productType: 'SDM_ECO', quantity: 1 }]);
+      setErrors({});
+    }
+  }, [open, initialStartDate]);
+
+  const generateWONumber = async () => {
+    setGeneratingWO(true);
+    try {
+      const generatedNumber = await SettingsService.generateWorkOrderNumber();
+      setWoNumber(generatedNumber);
+    } catch (error) {
+      console.error('Error generating WO number:', error);
+      const fallback = `WO-${Date.now()}`;
+      setWoNumber(fallback);
+    } finally {
+      setGeneratingWO(false);
+    }
+  };
+
+  const loadSerialPrefixes = async () => {
+    const prefixes = await SettingsService.getSerialPrefixes();
+    setSerialPrefixes(prefixes);
+  };
+
+  const addProductBatch = () => {
+    setProductBatches([
+      ...productBatches,
+      { id: crypto.randomUUID(), productType: 'SENSOR', quantity: 1 }
+    ]);
+  };
+
+  const removeProductBatch = (id: string) => {
+    if (productBatches.length > 1) {
+      setProductBatches(productBatches.filter(b => b.id !== id));
+    }
+  };
+
+  const updateProductBatch = (id: string, field: 'productType' | 'quantity', value: any) => {
+    setProductBatches(productBatches.map(b => 
+      b.id === id ? { ...b, [field]: value } : b
+    ));
+  };
+
+  const getTotalItems = () => productBatches.reduce((sum, b) => sum + b.quantity, 0);
+
+  const validate = (): boolean => {
+    const newErrors: typeof errors = {};
+
+    if (!startDate) {
+      newErrors.startDate = language === 'nl' ? 'Startdatum is verplicht' : 'Start date is required';
+    }
+
+    if (!shippingDate) {
+      newErrors.shippingDate = language === 'nl' ? 'Verzenddatum is verplicht' : 'Shipping date is required';
+    }
+
+    if (startDate && shippingDate && startDate > shippingDate) {
+      newErrors.shippingDate = language === 'nl' ? 'Verzenddatum moet na startdatum zijn' : 'Shipping date must be after start date';
+    }
+
+    if (!customerName.trim()) {
+      newErrors.customerName = language === 'nl' ? 'Klantnaam is verplicht' : 'Customer name is required';
+    }
+
+    if (!externalOrderNumber.trim()) {
+      newErrors.externalOrderNumber = language === 'nl' ? 'Ordernummer is verplicht' : 'Order number is required';
+    }
+
+    if (!orderValue.trim() || isNaN(parseFloat(orderValue)) || parseFloat(orderValue) <= 0) {
+      newErrors.orderValue = language === 'nl' ? 'Geldige orderwaarde is verplicht' : 'Valid order value is required';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+
+    if (!validate()) {
+      return;
+    }
+
+    setCreating(true);
+    
+    let attempts = 0;
+    const maxAttempts = 3;
+    
+    while (attempts < maxAttempts) {
+      try {
+        let currentWoNumber = woNumber;
+        if (attempts > 0) {
+          currentWoNumber = await SettingsService.generateWorkOrderNumber();
+          setWoNumber(currentWoNumber);
+        }
+        
+        const primaryProductType = productBatches[0].productType;
+        const totalBatchSize = getTotalItems();
+
+        const { data: workOrder, error: woError } = await supabase
+          .from('work_orders')
+          .insert({
+            wo_number: currentWoNumber,
+            product_type: primaryProductType,
+            batch_size: totalBatchSize,
+            created_by: user.id,
+            status: 'planned',
+            start_date: startDate ? format(startDate, 'yyyy-MM-dd') : null,
+            shipping_date: shippingDate ? format(shippingDate, 'yyyy-MM-dd') : null,
+            customer_name: customerName.trim(),
+            external_order_number: externalOrderNumber.trim(),
+            order_value: parseFloat(orderValue),
+          })
+          .select()
+          .single();
+
+        if (woError) {
+          if (woError.code === '23505' && attempts < maxAttempts - 1) {
+            attempts++;
+            continue;
+          }
+          throw woError;
+        }
+
+        const prefixes = serialPrefixes || { SENSOR: 'Q', MLA: 'W', HMI: 'X', TRANSMITTER: 'T', SDM_ECO: 'SDM' };
+        const serialFormat = await SettingsService.getSerialFormat();
+        const items: any[] = [];
+        let position = 1;
+        
+        const woSuffix = currentWoNumber.replace(/[^0-9]/g, '').slice(-6) || Date.now().toString().slice(-6);
+
+        for (const batch of productBatches) {
+          const prefix = prefixes[batch.productType] || batch.productType.charAt(0);
+          for (let i = 1; i <= batch.quantity; i++) {
+            const paddedPosition = String(position).padStart(serialFormat.padLength, '0');
+            const serialNumber = `${prefix}${serialFormat.separator}${woSuffix}${serialFormat.separator}${paddedPosition}`;
+            items.push({
+              work_order_id: workOrder.id,
+              serial_number: serialNumber,
+              position_in_batch: position,
+              status: 'planned',
+              assigned_to: user.id,
+              product_type: batch.productType,
+            });
+            position++;
+          }
+        }
+
+        const { error: itemsError } = await supabase
+          .from('work_order_items')
+          .insert(items);
+
+        if (itemsError) throw itemsError;
+
+        await supabase.from('activity_logs').insert({
+          user_id: user.id,
+          action: 'create_work_order',
+          entity_type: 'work_order',
+          entity_id: workOrder.id,
+          details: { 
+            wo_number: currentWoNumber, 
+            product_batches: productBatches.map(b => ({ type: b.productType, quantity: b.quantity })),
+            total_items: totalBatchSize 
+          },
+        });
+
+        const { triggerWebhook } = await import('@/lib/webhooks');
+        await triggerWebhook('work_order_created', {
+          work_order: workOrder,
+          batch_size: totalBatchSize,
+          product_batches: productBatches,
+        });
+
+        toast.success(t('success'), { description: `${t('workOrderNumber')} ${currentWoNumber} ${t('workOrderCreated')}` });
+        onOpenChange(false);
+        onSuccess();
+        return;
+        
+      } catch (error: any) {
+        if (error.code === '23505' && attempts < maxAttempts - 1) {
+          attempts++;
+          continue;
+        }
+        
+        console.error('Error creating work order:', error);
+        toast.error(t('error'), { description: error.message });
+        break;
+      }
+    }
+    
+    setCreating(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="text-lg">{t('createWorkOrder')}</DialogTitle>
+          <DialogDescription className="text-sm">
+            {initialStartDate 
+              ? `${language === 'nl' ? 'Nieuwe werkorder voor' : 'New work order for'} ${format(initialStartDate, 'MMMM d, yyyy')}`
+              : t('createWorkOrderDesc')
+            }
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleCreate} className="space-y-4">
+          <div className="space-y-2">
+            <Label className="text-xs font-medium uppercase tracking-wider">{t('workOrderNumber')}</Label>
+            <div className="flex items-center gap-2">
+              <div className="flex-1 p-2.5 rounded-md border bg-muted/50 font-mono text-sm font-semibold">
+                {generatingWO ? (
+                  <span className="flex items-center gap-2 text-muted-foreground">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    Generating...
+                  </span>
+                ) : (
+                  woNumber
+                )}
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                className="h-9 w-9"
+                onClick={generateWONumber}
+                disabled={generatingWO}
+              >
+                <RefreshCw className={`h-3.5 w-3.5 ${generatingWO ? 'animate-spin' : ''}`} />
+              </Button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label className="text-xs font-medium">
+                {language === 'nl' ? 'Startdatum' : 'Start Date'} <span className="text-destructive">*</span>
+              </Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full h-10 px-3 text-base leading-5 font-normal flex items-center gap-2 justify-start text-left",
+                      !startDate && "text-muted-foreground",
+                      errors.startDate && "border-destructive",
+                    )}
+                  >
+                    <CalendarIcon className="h-4 w-4" />
+                    {startDate ? format(startDate, "dd/MM/yyyy") : <span>{t('selectDate')}</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={startDate}
+                    onSelect={setStartDate}
+                    initialFocus
+                    className="pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+              {errors.startDate && <p className="text-xs text-destructive">{errors.startDate}</p>}
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs font-medium">
+                {language === 'nl' ? 'Verzenddatum' : 'Shipping Date'} <span className="text-destructive">*</span>
+              </Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full h-10 px-3 text-base leading-5 font-normal flex items-center gap-2 justify-start text-left",
+                      !shippingDate && "text-muted-foreground",
+                      errors.shippingDate && "border-destructive",
+                    )}
+                  >
+                    <CalendarIcon className="h-4 w-4" />
+                    {shippingDate ? format(shippingDate, "dd/MM/yyyy") : <span>{t('selectDate')}</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={shippingDate}
+                    onSelect={setShippingDate}
+                    initialFocus
+                    className="pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+              {errors.shippingDate && <p className="text-xs text-destructive">{errors.shippingDate}</p>}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label className="text-xs font-medium">
+                {t('customer')} <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                value={customerName}
+                onChange={(e) => setCustomerName(e.target.value)}
+                placeholder={t('customerPlaceholder')}
+                className={cn("text-base", errors.customerName && "border-destructive")}
+                maxLength={255}
+              />
+              {errors.customerName && <p className="text-xs text-destructive">{errors.customerName}</p>}
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs font-medium">
+                {t('orderNumber')} <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                value={externalOrderNumber}
+                onChange={(e) => setExternalOrderNumber(e.target.value)}
+                placeholder={t('orderNumberPlaceholder')}
+                className={cn("text-base", errors.externalOrderNumber && "border-destructive")}
+                maxLength={100}
+              />
+              {errors.externalOrderNumber && <p className="text-xs text-destructive">{errors.externalOrderNumber}</p>}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label className="text-xs font-medium">
+              {t('value')} (€) <span className="text-destructive">*</span>
+            </Label>
+            <Input
+              type="number"
+              step="0.01"
+              min="0"
+              value={orderValue}
+              onChange={(e) => setOrderValue(e.target.value)}
+              placeholder="0.00"
+              className={cn("text-base", errors.orderValue && "border-destructive")}
+            />
+            {errors.orderValue && <p className="text-xs text-destructive">{errors.orderValue}</p>}
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs font-medium uppercase tracking-wider">{t('productBatches')}</Label>
+              <Badge variant="secondary" className="text-[10px]">
+                {getTotalItems()} {t('items')}
+              </Badge>
+            </div>
+            
+            <div className="space-y-2 max-h-[180px] overflow-y-auto pr-1">
+              {productBatches.map((batch) => (
+                <div key={batch.id} className="flex items-center gap-2 p-2 rounded-md border bg-muted/30">
+                  <div className="flex-1">
+                    <Select
+                      value={batch.productType}
+                      onValueChange={(value: ProductType) => updateProductBatch(batch.id, 'productType', value)}
+                    >
+                      <SelectTrigger className="h-8 text-xs border">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {PRODUCT_TYPES.map(type => (
+                          <SelectItem key={type} value={type} className="text-xs">
+                            {formatProductType(type)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="w-16">
+                    <Input
+                      type="number"
+                      min="1"
+                      max="50"
+                      value={batch.quantity}
+                      onChange={(e) => updateProductBatch(batch.id, 'quantity', Math.max(1, parseInt(e.target.value) || 1))}
+                      className="h-8 text-xs text-center"
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                    onClick={() => removeProductBatch(batch.id)}
+                    disabled={productBatches.length === 1}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="w-full mt-2 text-xs"
+              onClick={addProductBatch}
+            >
+              <Plus className="h-3 w-3 mr-1" /> {t('addProductBatch')}
+            </Button>
+          </div>
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              {t('cancel')}
+            </Button>
+            <Button type="submit" disabled={creating || generatingWO}>
+              {creating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {t('createWorkOrder')}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
