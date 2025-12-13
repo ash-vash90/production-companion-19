@@ -5,6 +5,7 @@ import { PageHeader } from '@/components/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -17,6 +18,7 @@ import { toast } from 'sonner';
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, parseISO, addWeeks, subWeeks, differenceInDays, isWithinInterval, addMonths, subMonths } from 'date-fns';
 import { ChevronLeft, ChevronRight, Package, CalendarIcon, LayoutGrid, List, ArrowRight, Play, Flag, Plus, GanttChartSquare } from 'lucide-react';
 import { cn, formatProductType } from '@/lib/utils';
+import { CreateWorkOrderDialogWithDate } from '@/components/calendar/CreateWorkOrderFromCalendar';
 
 interface WorkOrder {
   id: string;
@@ -34,7 +36,7 @@ type CalendarViewMode = 'month' | 'week';
 
 const ProductionCalendar = () => {
   const { user } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { isAdmin } = useUserProfile();
   const navigate = useNavigate();
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -55,6 +57,10 @@ const ProductionCalendar = () => {
   const [unscheduledOrders, setUnscheduledOrders] = useState<WorkOrder[]>([]);
   const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
   const [selectedUnscheduledOrder, setSelectedUnscheduledOrder] = useState<string>('');
+  
+  // Create new work order from calendar
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [createForDate, setCreateForDate] = useState<Date | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -213,16 +219,26 @@ const ProductionCalendar = () => {
     setDialogOpen(true);
   };
 
-  // Click on empty day to schedule
+  // Click on empty day to schedule or create new
   const handleDayClick = (date: Date) => {
     if (!isAdmin) return;
-    if (unscheduledOrders.length === 0) {
-      toast.info('No unscheduled work orders available');
-      return;
-    }
     setSchedulingDate(date);
     setSelectedUnscheduledOrder('');
     setScheduleDialogOpen(true);
+  };
+  
+  // Open create work order dialog with date pre-filled
+  const handleCreateNewFromCalendar = () => {
+    if (!schedulingDate) return;
+    setCreateForDate(schedulingDate);
+    setScheduleDialogOpen(false);
+    setCreateDialogOpen(true);
+  };
+  
+  const handleWorkOrderCreated = () => {
+    setCreateDialogOpen(false);
+    setCreateForDate(null);
+    fetchWorkOrders();
   };
 
   const handleSaveDate = async () => {
@@ -764,40 +780,78 @@ const ProductionCalendar = () => {
         <Dialog open={scheduleDialogOpen} onOpenChange={setScheduleDialogOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Schedule Work Order</DialogTitle>
+              <DialogTitle>{language === 'nl' ? 'Werkorder Plannen' : 'Schedule Work Order'}</DialogTitle>
               <DialogDescription>
-                Select a work order to schedule for {schedulingDate && format(schedulingDate, 'MMMM d, yyyy')}
+                {schedulingDate && format(schedulingDate, 'MMMM d, yyyy')}
               </DialogDescription>
             </DialogHeader>
-            <div className="py-4">
-              <Select value={selectedUnscheduledOrder} onValueChange={setSelectedUnscheduledOrder}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a work order..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {unscheduledOrders.map(order => (
-                    <SelectItem key={order.id} value={order.id}>
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">{order.wo_number}</span>
-                        <span className="text-muted-foreground text-xs">
-                          {formatProductType(order.product_type)} • {order.batch_size} units
-                        </span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="py-4 space-y-4">
+              {unscheduledOrders.length > 0 && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">
+                    {language === 'nl' ? 'Bestaande werkorder plannen' : 'Schedule existing work order'}
+                  </Label>
+                  <Select value={selectedUnscheduledOrder} onValueChange={setSelectedUnscheduledOrder}>
+                    <SelectTrigger>
+                      <SelectValue placeholder={language === 'nl' ? 'Selecteer een werkorder...' : 'Select a work order...'} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {unscheduledOrders.map(order => (
+                        <SelectItem key={order.id} value={order.id}>
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">{order.wo_number}</span>
+                            <span className="text-muted-foreground text-xs">
+                              {formatProductType(order.product_type)} • {order.batch_size} units
+                            </span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+              
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-background px-2 text-muted-foreground">
+                    {language === 'nl' ? 'of' : 'or'}
+                  </span>
+                </div>
+              </div>
+              
+              <Button 
+                variant="outline" 
+                className="w-full"
+                onClick={handleCreateNewFromCalendar}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                {language === 'nl' ? 'Nieuwe werkorder aanmaken' : 'Create new work order'}
+              </Button>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setScheduleDialogOpen(false)}>
-                Cancel
+                {t('cancel')}
               </Button>
-              <Button onClick={handleQuickSchedule} disabled={updating || !selectedUnscheduledOrder}>
-                Schedule
+              <Button 
+                onClick={handleQuickSchedule} 
+                disabled={updating || !selectedUnscheduledOrder}
+              >
+                {language === 'nl' ? 'Plannen' : 'Schedule'}
               </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
+        
+        {/* Create Work Order from Calendar Dialog */}
+        <CreateWorkOrderDialogWithDate
+          open={createDialogOpen}
+          onOpenChange={setCreateDialogOpen}
+          onSuccess={handleWorkOrderCreated}
+          initialStartDate={createForDate}
+        />
       </div>
     </Layout>
   );
