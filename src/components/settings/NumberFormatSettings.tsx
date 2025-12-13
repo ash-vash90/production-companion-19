@@ -112,49 +112,50 @@ const NumberFormatSettings = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Work Order Format */}
       <Card>
-        <CardHeader>
-          <CardTitle>Work Order Number Format</CardTitle>
-          <CardDescription>
+        <CardHeader className="pb-4">
+          <CardTitle className="text-lg">Work Order Number Format</CardTitle>
+          <CardDescription className="text-sm">
             Configure how work order numbers are automatically generated
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div className="space-y-2">
-              <Label htmlFor="woPrefix">Prefix</Label>
+              <Label htmlFor="woPrefix" className="text-sm">Prefix</Label>
               <Input
                 id="woPrefix"
                 value={woFormat.prefix}
                 onChange={(e) => setWoFormat({ ...woFormat, prefix: e.target.value })}
                 placeholder="WO"
+                className="font-mono"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="woDateFormat">Date Format</Label>
+              <Label htmlFor="woDateFormat" className="text-sm">Date Format</Label>
               <Select
                 value={woFormat.dateFormat}
                 onValueChange={(value) => setWoFormat({ ...woFormat, dateFormat: value })}
               >
-                <SelectTrigger>
+                <SelectTrigger className="text-sm">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="YYYYMMDD">YYYYMMDD (20241203)</SelectItem>
-                  <SelectItem value="YYMMDD">YYMMDD (241203)</SelectItem>
-                  <SelectItem value="YYYY-MM-DD">YYYY-MM-DD (2024-12-03)</SelectItem>
+                  <SelectItem value="YYYYMMDD">YYYYMMDD</SelectItem>
+                  <SelectItem value="YYMMDD">YYMMDD</SelectItem>
+                  <SelectItem value="YYYY-MM-DD">YYYY-MM-DD</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="woSeparator">Separator</Label>
+              <Label htmlFor="woSeparator" className="text-sm">Separator</Label>
               <Select
                 value={woFormat.separator || 'none'}
                 onValueChange={(value) => setWoFormat({ ...woFormat, separator: value === 'none' ? '' : value })}
               >
-                <SelectTrigger>
+                <SelectTrigger className="text-sm">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -166,33 +167,33 @@ const NumberFormatSettings = () => {
             </div>
           </div>
           <div className="p-3 rounded-lg bg-muted/50 border">
-            <span className="text-sm text-muted-foreground">Preview: </span>
-            <span className="font-mono font-semibold">{previewWO}</span>
+            <span className="text-xs sm:text-sm text-muted-foreground">Preview: </span>
+            <span className="font-mono font-semibold text-sm sm:text-base">{previewWO}</span>
           </div>
         </CardContent>
       </Card>
 
       {/* Serial Number Prefixes */}
       <Card>
-        <CardHeader>
-          <CardTitle>Serial Number Prefixes</CardTitle>
-          <CardDescription>
+        <CardHeader className="pb-4">
+          <CardTitle className="text-lg">Serial Number Prefixes</CardTitle>
+          <CardDescription className="text-sm">
             Define the prefix letter/code for each product type
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5 sm:gap-4">
             {(Object.keys(serialPrefixes) as Array<keyof SerialPrefixes>).map((type) => (
-              <div key={type} className="space-y-2">
-                <Label htmlFor={`prefix-${type}`}>{type.replace('_', ' ')}</Label>
+              <div key={type} className="space-y-1.5 sm:space-y-2">
+                <Label htmlFor={`prefix-${type}`} className="text-xs sm:text-sm">{type.replace('_', ' ')}</Label>
                 <Input
                   id={`prefix-${type}`}
                   value={serialPrefixes[type]}
                   onChange={(e) => setSerialPrefixes({ ...serialPrefixes, [type]: e.target.value.toUpperCase() })}
                   maxLength={4}
-                  className="font-mono"
+                  className="font-mono text-sm"
                 />
-                <p className="text-xs text-muted-foreground font-mono">{getSerialPreview(type)}</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground font-mono">{getSerialPreview(type)}</p>
               </div>
             ))}
           </div>
@@ -201,21 +202,21 @@ const NumberFormatSettings = () => {
 
       {/* Serial Number Format */}
       <Card>
-        <CardHeader>
-          <CardTitle>Serial Number Format</CardTitle>
-          <CardDescription>
+        <CardHeader className="pb-4">
+          <CardTitle className="text-lg">Serial Number Format</CardTitle>
+          <CardDescription className="text-sm">
             Configure serial number padding and separator
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="padLength">Number Padding (digits)</Label>
+              <Label htmlFor="padLength" className="text-sm">Number Padding (digits)</Label>
               <Select
                 value={String(serialFormat.padLength)}
                 onValueChange={(value) => setSerialFormat({ ...serialFormat, padLength: parseInt(value) })}
               >
-                <SelectTrigger>
+                <SelectTrigger className="text-sm">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -227,12 +228,12 @@ const NumberFormatSettings = () => {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="serialSeparator">Separator</Label>
+              <Label htmlFor="serialSeparator" className="text-sm">Separator</Label>
               <Select
                 value={serialFormat.separator || 'none'}
                 onValueChange={(value) => setSerialFormat({ ...serialFormat, separator: value === 'none' ? '' : value })}
               >
-                <SelectTrigger>
+                <SelectTrigger className="text-sm">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -247,12 +248,12 @@ const NumberFormatSettings = () => {
       </Card>
 
       {/* Save Button */}
-      <div className="flex justify-end gap-3">
-        <Button variant="outline" onClick={loadSettings}>
+      <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
+        <Button variant="outline" onClick={loadSettings} className="w-full sm:w-auto">
           <RefreshCw className="h-4 w-4 mr-2" />
           Reset
         </Button>
-        <Button onClick={handleSave} disabled={saving}>
+        <Button onClick={handleSave} disabled={saving} className="w-full sm:w-auto">
           {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
           Save Settings
         </Button>

@@ -269,25 +269,25 @@ export function CertificateTemplateManager() {
 
   return (
     <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5" />
+      <CardHeader className="pb-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="space-y-1">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <FileText className="h-5 w-5 shrink-0" />
               Certificate Templates
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-sm">
               Upload PDF templates with form fields to generate professional certificates
             </CardDescription>
           </div>
           <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
             <DialogTrigger asChild>
-              <Button>
+              <Button size="sm" className="w-full sm:w-auto">
                 <Upload className="h-4 w-4 mr-2" />
                 Upload Template
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-lg">
+            <DialogContent className="max-w-lg w-[calc(100%-2rem)] max-h-[80vh]">
               <DialogHeader>
                 <DialogTitle>Upload PDF Template</DialogTitle>
                 <DialogDescription>
@@ -491,7 +491,7 @@ export function CertificateTemplateManager() {
 
         {/* Field Mapping Dialog */}
         <Dialog open={mappingDialogOpen} onOpenChange={setMappingDialogOpen}>
-          <DialogContent className="max-w-2xl max-h-[80vh]">
+          <DialogContent className="max-w-2xl w-[calc(100%-2rem)] max-h-[80vh]">
             <DialogHeader>
               <DialogTitle>Configure Field Mappings</DialogTitle>
               <DialogDescription>
@@ -502,11 +502,11 @@ export function CertificateTemplateManager() {
               <ScrollArea className="max-h-[50vh]">
                 <div className="space-y-3 pr-4">
                   {selectedTemplate.detected_fields?.map((fieldName) => (
-                    <div key={fieldName} className="flex items-center gap-4">
-                      <div className="flex-1">
-                        <Label className="text-sm font-mono">{fieldName}</Label>
+                    <div key={fieldName} className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+                      <div className="sm:flex-1">
+                        <Label className="text-sm font-mono bg-muted px-2 py-1 rounded">{fieldName}</Label>
                       </div>
-                      <div className="flex-1">
+                      <div className="sm:flex-1">
                         <Select
                           value={fieldMappings[fieldName] || ''}
                           onValueChange={(value) => {
@@ -516,7 +516,7 @@ export function CertificateTemplateManager() {
                             }));
                           }}
                         >
-                          <SelectTrigger>
+                          <SelectTrigger className="text-sm">
                             <SelectValue placeholder="Select data source" />
                           </SelectTrigger>
                           <SelectContent>
@@ -541,11 +541,11 @@ export function CertificateTemplateManager() {
                 </div>
               </ScrollArea>
             )}
-            <div className="flex justify-end gap-2 pt-4">
-              <Button variant="outline" onClick={() => setMappingDialogOpen(false)}>
+            <div className="flex flex-col-reverse gap-2 pt-4 sm:flex-row sm:justify-end">
+              <Button variant="outline" onClick={() => setMappingDialogOpen(false)} className="w-full sm:w-auto">
                 Cancel
               </Button>
-              <Button onClick={handleSaveMappings}>
+              <Button onClick={handleSaveMappings} className="w-full sm:w-auto">
                 Save Mappings
               </Button>
             </div>

@@ -196,26 +196,27 @@ const Settings = () => {
   return (
     <ProtectedRoute>
       <Layout>
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           <PageHeader title={t('settingsPage')} description={t('configureWebhooks')} />
 
-          <Tabs defaultValue="numbering" className="space-y-6">
-            <TabsList className="flex-wrap h-auto gap-1">
-              <TabsTrigger value="numbering" className="gap-2">
-                <Hash className="h-4 w-4" />
-                Number Formats
+          <Tabs defaultValue="numbering" className="space-y-4 sm:space-y-6">
+            {/* Mobile-optimized tabs - grid on mobile, flex on desktop */}
+            <TabsList className="grid grid-cols-2 gap-1 h-auto p-1 sm:inline-flex sm:flex-wrap">
+              <TabsTrigger value="numbering" className="gap-1.5 text-xs sm:text-sm px-2 py-1.5 sm:px-3 sm:py-2">
+                <Hash className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
+                <span className="truncate">Formats</span>
               </TabsTrigger>
-              <TabsTrigger value="certificates" className="gap-2">
-                <FileText className="h-4 w-4" />
-                Certificate Templates
+              <TabsTrigger value="certificates" className="gap-1.5 text-xs sm:text-sm px-2 py-1.5 sm:px-3 sm:py-2">
+                <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
+                <span className="truncate">Certificates</span>
               </TabsTrigger>
-              <TabsTrigger value="automations" className="gap-2">
-                <Zap className="h-4 w-4" />
-                {t('automations') || 'Automations'}
+              <TabsTrigger value="automations" className="gap-1.5 text-xs sm:text-sm px-2 py-1.5 sm:px-3 sm:py-2">
+                <Zap className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
+                <span className="truncate">Automations</span>
               </TabsTrigger>
-              <TabsTrigger value="outgoing" className="gap-2">
-                <Webhook className="h-4 w-4" />
-                {t('outgoingWebhooks') || 'Outgoing Webhooks'}
+              <TabsTrigger value="outgoing" className="gap-1.5 text-xs sm:text-sm px-2 py-1.5 sm:px-3 sm:py-2">
+                <Webhook className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
+                <span className="truncate">Webhooks</span>
               </TabsTrigger>
             </TabsList>
             
@@ -233,22 +234,22 @@ const Settings = () => {
             
             <TabsContent value="outgoing">
               <Card>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle>{t('zapierWebhooks')}</CardTitle>
-                      <CardDescription>
+                <CardHeader className="pb-4">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="space-y-1">
+                      <CardTitle className="text-lg">{t('zapierWebhooks')}</CardTitle>
+                      <CardDescription className="text-sm">
                         {t('webhooksDescription')}
                       </CardDescription>
                     </div>
                     <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
                       <DialogTrigger asChild>
-                        <Button>
+                        <Button size="sm" className="w-full sm:w-auto">
                           <Plus className="mr-2 h-4 w-4" />
                           {t('addWebhook')}
                         </Button>
                       </DialogTrigger>
-                      <DialogContent className="max-w-lg">
+                      <DialogContent className="max-w-lg w-[calc(100%-2rem)] max-h-[80vh]">
                         <DialogHeader>
                           <DialogTitle>{t('addZapierWebhook')}</DialogTitle>
                           <DialogDescription>{t('createWebhookIntegration')}</DialogDescription>

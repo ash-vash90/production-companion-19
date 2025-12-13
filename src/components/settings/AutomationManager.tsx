@@ -355,28 +355,28 @@ const AutomationManager = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Webhooks List */}
       <Card>
         <CardHeader className="pb-4">
-          <div className="flex items-center justify-between">
-            <div>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="space-y-1">
               <CardTitle className="flex items-center gap-2 text-lg">
-                <Webhook className="h-5 w-5" />
+                <Webhook className="h-5 w-5 shrink-0" />
                 {t('incomingWebhooks') || 'Incoming Webhooks'}
               </CardTitle>
-              <CardDescription className="text-sm mt-1">
+              <CardDescription className="text-sm">
                 {t('incomingWebhooksDesc') || 'Receive data from external systems'}
               </CardDescription>
             </div>
             <Dialog open={webhookDialogOpen} onOpenChange={setWebhookDialogOpen}>
               <DialogTrigger asChild>
-                <Button size="sm">
+                <Button size="sm" className="w-full sm:w-auto">
                   <Plus className="mr-2 h-4 w-4" />
                   {t('createEndpoint') || 'Create'}
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="w-[calc(100%-2rem)] max-w-lg max-h-[80vh]">
                 <DialogHeader>
                   <DialogTitle>{t('createWebhookEndpoint') || 'Create Webhook Endpoint'}</DialogTitle>
                   <DialogDescription>
@@ -402,11 +402,11 @@ const AutomationManager = () => {
                     />
                   </div>
                 </div>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setWebhookDialogOpen(false)}>
+                <DialogFooter className="flex-col gap-2 sm:flex-row">
+                  <Button variant="outline" onClick={() => setWebhookDialogOpen(false)} className="w-full sm:w-auto">
                     {t('cancel')}
                   </Button>
-                  <Button onClick={createWebhook} disabled={!newWebhook.name}>
+                  <Button onClick={createWebhook} disabled={!newWebhook.name} className="w-full sm:w-auto">
                     {t('create')}
                   </Button>
                 </DialogFooter>
@@ -465,14 +465,14 @@ const AutomationManager = () => {
       {selectedWebhook && (
         <Card>
           <CardHeader className="pb-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-lg">{selectedWebhook.name}</CardTitle>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0 flex-1">
+                <CardTitle className="text-lg truncate">{selectedWebhook.name}</CardTitle>
                 {selectedWebhook.description && (
-                  <CardDescription className="mt-1">{selectedWebhook.description}</CardDescription>
+                  <CardDescription className="mt-1 line-clamp-2">{selectedWebhook.description}</CardDescription>
                 )}
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 self-end sm:self-auto">
                 <Switch
                   checked={selectedWebhook.enabled}
                   onCheckedChange={(checked) => toggleWebhook(selectedWebhook.id, checked)}
@@ -483,16 +483,16 @@ const AutomationManager = () => {
               </div>
             </div>
           </CardHeader>
-          <CardContent className="space-y-6">
+          <CardContent className="space-y-4 sm:space-y-6">
             {/* Endpoint URL */}
             <div className="space-y-2">
               <Label className="text-sm text-muted-foreground">Webhook URL</Label>
               <div className="flex items-center gap-2">
-                <code className="flex-1 text-xs sm:text-sm bg-muted p-2 rounded border truncate font-mono">
+                <code className="flex-1 text-[10px] sm:text-xs bg-muted p-2 rounded border truncate font-mono overflow-x-auto">
                   {getWebhookUrl(selectedWebhook.endpoint_key)}
                 </code>
-                <Button variant="outline" size="icon" className="shrink-0" onClick={() => copyToClipboard(getWebhookUrl(selectedWebhook.endpoint_key))}>
-                  <Copy className="h-4 w-4" />
+                <Button variant="outline" size="icon" className="shrink-0 h-8 w-8" onClick={() => copyToClipboard(getWebhookUrl(selectedWebhook.endpoint_key))}>
+                  <Copy className="h-3.5 w-3.5" />
                 </Button>
               </div>
             </div>
@@ -501,14 +501,14 @@ const AutomationManager = () => {
             <div className="space-y-2">
               <Label className="text-sm text-muted-foreground">Secret Key (X-Webhook-Secret)</Label>
               <div className="flex items-center gap-2">
-                <code className="flex-1 text-xs sm:text-sm bg-muted p-2 rounded border font-mono truncate">
+                <code className="flex-1 text-[10px] sm:text-xs bg-muted p-2 rounded border font-mono truncate">
                   {showSecrets[selectedWebhook.id] ? selectedWebhook.secret_key : '••••••••••••••••'}
                 </code>
-                <Button variant="outline" size="icon" className="shrink-0" onClick={() => setShowSecrets(prev => ({ ...prev, [selectedWebhook.id]: !prev[selectedWebhook.id] }))}>
-                  {showSecrets[selectedWebhook.id] ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                <Button variant="outline" size="icon" className="shrink-0 h-8 w-8" onClick={() => setShowSecrets(prev => ({ ...prev, [selectedWebhook.id]: !prev[selectedWebhook.id] }))}>
+                  {showSecrets[selectedWebhook.id] ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                 </Button>
-                <Button variant="outline" size="icon" className="shrink-0" onClick={() => copyToClipboard(selectedWebhook.secret_key)}>
-                  <Copy className="h-4 w-4" />
+                <Button variant="outline" size="icon" className="shrink-0 h-8 w-8" onClick={() => copyToClipboard(selectedWebhook.secret_key)}>
+                  <Copy className="h-3.5 w-3.5" />
                 </Button>
               </div>
             </div>
@@ -517,29 +517,29 @@ const AutomationManager = () => {
 
             {/* Automation Rules */}
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <h4 className="font-medium flex items-center gap-2">
-                    <Zap className="h-4 w-4" />
+                  <h4 className="font-medium flex items-center gap-2 text-sm sm:text-base">
+                    <Zap className="h-4 w-4 shrink-0" />
                     Automation Rules
                   </h4>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
                     Define actions when this webhook receives data
                   </p>
                 </div>
                 <div className="flex gap-2">
-                  <Button variant="outline" size="sm" onClick={() => { fetchLogs(selectedWebhook.id); setLogsDialogOpen(true); }}>
-                    <History className="mr-2 h-4 w-4" />
+                  <Button variant="outline" size="sm" className="flex-1 sm:flex-none h-8 text-xs sm:text-sm" onClick={() => { fetchLogs(selectedWebhook.id); setLogsDialogOpen(true); }}>
+                    <History className="mr-1.5 h-3.5 w-3.5" />
                     Logs
                   </Button>
                   <Dialog open={ruleDialogOpen} onOpenChange={setRuleDialogOpen}>
                     <DialogTrigger asChild>
-                      <Button size="sm">
-                        <Plus className="mr-2 h-4 w-4" />
+                      <Button size="sm" className="flex-1 sm:flex-none h-8 text-xs sm:text-sm">
+                        <Plus className="mr-1.5 h-3.5 w-3.5" />
                         Add Rule
                       </Button>
                     </DialogTrigger>
-                    <DialogContent className="max-w-xl max-h-[90vh]">
+                    <DialogContent className="max-w-xl w-[calc(100%-2rem)] max-h-[90vh]">
                       <DialogHeader>
                         <DialogTitle>Create Automation Rule</DialogTitle>
                         <DialogDescription>
@@ -694,11 +694,11 @@ const AutomationManager = () => {
                           </div>
                         </div>
                       </ScrollArea>
-                      <DialogFooter className="pt-4">
-                        <Button variant="outline" onClick={() => setRuleDialogOpen(false)}>
+                      <DialogFooter className="flex-col gap-2 pt-4 sm:flex-row">
+                        <Button variant="outline" onClick={() => setRuleDialogOpen(false)} className="w-full sm:w-auto">
                           {t('cancel')}
                         </Button>
-                        <Button onClick={createRule} disabled={!newRule.name}>
+                        <Button onClick={createRule} disabled={!newRule.name} className="w-full sm:w-auto">
                           Create Rule
                         </Button>
                       </DialogFooter>
@@ -757,14 +757,14 @@ const AutomationManager = () => {
 
       {/* Logs Dialog */}
       <Dialog open={logsDialogOpen} onOpenChange={setLogsDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[80vh]">
+        <DialogContent className="max-w-2xl w-[calc(100%-2rem)] max-h-[80vh]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <History className="h-5 w-5" />
-              Webhook Logs
+              <History className="h-5 w-5 shrink-0" />
+              <span className="truncate">Webhook Logs</span>
             </DialogTitle>
-            <DialogDescription>
-              Recent webhook executions for {selectedWebhook?.name}
+            <DialogDescription className="truncate">
+              Recent executions for {selectedWebhook?.name}
             </DialogDescription>
           </DialogHeader>
           <ScrollArea className="max-h-[60vh]">
