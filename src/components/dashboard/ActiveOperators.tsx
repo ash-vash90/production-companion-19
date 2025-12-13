@@ -27,22 +27,41 @@ export const ActiveOperators = memo(function ActiveOperators() {
   useEffect(() => {
     isMountedRef.current = true;
     
-    if (user) {
-      supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single()
-        .then(({ data }) => {
-          if (isMountedRef.current) {
-            setCurrentUserProfile(data);
-            setLoading(false);
-          }
-        });
-    }
+    // Timeout after 8 seconds to prevent infinite loading
+    const timeoutId = setTimeout(() => {
+      if (isMountedRef.current) setLoading(false);
+    }, 8000);
+
+    const fetchProfile = async () => {
+      if (!user) {
+        clearTimeout(timeoutId);
+        setLoading(false);
+        return;
+      }
+      
+      try {
+        const { data } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+        
+        clearTimeout(timeoutId);
+        if (isMountedRef.current) {
+          setCurrentUserProfile(data);
+          setLoading(false);
+        }
+      } catch {
+        clearTimeout(timeoutId);
+        if (isMountedRef.current) setLoading(false);
+      }
+    };
+
+    fetchProfile();
     
     return () => {
       isMountedRef.current = false;
+      clearTimeout(timeoutId);
     };
   }, [user]);
 

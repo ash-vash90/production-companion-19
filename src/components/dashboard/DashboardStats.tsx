@@ -17,31 +17,42 @@ export function DashboardStats() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let isMounted = true;
+    
+    const fetchStats = async () => {
+      // Timeout after 8 seconds
+      const timeoutId = setTimeout(() => {
+        if (isMounted) setLoading(false);
+      }, 8000);
+
+      try {
+        const [workOrdersResult, itemsResult, stepsResult] = await Promise.all([
+          supabase.from('work_orders').select('*', { count: 'exact' }),
+          supabase.from('work_order_items').select('*', { count: 'exact' }),
+          supabase.from('step_executions').select('*', { count: 'exact' }),
+        ]);
+
+        if (isMounted) {
+          setStats({
+            totalWorkOrders: workOrdersResult.count || 0,
+            activeWorkOrders: workOrdersResult.data?.filter((wo) => wo.status === 'in_progress').length || 0,
+            inProgressItems: itemsResult.data?.filter((item) => item.status === 'in_progress').length || 0,
+            completedItems: itemsResult.data?.filter((item) => item.status === 'completed').length || 0,
+            totalItems: itemsResult.count || 0,
+            totalSteps: stepsResult.count || 0,
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching stats:', error);
+      } finally {
+        clearTimeout(timeoutId);
+        if (isMounted) setLoading(false);
+      }
+    };
+
     fetchStats();
+    return () => { isMounted = false; };
   }, []);
-
-  const fetchStats = async () => {
-    try {
-      const [workOrdersResult, itemsResult, stepsResult] = await Promise.all([
-        supabase.from('work_orders').select('*', { count: 'exact' }),
-        supabase.from('work_order_items').select('*', { count: 'exact' }),
-        supabase.from('step_executions').select('*', { count: 'exact' }),
-      ]);
-
-      setStats({
-        totalWorkOrders: workOrdersResult.count || 0,
-        activeWorkOrders: workOrdersResult.data?.filter((wo) => wo.status === 'in_progress').length || 0,
-        inProgressItems: itemsResult.data?.filter((item) => item.status === 'in_progress').length || 0,
-        completedItems: itemsResult.data?.filter((item) => item.status === 'completed').length || 0,
-        totalItems: itemsResult.count || 0,
-        totalSteps: stepsResult.count || 0,
-      });
-    } catch (error) {
-      console.error('Error fetching stats:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   if (loading) {
     return (

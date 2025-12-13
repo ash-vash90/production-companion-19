@@ -31,6 +31,11 @@ export function ProductionOverview() {
   const isSubscribedRef = useRef(false);
 
   const fetchWorkOrders = useCallback(async () => {
+    // Timeout after 8 seconds
+    const timeoutId = setTimeout(() => {
+      if (isMountedRef.current) setLoading(false);
+    }, 8000);
+
     try {
       // Fetch work orders with minimal data
       const { data: workOrdersData, error: woError } = await supabase
@@ -93,6 +98,7 @@ export function ProductionOverview() {
     } catch (error) {
       console.error('Error fetching work orders:', error);
     } finally {
+      clearTimeout(timeoutId);
       if (isMountedRef.current) {
         setLoading(false);
       }
