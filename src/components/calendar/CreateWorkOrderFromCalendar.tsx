@@ -11,7 +11,8 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Loader2, Plus, Trash2, RefreshCw, CalendarIcon } from 'lucide-react';
+import { Loader2, Plus, Trash2, RefreshCw, CalendarIcon, AlertTriangle } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
 import { formatProductType, cn } from '@/lib/utils';
 import { SettingsService, SerialPrefixes } from '@/services/settingsService';
 import { format } from 'date-fns';
@@ -42,6 +43,8 @@ export function CreateWorkOrderDialogWithDate({
   const { user } = useAuth();
   const { t, language } = useLanguage();
   const [creating, setCreating] = useState(false);
+  const [creationProgress, setCreationProgress] = useState(0);
+  const [creationStatus, setCreationStatus] = useState('');
   const [woNumber, setWoNumber] = useState('');
   const [generatingWO, setGeneratingWO] = useState(false);
   const [serialPrefixes, setSerialPrefixes] = useState<SerialPrefixes | null>(null);
@@ -157,6 +160,8 @@ export function CreateWorkOrderDialogWithDate({
     }
 
     setCreating(true);
+    setCreationProgress(0);
+    setCreationStatus(language === 'nl' ? 'Werkorder aanmaken...' : 'Creating work order...');
     
     let attempts = 0;
     const maxAttempts = 3;
@@ -197,6 +202,9 @@ export function CreateWorkOrderDialogWithDate({
           throw woError;
         }
 
+        setCreationProgress(20);
+        setCreationStatus(language === 'nl' ? 'Serienummers genereren...' : 'Generating serial numbers...');
+        
         const prefixes = serialPrefixes || { SENSOR: 'Q', MLA: 'W', HMI: 'X', TRANSMITTER: 'T', SDM_ECO: 'SDM' };
         const serialFormat = await SettingsService.getSerialFormat();
         const items: any[] = [];
@@ -218,14 +226,33 @@ export function CreateWorkOrderDialogWithDate({
               product_type: batch.productType,
             });
             position++;
+            
+            // Update progress during generation for large batches
+            if (totalBatchSize > 50 && position % 25 === 0) {
+              setCreationProgress(20 + Math.floor((position / totalBatchSize) * 40));
+            }
           }
         }
 
-        const { error: itemsError } = await supabase
-          .from('work_order_items')
-          .insert(items);
+        setCreationProgress(60);
+        setCreationStatus(language === 'nl' ? 'Items opslaan...' : 'Saving items...');
 
-        if (itemsError) throw itemsError;
+        // Insert items in batches of 100 for large orders
+        const BATCH_SIZE = 100;
+        for (let i = 0; i < items.length; i += BATCH_SIZE) {
+          const batchItems = items.slice(i, i + BATCH_SIZE);
+          const { error: itemsError } = await supabase
+            .from('work_order_items')
+            .insert(batchItems);
+
+          if (itemsError) throw itemsError;
+          
+          // Update progress during insert
+          setCreationProgress(60 + Math.floor(((i + batchItems.length) / items.length) * 30));
+        }
+
+        setCreationProgress(95);
+        setCreationStatus(language === 'nl' ? 'Afronden...' : 'Finalizing...');
 
         await supabase.from('activity_logs').insert({
           user_id: user.id,
@@ -246,6 +273,7 @@ export function CreateWorkOrderDialogWithDate({
           product_batches: productBatches,
         });
 
+        setCreationProgress(100);
         toast.success(t('success'), { description: `${t('workOrderNumber')} ${currentWoNumber} ${t('workOrderCreated')}` });
         onOpenChange(false);
         onSuccess();
@@ -264,6 +292,8 @@ export function CreateWorkOrderDialogWithDate({
     }
     
     setCreating(false);
+    setCreationProgress(0);
+    setCreationStatus('');
   };
 
   return (
@@ -474,7 +504,31 @@ export function CreateWorkOrderDialogWithDate({
             >
               <Plus className="h-3 w-3 mr-1" /> {t('addProductBatch')}
             </Button>
+
+            {/* Large batch warning */}
+            {getTotalItems() > 100 && (
+              <div className="flex items-start gap-2 p-2.5 rounded-md bg-amber-500/10 border border-amber-500/20">
+                <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
+                <p className="text-xs text-amber-600 dark:text-amber-400">
+                  {language === 'nl' 
+                    ? `Grote batch: ${getTotalItems()} items. Dit kan enige tijd duren om aan te maken.`
+                    : `Large batch: ${getTotalItems()} items. This may take a moment to create.`
+                  }
+                </p>
+              </div>
+            )}
           </div>
+
+          {/* Progress indicator during creation */}
+          {creating && (
+            <div className="space-y-2 p-3 rounded-md border bg-muted/30">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-muted-foreground">{creationStatus}</span>
+                <span className="font-medium">{creationProgress}%</span>
+              </div>
+              <Progress value={creationProgress} className="h-2" />
+            </div>
+          )}
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
