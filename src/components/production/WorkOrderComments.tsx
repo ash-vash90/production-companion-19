@@ -106,10 +106,12 @@ export function WorkOrderComments({ workOrderId, workOrderItemId, currentStepNum
 
   const fetchNotes = async () => {
     try {
+      // Only fetch comments with type='comment' (notes live in SimpleNotes)
       let query = supabase
         .from('work_order_notes')
         .select('*')
         .eq('work_order_id', workOrderId)
+        .eq('type', 'comment')
         .order('created_at', { ascending: true });
 
       if (workOrderItemId) {
@@ -135,12 +137,7 @@ export function WorkOrderComments({ workOrderId, workOrderItemId, currentStepNum
         }, {} as Record<string, { name: string; avatar_url: string | null }>);
       }
 
-      // Comments = anything with replies or mentions; plain notes live in SimpleNotes
-      const commentData = (data || []).filter((note: any) => 
-        note.reply_to_id !== null || (note.mentions && note.mentions.length > 0)
-      );
-
-      const enrichedNotes = commentData.map((note: any) => ({
+      const enrichedNotes = (data || []).map((note: any) => ({
         id: note.id,
         content: note.content,
         user_id: note.user_id,
@@ -183,6 +180,7 @@ export function WorkOrderComments({ workOrderId, workOrderItemId, currentStepNum
           content: newNote.trim(),
           reply_to_id: replyingTo?.id || null,
           mentions: selectedMentions,
+          type: 'comment',
         })
         .select()
         .single();

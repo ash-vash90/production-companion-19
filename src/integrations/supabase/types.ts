@@ -1012,6 +1012,7 @@ export type Database = {
           mentions: string[] | null
           reply_to_id: string | null
           step_number: number | null
+          type: string
           updated_at: string
           user_id: string
           work_order_id: string
@@ -1024,6 +1025,7 @@ export type Database = {
           mentions?: string[] | null
           reply_to_id?: string | null
           step_number?: number | null
+          type?: string
           updated_at?: string
           user_id: string
           work_order_id: string
@@ -1036,6 +1038,7 @@ export type Database = {
           mentions?: string[] | null
           reply_to_id?: string | null
           step_number?: number | null
+          type?: string
           updated_at?: string
           user_id?: string
           work_order_id?: string
