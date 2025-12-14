@@ -18,7 +18,7 @@ import { WorkOrderTableRow, WorkOrderRowData } from '@/components/workorders/Wor
 import { CancelWorkOrderDialog } from '@/components/workorders/CancelWorkOrderDialog';
 import { useWorkOrders, invalidateWorkOrdersCache, WorkOrderListItem } from '@/hooks/useWorkOrders';
 import { prefetchProductionOnHover } from '@/services/prefetchService';
-import { ResponsiveVirtualizedGrid } from '@/components/VirtualizedList';
+import { ResponsiveVirtualizedGrid, VirtualizedList } from '@/components/VirtualizedList';
 import { PullToRefresh } from '@/components/PullToRefresh';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -51,6 +51,13 @@ const GROUPBY_STORAGE_KEY = 'workorders_groupby';
 const VIEWMODE_STORAGE_KEY = 'workorders_viewmode';
 
 type ViewMode = 'cards' | 'table';
+
+const CARD_ITEM_HEIGHT = 280;
+const CARD_MIN_WIDTH = 300;
+const CARD_GAP = 12;
+const LIST_MAX_HEIGHT = 720;
+const TABLE_ROW_HEIGHT = 72;
+const VIRTUALIZATION_THRESHOLD = 50;
 
 const WorkOrders = () => {
   const { user } = useAuth();
@@ -450,7 +457,7 @@ const WorkOrders = () => {
   ), [canManageProduction, handleStatusChange, handlePrint]);
 
   // Render table view with shared component
-  const renderTableView = (orders: WorkOrderWithItems[]) => (
+  const renderTableView = useCallback((orders: WorkOrderWithItems[]) => (
     <div className="rounded-lg border overflow-hidden">
       <Table>
         <TableHeader>
@@ -463,35 +470,68 @@ const WorkOrders = () => {
             <TableHead className="text-xs text-right">{t('actions')}</TableHead>
           </TableRow>
         </TableHeader>
-        <TableBody>
-          {orders.map((wo) => (
-            <WorkOrderTableRow
-              key={wo.id}
-              workOrder={toRowData(wo)}
-              linkTo={`/production/${wo.id}`}
-              onCancel={isAdmin ? () => openCancelDialog({ id: wo.id, wo_number: wo.wo_number }) : undefined}
-              actions={renderActions(wo)}
-            />
-          ))}
-        </TableBody>
       </Table>
+      <VirtualizedList
+        items={orders}
+        itemHeight={TABLE_ROW_HEIGHT}
+        maxHeight={LIST_MAX_HEIGHT}
+        threshold={VIRTUALIZATION_THRESHOLD}
+        renderItem={(wo) => (
+          <WorkOrderTableRow
+            workOrder={toRowData(wo)}
+            linkTo={`/production/${wo.id}`}
+            onCancel={isAdmin ? () => openCancelDialog({ id: wo.id, wo_number: wo.wo_number }) : undefined}
+            actions={renderActions(wo)}
+          />
+        )}
+        renderVirtualizedItems={({ visibleItems, beforeHeight, afterHeight }) => (
+          <Table>
+            <TableBody>
+              {beforeHeight > 0 && (
+                <TableRow style={{ height: beforeHeight }}>
+                  <TableCell colSpan={6} className="p-0" />
+                </TableRow>
+              )}
+              {visibleItems.map((wo) => (
+                <WorkOrderTableRow
+                  key={wo.id}
+                  workOrder={toRowData(wo)}
+                  linkTo={`/production/${wo.id}`}
+                  onCancel={isAdmin ? () => openCancelDialog({ id: wo.id, wo_number: wo.wo_number }) : undefined}
+                  actions={renderActions(wo)}
+                />
+              ))}
+              {afterHeight > 0 && (
+                <TableRow style={{ height: afterHeight }}>
+                  <TableCell colSpan={6} className="p-0" />
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        )}
+      />
     </div>
-  );
+  ), [language, t, isAdmin, openCancelDialog, renderActions, toRowData]);
 
   // Render card view with shared component
   const renderCardView = useCallback((orders: WorkOrderWithItems[]) => (
-    <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-      {orders.map((wo) => (
+    <ResponsiveVirtualizedGrid
+      items={orders}
+      renderItem={(wo) => (
         <WorkOrderCard
-          key={wo.id}
           workOrder={toRowData(wo)}
           onClick={() => navigate(`/production/${wo.id}`)}
           onCancel={isAdmin ? () => openCancelDialog({ id: wo.id, wo_number: wo.wo_number }) : undefined}
           onHover={() => prefetchProductionOnHover(wo.id)}
           actions={renderActions(wo)}
         />
-      ))}
-    </div>
+      )}
+      itemHeight={CARD_ITEM_HEIGHT}
+      minItemWidth={CARD_MIN_WIDTH}
+      gap={CARD_GAP}
+      maxHeight={LIST_MAX_HEIGHT}
+      threshold={VIRTUALIZATION_THRESHOLD}
+    />
   ), [toRowData, navigate, isAdmin, openCancelDialog, renderActions]);
 
   const isMobile = useIsMobile();
@@ -686,31 +726,9 @@ const WorkOrders = () => {
                 </Card>
               )
             ) : groupBy === 'none' ? (
-              viewMode === 'cards' ? (
-                filteredOrders.length > 50 ? (
-                  <ResponsiveVirtualizedGrid
-                    items={filteredOrders}
-                    renderItem={(wo) => (
-                      <WorkOrderCard
-                        workOrder={toRowData(wo)}
-                        onClick={() => navigate(`/production/${wo.id}`)}
-                        onCancel={isAdmin ? () => openCancelDialog({ id: wo.id, wo_number: wo.wo_number }) : undefined}
-                        onHover={() => prefetchProductionOnHover(wo.id)}
-                        actions={renderActions(wo)}
-                      />
-                    )}
-                    itemHeight={280}
-                    minItemWidth={300}
-                    gap={12}
-                    maxHeight={700}
-                    threshold={50}
-                  />
-                ) : (
-                  renderCardView(filteredOrders)
-                )
-              ) : (
-                renderTableView(filteredOrders)
-              )
+              viewMode === 'cards'
+                ? renderCardView(filteredOrders)
+                : renderTableView(filteredOrders)
             ) : (
               <div className="space-y-2">
                 {Object.entries(groupedOrders).sort().map(([groupKey, orders]) => (
