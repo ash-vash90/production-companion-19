@@ -267,7 +267,7 @@ export function usePaginatedWorkOrders(pageSize = 25) {
 
     const { data: workOrdersData, error } = await supabase
       .from('work_orders')
-      .select('id, wo_number, product_type, batch_size, status, created_at, created_by, customer_name, external_order_number, order_value, start_date, shipping_date')
+      .select('id, wo_number, product_type, batch_size, status, created_at, created_by, customer_name, external_order_number, order_value, start_date, shipping_date, completed_at')
       .neq('status', 'cancelled')
       .order('created_at', { ascending: false })
       .range(from, to);
