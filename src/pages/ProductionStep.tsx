@@ -21,6 +21,7 @@ import StepEditDialog from '@/components/production/StepEditDialog';
 import SubAssemblyLinkDialog from '@/components/production/SubAssemblyLinkDialog';
 import { SimpleNotes } from '@/components/production/SimpleNotes';
 import { WorkOrderComments } from '@/components/production/WorkOrderComments';
+import { WorkInstructionViewer } from '@/components/production/WorkInstructionViewer';
 import { generateQualityCertificate } from '@/services/certificateService';
 
 
@@ -562,6 +563,12 @@ const ProductionStep = () => {
               <History className="h-5 w-5" />
               <span className="hidden sm:inline">{t('history')}</span>
             </Button>
+
+            <WorkInstructionViewer
+              productType={(item.product_type || workOrder.product_type) as 'SDM_ECO' | 'SENSOR' | 'MLA' | 'HMI' | 'TRANSMITTER'}
+              productionStepId={currentStep?.id}
+              productionStepNumber={currentStep?.step_number}
+            />
           </div>
         </div>
 

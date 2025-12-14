@@ -16,13 +16,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Plus, Trash2, Webhook, Loader2, Zap, Hash, Settings2, TestTube, FileText } from 'lucide-react';
+import { Plus, Trash2, Webhook, Loader2, Zap, Hash, Settings2, TestTube, FileText, BookOpen } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import AutomationManager from '@/components/settings/AutomationManager';
 import NumberFormatSettings from '@/components/settings/NumberFormatSettings';
 import { CertificateTemplateManager } from '@/components/settings/CertificateTemplateManager';
+import { WorkInstructionsManager } from '@/components/settings/WorkInstructionsManager';
 
 const Settings = () => {
   const { user } = useAuth();
@@ -206,6 +207,10 @@ const Settings = () => {
                 <Hash className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
                 <span className="truncate">Formats</span>
               </TabsTrigger>
+              <TabsTrigger value="instructions" className="gap-1.5 text-xs sm:text-sm px-2 py-1.5 sm:px-3 sm:py-2">
+                <BookOpen className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
+                <span className="truncate">Instructions</span>
+              </TabsTrigger>
               <TabsTrigger value="certificates" className="gap-1.5 text-xs sm:text-sm px-2 py-1.5 sm:px-3 sm:py-2">
                 <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
                 <span className="truncate">Certificates</span>
@@ -223,7 +228,11 @@ const Settings = () => {
             <TabsContent value="numbering">
               <NumberFormatSettings />
             </TabsContent>
-            
+
+            <TabsContent value="instructions">
+              <WorkInstructionsManager />
+            </TabsContent>
+
             <TabsContent value="certificates">
               <CertificateTemplateManager />
             </TabsContent>
