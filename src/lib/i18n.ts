@@ -15,7 +15,16 @@ export const translations = {
     navigation: 'Navigation',
     productionCalendar: 'Production Calendar',
     traceability: 'Traceability',
-    
+
+    // Dashboard
+    quickActionsTitle: 'Quick actions',
+    quickActionsSubtitle: 'Jump to the tools you use most',
+    quickActionWorkOrders: 'Plan and track production orders',
+    quickActionReports: 'Review shift and production reports',
+    quickActionInventory: 'Check material availability',
+    quickActionSearch: 'Trace work orders or serial numbers',
+    quickActionAnalytics: 'Monitor KPIs and trends',
+
     // Greetings
     goodMorning: 'Good morning',
     goodAfternoon: 'Good afternoon',
@@ -556,7 +565,16 @@ export const translations = {
     navigation: 'Navigatie',
     productionCalendar: 'Productiekalender',
     traceability: 'Traceerbaarheid',
-    
+
+    // Dashboard
+    quickActionsTitle: 'Snelle acties',
+    quickActionsSubtitle: 'Ga direct naar de tools die je het meest gebruikt',
+    quickActionWorkOrders: 'Plan en volg productieorders op',
+    quickActionReports: 'Bekijk dienst- en productierapporten',
+    quickActionInventory: 'Controleer materiaalbeschikbaarheid',
+    quickActionSearch: 'Traceer werkorders of serienummers',
+    quickActionAnalytics: 'Volg KPI\'s en trends',
+
     // Greetings
     goodMorning: 'Goedemorgen',
     goodAfternoon: 'Goedemiddag',
