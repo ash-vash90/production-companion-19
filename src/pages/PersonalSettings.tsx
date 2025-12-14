@@ -12,11 +12,12 @@ import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
+import { Input } from '@/components/ui/input';
 import { useTheme } from '@/hooks/useTheme';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Moon, Sun, Monitor, Bell, Globe, Camera, Loader2, Mail, AtSign, FileText, CheckCircle } from 'lucide-react';
+import { Moon, Sun, Monitor, Bell, Globe, Camera, Loader2, Mail, AtSign, FileText, CheckCircle, User } from 'lucide-react';
 import { ImageCropDialog } from '@/components/ImageCropDialog';
 
 interface NotificationPrefs {
@@ -51,12 +52,51 @@ const PersonalSettings = () => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [notificationPrefs, setNotificationPrefs] = useState<NotificationPrefs>(DEFAULT_PREFS);
   const [savingPrefs, setSavingPrefs] = useState(false);
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [savingName, setSavingName] = useState(false);
 
   useEffect(() => {
     if (user) {
       loadNotificationPrefs();
     }
   }, [user]);
+
+  useEffect(() => {
+    if (contextProfile?.full_name) {
+      const parts = contextProfile.full_name.split(' ');
+      setFirstName(parts[0] || '');
+      setLastName(parts.slice(1).join(' ') || '');
+    }
+  }, [contextProfile]);
+
+  const handleSaveName = async () => {
+    if (!user) return;
+    
+    const fullName = `${firstName.trim()} ${lastName.trim()}`.trim();
+    if (!fullName) {
+      toast.error(language === 'nl' ? 'Naam is verplicht' : 'Name is required');
+      return;
+    }
+
+    setSavingName(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ full_name: fullName })
+        .eq('id', user.id);
+
+      if (error) throw error;
+
+      await refreshProfile();
+      toast.success(language === 'nl' ? 'Naam bijgewerkt' : 'Name updated');
+    } catch (error: any) {
+      console.error('Error updating name:', error);
+      toast.error(t('error'), { description: error.message });
+    } finally {
+      setSavingName(false);
+    }
+  };
 
   const loadNotificationPrefs = async () => {
     if (!user) return;
@@ -188,6 +228,55 @@ const PersonalSettings = () => {
         <PageHeader title={t('personalSettings')} description={t('personalSettingsDescription')} />
 
         <div className="space-y-4 max-w-xl">
+          {/* Profile Name */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <User className="h-4 w-4" />
+                {language === 'nl' ? 'Naam' : 'Name'}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="firstName" className="text-xs">
+                    {language === 'nl' ? 'Voornaam' : 'First Name'}
+                  </Label>
+                  <Input
+                    id="firstName"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    placeholder={language === 'nl' ? 'Voornaam' : 'First name'}
+                    className="h-9"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="lastName" className="text-xs">
+                    {language === 'nl' ? 'Achternaam' : 'Last Name'}
+                  </Label>
+                  <Input
+                    id="lastName"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    placeholder={language === 'nl' ? 'Achternaam' : 'Last name'}
+                    className="h-9"
+                  />
+                </div>
+              </div>
+              <Button 
+                onClick={handleSaveName} 
+                disabled={savingName}
+                size="sm"
+                className="w-full"
+              >
+                {savingName ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : null}
+                {language === 'nl' ? 'Naam opslaan' : 'Save Name'}
+              </Button>
+            </CardContent>
+          </Card>
+
           {/* Profile Photo */}
           <Card>
             <CardHeader className="pb-2">

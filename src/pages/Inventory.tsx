@@ -615,8 +615,7 @@ export default function Inventory() {
                   value={bulkImportText}
                   onChange={(e) => setBulkImportText(e.target.value)}
                   rows={6}
-                  placeholder={'SKU123,25
-SKU456,10'}
+                  placeholder={"SKU123,25\nSKU456,10"}
                 />
               <p className="text-xs text-muted-foreground">
                   {language === 'nl'
