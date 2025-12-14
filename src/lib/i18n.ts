@@ -17,6 +17,13 @@ export const translations = {
     traceability: 'Traceability',
 
     // Dashboard
+    todaysSchedule: "Today's Schedule",
+    noOrdersToday: 'No work orders scheduled for today',
+    failedToLoad: 'Failed to load data',
+    yourTeam: 'Your Team',
+    all: 'All',
+    more: 'more',
+    viewCalendar: 'View calendar',
     quickActionsTitle: 'Quick actions',
     quickActionsSubtitle: 'Jump to the tools you use most',
     quickActionWorkOrders: 'Plan and track production orders',
@@ -324,6 +331,7 @@ export const translations = {
     measurementRecordedAction: 'Measurement Recorded',
     batchScannedAction: 'Batch Scanned',
     labelPrintedAction: 'Label Printed',
+    failedLoadActivity: 'Failed to load activity',
     activeOperatorsTitle: 'Active Operators',
     operatorsCurrentlyWorking: 'Operators currently working',
     noOperatorsFound: 'No operators found',
@@ -567,6 +575,13 @@ export const translations = {
     traceability: 'Traceerbaarheid',
 
     // Dashboard
+    todaysSchedule: 'Planning Vandaag',
+    noOrdersToday: 'Geen werkorders gepland voor vandaag',
+    failedToLoad: 'Laden mislukt',
+    yourTeam: 'Je Collega\'s',
+    all: 'Alles',
+    more: 'meer',
+    viewCalendar: 'Bekijk kalender',
     quickActionsTitle: 'Snelle acties',
     quickActionsSubtitle: 'Ga direct naar de tools die je het meest gebruikt',
     quickActionWorkOrders: 'Plan en volg productieorders op',
@@ -874,6 +889,7 @@ export const translations = {
     measurementRecordedAction: 'Meting Vastgelegd',
     batchScannedAction: 'Batch Gescand',
     labelPrintedAction: 'Label Afgedrukt',
+    failedLoadActivity: 'Activiteit laden mislukt',
     activeOperatorsTitle: 'Actieve Operators',
     operatorsCurrentlyWorking: 'Operators die momenteel werken',
     noOperatorsFound: 'Geen operators gevonden',

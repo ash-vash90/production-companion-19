@@ -11,6 +11,7 @@ import { CreateWorkOrderDialog } from '@/components/CreateWorkOrderDialog';
 import { useResilientQuery } from '@/hooks/useResilientQuery';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
+import { CardSectionHeader } from '@/components/CardSectionHeader';
 
 interface WorkOrderWithItems {
   id: string;
@@ -179,14 +180,14 @@ export function ProductionOverview() {
   if (error && (!workOrders || workOrders.length === 0)) {
     return (
       <section>
-        <div className="flex items-center gap-2 mb-4">
-          <Package className="h-5 w-5 text-warning" />
-          <h2 className="font-semibold">{t('activeWorkOrdersTitle')}</h2>
-        </div>
+        <CardSectionHeader
+          icon={<Package className="h-5 w-5 text-warning" />}
+          title={t('activeWorkOrdersTitle')}
+        />
         <div className="flex items-center justify-center py-8 gap-3 text-muted-foreground">
           <AlertCircle className="h-5 w-5" />
-          <span className="text-sm">Failed to load work orders</span>
-          <Button variant="ghost" size="sm" onClick={() => refetch()}>
+          <span className="text-sm">{t('failedLoadWorkOrders')}</span>
+          <Button variant="outline" size="sm" onClick={() => refetch()}>
             <RefreshCw className="h-4 w-4" />
           </Button>
         </div>
@@ -197,41 +198,38 @@ export function ProductionOverview() {
   return (
     <>
       <section>
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
-          <div className="flex items-center gap-2 flex-wrap">
-            <Package className="h-5 w-5 text-warning" />
-            <h2 className="font-semibold">{t('activeWorkOrdersTitle')}</h2>
-            <Badge variant="warning">{inProgressCount}</Badge>
-            {plannedCount > 0 && !showAll && (
-              <span className="text-sm text-muted-foreground">
-                +{plannedCount} {language === 'nl' ? 'gepland' : 'planned'}
-              </span>
-            )}
-            {isStale && (
-              <Button variant="ghost" size="sm" className="h-6 px-2" onClick={() => refetch()}>
-                <RefreshCw className="h-3 w-3" />
+        <CardSectionHeader
+          icon={<Package className="h-5 w-5 text-warning" />}
+          title={t('activeWorkOrdersTitle')}
+          chipLabel={inProgressCount}
+          chipVariant="warning"
+          actions={(
+            <div className="flex items-center gap-2">
+              {(plannedCount > 0 || showAll) && (
+                <Button variant="outline" size="sm" onClick={() => setShowAll(!showAll)}>
+                  <Eye className="h-4 w-4 mr-1.5" />
+                  {showAll ? t('active') : t('all')}
+                </Button>
+              )}
+              <Button variant="default" size="sm" onClick={() => setDialogOpen(true)}>
+                <Plus className="mr-1.5 h-4 w-4" />
+                {t('createWorkOrder')}
               </Button>
-            )}
+              {isStale && (
+                <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => refetch()}>
+                  <RefreshCw className="h-3.5 w-3.5" />
+                </Button>
+              )}
+            </div>
+          )}
+        />
+        {plannedCount > 0 && !showAll && (
+          <div className="flex items-center gap-2 mb-3 text-sm text-muted-foreground">
+            <Badge variant="outline" className="text-[11px]">
+              +{plannedCount} {t('planned')}
+            </Badge>
           </div>
-          <div className="flex items-center gap-2">
-            {(plannedCount > 0 || showAll) && (
-              <Button variant="ghost" size="sm" onClick={() => setShowAll(!showAll)}>
-                <Eye className="h-4 w-4 mr-1.5" />
-                {showAll
-                  ? language === 'nl'
-                    ? 'Actief'
-                    : 'Active'
-                  : language === 'nl'
-                    ? 'Alles'
-                    : 'All'}
-              </Button>
-            )}
-            <Button variant="default" size="sm" onClick={() => setDialogOpen(true)}>
-              <Plus className="mr-1.5 h-4 w-4" />
-              {language === 'nl' ? 'Nieuw' : 'New'}
-            </Button>
-          </div>
-        </div>
+        )}
 
         {displayedOrders.length > 0 ? (
           <div className="space-y-3">
@@ -265,11 +263,7 @@ export function ProductionOverview() {
           </div>
         ) : (
           <div className="py-12 text-center text-sm text-muted-foreground">
-            {showAll
-              ? t('noActiveWorkOrders')
-              : language === 'nl'
-                ? 'Geen actieve werkorders'
-                : 'No work orders in progress'}
+            {showAll ? t('noActiveWorkOrders') : t('noWorkOrdersYet')}
           </div>
         )}
       </section>
