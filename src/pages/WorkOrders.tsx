@@ -16,7 +16,7 @@ import { WorkOrderFilters, FilterState, GroupByOption } from '@/components/worko
 import { WorkOrderCard } from '@/components/workorders/WorkOrderCard';
 import { WorkOrderTableRow, WorkOrderRowData } from '@/components/workorders/WorkOrderTableRow';
 import { CancelWorkOrderDialog } from '@/components/workorders/CancelWorkOrderDialog';
-import { useWorkOrders, invalidateWorkOrdersCache, WorkOrderListItem } from '@/hooks/useWorkOrders';
+import { usePaginatedWorkOrders, invalidateWorkOrdersCache, WorkOrderListItem, WorkOrderQueryFilters } from '@/hooks/useWorkOrders';
 import { prefetchProductionOnHover } from '@/services/prefetchService';
 import { ResponsiveVirtualizedGrid } from '@/components/VirtualizedList';
 import { PullToRefresh } from '@/components/PullToRefresh';
@@ -24,7 +24,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Plus, Package, RotateCcw, LayoutGrid, Table as TableIcon, Filter, Loader2, ChevronDown, ChevronRight, CalendarDays, ListChecks } from 'lucide-react';
-import { format, differenceInDays, parseISO } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { WorkOrderActions } from '@/components/workorders/WorkOrderActions';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
@@ -62,12 +62,6 @@ const WorkOrders = () => {
   const [cancellingWorkOrder, setCancellingWorkOrder] = useState<{ id: string; wo_number: string } | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
   
-  // Use the resilient work orders hook - disable realtime to reduce memory/subscriptions
-  const { workOrders, loading, error, refetch } = useWorkOrders({
-    excludeCancelled: true,
-    enableRealtime: false,
-  });
-  
   // Track if component is mounted to prevent state updates after unmount
   const isMountedRef = useRef(true);
   useEffect(() => {
@@ -104,6 +98,23 @@ const WorkOrders = () => {
       return 'cards';
     }
   });
+
+  const serverFilters: WorkOrderQueryFilters = useMemo(() => ({
+    statusFilter: filters.statusFilter !== 'all' ? filters.statusFilter : undefined,
+    productFilter: filters.productFilter !== 'all' ? filters.productFilter : undefined,
+    customerFilter: filters.customerFilter !== 'all' ? filters.customerFilter : undefined,
+    searchTerm: filters.searchTerm || undefined,
+    ageFilter: filters.ageFilter !== 'all' ? (filters.ageFilter as WorkOrderQueryFilters['ageFilter']) : undefined,
+    deliveryMonthFilter: filters.deliveryMonthFilter !== 'all' ? filters.deliveryMonthFilter : undefined,
+    createdMonthFilter: filters.createdMonthFilter !== 'all' ? filters.createdMonthFilter : undefined,
+    batchSizeFilter: filters.batchSizeFilter !== 'all' ? (filters.batchSizeFilter as WorkOrderQueryFilters['batchSizeFilter']) : undefined,
+  }), [filters]);
+
+  const { workOrders, loading, error, loadMore, hasMore, reset, isLoadingMore } = usePaginatedWorkOrders({
+    excludeCancelled: true,
+    pageSize: 25,
+    filters: serverFilters,
+  });
   
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
@@ -127,6 +138,12 @@ const WorkOrders = () => {
       navigate('/auth');
     }
   }, [user, navigate]);
+
+  useEffect(() => {
+    if (error) {
+      toast.error(t('error'), { description: error.message });
+    }
+  }, [error, t]);
 
   // Reset all filters
   const resetFilters = useCallback(() => {
@@ -172,71 +189,7 @@ const WorkOrders = () => {
   }, [workOrders]);
 
   // Filter logic
-  const filteredOrders = useMemo(() => {
-    let filtered = [...workOrders];
-
-    if (filters.searchTerm) {
-      const term = filters.searchTerm.toLowerCase();
-      filtered = filtered.filter(wo =>
-        wo.wo_number.toLowerCase().includes(term) ||
-        wo.product_type.toLowerCase().includes(term) ||
-        wo.customer_name?.toLowerCase().includes(term)
-      );
-    }
-
-    if (filters.statusFilter !== 'all') {
-      filtered = filtered.filter(wo => wo.status === filters.statusFilter);
-    }
-
-    if (filters.productFilter !== 'all') {
-      filtered = filtered.filter(wo => wo.product_type === filters.productFilter);
-    }
-
-    if (filters.customerFilter !== 'all') {
-      filtered = filtered.filter(wo => wo.customer_name === filters.customerFilter);
-    }
-
-    if (filters.ageFilter !== 'all') {
-      const now = new Date();
-      filtered = filtered.filter(wo => {
-        const createdDate = parseISO(wo.created_at);
-        const ageDays = differenceInDays(now, createdDate);
-        switch (filters.ageFilter) {
-          case 'today': return ageDays === 0;
-          case 'week': return ageDays <= 7;
-          case 'month': return ageDays <= 30;
-          case 'older': return ageDays > 30;
-          default: return true;
-        }
-      });
-    }
-
-    if (filters.deliveryMonthFilter !== 'all') {
-      filtered = filtered.filter(wo => {
-        if (!wo.shipping_date) return false;
-        return format(parseISO(wo.shipping_date), 'yyyy-MM') === filters.deliveryMonthFilter;
-      });
-    }
-
-    if (filters.createdMonthFilter !== 'all') {
-      filtered = filtered.filter(wo => {
-        return format(parseISO(wo.created_at), 'yyyy-MM') === filters.createdMonthFilter;
-      });
-    }
-
-    if (filters.batchSizeFilter !== 'all') {
-      filtered = filtered.filter(wo => {
-        switch (filters.batchSizeFilter) {
-          case 'small': return wo.batch_size <= 5;
-          case 'medium': return wo.batch_size > 5 && wo.batch_size <= 20;
-          case 'large': return wo.batch_size > 20;
-          default: return true;
-        }
-      });
-    }
-
-    return filtered;
-  }, [filters, workOrders]);
+  const filteredOrders = useMemo(() => workOrders, [workOrders]);
 
   const backlogOrders = useMemo(() => filteredOrders.filter(wo => ['planned', 'on_hold'].includes(wo.status)), [filteredOrders]);
 
@@ -374,13 +327,13 @@ const WorkOrders = () => {
       toast.success(t('success'), { description: t('workOrderCancelled') });
       setCancelDialogOpen(false);
       setCancellingWorkOrder(null);
-      if (isMountedRef.current) refetch();
+      if (isMountedRef.current) reset();
     } catch (error: any) {
       toast.error(t('error'), { description: error.message });
     } finally {
       setIsCancelling(false);
     }
-  }, [cancellingWorkOrder, t, refetch]);
+  }, [cancellingWorkOrder, reset, t]);
 
   const canManageProduction = isAdmin || isSupervisor;
 
@@ -410,11 +363,11 @@ const WorkOrders = () => {
       if (error) throw error;
 
       toast.success(t('success'), { description: t('statusUpdated') || t('saved') });
-      if (isMountedRef.current) refetch();
+      if (isMountedRef.current) reset();
     } catch (error: any) {
       toast.error(t('error'), { description: error.message });
     }
-  }, [canManageProduction, t, workOrders, refetch]);
+  }, [canManageProduction, reset, t, workOrders]);
 
   const handlePrint = useCallback((workOrderId: string) => {
     window.open(`/production/${workOrderId}`, '_blank', 'noopener,noreferrer');
@@ -499,9 +452,9 @@ const WorkOrders = () => {
   // Pull to refresh handler
   const handlePullRefresh = useCallback(async () => {
     invalidateWorkOrdersCache();
-    await refetch();
+    reset();
     toast.success(t('refreshed') || 'Refreshed');
-  }, [refetch, t]);
+  }, [reset, t]);
 
   return (
     <ProtectedRoute>
@@ -751,14 +704,29 @@ const WorkOrders = () => {
                 ))}
               </div>
             )}
+
+            {!loading && hasMore && (
+              <div className="flex justify-center mt-4">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={loadMore}
+                  disabled={isLoadingMore}
+                  className="gap-2"
+                >
+                  {isLoadingMore && <Loader2 className="h-4 w-4 animate-spin" />}
+                  {t('loadMore') || 'Load more'}
+                </Button>
+              </div>
+            )}
           </div>
         </div>
         </PullToRefresh>
 
-        <CreateWorkOrderDialog 
-          open={dialogOpen} 
-          onOpenChange={setDialogOpen} 
-          onSuccess={refetch}
+        <CreateWorkOrderDialog
+          open={dialogOpen}
+          onOpenChange={setDialogOpen}
+          onSuccess={reset}
         />
 
         <CancelWorkOrderDialog
