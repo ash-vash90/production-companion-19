@@ -4,11 +4,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { Link2, CheckCircle2, AlertCircle, Loader2, ScanBarcode } from 'lucide-react';
+import { Link2, CheckCircle2, AlertCircle, Loader2, ScanBarcode, Search, Star, Package } from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
+import { nl, enUS } from 'date-fns/locale';
 
 interface SubAssemblyLinkDialogProps {
   open: boolean;
@@ -18,6 +22,19 @@ interface SubAssemblyLinkDialogProps {
   expectedComponentType: 'SENSOR' | 'MLA' | 'HMI' | 'TRANSMITTER';
   stepExecutionId: string;
   onComplete: () => void;
+  parentWorkOrderId?: string;
+  parentCustomerName?: string;
+}
+
+interface AvailableComponent {
+  id: string;
+  serial_number: string;
+  completed_at: string;
+  work_order: {
+    wo_number: string;
+    customer_name: string | null;
+    id: string;
+  };
 }
 
 const COMPONENT_PREFIXES: Record<string, string> = {
@@ -35,6 +52,8 @@ const SubAssemblyLinkDialog: React.FC<SubAssemblyLinkDialogProps> = ({
   expectedComponentType,
   stepExecutionId,
   onComplete,
+  parentWorkOrderId,
+  parentCustomerName,
 }) => {
   const { user } = useAuth();
   const { t, language } = useLanguage();
@@ -47,13 +66,18 @@ const SubAssemblyLinkDialog: React.FC<SubAssemblyLinkDialogProps> = ({
     childItem?: any;
   } | null>(null);
   const [existingLink, setExistingLink] = useState<any>(null);
+  const [availableComponents, setAvailableComponents] = useState<AvailableComponent[]>([]);
+  const [loadingAvailable, setLoadingAvailable] = useState(false);
+  const [searchFilter, setSearchFilter] = useState('');
 
-  // Check for existing link on open
+  // Check for existing link and fetch available components on open
   useEffect(() => {
     if (open) {
       checkExistingLink();
+      fetchAvailableComponents();
       setSerialNumber('');
       setValidationResult(null);
+      setSearchFilter('');
     }
   }, [open, parentItemId, expectedComponentType]);
 
@@ -74,6 +98,58 @@ const SubAssemblyLinkDialog: React.FC<SubAssemblyLinkDialogProps> = ({
       .maybeSingle();
     
     setExistingLink(data);
+  };
+
+  const fetchAvailableComponents = async () => {
+    setLoadingAvailable(true);
+    try {
+      // Get all completed items of the expected type
+      const { data: completedItems, error } = await supabase
+        .from('work_order_items')
+        .select(`
+          id,
+          serial_number,
+          completed_at,
+          work_order:work_orders!work_order_items_work_order_id_fkey(
+            id,
+            wo_number,
+            customer_name
+          )
+        `)
+        .eq('status', 'completed')
+        .eq('product_type', expectedComponentType)
+        .order('completed_at', { ascending: false })
+        .limit(50);
+
+      if (error) throw error;
+
+      // Get all already-linked child items
+      const { data: linkedItems } = await supabase
+        .from('sub_assemblies')
+        .select('child_item_id');
+
+      const linkedIds = new Set(linkedItems?.map(l => l.child_item_id) || []);
+
+      // Filter out already linked items
+      const available = (completedItems || [])
+        .filter(item => !linkedIds.has(item.id))
+        .map(item => ({
+          id: item.id,
+          serial_number: item.serial_number,
+          completed_at: item.completed_at || '',
+          work_order: {
+            id: item.work_order?.id || '',
+            wo_number: item.work_order?.wo_number || '',
+            customer_name: item.work_order?.customer_name || null,
+          },
+        }));
+
+      setAvailableComponents(available);
+    } catch (error) {
+      console.error('Error fetching available components:', error);
+    } finally {
+      setLoadingAvailable(false);
+    }
   };
 
   const validateSerialNumber = async (serial: string) => {
@@ -236,6 +312,10 @@ const SubAssemblyLinkDialog: React.FC<SubAssemblyLinkDialogProps> = ({
     }
   };
 
+  const selectComponent = (component: AvailableComponent) => {
+    setSerialNumber(component.serial_number);
+  };
+
   const componentLabel = {
     SENSOR: language === 'nl' ? 'Sensor' : 'Sensor',
     MLA: 'MLA',
@@ -243,9 +323,26 @@ const SubAssemblyLinkDialog: React.FC<SubAssemblyLinkDialogProps> = ({
     TRANSMITTER: language === 'nl' ? 'Transmitter' : 'Transmitter',
   }[expectedComponentType];
 
+  // Filter and sort available components
+  const filteredComponents = availableComponents
+    .filter(c => 
+      searchFilter === '' || 
+      c.serial_number.toLowerCase().includes(searchFilter.toLowerCase()) ||
+      c.work_order.wo_number.toLowerCase().includes(searchFilter.toLowerCase()) ||
+      (c.work_order.customer_name?.toLowerCase().includes(searchFilter.toLowerCase()))
+    )
+    .sort((a, b) => {
+      // Prioritize same customer/work order
+      const aIsRecommended = parentCustomerName && a.work_order.customer_name === parentCustomerName;
+      const bIsRecommended = parentCustomerName && b.work_order.customer_name === parentCustomerName;
+      if (aIsRecommended && !bIsRecommended) return -1;
+      if (!aIsRecommended && bIsRecommended) return 1;
+      return 0;
+    });
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[calc(100%-2rem)] max-w-md">
+      <DialogContent className="w-[calc(100%-2rem)] max-w-lg max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Link2 className="h-5 w-5" />
@@ -253,16 +350,16 @@ const SubAssemblyLinkDialog: React.FC<SubAssemblyLinkDialogProps> = ({
           </DialogTitle>
           <DialogDescription>
             {language === 'nl' 
-              ? `Scan of voer het serienummer in van de ${componentLabel} om te koppelen aan ${parentSerialNumber}`
-              : `Scan or enter the serial number of the ${componentLabel} to link to ${parentSerialNumber}`}
+              ? `Scan of selecteer een ${componentLabel} om te koppelen aan ${parentSerialNumber}`
+              : `Scan or select a ${componentLabel} to link to ${parentSerialNumber}`}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
+        <div className="flex-1 overflow-hidden flex flex-col space-y-4 py-2">
           {existingLink ? (
-            <div className="p-4 border rounded-lg bg-success/10 border-success/30">
+            <div className="p-4 border rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800">
               <div className="flex items-center gap-2 mb-2">
-                <CheckCircle2 className="h-5 w-5 text-success" />
+                <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
                 <span className="font-medium">
                   {language === 'nl' ? 'Al gekoppeld' : 'Already linked'}
                 </span>
@@ -270,23 +367,24 @@ const SubAssemblyLinkDialog: React.FC<SubAssemblyLinkDialogProps> = ({
               <div className="flex items-center gap-2">
                 <Badge variant="outline">{expectedComponentType}</Badge>
                 <span className="font-mono font-medium">{existingLink.child_item.serial_number}</span>
-                <Badge className="bg-success text-success-foreground text-xs">
+                <Badge variant="success" className="text-xs">
                   {existingLink.child_item.status}
                 </Badge>
               </div>
             </div>
           ) : (
             <>
+              {/* Manual Input Section */}
               <div className="space-y-2">
                 <Label htmlFor="serialInput" className="flex items-center gap-2">
                   <ScanBarcode className="h-4 w-4" />
-                  {language === 'nl' ? 'Serienummer' : 'Serial Number'}
+                  {language === 'nl' ? 'Scan of type serienummer' : 'Scan or type serial number'}
                 </Label>
                 <Input
                   id="serialInput"
                   value={serialNumber}
                   onChange={(e) => setSerialNumber(e.target.value.toUpperCase())}
-                  placeholder={`${COMPONENT_PREFIXES[expectedComponentType]}XXXXXXXX-XXX`}
+                  placeholder={`${COMPONENT_PREFIXES[expectedComponentType]}XXXX`}
                   className="font-mono text-lg h-12"
                   autoFocus
                   autoComplete="off"
@@ -308,28 +406,128 @@ const SubAssemblyLinkDialog: React.FC<SubAssemblyLinkDialogProps> = ({
               {validationResult && !validating && (
                 <div className={`p-3 rounded-lg border ${
                   validationResult.valid 
-                    ? 'bg-success/10 border-success/30' 
+                    ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800' 
                     : 'bg-destructive/10 border-destructive/30'
                 }`}>
                   <div className="flex items-center gap-2">
                     {validationResult.valid ? (
-                      <CheckCircle2 className="h-4 w-4 text-success" />
+                      <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                     ) : (
                       <AlertCircle className="h-4 w-4 text-destructive" />
                     )}
                     <span className={`text-sm font-medium ${
-                      validationResult.valid ? 'text-success' : 'text-destructive'
+                      validationResult.valid ? 'text-emerald-700 dark:text-emerald-300' : 'text-destructive'
                     }`}>
                       {validationResult.message}
                     </span>
                   </div>
                 </div>
               )}
+
+              {/* Available Components Section */}
+              <Separator />
+              
+              <div className="flex-1 overflow-hidden flex flex-col">
+                <div className="flex items-center justify-between mb-2">
+                  <Label className="flex items-center gap-2">
+                    <Package className="h-4 w-4" />
+                    {language === 'nl' ? 'Beschikbare componenten' : 'Available components'}
+                  </Label>
+                  <span className="text-xs text-muted-foreground">
+                    {filteredComponents.length} {language === 'nl' ? 'beschikbaar' : 'available'}
+                  </span>
+                </div>
+
+                {/* Search filter */}
+                <div className="relative mb-2">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    value={searchFilter}
+                    onChange={(e) => setSearchFilter(e.target.value)}
+                    placeholder={language === 'nl' ? 'Zoeken...' : 'Search...'}
+                    className="pl-9 h-9"
+                  />
+                </div>
+
+                {loadingAvailable ? (
+                  <div className="flex items-center justify-center py-8 text-muted-foreground">
+                    <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                    {language === 'nl' ? 'Laden...' : 'Loading...'}
+                  </div>
+                ) : filteredComponents.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Package className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">
+                      {language === 'nl' 
+                        ? 'Geen beschikbare componenten gevonden' 
+                        : 'No available components found'}
+                    </p>
+                  </div>
+                ) : (
+                  <ScrollArea className="flex-1 -mx-1 px-1" style={{ maxHeight: '200px' }}>
+                    <div className="space-y-2">
+                      {filteredComponents.map((component) => {
+                        const isRecommended = parentCustomerName && 
+                          component.work_order.customer_name === parentCustomerName;
+                        const isSelected = serialNumber === component.serial_number;
+
+                        return (
+                          <button
+                            key={component.id}
+                            onClick={() => selectComponent(component)}
+                            className={`w-full text-left p-3 rounded-lg border transition-colors ${
+                              isSelected 
+                                ? 'border-primary bg-primary/5 ring-1 ring-primary' 
+                                : 'border-border hover:border-primary/50 hover:bg-accent/50'
+                            }`}
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                  {isRecommended && (
+                                    <Star className="h-3.5 w-3.5 text-amber-500 fill-amber-500" />
+                                  )}
+                                  <span className="font-mono font-medium text-sm truncate">
+                                    {component.serial_number}
+                                  </span>
+                                  {isRecommended && (
+                                    <Badge variant="warning" className="text-xs py-0">
+                                      {language === 'nl' ? 'Aanbevolen' : 'Recommended'}
+                                    </Badge>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                  <span>{component.work_order.wo_number}</span>
+                                  {component.work_order.customer_name && (
+                                    <>
+                                      <span>•</span>
+                                      <span className="truncate">{component.work_order.customer_name}</span>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="text-xs text-muted-foreground whitespace-nowrap">
+                                {component.completed_at && formatDistanceToNow(
+                                  new Date(component.completed_at),
+                                  { 
+                                    addSuffix: true, 
+                                    locale: language === 'nl' ? nl : enUS 
+                                  }
+                                )}
+                              </div>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </ScrollArea>
+                )}
+              </div>
             </>
           )}
         </div>
 
-        <DialogFooter className="flex-col gap-2 sm:flex-row">
+        <DialogFooter className="flex-col gap-2 sm:flex-row pt-2">
           <Button 
             variant="outline" 
             onClick={() => onOpenChange(false)}
