@@ -10,6 +10,7 @@ import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useResilientQuery } from '@/hooks/useResilientQuery';
 import { Skeleton } from '@/components/ui/skeleton';
+import { CardSectionHeader } from '@/components/CardSectionHeader';
 
 interface WorkOrderItem {
   id: string;
@@ -28,7 +29,7 @@ interface WorkOrder {
 }
 
 export const TodaysSchedule = memo(function TodaysSchedule() {
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
   const navigate = useNavigate();
 
   const { data: workOrders, loading, error, refetch, isStale } = useResilientQuery<WorkOrder[]>({
@@ -115,12 +116,10 @@ export const TodaysSchedule = memo(function TodaysSchedule() {
   if (loading) {
     return (
       <section>
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <Calendar className="h-5 w-5 text-primary" />
-            <h2 className="font-semibold">{language === 'nl' ? 'Planning Vandaag' : "Today's Schedule"}</h2>
-          </div>
-        </div>
+        <CardSectionHeader
+          icon={<Calendar className="h-5 w-5 text-primary" />}
+          title={t('todaysSchedule')}
+        />
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
             <div key={i} className="flex items-center gap-4 py-3">
@@ -137,14 +136,14 @@ export const TodaysSchedule = memo(function TodaysSchedule() {
   if (error && displayWorkOrders.length === 0) {
     return (
       <section>
-        <div className="flex items-center gap-2 mb-4">
-          <Calendar className="h-5 w-5 text-primary" />
-          <h2 className="font-semibold">{language === 'nl' ? 'Planning Vandaag' : "Today's Schedule"}</h2>
-        </div>
+        <CardSectionHeader
+          icon={<Calendar className="h-5 w-5 text-primary" />}
+          title={t('todaysSchedule')}
+        />
         <div className="flex items-center justify-center py-8 gap-3 text-muted-foreground">
           <AlertCircle className="h-5 w-5" />
-          <span className="text-sm">Failed to load</span>
-          <Button variant="ghost" size="sm" onClick={() => refetch()}>
+          <span className="text-sm">{t('failedToLoad')}</span>
+          <Button variant="outline" size="sm" onClick={() => refetch()}>
             <RefreshCw className="h-4 w-4" />
           </Button>
         </div>
@@ -154,20 +153,18 @@ export const TodaysSchedule = memo(function TodaysSchedule() {
 
   return (
     <section>
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <Calendar className="h-5 w-5 text-primary" />
-          <h2 className="font-semibold">{language === 'nl' ? 'Planning Vandaag' : "Today's Schedule"}</h2>
-          {displayWorkOrders.length > 0 && (
-            <Badge variant="secondary" className="ml-1">{displayWorkOrders.length}</Badge>
-          )}
-        </div>
-        {isStale && (
-          <Button variant="ghost" size="sm" className="h-7" onClick={() => refetch()}>
-            <RefreshCw className="h-3 w-3" />
-          </Button>
-        )}
-      </div>
+      <CardSectionHeader
+        icon={<Calendar className="h-5 w-5 text-primary" />}
+        title={t('todaysSchedule')}
+        chipLabel={displayWorkOrders.length > 0 ? displayWorkOrders.length : undefined}
+        actions={
+          isStale ? (
+            <Button variant="outline" size="sm" className="h-7" onClick={() => refetch()}>
+              <RefreshCw className="h-3 w-3" />
+            </Button>
+          ) : undefined
+        }
+      />
 
       {displayWorkOrders.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 text-center">
@@ -175,9 +172,7 @@ export const TodaysSchedule = memo(function TodaysSchedule() {
             <Calendar className="h-6 w-6 text-muted-foreground" />
           </div>
           <p className="text-sm text-muted-foreground">
-            {language === 'nl' 
-              ? 'Geen werkorders gepland voor vandaag' 
-              : 'No work orders scheduled for today'}
+            {t('noOrdersToday')}
           </p>
         </div>
       ) : (
@@ -231,18 +226,18 @@ export const TodaysSchedule = memo(function TodaysSchedule() {
 
       {displayWorkOrders.length > 5 && (
         <p className="text-xs text-muted-foreground text-center mt-3">
-          +{displayWorkOrders.length - 5} {language === 'nl' ? 'meer' : 'more'}
+          +{displayWorkOrders.length - 5} {t('more')}
         </p>
       )}
 
-      <Button 
-        variant="ghost" 
-        size="sm" 
+      <Button
+        variant="outline"
+        size="sm"
         className="w-full mt-4 text-muted-foreground hover:text-foreground"
         onClick={() => navigate('/calendar')}
       >
         <Calendar className="h-4 w-4 mr-2" />
-        {language === 'nl' ? 'Bekijk kalender' : 'View calendar'}
+        {t('viewCalendar')}
         <ArrowRight className="h-4 w-4 ml-auto" />
       </Button>
     </section>

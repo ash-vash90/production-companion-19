@@ -453,7 +453,7 @@ const WorkOrders = () => {
             {/* View Toggle */}
             <div className="flex items-center border rounded-md">
               <Button
-                variant={viewMode === 'cards' ? 'secondary' : 'ghost'}
+                variant={viewMode === 'cards' ? 'default' : 'outline'}
                 size="sm"
                 className="h-8 px-2 rounded-r-none"
                 onClick={() => setViewMode('cards')}
@@ -461,7 +461,7 @@ const WorkOrders = () => {
                 <LayoutGrid className="h-4 w-4" />
               </Button>
               <Button
-                variant={viewMode === 'table' ? 'secondary' : 'ghost'}
+                variant={viewMode === 'table' ? 'default' : 'outline'}
                 size="sm"
                 className="h-8 px-2 rounded-l-none"
                 onClick={() => setViewMode('table')}
