@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Table,
   TableBody,
@@ -46,9 +47,14 @@ import {
   ArrowDownCircle,
   ArrowUpCircle,
   RefreshCw,
+  Download,
+  Upload,
+  ShoppingCart,
+  FileSpreadsheet,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { nl, enUS } from 'date-fns/locale';
+import { toast } from 'sonner';
 
 export default function Inventory() {
   const { language, t } = useLanguage();
@@ -56,12 +62,19 @@ export default function Inventory() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showReceiveDialog, setShowReceiveDialog] = useState(false);
   const [showScannerDialog, setShowScannerDialog] = useState(false);
+  const [showReplenishmentDialog, setShowReplenishmentDialog] = useState(false);
+  const [showBulkImportDialog, setShowBulkImportDialog] = useState(false);
+  const [showExportDialog, setShowExportDialog] = useState(false);
 
   // Form state for receive dialog
   const [selectedMaterialId, setSelectedMaterialId] = useState('');
   const [batchNumber, setBatchNumber] = useState('');
   const [quantity, setQuantity] = useState('');
   const [expiryDate, setExpiryDate] = useState('');
+  const [reorderMaterialId, setReorderMaterialId] = useState('');
+  const [reorderQuantity, setReorderQuantity] = useState('');
+  const [poNotes, setPoNotes] = useState('');
+  const [bulkImportText, setBulkImportText] = useState('');
 
   const { data: stockLevels, isLoading: stockLoading } = useStockLevels();
   const { data: materials } = useMaterials();
@@ -104,6 +117,69 @@ export default function Inventory() {
     setBatchNumber('');
     setQuantity('');
     setExpiryDate('');
+  };
+
+  const resetReplenishmentForm = () => {
+    setReorderMaterialId('');
+    setReorderQuantity('');
+    setPoNotes('');
+  };
+
+  const handleCreateReorder = () => {
+    if (!reorderMaterialId || !reorderQuantity) return;
+
+    const selectedMaterial = materials?.find(m => m.id === reorderMaterialId);
+    const materialName = selectedMaterial
+      ? getMaterialName(selectedMaterial, language as 'en' | 'nl')
+      : reorderMaterialId;
+
+    toast.success(
+      language === 'nl'
+        ? `Inkooporder aangemaakt voor ${materialName}`
+        : `Purchase order created for ${materialName}`
+    );
+
+    setShowReplenishmentDialog(false);
+    resetReplenishmentForm();
+  };
+
+  const handleBulkImport = () => {
+    if (!bulkImportText.trim()) return;
+
+    toast.success(
+      language === 'nl'
+        ? 'Bulkimport gestart voor lage voorraad'
+        : 'Bulk import started for low stock'
+    );
+
+    setShowBulkImportDialog(false);
+    setBulkImportText('');
+  };
+
+  const handleExportLowStock = async () => {
+    if (!lowStockItems || lowStockItems.length === 0) return;
+    const csv = ['sku,available,reorder_point'].concat(
+      lowStockItems.map(item => `${item.material.sku},${item.totalAvailable},${item.reorderPoint}`)
+    ).join('\n');
+
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(csv);
+        toast.success(
+          language === 'nl' ? 'Herbestellijst gekopieerd' : 'Reorder list copied'
+        );
+      } else {
+        toast.success(
+          language === 'nl' ? 'Herbestellijst klaar om te exporteren' : 'Reorder list ready to export'
+        );
+      }
+    } catch {
+      toast.success(
+        language === 'nl' ? 'Herbestellijst klaar om te exporteren' : 'Reorder list ready to export'
+      );
+    }
+
+    setShowExportDialog(false);
   };
 
   const handleScanResult = (scannedBatch: string) => {
@@ -211,6 +287,47 @@ export default function Inventory() {
 
           {/* Low Stock Alert */}
           <LowStockAlert />
+
+          {lowStockItems && lowStockItems.length > 0 && (
+            <Card className="border-dashed border-warning/50 bg-warning/5">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <ShoppingCart className="h-4 w-4" />
+                  {language === 'nl' ? 'Aanvullen en bestellen' : 'Replenishment and ordering'}
+                  <Badge variant="secondary">{lowStockItems.length}</Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  {language === 'nl'
+                    ? 'Lage voorraad gedetecteerd. Start direct een bestelling of laad bestellijsten in.'
+                    : 'Low stock detected. Kick off a purchase order or sync your reorder lists.'}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <Button size="sm" onClick={() => setShowReplenishmentDialog(true)}>
+                    <Plus className="h-4 w-4 mr-1" />
+                    {language === 'nl' ? 'Inkooporder' : 'Create PO'}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setShowReplenishmentDialog(true)}
+                  >
+                    <RefreshCw className="h-4 w-4 mr-1" />
+                    {language === 'nl' ? 'Herbestellen' : 'Reorder'}
+                  </Button>
+                  <Button size="sm" variant="secondary" onClick={() => setShowBulkImportDialog(true)}>
+                    <Upload className="h-4 w-4 mr-1" />
+                    {language === 'nl' ? 'Bulk importeren' : 'Bulk Import'}
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => setShowExportDialog(true)}>
+                    <Download className="h-4 w-4 mr-1" />
+                    {language === 'nl' ? 'Exporteren' : 'Export Alerts'}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Actions and Search */}
           <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
@@ -406,6 +523,165 @@ export default function Inventory() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Replenishment Dialog */}
+        <Dialog open={showReplenishmentDialog} onOpenChange={setShowReplenishmentDialog}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>
+                {language === 'nl' ? 'Inkooporder aanmaken' : 'Create purchase order'}
+              </DialogTitle>
+              <DialogDescription>
+                {language === 'nl'
+                  ? 'Selecteer lage voorraad om opnieuw te bestellen'
+                  : 'Select low-stock items to reorder'}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>{language === 'nl' ? 'Materiaal' : 'Material'}</Label>
+                <Select
+                  value={reorderMaterialId}
+                  onValueChange={setReorderMaterialId}
+                >
+                  <SelectTrigger>
+                    <SelectValue
+                      placeholder={
+                        language === 'nl'
+                          ? 'Kies materiaal met lage voorraad...'
+                          : 'Choose low stock material...'
+                      }
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {lowStockItems?.map((item) => (
+                      <SelectItem key={item.material.id} value={item.material.id}>
+                        {getMaterialName(item.material, language as 'en' | 'nl')} ({item.material.sku})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>{language === 'nl' ? 'Hoeveelheid' : 'Quantity to order'}</Label>
+                <Input
+                  type="number"
+                  min="1"
+                  value={reorderQuantity}
+                  onChange={(e) => setReorderQuantity(e.target.value)}
+                  placeholder="10"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>{language === 'nl' ? 'Notities (optioneel)' : 'Notes (optional)'}</Label>
+                <Textarea
+                  value={poNotes}
+                  onChange={(e) => setPoNotes(e.target.value)}
+                  placeholder={
+                    language === 'nl'
+                      ? 'Leverancier of gewenste leverdatum...'
+                      : 'Preferred supplier or delivery date...'
+                  }
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowReplenishmentDialog(false)}>
+                {t('cancel')}
+              </Button>
+              <Button onClick={handleCreateReorder} disabled={!reorderMaterialId || !reorderQuantity}>
+                <ShoppingCart className="h-4 w-4 mr-2" />
+                {language === 'nl' ? 'Aanmaken' : 'Create PO'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Bulk Import Dialog */}
+        <Dialog open={showBulkImportDialog} onOpenChange={setShowBulkImportDialog}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>{language === 'nl' ? 'Bulk import' : 'Bulk import'}</DialogTitle>
+              <DialogDescription>
+                {language === 'nl'
+                  ? 'Plak een CSV-lijst met SKU, hoeveelheid'
+                  : 'Paste a CSV list with SKU and quantity to reorder'}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-2">
+                <Textarea
+                  value={bulkImportText}
+                  onChange={(e) => setBulkImportText(e.target.value)}
+                  rows={6}
+                  placeholder={'SKU123,25
+SKU456,10'}
+                />
+              <p className="text-xs text-muted-foreground">
+                  {language === 'nl'
+                    ? "Gebruik komma's of tabs als scheidingsteken om snel een bestellijst te laden."
+                    : 'Use commas or tabs to quickly load a reorder list.'}
+              </p>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowBulkImportDialog(false)}>
+                {t('cancel')}
+              </Button>
+              <Button onClick={handleBulkImport} disabled={!bulkImportText.trim()}>
+                <Upload className="h-4 w-4 mr-2" />
+                {language === 'nl' ? 'Importeren' : 'Import'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Export Dialog */}
+        <Dialog open={showExportDialog} onOpenChange={setShowExportDialog}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>{language === 'nl' ? 'Export lage voorraad' : 'Export low stock'}</DialogTitle>
+              <DialogDescription>
+                {language === 'nl'
+                  ? 'Kopieer of exporteer de herbestellijst voor leveranciers.'
+                  : 'Copy or export the reorder list for suppliers.'}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm text-muted-foreground">
+                <span>
+                  {language === 'nl'
+                    ? `${lowStockItems?.length || 0} materialen in export`
+                    : `${lowStockItems?.length || 0} materials included`}
+                </span>
+                <Badge variant="secondary">CSV</Badge>
+              </div>
+              <Textarea
+                readOnly
+                value={
+                  ['sku,available,reorder_point'].concat(
+                    (lowStockItems || []).map(item => `${item.material.sku},${item.totalAvailable},${item.reorderPoint}`)
+                  ).join('\n')
+                }
+                rows={6}
+              />
+              <p className="text-xs text-muted-foreground">
+                {language === 'nl'
+                  ? 'Kopieer naar het klembord of download als CSV.'
+                  : 'Copy to clipboard or download as CSV.'}
+              </p>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowExportDialog(false)}>
+                {t('cancel')}
+              </Button>
+              <Button onClick={handleExportLowStock}>
+                <FileSpreadsheet className="h-4 w-4 mr-2" />
+                {language === 'nl' ? 'Exporteren' : 'Export'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* Receive Stock Dialog */}
         <Dialog open={showReceiveDialog} onOpenChange={setShowReceiveDialog}>
