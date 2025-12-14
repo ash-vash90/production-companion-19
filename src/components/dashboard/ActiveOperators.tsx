@@ -169,12 +169,16 @@ export const ActiveOperators = memo(function ActiveOperators() {
 
   if (loading) {
     return (
-      <section>
-        <div className="flex items-center gap-2 mb-4">
-          <Users className="h-5 w-5 text-success" />
-          <h2 className="font-semibold">{language === 'nl' ? 'Je Collega\'s' : 'Your Team'}</h2>
+      <div className="rounded-xl border bg-card overflow-hidden">
+        <div className="p-4 sm:p-5 border-b bg-muted/30">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-success/10">
+              <Users className="h-4 w-4 text-success" />
+            </div>
+            <h2 className="font-semibold text-sm">{language === 'nl' ? 'Je Team' : 'Your Team'}</h2>
+          </div>
         </div>
-        <div className="space-y-3">
+        <div className="p-4 sm:p-5 space-y-3">
           {[1, 2, 3].map((i) => (
             <div key={i} className="flex items-center gap-3 py-2">
               <Skeleton className="h-9 w-9 rounded-full" />
@@ -185,80 +189,94 @@ export const ActiveOperators = memo(function ActiveOperators() {
             </div>
           ))}
         </div>
-      </section>
+      </div>
     );
   }
 
   if (error) {
     return (
-      <section>
-        <div className="flex items-center gap-2 mb-4">
-          <Users className="h-5 w-5 text-success" />
-          <h2 className="font-semibold">{language === 'nl' ? 'Je Collega\'s' : 'Your Team'}</h2>
+      <div className="rounded-xl border bg-card overflow-hidden">
+        <div className="p-4 sm:p-5 border-b bg-muted/30">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-success/10">
+              <Users className="h-4 w-4 text-success" />
+            </div>
+            <h2 className="font-semibold text-sm">{language === 'nl' ? 'Je Team' : 'Your Team'}</h2>
+          </div>
         </div>
-        <div className="flex items-center justify-center py-8 gap-3 text-muted-foreground">
-          <AlertCircle className="h-5 w-5" />
-          <span className="text-sm">Failed to load</span>
-          <Button variant="ghost" size="sm" onClick={handleRetry}>
-            <RefreshCw className="h-4 w-4" />
-          </Button>
+        <div className="p-4 sm:p-5">
+          <div className="flex items-center justify-center py-6 gap-3 text-muted-foreground">
+            <AlertCircle className="h-5 w-5" />
+            <span className="text-sm">Failed to load</span>
+            <Button variant="ghost" size="sm" onClick={handleRetry}>
+              <RefreshCw className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
-      </section>
+      </div>
     );
   }
 
   return (
-    <section>
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <Users className="h-5 w-5 text-success" />
-          <h2 className="font-semibold">{language === 'nl' ? 'Je Collega\'s' : 'Your Team'}</h2>
+    <div className="rounded-xl border bg-card overflow-hidden">
+      {/* Section Header */}
+      <div className="p-4 sm:p-5 border-b bg-muted/30">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-success/10">
+              <Users className="h-4 w-4 text-success" />
+            </div>
+            <h2 className="font-semibold text-sm">{language === 'nl' ? 'Je Team' : 'Your Team'}</h2>
+          </div>
           {onlineUsers.length > 0 && (
-            <Badge variant="success" className="ml-1">
+            <Badge variant="success" className="text-xs">
               <Circle className="h-1.5 w-1.5 mr-1 fill-current animate-pulse" />
-              {onlineUsers.length}
+              {onlineUsers.length} {language === 'nl' ? 'online' : 'online'}
             </Badge>
           )}
         </div>
       </div>
 
-      {onlineUsers.length > 0 ? (
-        <div className="space-y-1">
-          {onlineUsers.slice(0, 6).map((colleague) => (
-            <div
-              key={colleague.id}
-              className="flex items-center gap-3 py-2.5 px-2 -mx-2 rounded-lg hover:bg-muted/30 transition-colors"
-            >
-              <div className="relative shrink-0">
-                <Avatar className="h-9 w-9">
-                  <AvatarImage src={colleague.avatar_url || undefined} />
-                  <AvatarFallback className="text-xs bg-primary/10 text-primary font-semibold">
-                    {getInitials(colleague.name)}
-                  </AvatarFallback>
-                </Avatar>
-                <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-success border-2 border-background" />
+      {/* Content */}
+      <div className="p-4 sm:p-5">
+        {onlineUsers.length > 0 ? (
+          <div className="space-y-2">
+            {onlineUsers.slice(0, 6).map((colleague) => (
+              <div
+                key={colleague.id}
+                className="flex items-center gap-3 p-3 rounded-lg border border-border bg-background hover:border-primary/20 transition-colors"
+              >
+                <div className="relative shrink-0">
+                  <Avatar className="h-9 w-9">
+                    <AvatarImage src={colleague.avatar_url || undefined} />
+                    <AvatarFallback className="text-xs bg-primary/10 text-primary font-semibold">
+                      {getInitials(colleague.name)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-success border-2 border-card" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium text-sm truncate">{colleague.name}</div>
+                  {colleague.role && (
+                    <Badge variant={getRoleBadgeVariant(colleague.role)} className="text-[10px] mt-0.5">
+                      {getRoleLabel(colleague.role)}
+                    </Badge>
+                  )}
+                </div>
               </div>
-              <div className="flex-1 min-w-0">
-                <div className="font-medium text-sm truncate">{colleague.name}</div>
-                {colleague.role && (
-                  <Badge variant={getRoleBadgeVariant(colleague.role)} className="text-[10px] mt-0.5">
-                    {getRoleLabel(colleague.role)}
-                  </Badge>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="flex flex-col items-center justify-center py-12 text-center">
-          <div className="p-3 rounded-full bg-muted/50 mb-3">
-            <UserCircle className="h-6 w-6 text-muted-foreground" />
+            ))}
           </div>
-          <p className="text-sm text-muted-foreground">
-            {language === 'nl' ? 'Niemand anders is online' : 'No one else is online'}
-          </p>
-        </div>
-      )}
-    </section>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-8 text-center">
+            <div className="p-3 rounded-full bg-muted/50 mb-3">
+              <UserCircle className="h-5 w-5 text-muted-foreground" />
+            </div>
+            <p className="text-sm text-muted-foreground">
+              {language === 'nl' ? 'Niemand anders is online' : 'No one else is online'}
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
   );
 });

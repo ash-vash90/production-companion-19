@@ -7,7 +7,6 @@ import { RecentActivity } from '@/components/dashboard/RecentActivity';
 import { ActiveOperators } from '@/components/dashboard/ActiveOperators';
 import { TodaysSchedule } from '@/components/dashboard/TodaysSchedule';
 import { WeatherWidget } from '@/components/dashboard/WeatherWidget';
-import { Card, CardContent } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2 } from 'lucide-react';
 
@@ -98,35 +97,12 @@ const Index = () => {
           </div>
         </header>
 
-        {/* Main content - fully card-based, single column */}
+        {/* Dashboard Sections */}
         <div className="space-y-4">
-          {/* Today's Schedule Card */}
-          <Card className="rounded-xl shadow-sm border">
-            <CardContent className="p-5">
-              <TodaysSchedule />
-            </CardContent>
-          </Card>
-
-          {/* Your Team Card */}
-          <Card className="rounded-xl shadow-sm border">
-            <CardContent className="p-5">
-              <ActiveOperators />
-            </CardContent>
-          </Card>
-
-          {/* Active Work Orders Card */}
-          <Card className="rounded-xl shadow-sm border">
-            <CardContent className="p-5">
-              <ProductionOverview />
-            </CardContent>
-          </Card>
-
-          {/* Recent Activity Card */}
-          <Card className="rounded-xl shadow-sm border">
-            <CardContent className="p-5">
-              <RecentActivity />
-            </CardContent>
-          </Card>
+          <TodaysSchedule />
+          <ActiveOperators />
+          <ProductionOverview />
+          <RecentActivity />
         </div>
       </div>
     </Layout>
