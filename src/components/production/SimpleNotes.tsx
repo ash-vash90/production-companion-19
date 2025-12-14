@@ -64,12 +64,12 @@ export function SimpleNotes({ workOrderId, workOrderItemId, currentStepNumber }:
 
   const fetchNotes = async () => {
     try {
-      // Only fetch notes that are NOT replies (simple notes only)
+      // Only fetch notes with type='note' (comments live in WorkOrderComments)
       let query = supabase
         .from('work_order_notes')
         .select('*')
         .eq('work_order_id', workOrderId)
-        .is('reply_to_id', null)
+        .eq('type', 'note')
         .order('created_at', { ascending: false });
 
       if (workOrderItemId) {
@@ -95,17 +95,14 @@ export function SimpleNotes({ workOrderId, workOrderItemId, currentStepNumber }:
         }, {} as Record<string, string>);
       }
 
-      const enrichedNotes = (data || [])
-        // Only keep pure notes without mentions (comments with @mentions live in WorkOrderComments)
-        .filter((note: any) => !note.mentions || note.mentions.length === 0)
-        .map((note: any) => ({
-          id: note.id,
-          content: note.content,
-          user_id: note.user_id,
-          step_number: note.step_number,
-          created_at: note.created_at,
-          user_name: profilesMap[note.user_id] || 'Unknown',
-        }));
+      const enrichedNotes = (data || []).map((note: any) => ({
+        id: note.id,
+        content: note.content,
+        user_id: note.user_id,
+        step_number: note.step_number,
+        created_at: note.created_at,
+        user_name: profilesMap[note.user_id] || 'Unknown',
+      }));
 
       setNotes(enrichedNotes);
     } catch (error) {
@@ -130,6 +127,7 @@ export function SimpleNotes({ workOrderId, workOrderItemId, currentStepNumber }:
           content: newNote.trim(),
           reply_to_id: null,
           mentions: [],
+          type: 'note',
         });
 
       if (error) throw error;
