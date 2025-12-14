@@ -10,17 +10,16 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Search as SearchIcon, Loader2, Package, FileText, ArrowRight, User2, Printer, Clock3, Share2 } from 'lucide-react';
+import { Search as SearchIcon, Loader2, Package, FileText, ArrowRight } from 'lucide-react';
 import { formatProductType } from '@/lib/utils';
 
 interface SearchResult {
-  type: 'work_order' | 'serial_number' | 'production_report' | 'operator';
+  type: 'work_order' | 'serial_number';
   id: string;
   title: string;
   subtitle: string;
-  status?: string;
+  status: string;
   productType?: string;
-  workOrderId?: string;
 }
 
 const Search = () => {
@@ -74,7 +73,7 @@ const Search = () => {
           id,
           serial_number,
           status,
-          work_order:work_orders(id, wo_number, product_type)
+          work_order:work_orders(wo_number, product_type)
         `)
         .ilike('serial_number', `%${q}%`)
         .limit(10);
@@ -90,48 +89,6 @@ const Search = () => {
           subtitle: `${wo?.wo_number || 'Unknown'} • ${formatProductType(wo?.product_type || '')}`,
           status: item.status,
           productType: wo?.product_type,
-          workOrderId: wo?.id,
-        });
-      }
-
-      // Search production reports (completed/cancelled work orders)
-      const { data: reports, error: reportsError } = await supabase
-        .from('work_orders')
-        .select('id, wo_number, product_type, status, batch_size, completed_at')
-        .in('status', ['completed', 'cancelled'])
-        .ilike('wo_number', `%${q}%`)
-        .limit(10);
-
-      if (reportsError) throw reportsError;
-
-      for (const report of reports || []) {
-        searchResults.push({
-          type: 'production_report',
-          id: report.id,
-          title: report.wo_number,
-          subtitle: `${formatProductType(report.product_type)} • ${report.batch_size} units`,
-          status: report.status,
-          productType: report.product_type,
-        });
-      }
-
-      // Search operators
-      const { data: operators, error: operatorsError } = await supabase
-        .from('profiles')
-        .select('id, full_name, role')
-        .eq('role', 'operator')
-        .ilike('full_name', `%${q}%`)
-        .limit(10);
-
-      if (operatorsError) throw operatorsError;
-
-      for (const operator of operators || []) {
-        searchResults.push({
-          type: 'operator',
-          id: operator.id,
-          title: operator.full_name,
-          subtitle: t('operatorsCurrentlyWorking') || 'Operator',
-          status: operator.role,
         });
       }
 
@@ -152,27 +109,11 @@ const Search = () => {
   };
 
   const handleResultClick = (result: SearchResult) => {
-    switch (result.type) {
-      case 'work_order':
-        navigate(`/production/${result.id}`);
-        break;
-      case 'production_report':
-        navigate(`/production-reports/${result.id}`);
-        break;
-      case 'operator':
-        navigate('/role-management');
-        break;
-      default:
-        navigate(`/genealogy/${encodeURIComponent(result.id)}`);
-        break;
+    if (result.type === 'work_order') {
+      navigate(`/production/${result.id}`);
+    } else {
+      navigate(`/genealogy/${encodeURIComponent(result.id)}`);
     }
-  };
-
-  const typeBadgeConfig: Record<SearchResult['type'], { label: string; className?: string }> = {
-    work_order: { label: t('workOrder') },
-    serial_number: { label: t('serialNumber') },
-    production_report: { label: t('productionReport') || 'Production Report', className: 'bg-secondary text-secondary-foreground' },
-    operator: { label: t('operator'), className: 'bg-muted text-foreground' },
   };
 
   const getStatusBadgeClass = (status: string) => {
@@ -186,57 +127,6 @@ const Search = () => {
 
   const formatStatus = (status: string) => {
     return status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-  };
-
-  const getQuickActions = (result: SearchResult) => {
-    const actions: Array<{ label: string; onClick: () => void; icon: React.ReactNode }> = [];
-
-    if (result.type === 'serial_number') {
-      actions.push({
-        label: t('openGenealogy') || 'Genealogy',
-        onClick: () => navigate(`/genealogy/${encodeURIComponent(result.id)}`),
-        icon: <Share2 className="h-4 w-4" />,
-      });
-
-      if (result.workOrderId) {
-        actions.push({
-          label: t('printLabel'),
-          onClick: () => navigate(`/production/${result.workOrderId}?serial=${encodeURIComponent(result.id)}#labels`),
-          icon: <Printer className="h-4 w-4" />,
-        });
-      }
-    }
-
-    if (result.type === 'work_order') {
-      actions.push({
-        label: t('printLabels') || t('printLabel'),
-        onClick: () => navigate(`/production/${result.id}#labels`),
-        icon: <Printer className="h-4 w-4" />,
-      });
-      actions.push({
-        label: t('scheduleWorkOrder'),
-        onClick: () => navigate(`/calendar?wo=${result.id}`),
-        icon: <Clock3 className="h-4 w-4" />,
-      });
-    }
-
-    if (result.type === 'production_report') {
-      actions.push({
-        label: t('viewReport') || t('view'),
-        onClick: () => navigate(`/production-reports/${result.id}`),
-        icon: <FileText className="h-4 w-4" />,
-      });
-    }
-
-    if (result.type === 'operator') {
-      actions.push({
-        label: t('schedule'),
-        onClick: () => navigate('/calendar'),
-        icon: <Clock3 className="h-4 w-4" />,
-      });
-    }
-
-    return actions;
   };
 
   return (
@@ -321,57 +211,36 @@ const Search = () => {
                     </div>
                   ) : (
                     <div className="space-y-2">
-                      {results.map((result, index) => {
-                        const quickActions = getQuickActions(result);
-                        const typeConfig = typeBadgeConfig[result.type];
-                        return (
-                          <div
-                            key={`${result.type}-${result.id}-${index}`}
-                            onClick={() => handleResultClick(result)}
-                            className="flex items-center justify-between p-4 border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors group"
-                          >
-                            <div className="flex items-center gap-4">
-                              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                                {result.type === 'work_order' && <Package className="h-5 w-5 text-primary" />}
-                                {result.type === 'serial_number' && <FileText className="h-5 w-5 text-primary" />}
-                                {result.type === 'production_report' && <FileText className="h-5 w-5 text-primary" />}
-                                {result.type === 'operator' && <User2 className="h-5 w-5 text-primary" />}
-                              </div>
-                              <div>
-                                <p className="font-mono font-semibold">{result.title}</p>
-                                <p className="text-sm text-muted-foreground">{result.subtitle}</p>
-                              </div>
+                      {results.map((result, index) => (
+                        <div
+                          key={`${result.type}-${result.id}-${index}`}
+                          onClick={() => handleResultClick(result)}
+                          className="flex items-center justify-between p-4 border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors group"
+                        >
+                          <div className="flex items-center gap-4">
+                            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                              {result.type === 'work_order' ? (
+                                <Package className="h-5 w-5 text-primary" />
+                              ) : (
+                                <FileText className="h-5 w-5 text-primary" />
+                              )}
                             </div>
-                            <div className="flex items-center gap-2">
-                              {quickActions.length > 0 && (
-                                <div className="hidden md:flex items-center gap-2 mr-2">
-                                  {quickActions.map((action, i) => (
-                                    <Button
-                                      key={`${result.id}-action-${i}`}
-                                      size="sm"
-                                      variant="ghost"
-                                      onClick={(e) => { e.stopPropagation(); action.onClick(); }}
-                                      className="text-xs"
-                                    >
-                                      {action.icon}
-                                      <span className="ml-1">{action.label}</span>
-                                    </Button>
-                                  ))}
-                                </div>
-                              )}
-                              {result.status && (
-                                <Badge className={getStatusBadgeClass(result.status)}>
-                                  {formatStatus(result.status)}
-                                </Badge>
-                              )}
-                              <Badge variant="outline" className={typeConfig.className || ''}>
-                                {typeConfig.label}
-                              </Badge>
-                              <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <div>
+                              <p className="font-mono font-semibold">{result.title}</p>
+                              <p className="text-sm text-muted-foreground">{result.subtitle}</p>
                             </div>
                           </div>
-                        );
-                      })}
+                          <div className="flex items-center gap-3">
+                            <Badge className={getStatusBadgeClass(result.status)}>
+                              {formatStatus(result.status)}
+                            </Badge>
+                            <Badge variant="outline">
+                              {result.type === 'work_order' ? t('workOrder') : t('serialNumber')}
+                            </Badge>
+                            <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   )}
                 </CardContent>

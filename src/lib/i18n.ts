@@ -15,23 +15,7 @@ export const translations = {
     navigation: 'Navigation',
     productionCalendar: 'Production Calendar',
     traceability: 'Traceability',
-
-    // Dashboard
-    todaysSchedule: "Today's Schedule",
-    noOrdersToday: 'No work orders scheduled for today',
-    failedToLoad: 'Failed to load data',
-    yourTeam: 'Your Team',
-    all: 'All',
-    more: 'more',
-    viewCalendar: 'View calendar',
-    quickActionsTitle: 'Quick actions',
-    quickActionsSubtitle: 'Jump to the tools you use most',
-    quickActionWorkOrders: 'Plan and track production orders',
-    quickActionReports: 'Review shift and production reports',
-    quickActionInventory: 'Check material availability',
-    quickActionSearch: 'Trace work orders or serial numbers',
-    quickActionAnalytics: 'Monitor KPIs and trends',
-
+    
     // Greetings
     goodMorning: 'Good morning',
     goodAfternoon: 'Good afternoon',
@@ -331,7 +315,6 @@ export const translations = {
     measurementRecordedAction: 'Measurement Recorded',
     batchScannedAction: 'Batch Scanned',
     labelPrintedAction: 'Label Printed',
-    failedLoadActivity: 'Failed to load activity',
     activeOperatorsTitle: 'Active Operators',
     operatorsCurrentlyWorking: 'Operators currently working',
     noOperatorsFound: 'No operators found',
@@ -434,8 +417,6 @@ export const translations = {
     resultsFound: 'results found',
     noResultsFoundHint: 'Try a different search term or check the spelling',
     workOrder: 'Work Order',
-    openGenealogy: 'Open Genealogy',
-    schedule: 'Schedule',
     searchTips: 'Search Tips',
     searchTip1: 'Search by work order number (e.g., WO-20241201-001)',
     searchTip2: 'Search by serial number (e.g., Q-0001, W-0042)',
@@ -575,23 +556,7 @@ export const translations = {
     navigation: 'Navigatie',
     productionCalendar: 'Productiekalender',
     traceability: 'Traceerbaarheid',
-
-    // Dashboard
-    todaysSchedule: 'Planning Vandaag',
-    noOrdersToday: 'Geen werkorders gepland voor vandaag',
-    failedToLoad: 'Laden mislukt',
-    yourTeam: 'Je Collega\'s',
-    all: 'Alles',
-    more: 'meer',
-    viewCalendar: 'Bekijk kalender',
-    quickActionsTitle: 'Snelle acties',
-    quickActionsSubtitle: 'Ga direct naar de tools die je het meest gebruikt',
-    quickActionWorkOrders: 'Plan en volg productieorders op',
-    quickActionReports: 'Bekijk dienst- en productierapporten',
-    quickActionInventory: 'Controleer materiaalbeschikbaarheid',
-    quickActionSearch: 'Traceer werkorders of serienummers',
-    quickActionAnalytics: 'Volg KPI\'s en trends',
-
+    
     // Greetings
     goodMorning: 'Goedemorgen',
     goodAfternoon: 'Goedemiddag',
@@ -891,7 +856,6 @@ export const translations = {
     measurementRecordedAction: 'Meting Vastgelegd',
     batchScannedAction: 'Batch Gescand',
     labelPrintedAction: 'Label Afgedrukt',
-    failedLoadActivity: 'Activiteit laden mislukt',
     activeOperatorsTitle: 'Actieve Operators',
     operatorsCurrentlyWorking: 'Operators die momenteel werken',
     noOperatorsFound: 'Geen operators gevonden',
@@ -994,8 +958,6 @@ export const translations = {
     resultsFound: 'resultaten gevonden',
     noResultsFoundHint: 'Probeer een andere zoekterm of controleer de spelling',
     workOrder: 'Werkorder',
-    openGenealogy: 'Open genealogie',
-    schedule: 'Plannen',
     searchTips: 'Zoektips',
     searchTip1: 'Zoek op werkordernummer (bijv. WO-20241201-001)',
     searchTip2: 'Zoek op serienummer (bijv. Q-0001, W-0042)',

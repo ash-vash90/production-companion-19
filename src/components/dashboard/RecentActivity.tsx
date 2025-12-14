@@ -9,7 +9,6 @@ import { nl, enUS } from 'date-fns/locale';
 import { useResilientQuery } from '@/hooks/useResilientQuery';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card } from '@/components/ui/card';
-import { CardSectionHeader } from '@/components/CardSectionHeader';
 
 interface ActivityDetails {
   step_number?: number;
@@ -101,7 +100,7 @@ export const RecentActivity = memo(function RecentActivity() {
     if (!details || typeof details !== 'object') return null;
 
     if (activity.action === 'complete_step' && details.step_number && details.serial_number) {
-      return `${t('step')} ${details.step_number} • ${details.serial_number}`;
+      return `Step ${details.step_number} • ${details.serial_number}`;
     }
 
     if (activity.action === 'create_work_order' && details.wo_number) {
@@ -124,10 +123,10 @@ export const RecentActivity = memo(function RecentActivity() {
   if (loading) {
     return (
       <section>
-        <CardSectionHeader
-          icon={<Activity className="h-5 w-5 text-muted-foreground" />}
-          title={t('recentActivityTitle')}
-        />
+        <div className="flex items-center gap-2 mb-4">
+          <Activity className="h-5 w-5 text-muted-foreground" />
+          <h2 className="font-semibold">{t('recentActivityTitle')}</h2>
+        </div>
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
             <Card key={i} className="shadow-card">
@@ -148,14 +147,14 @@ export const RecentActivity = memo(function RecentActivity() {
   if (error && displayActivities.length === 0) {
     return (
       <section>
-        <CardSectionHeader
-          icon={<Activity className="h-5 w-5 text-muted-foreground" />}
-          title={t('recentActivityTitle')}
-        />
+        <div className="flex items-center gap-2 mb-4">
+          <Activity className="h-5 w-5 text-muted-foreground" />
+          <h2 className="font-semibold">{t('recentActivityTitle')}</h2>
+        </div>
         <div className="flex items-center justify-center py-8 gap-3 text-muted-foreground">
           <AlertCircle className="h-5 w-5" />
-          <span className="text-sm">{t('failedLoadActivity')}</span>
-          <Button variant="outline" size="sm" onClick={() => refetch()}>
+          <span className="text-sm">Failed to load activity</span>
+          <Button variant="ghost" size="sm" onClick={() => refetch()}>
             <RefreshCw className="h-4 w-4" />
           </Button>
         </div>
@@ -165,18 +164,18 @@ export const RecentActivity = memo(function RecentActivity() {
 
   return (
     <section>
-      <CardSectionHeader
-        icon={<Activity className="h-5 w-5 text-muted-foreground" />}
-        title={t('recentActivityTitle')}
-        actions={
-          isStale ? (
-            <Button variant="outline" size="sm" className="h-7" onClick={() => refetch()}>
-              <RefreshCw className="h-3 w-3 mr-1" />
-              {t('refresh')}
-            </Button>
-          ) : undefined
-        }
-      />
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <Activity className="h-5 w-5 text-muted-foreground" />
+          <h2 className="font-semibold">{t('recentActivityTitle')}</h2>
+        </div>
+        {isStale && (
+          <Button variant="ghost" size="sm" className="h-7" onClick={() => refetch()}>
+            <RefreshCw className="h-3 w-3 mr-1" />
+            Refresh
+          </Button>
+        )}
+      </div>
 
       {displayActivities.length > 0 ? (
         <div className="space-y-3">

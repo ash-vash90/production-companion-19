@@ -7,31 +7,19 @@ interface VirtualizedListProps<T> {
   className?: string;
   overscan?: number;
   maxHeight?: number;
-  threshold?: number;
-  renderVirtualizedItems?: (params: {
-    visibleItems: T[];
-    startIndex: number;
-    endIndex: number;
-    beforeHeight: number;
-    afterHeight: number;
-    totalHeight: number;
-    itemHeight: number;
-  }) => React.ReactNode;
 }
 
 /**
  * Simple virtualized list component for rendering large lists efficiently.
  * Only renders items that are visible in the viewport plus an overscan buffer.
  */
-export function VirtualizedList<T>({
-  items,
-  renderItem,
-  itemHeight,
+export function VirtualizedList<T>({ 
+  items, 
+  renderItem, 
+  itemHeight, 
   className = '',
   overscan = 5,
-  maxHeight = 600,
-  threshold = 50,
-  renderVirtualizedItems
+  maxHeight = 600
 }: VirtualizedListProps<T>) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [scrollTop, setScrollTop] = useState(0);
@@ -60,23 +48,7 @@ export function VirtualizedList<T>({
   }, [maxHeight]);
 
   // For small lists, render without virtualization
-  if (items.length <= threshold) {
-    if (renderVirtualizedItems) {
-      return (
-        <div className={className}>
-          {renderVirtualizedItems({
-            visibleItems: items,
-            startIndex: 0,
-            endIndex: items.length,
-            beforeHeight: 0,
-            afterHeight: 0,
-            totalHeight: items.length * itemHeight,
-            itemHeight,
-          })}
-        </div>
-      );
-    }
-
+  if (items.length <= 50) {
     return (
       <div className={className}>
         {items.map((item, index) => (
@@ -93,41 +65,25 @@ export function VirtualizedList<T>({
 
   const visibleItems = items.slice(startIndex, endIndex);
   const offsetY = startIndex * itemHeight;
-  const beforeHeight = offsetY;
-  const afterHeight = totalHeight - endIndex * itemHeight;
-
-  const virtualizedContent = renderVirtualizedItems ? (
-    renderVirtualizedItems({
-      visibleItems,
-      startIndex,
-      endIndex,
-      beforeHeight,
-      afterHeight,
-      totalHeight,
-      itemHeight,
-    })
-  ) : (
-    <div style={{ height: totalHeight, position: 'relative' }}>
-      <div style={{ transform: `translateY(${offsetY}px)` }}>
-        {visibleItems.map((item, i) => (
-          <div
-            key={startIndex + i}
-            style={{ height: itemHeight }}
-          >
-            {renderItem(item, startIndex + i)}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
 
   return (
-    <div
+    <div 
       ref={containerRef}
       className={`overflow-auto ${className}`}
       style={{ height: containerHeight, position: 'relative' }}
     >
-      {virtualizedContent}
+      <div style={{ height: totalHeight, position: 'relative' }}>
+        <div style={{ transform: `translateY(${offsetY}px)` }}>
+          {visibleItems.map((item, i) => (
+            <div 
+              key={startIndex + i} 
+              style={{ height: itemHeight }}
+            >
+              {renderItem(item, startIndex + i)}
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

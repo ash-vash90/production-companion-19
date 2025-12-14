@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import Layout from '@/components/Layout';
@@ -108,7 +108,6 @@ const ProductionReports = () => {
   const { user } = useAuth();
   const { t, language } = useLanguage();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   const isMobile = useIsMobile();
   
   const { reports: workOrders, loading, error, refetch, isStale } = useProductionReports();
@@ -143,16 +142,6 @@ const ProductionReports = () => {
   React.useEffect(() => {
     sessionStorage.setItem(VIEWMODE_STORAGE_KEY, viewMode);
   }, [viewMode]);
-
-  React.useEffect(() => {
-    const serialParam = searchParams.get('serial');
-    if (serialParam) {
-      setFilters((prev) => ({
-        ...prev,
-        searchTerm: serialParam,
-      }));
-    }
-  }, [searchParams]);
 
   // Extract unique customers and months for filter options
   const customers = useMemo(() => {

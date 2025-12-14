@@ -1,4 +1,3 @@
-import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
@@ -35,7 +34,6 @@ interface WorkOrderTableRowProps {
   linkTo?: string;
   showCompletedDate?: boolean;
   actionLabel?: string;
-  actions?: React.ReactNode;
 }
 
 export function WorkOrderTableRow({
@@ -46,7 +44,6 @@ export function WorkOrderTableRow({
   linkTo,
   showCompletedDate = false,
   actionLabel,
-  actions,
 }: WorkOrderTableRowProps) {
   const navigate = useNavigate();
   const { t } = useLanguage();
@@ -121,35 +118,31 @@ export function WorkOrderTableRow({
         </TableCell>
       )}
       <TableCell className="text-right whitespace-nowrap">
-        {actions ? (
-          <div onClick={(e) => e.stopPropagation()}>{actions}</div>
-        ) : (
-          <div className="flex justify-end gap-1">
+        <div className="flex justify-end gap-1">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleClick();
+            }}
+          >
+            {actionLabel || t('view')}
+          </Button>
+          {onCancel && (
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
+              className="text-destructive hover:text-destructive"
               onClick={(e) => {
                 e.stopPropagation();
-                handleClick();
+                onCancel();
               }}
             >
-              {actionLabel || t('view')}
+              {t('cancel')}
             </Button>
-            {onCancel && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-destructive hover:text-destructive"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onCancel();
-                }}
-              >
-                {t('cancel')}
-              </Button>
-            )}
-          </div>
-        )}
+          )}
+        </div>
       </TableCell>
     </TableRow>
   );

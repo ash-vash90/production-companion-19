@@ -30,7 +30,6 @@ interface WorkOrderCardProps {
   showActions?: boolean;
   showUrgency?: boolean;
   linkTo?: string;
-  actions?: React.ReactNode;
 }
 
 export function WorkOrderCard({
@@ -41,7 +40,6 @@ export function WorkOrderCard({
   showActions = true,
   showUrgency = true,
   linkTo,
-  actions,
 }: WorkOrderCardProps) {
   const navigate = useNavigate();
   const { t } = useLanguage();
@@ -159,15 +157,6 @@ export function WorkOrderCard({
         {/* Arrow indicator - always visible */}
         <ChevronRight className="h-5 w-5 text-muted-foreground/50 group-hover:text-primary transition-colors shrink-0" />
       </div>
-
-      {actions && (
-        <div
-          className="mt-3 pt-3 border-t border-border/60"
-          onClick={(e) => e.stopPropagation()}
-        >
-          {actions}
-        </div>
-      )}
     </div>
   );
 }

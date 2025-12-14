@@ -10,7 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Loader2, ArrowLeft, CheckCircle2, AlertCircle, ScanBarcode, History, XCircle, Users, Link2, Printer, FileText } from 'lucide-react';
+import { Loader2, ArrowLeft, CheckCircle2, AlertCircle, ScanBarcode, History, XCircle, Users, Link2 } from 'lucide-react';
 import { formatDateTime } from '@/lib/utils';
 import MeasurementDialog from '@/components/production/MeasurementDialog';
 import ChecklistDialog from '@/components/production/ChecklistDialog';
@@ -22,8 +22,6 @@ import SubAssemblyLinkDialog from '@/components/production/SubAssemblyLinkDialog
 import { SimpleNotes } from '@/components/production/SimpleNotes';
 import { WorkOrderComments } from '@/components/production/WorkOrderComments';
 import { generateQualityCertificate } from '@/services/certificateService';
-import { Progress } from '@/components/ui/progress';
-import { printWorkOrderLabel } from '@/lib/labelPrinter';
 
 
 interface PresenceUser {
@@ -508,34 +506,6 @@ const ProductionStep = () => {
     );
   }
 
-  const completedSteps = stepCompletions.size;
-  const totalSteps = productionSteps.length;
-  const progressPercent = totalSteps ? Math.round((completedSteps / totalSteps) * 100) : 0;
-
-  const responsibleOperators = Array.from(
-    new Map(
-      Array.from(stepCompletions.values()).map((info) => [info.completed_by_name, info])
-    ).values()
-  );
-
-  const handlePrintLabel = async () => {
-    await printWorkOrderLabel({
-      serialNumber: item.serial_number,
-      operatorInitials: stepExecution?.operator_initials,
-      productType: item.product_type || workOrder.product_type,
-      workOrderNumber: workOrder.wo_number,
-      userId: user?.id,
-    });
-  };
-
-  const handleOpenGenealogy = () => {
-    navigate(`/genealogy/${encodeURIComponent(item.serial_number)}`);
-  };
-
-  const handleCreateReport = () => {
-    navigate(`/production-reports?serial=${encodeURIComponent(item.serial_number)}`);
-  };
-
   return (
     <Layout>
       <div className="space-y-6 md:space-y-8 max-w-3xl mx-auto">
@@ -591,62 +561,6 @@ const ProductionStep = () => {
             <Button variant="outline" size="lg" onClick={() => setShowValidationHistory(true)} className="gap-2">
               <History className="h-5 w-5" />
               <span className="hidden sm:inline">{t('history')}</span>
-            </Button>
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-3 rounded-lg border bg-card p-4 shadow-sm">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex flex-wrap items-center gap-3">
-              <Badge variant="outline" className="text-xs px-2 py-1 font-medium">
-                {t('step')} {item.current_step} {t('of')} {productionSteps.length}
-              </Badge>
-              <div className="min-w-[220px]">
-                <div className="flex items-center justify-between text-xs text-muted-foreground font-medium">
-                  <span>{t('progress')}</span>
-                  <span>{progressPercent}%</span>
-                </div>
-                <Progress value={progressPercent} className="h-2" />
-              </div>
-            </div>
-
-            {responsibleOperators.length > 0 && (
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground">{t('responsible') || 'Operators'}</span>
-                <div className="flex -space-x-2">
-                  {responsibleOperators.slice(0, 3).map((operator) => (
-                    <Avatar key={operator.completed_by_name} className="h-8 w-8 border-2 border-background">
-                      {operator.avatar_url ? (
-                        <AvatarImage src={operator.avatar_url} alt={operator.completed_by_name} />
-                      ) : (
-                        <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                          {getInitials(operator.completed_by_name)}
-                        </AvatarFallback>
-                      )}
-                    </Avatar>
-                  ))}
-                  {responsibleOperators.length > 3 && (
-                    <div className="h-8 w-8 rounded-full bg-muted border-2 border-background flex items-center justify-center text-xs font-medium">
-                      +{responsibleOperators.length - 3}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            <Button variant="outline" onClick={handlePrintLabel} className="gap-2">
-              <Printer className="h-4 w-4" />
-              <span>{t('printLabel') || 'Print label'}</span>
-            </Button>
-            <Button variant="outline" onClick={handleCreateReport} className="gap-2">
-              <FileText className="h-4 w-4" />
-              <span>{t('createReport') || 'Create report'}</span>
-            </Button>
-            <Button variant="outline" onClick={handleOpenGenealogy} className="gap-2">
-              <Link2 className="h-4 w-4" />
-              <span>{t('traceability') || 'Open genealogy'}</span>
             </Button>
           </div>
         </div>

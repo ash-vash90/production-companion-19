@@ -16,19 +16,16 @@ import { WorkOrderFilters, FilterState, GroupByOption } from '@/components/worko
 import { WorkOrderCard } from '@/components/workorders/WorkOrderCard';
 import { WorkOrderTableRow, WorkOrderRowData } from '@/components/workorders/WorkOrderTableRow';
 import { CancelWorkOrderDialog } from '@/components/workorders/CancelWorkOrderDialog';
-import { usePaginatedWorkOrders, invalidateWorkOrdersCache, WorkOrderListItem, WorkOrderQueryFilters } from '@/hooks/useWorkOrders';
+import { useWorkOrders, invalidateWorkOrdersCache, WorkOrderListItem } from '@/hooks/useWorkOrders';
 import { prefetchProductionOnHover } from '@/services/prefetchService';
-import { ResponsiveVirtualizedGrid, VirtualizedList } from '@/components/VirtualizedList';
+import { ResponsiveVirtualizedGrid } from '@/components/VirtualizedList';
 import { PullToRefresh } from '@/components/PullToRefresh';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Plus, Package, RotateCcw, LayoutGrid, Table as TableIcon, Filter, Loader2, ChevronDown, ChevronRight, CalendarDays, ListChecks } from 'lucide-react';
-import { format, parseISO } from 'date-fns';
+import { Plus, Package, RotateCcw, LayoutGrid, Table as TableIcon, Filter, Loader2, ChevronDown, ChevronRight } from 'lucide-react';
+import { format, differenceInDays, parseISO } from 'date-fns';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { WorkOrderActions } from '@/components/workorders/WorkOrderActions';
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
-import { Bar, BarChart, CartesianGrid, XAxis } from 'recharts';
 
 // Type alias for backwards compatibility
 type WorkOrderWithItems = WorkOrderListItem;
@@ -52,22 +49,21 @@ const VIEWMODE_STORAGE_KEY = 'workorders_viewmode';
 
 type ViewMode = 'cards' | 'table';
 
-const CARD_ITEM_HEIGHT = 280;
-const CARD_MIN_WIDTH = 300;
-const CARD_GAP = 12;
-const LIST_MAX_HEIGHT = 720;
-const TABLE_ROW_HEIGHT = 72;
-const VIRTUALIZATION_THRESHOLD = 50;
-
 const WorkOrders = () => {
   const { user } = useAuth();
   const { t, language } = useLanguage();
-  const { isAdmin, isSupervisor } = useUserProfile();
+  const { isAdmin } = useUserProfile();
   const navigate = useNavigate();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [cancellingWorkOrder, setCancellingWorkOrder] = useState<{ id: string; wo_number: string } | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
+  
+  // Use the resilient work orders hook - disable realtime to reduce memory/subscriptions
+  const { workOrders, loading, error, refetch } = useWorkOrders({
+    excludeCancelled: true,
+    enableRealtime: false,
+  });
   
   // Track if component is mounted to prevent state updates after unmount
   const isMountedRef = useRef(true);
@@ -105,23 +101,6 @@ const WorkOrders = () => {
       return 'cards';
     }
   });
-
-  const serverFilters: WorkOrderQueryFilters = useMemo(() => ({
-    statusFilter: filters.statusFilter !== 'all' ? filters.statusFilter : undefined,
-    productFilter: filters.productFilter !== 'all' ? filters.productFilter : undefined,
-    customerFilter: filters.customerFilter !== 'all' ? filters.customerFilter : undefined,
-    searchTerm: filters.searchTerm || undefined,
-    ageFilter: filters.ageFilter !== 'all' ? (filters.ageFilter as WorkOrderQueryFilters['ageFilter']) : undefined,
-    deliveryMonthFilter: filters.deliveryMonthFilter !== 'all' ? filters.deliveryMonthFilter : undefined,
-    createdMonthFilter: filters.createdMonthFilter !== 'all' ? filters.createdMonthFilter : undefined,
-    batchSizeFilter: filters.batchSizeFilter !== 'all' ? (filters.batchSizeFilter as WorkOrderQueryFilters['batchSizeFilter']) : undefined,
-  }), [filters]);
-
-  const { workOrders, loading, error, loadMore, hasMore, reset, isLoadingMore } = usePaginatedWorkOrders({
-    excludeCancelled: true,
-    pageSize: 25,
-    filters: serverFilters,
-  });
   
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
@@ -145,12 +124,6 @@ const WorkOrders = () => {
       navigate('/auth');
     }
   }, [user, navigate]);
-
-  useEffect(() => {
-    if (error) {
-      toast.error(t('error'), { description: error.message });
-    }
-  }, [error, t]);
 
   // Reset all filters
   const resetFilters = useCallback(() => {
@@ -196,54 +169,71 @@ const WorkOrders = () => {
   }, [workOrders]);
 
   // Filter logic
-  const filteredOrders = useMemo(() => workOrders, [workOrders]);
+  const filteredOrders = useMemo(() => {
+    let filtered = [...workOrders];
 
-  const backlogOrders = useMemo(() => filteredOrders.filter(wo => ['planned', 'on_hold'].includes(wo.status)), [filteredOrders]);
+    if (filters.searchTerm) {
+      const term = filters.searchTerm.toLowerCase();
+      filtered = filtered.filter(wo =>
+        wo.wo_number.toLowerCase().includes(term) ||
+        wo.product_type.toLowerCase().includes(term) ||
+        wo.customer_name?.toLowerCase().includes(term)
+      );
+    }
 
-  const kpiStats = useMemo(() => {
-    const planned = filteredOrders.filter((wo) => wo.status === 'planned').length;
-    const inProgress = filteredOrders.filter((wo) => wo.status === 'in_progress').length;
-    const onHold = filteredOrders.filter((wo) => wo.status === 'on_hold').length;
-    const completed = filteredOrders.filter((wo) => wo.status === 'completed').length;
-    const backlogValue = backlogOrders.reduce((sum, wo) => sum + (wo.order_value || 0), 0);
+    if (filters.statusFilter !== 'all') {
+      filtered = filtered.filter(wo => wo.status === filters.statusFilter);
+    }
 
-    return {
-      total: filteredOrders.length,
-      planned,
-      inProgress,
-      onHold,
-      completed,
-      backlogValue,
-    };
-  }, [backlogOrders, filteredOrders]);
+    if (filters.productFilter !== 'all') {
+      filtered = filtered.filter(wo => wo.product_type === filters.productFilter);
+    }
 
-  const backlogChartData = useMemo(() => {
-    const groups: Record<string, { label: string; count: number; dateValue: number | null }> = {};
+    if (filters.customerFilter !== 'all') {
+      filtered = filtered.filter(wo => wo.customer_name === filters.customerFilter);
+    }
 
-    backlogOrders.forEach((wo) => {
-      if (wo.shipping_date) {
-        const date = parseISO(wo.shipping_date);
-        const label = format(date, 'MMM d');
-        const key = format(date, 'yyyy-MM-dd');
-        groups[key] = groups[key]
-          ? { ...groups[key], count: groups[key].count + 1 }
-          : { label, count: 1, dateValue: date.getTime() };
-      } else {
-        const key = 'unscheduled';
-        groups[key] = groups[key]
-          ? { ...groups[key], count: groups[key].count + 1 }
-          : { label: t('notScheduled'), count: 1, dateValue: null };
-      }
-    });
+    if (filters.ageFilter !== 'all') {
+      const now = new Date();
+      filtered = filtered.filter(wo => {
+        const createdDate = parseISO(wo.created_at);
+        const ageDays = differenceInDays(now, createdDate);
+        switch (filters.ageFilter) {
+          case 'today': return ageDays === 0;
+          case 'week': return ageDays <= 7;
+          case 'month': return ageDays <= 30;
+          case 'older': return ageDays > 30;
+          default: return true;
+        }
+      });
+    }
 
-    return Object.values(groups)
-      .sort((a, b) => {
-        if (a.dateValue === null) return 1;
-        if (b.dateValue === null) return -1;
-        return a.dateValue - b.dateValue;
-      })
-      .slice(0, 8);
-  }, [backlogOrders, t]);
+    if (filters.deliveryMonthFilter !== 'all') {
+      filtered = filtered.filter(wo => {
+        if (!wo.shipping_date) return false;
+        return format(parseISO(wo.shipping_date), 'yyyy-MM') === filters.deliveryMonthFilter;
+      });
+    }
+
+    if (filters.createdMonthFilter !== 'all') {
+      filtered = filtered.filter(wo => {
+        return format(parseISO(wo.created_at), 'yyyy-MM') === filters.createdMonthFilter;
+      });
+    }
+
+    if (filters.batchSizeFilter !== 'all') {
+      filtered = filtered.filter(wo => {
+        switch (filters.batchSizeFilter) {
+          case 'small': return wo.batch_size <= 5;
+          case 'medium': return wo.batch_size > 5 && wo.batch_size <= 20;
+          case 'large': return wo.batch_size > 20;
+          default: return true;
+        }
+      });
+    }
+
+    return filtered;
+  }, [filters, workOrders]);
 
   // Grouping logic
   const getGroupKey = (wo: WorkOrderWithItems, groupOption: GroupByOption): string => {
@@ -334,51 +324,13 @@ const WorkOrders = () => {
       toast.success(t('success'), { description: t('workOrderCancelled') });
       setCancelDialogOpen(false);
       setCancellingWorkOrder(null);
-      if (isMountedRef.current) reset();
+      if (isMountedRef.current) refetch();
     } catch (error: any) {
       toast.error(t('error'), { description: error.message });
     } finally {
       setIsCancelling(false);
     }
-  }, [cancellingWorkOrder, reset, t]);
-
-  const canManageProduction = isAdmin || isSupervisor;
-
-  const handleStatusChange = useCallback(async (workOrderId: string, status: 'planned' | 'in_progress' | 'on_hold' | 'completed') => {
-    if (!canManageProduction) {
-      toast.error(t('error'), { description: t('noPermission') || 'No permission to update status' });
-      return;
-    }
-
-    const targetOrder = workOrders.find((wo) => wo.id === workOrderId);
-    const updates: Record<string, any> = { status };
-
-    if (status === 'in_progress' && targetOrder && !targetOrder.start_date) {
-      updates.start_date = new Date().toISOString();
-    }
-
-    if (status === 'completed') {
-      updates.completed_at = new Date().toISOString();
-    }
-
-    try {
-      const { error } = await supabase
-        .from('work_orders')
-        .update(updates)
-        .eq('id', workOrderId);
-
-      if (error) throw error;
-
-      toast.success(t('success'), { description: t('statusUpdated') || t('saved') });
-      if (isMountedRef.current) reset();
-    } catch (error: any) {
-      toast.error(t('error'), { description: error.message });
-    }
-  }, [canManageProduction, reset, t, workOrders]);
-
-  const handlePrint = useCallback((workOrderId: string) => {
-    window.open(`/production/${workOrderId}`, '_blank', 'noopener,noreferrer');
-  }, []);
+  }, [cancellingWorkOrder, t, refetch]);
 
   // Transform work order to row data format
   const toRowData = useCallback((wo: WorkOrderWithItems): WorkOrderRowData => ({
@@ -388,7 +340,6 @@ const WorkOrders = () => {
     batch_size: wo.batch_size,
     status: wo.status,
     created_at: wo.created_at,
-    completed_at: wo.completed_at,
     customer_name: wo.customer_name,
     shipping_date: wo.shipping_date,
     start_date: wo.start_date,
@@ -398,19 +349,8 @@ const WorkOrders = () => {
     hasSubassemblies: wo.hasSubassemblies,
   }), []);
 
-  const renderActions = useCallback((wo: WorkOrderWithItems) => (
-    <WorkOrderActions
-      status={wo.status}
-      canManage={canManageProduction}
-      onStart={() => handleStatusChange(wo.id, 'in_progress')}
-      onPause={() => handleStatusChange(wo.id, 'on_hold')}
-      onComplete={() => handleStatusChange(wo.id, 'completed')}
-      onPrint={() => handlePrint(wo.id)}
-    />
-  ), [canManageProduction, handleStatusChange, handlePrint]);
-
   // Render table view with shared component
-  const renderTableView = useCallback((orders: WorkOrderWithItems[]) => (
+  const renderTableView = (orders: WorkOrderWithItems[]) => (
     <div className="rounded-lg border overflow-hidden">
       <Table>
         <TableHeader>
@@ -423,78 +363,43 @@ const WorkOrders = () => {
             <TableHead className="text-xs text-right">{t('actions')}</TableHead>
           </TableRow>
         </TableHeader>
+        <TableBody>
+          {orders.map((wo) => (
+            <WorkOrderTableRow
+              key={wo.id}
+              workOrder={toRowData(wo)}
+              linkTo={`/production/${wo.id}`}
+              onCancel={isAdmin ? () => openCancelDialog({ id: wo.id, wo_number: wo.wo_number }) : undefined}
+            />
+          ))}
+        </TableBody>
       </Table>
-      <VirtualizedList
-        items={orders}
-        itemHeight={TABLE_ROW_HEIGHT}
-        maxHeight={LIST_MAX_HEIGHT}
-        threshold={VIRTUALIZATION_THRESHOLD}
-        renderItem={(wo) => (
-          <WorkOrderTableRow
-            workOrder={toRowData(wo)}
-            linkTo={`/production/${wo.id}`}
-            onCancel={isAdmin ? () => openCancelDialog({ id: wo.id, wo_number: wo.wo_number }) : undefined}
-            actions={renderActions(wo)}
-          />
-        )}
-        renderVirtualizedItems={({ visibleItems, beforeHeight, afterHeight }) => (
-          <Table>
-            <TableBody>
-              {beforeHeight > 0 && (
-                <TableRow style={{ height: beforeHeight }}>
-                  <TableCell colSpan={6} className="p-0" />
-                </TableRow>
-              )}
-              {visibleItems.map((wo) => (
-                <WorkOrderTableRow
-                  key={wo.id}
-                  workOrder={toRowData(wo)}
-                  linkTo={`/production/${wo.id}`}
-                  onCancel={isAdmin ? () => openCancelDialog({ id: wo.id, wo_number: wo.wo_number }) : undefined}
-                  actions={renderActions(wo)}
-                />
-              ))}
-              {afterHeight > 0 && (
-                <TableRow style={{ height: afterHeight }}>
-                  <TableCell colSpan={6} className="p-0" />
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        )}
-      />
     </div>
-  ), [language, t, isAdmin, openCancelDialog, renderActions, toRowData]);
+  );
 
   // Render card view with shared component
   const renderCardView = useCallback((orders: WorkOrderWithItems[]) => (
-    <ResponsiveVirtualizedGrid
-      items={orders}
-      renderItem={(wo) => (
+    <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+      {orders.map((wo) => (
         <WorkOrderCard
+          key={wo.id}
           workOrder={toRowData(wo)}
           onClick={() => navigate(`/production/${wo.id}`)}
           onCancel={isAdmin ? () => openCancelDialog({ id: wo.id, wo_number: wo.wo_number }) : undefined}
           onHover={() => prefetchProductionOnHover(wo.id)}
-          actions={renderActions(wo)}
         />
-      )}
-      itemHeight={CARD_ITEM_HEIGHT}
-      minItemWidth={CARD_MIN_WIDTH}
-      gap={CARD_GAP}
-      maxHeight={LIST_MAX_HEIGHT}
-      threshold={VIRTUALIZATION_THRESHOLD}
-    />
-  ), [toRowData, navigate, isAdmin, openCancelDialog, renderActions]);
+      ))}
+    </div>
+  ), [toRowData, navigate, isAdmin, openCancelDialog]);
 
   const isMobile = useIsMobile();
 
   // Pull to refresh handler
   const handlePullRefresh = useCallback(async () => {
     invalidateWorkOrdersCache();
-    reset();
+    await refetch();
     toast.success(t('refreshed') || 'Refreshed');
-  }, [reset, t]);
+  }, [refetch, t]);
 
   return (
     <ProtectedRoute>
@@ -509,7 +414,7 @@ const WorkOrders = () => {
             title={t('workOrders')}
             description={t('manageWorkOrders')}
             actions={
-              <Button
+              <Button 
                 variant="default" 
                 size="sm" 
                 onClick={() => setDialogOpen(true)}
@@ -519,86 +424,6 @@ const WorkOrders = () => {
               </Button>
             }
           />
-
-          <div className="grid gap-3 md:grid-cols-2">
-            <Card className="shadow-sm">
-              <CardHeader className="pb-2">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <ListChecks className="h-4 w-4 text-primary" />
-                    <CardTitle className="text-sm">{t('overview') || 'Overview'}</CardTitle>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" onClick={() => navigate('/calendar')}>
-                      <CalendarDays className="h-3.5 w-3.5 mr-1" />
-                      {t('calendar') || 'Calendar'}
-                    </Button>
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => navigate('/calendar?view=backlog')}
-                    >
-                      {t('scheduleFromBacklog') || 'Schedule from backlog'}
-                    </Button>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-xs">
-                  <div className="rounded-md border p-3">
-                    <div className="text-muted-foreground">{t('total')}</div>
-                    <div className="text-2xl font-semibold">{kpiStats.total}</div>
-                  </div>
-                  <div className="rounded-md border p-3">
-                    <div className="text-muted-foreground">{t('planned')}</div>
-                    <div className="text-2xl font-semibold text-primary">{kpiStats.planned}</div>
-                  </div>
-                  <div className="rounded-md border p-3">
-                    <div className="text-muted-foreground">{t('inProgress')}</div>
-                    <div className="text-2xl font-semibold text-emerald-600">{kpiStats.inProgress}</div>
-                  </div>
-                  <div className="rounded-md border p-3">
-                    <div className="text-muted-foreground">{t('onHold')}</div>
-                    <div className="text-2xl font-semibold text-amber-600">{kpiStats.onHold}</div>
-                  </div>
-                  <div className="rounded-md border p-3">
-                    <div className="text-muted-foreground">{t('completed')}</div>
-                    <div className="text-2xl font-semibold text-muted-foreground">{kpiStats.completed}</div>
-                  </div>
-                  <div className="rounded-md border p-3 col-span-2 md:col-span-1">
-                    <div className="text-muted-foreground">{t('backlog')}</div>
-                    <div className="text-lg font-semibold">€{kpiStats.backlogValue.toLocaleString('nl-NL')}</div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="shadow-sm">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <Package className="h-4 w-4 text-primary" />
-                  {t('backlogOverview') || 'Backlog schedule'}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-0">
-                {backlogChartData.length === 0 ? (
-                  <div className="text-xs text-muted-foreground">{t('noData') || 'No backlog data'}</div>
-                ) : (
-                  <ChartContainer
-                    config={{ count: { label: t('orders') || 'Orders', color: 'hsl(var(--chart-1))' } }}
-                    className="h-48"
-                  >
-                    <BarChart data={backlogChartData}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                      <XAxis dataKey="label" tickLine={false} axisLine={false} className="text-[10px]" />
-                      <ChartTooltip content={<ChartTooltipContent hideLabel />} />
-                      <Bar dataKey="count" fill="var(--color-count)" radius={[6, 6, 0, 0]} />
-                    </BarChart>
-                  </ChartContainer>
-                )}
-              </CardContent>
-            </Card>
-          </div>
 
           {/* Filters and Grouping Bar */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
@@ -628,7 +453,7 @@ const WorkOrders = () => {
             {/* View Toggle */}
             <div className="flex items-center border rounded-md">
               <Button
-                variant={viewMode === 'cards' ? 'default' : 'outline'}
+                variant={viewMode === 'cards' ? 'secondary' : 'ghost'}
                 size="sm"
                 className="h-8 px-2 rounded-r-none"
                 onClick={() => setViewMode('cards')}
@@ -636,7 +461,7 @@ const WorkOrders = () => {
                 <LayoutGrid className="h-4 w-4" />
               </Button>
               <Button
-                variant={viewMode === 'table' ? 'default' : 'outline'}
+                variant={viewMode === 'table' ? 'secondary' : 'ghost'}
                 size="sm"
                 className="h-8 px-2 rounded-l-none"
                 onClick={() => setViewMode('table')}
@@ -679,9 +504,30 @@ const WorkOrders = () => {
                 </Card>
               )
             ) : groupBy === 'none' ? (
-              viewMode === 'cards'
-                ? renderCardView(filteredOrders)
-                : renderTableView(filteredOrders)
+              viewMode === 'cards' ? (
+                filteredOrders.length > 50 ? (
+                  <ResponsiveVirtualizedGrid
+                    items={filteredOrders}
+                    renderItem={(wo) => (
+                      <WorkOrderCard
+                        workOrder={toRowData(wo)}
+                        onClick={() => navigate(`/production/${wo.id}`)}
+                        onCancel={isAdmin ? () => handleCancelWorkOrder(wo.id) : undefined}
+                        onHover={() => prefetchProductionOnHover(wo.id)}
+                      />
+                    )}
+                    itemHeight={280}
+                    minItemWidth={300}
+                    gap={12}
+                    maxHeight={700}
+                    threshold={50}
+                  />
+                ) : (
+                  renderCardView(filteredOrders)
+                )
+              ) : (
+                renderTableView(filteredOrders)
+              )
             ) : (
               <div className="space-y-2">
                 {Object.entries(groupedOrders).sort().map(([groupKey, orders]) => (
@@ -722,29 +568,14 @@ const WorkOrders = () => {
                 ))}
               </div>
             )}
-
-            {!loading && hasMore && (
-              <div className="flex justify-center mt-4">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={loadMore}
-                  disabled={isLoadingMore}
-                  className="gap-2"
-                >
-                  {isLoadingMore && <Loader2 className="h-4 w-4 animate-spin" />}
-                  {t('loadMore') || 'Load more'}
-                </Button>
-              </div>
-            )}
           </div>
         </div>
         </PullToRefresh>
 
-        <CreateWorkOrderDialog
-          open={dialogOpen}
-          onOpenChange={setDialogOpen}
-          onSuccess={reset}
+        <CreateWorkOrderDialog 
+          open={dialogOpen} 
+          onOpenChange={setDialogOpen} 
+          onSuccess={refetch}
         />
 
         <CancelWorkOrderDialog

@@ -5,10 +5,9 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { Users, UserCircle, AlertCircle, RefreshCw } from 'lucide-react';
+import { Users, Circle, UserCircle, AlertCircle, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
-import { CardSectionHeader } from '@/components/CardSectionHeader';
 
 interface OnlineUser {
   id: string;
@@ -19,7 +18,7 @@ interface OnlineUser {
 }
 
 export const ActiveOperators = memo(function ActiveOperators() {
-  const { language, t } = useLanguage();
+  const { language } = useLanguage();
   const { user } = useAuth();
   const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([]);
   const [loading, setLoading] = useState(true);
@@ -58,7 +57,7 @@ export const ActiveOperators = memo(function ActiveOperators() {
       } catch (err) {
         clearTimeout(timeoutId);
         if (isMountedRef.current) {
-          setError(err instanceof Error ? err : new Error(t('failedToLoad')));
+          setError(err instanceof Error ? err : new Error('Failed to load profile'));
           setLoading(false);
         }
       }
@@ -171,12 +170,10 @@ export const ActiveOperators = memo(function ActiveOperators() {
   if (loading) {
     return (
       <section>
-        <CardSectionHeader
-          icon={<Users className="h-5 w-5 text-success" />}
-          title={t('yourTeam')}
-          chipLabel={onlineUsers.length > 0 ? onlineUsers.length : undefined}
-          chipVariant="success"
-        />
+        <div className="flex items-center gap-2 mb-4">
+          <Users className="h-5 w-5 text-success" />
+          <h2 className="font-semibold">{language === 'nl' ? 'Je Collega\'s' : 'Your Team'}</h2>
+        </div>
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
             <div key={i} className="flex items-center gap-3 py-2">
@@ -195,16 +192,14 @@ export const ActiveOperators = memo(function ActiveOperators() {
   if (error) {
     return (
       <section>
-        <CardSectionHeader
-          icon={<Users className="h-5 w-5 text-success" />}
-          title={t('yourTeam')}
-          chipLabel={onlineUsers.length > 0 ? onlineUsers.length : undefined}
-          chipVariant="success"
-        />
+        <div className="flex items-center gap-2 mb-4">
+          <Users className="h-5 w-5 text-success" />
+          <h2 className="font-semibold">{language === 'nl' ? 'Je Collega\'s' : 'Your Team'}</h2>
+        </div>
         <div className="flex items-center justify-center py-8 gap-3 text-muted-foreground">
           <AlertCircle className="h-5 w-5" />
-          <span className="text-sm">{t('failedToLoad')}</span>
-          <Button variant="outline" size="sm" onClick={handleRetry}>
+          <span className="text-sm">Failed to load</span>
+          <Button variant="ghost" size="sm" onClick={handleRetry}>
             <RefreshCw className="h-4 w-4" />
           </Button>
         </div>
@@ -214,12 +209,18 @@ export const ActiveOperators = memo(function ActiveOperators() {
 
   return (
     <section>
-      <CardSectionHeader
-        icon={<Users className="h-5 w-5 text-success" />}
-        title={t('yourTeam')}
-        chipLabel={onlineUsers.length > 0 ? onlineUsers.length : undefined}
-        chipVariant="success"
-      />
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <Users className="h-5 w-5 text-success" />
+          <h2 className="font-semibold">{language === 'nl' ? 'Je Collega\'s' : 'Your Team'}</h2>
+          {onlineUsers.length > 0 && (
+            <Badge variant="success" className="ml-1">
+              <Circle className="h-1.5 w-1.5 mr-1 fill-current animate-pulse" />
+              {onlineUsers.length}
+            </Badge>
+          )}
+        </div>
+      </div>
 
       {onlineUsers.length > 0 ? (
         <div className="space-y-1">
@@ -254,7 +255,7 @@ export const ActiveOperators = memo(function ActiveOperators() {
             <UserCircle className="h-6 w-6 text-muted-foreground" />
           </div>
           <p className="text-sm text-muted-foreground">
-            {t('noOneElseOnline')}
+            {language === 'nl' ? 'Niemand anders is online' : 'No one else is online'}
           </p>
         </div>
       )}
