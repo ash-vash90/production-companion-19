@@ -15,6 +15,7 @@ export interface WorkOrderListItem {
   status: string;
   created_at: string;
   start_date: string | null;
+  completed_at: string | null;
   shipping_date: string | null;
   customer_name: string | null;
   external_order_number: string | null;
@@ -57,7 +58,7 @@ export function useWorkOrders(options: UseWorkOrdersOptions = {}) {
 
     let query = supabase
       .from('work_orders')
-      .select('id, wo_number, product_type, batch_size, status, created_at, created_by, customer_name, external_order_number, order_value, start_date, shipping_date')
+      .select('id, wo_number, product_type, batch_size, status, created_at, created_by, customer_name, external_order_number, order_value, start_date, completed_at, shipping_date')
       .order('created_at', { ascending: false });
 
     if (excludeCancelled) {
