@@ -43,11 +43,14 @@ const MeasurementDialog: React.FC<MeasurementDialogProps> = ({
     }
   }, [user]);
 
-  // Parse measurement fields from JSON
+  // Parse measurement fields from JSON - handle nested structure
   const measurementFields = Array.isArray(productionStep.measurement_fields) 
     ? productionStep.measurement_fields 
-    : [];
+    : productionStep.measurement_fields?.fields || [];
   const validationRules = productionStep.validation_rules || {};
+
+  // Helper to get field label with language fallback
+  const getFieldLabel = (field: any) => field.label_en || field.label || field.name;
 
   const handleMeasurementChange = (fieldName: string, value: any) => {
     setMeasurements(prev => ({ ...prev, [fieldName]: value }));
@@ -260,37 +263,40 @@ const MeasurementDialog: React.FC<MeasurementDialogProps> = ({
             </div>
           )}
 
-          {measurementFields.map((field: any) => (
-            <div key={field.name} className="space-y-4">
-              <Label htmlFor={field.name} className="text-xl font-data uppercase tracking-wider">
-                {field.label} {field.unit ? `(${field.unit})` : ''} *
-              </Label>
-              {field.type === 'pass_fail' ? (
-                <Select
-                  value={measurements[field.name]?.toString()}
-                  onValueChange={(val) => handleMeasurementChange(field.name, val === 'true')}
-                >
-                  <SelectTrigger className="h-16 text-xl border-2 font-semibold">
-                    <SelectValue placeholder="Select result" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="true" className="h-16 text-xl py-4">✓ PASS</SelectItem>
-                    <SelectItem value="false" className="h-16 text-xl py-4">✗ NO PASS</SelectItem>
-                  </SelectContent>
-                </Select>
-              ) : (
-                <Input
-                  id={field.name}
-                  type="number"
-                  step="0.01"
-                  value={measurements[field.name] || ''}
-                  onChange={(e) => handleMeasurementChange(field.name, e.target.value)}
-                  placeholder={`Enter ${field.label.toLowerCase()}`}
-                  className="h-16 text-2xl font-bold text-center border-2"
-                />
-              )}
-            </div>
-          ))}
+          {measurementFields.map((field: any) => {
+            const fieldLabel = getFieldLabel(field);
+            return (
+              <div key={field.name} className="space-y-4">
+                <Label htmlFor={field.name} className="text-xl font-data uppercase tracking-wider">
+                  {fieldLabel} {field.unit ? `(${field.unit})` : ''} *
+                </Label>
+                {field.type === 'pass_fail' ? (
+                  <Select
+                    value={measurements[field.name]?.toString()}
+                    onValueChange={(val) => handleMeasurementChange(field.name, val === 'true')}
+                  >
+                    <SelectTrigger className="h-16 text-xl border-2 font-semibold">
+                      <SelectValue placeholder="Select result" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="true" className="h-16 text-xl py-4">✓ PASS</SelectItem>
+                      <SelectItem value="false" className="h-16 text-xl py-4">✗ NO PASS</SelectItem>
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Input
+                    id={field.name}
+                    type="number"
+                    step="0.01"
+                    value={measurements[field.name] || ''}
+                    onChange={(e) => handleMeasurementChange(field.name, e.target.value)}
+                    placeholder={`Enter ${fieldLabel.toLowerCase()}`}
+                    className="h-16 text-2xl font-bold text-center border-2"
+                  />
+                )}
+              </div>
+            );
+          })}
 
           {validationResult && (
             <div className={`flex items-start gap-4 p-5 rounded-lg border-2 ${
