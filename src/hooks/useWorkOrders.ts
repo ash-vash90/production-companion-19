@@ -1,7 +1,8 @@
-import { useRef, useCallback, useMemo } from 'react';
+import { useRef, useCallback, useMemo, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useResilientQuery } from './useResilientQuery';
 import { getProductBreakdown, ProductBreakdown } from '@/lib/utils';
+import { endOfMonth, startOfDay, startOfMonth, subDays } from 'date-fns';
 
 // Global cache for work orders data
 const workOrdersCache = new Map<string, { data: any[]; timestamp: number }>();
@@ -33,6 +34,17 @@ interface UseWorkOrdersOptions {
   limit?: number;
   statusFilter?: WorkOrderStatus[];
   enableRealtime?: boolean;
+}
+
+export interface WorkOrderQueryFilters {
+  statusFilter?: WorkOrderStatus;
+  productFilter?: string;
+  customerFilter?: string;
+  searchTerm?: string;
+  ageFilter?: 'today' | 'week' | 'month' | 'older';
+  deliveryMonthFilter?: string;
+  createdMonthFilter?: string;
+  batchSizeFilter?: 'small' | 'medium' | 'large';
 }
 
 /**
@@ -256,34 +268,118 @@ export function invalidateWorkOrdersCache(): void {
 /**
  * Hook for paginated work orders - handles large datasets
  */
-export function usePaginatedWorkOrders(pageSize = 25) {
-  const pageRef = useRef(0);
-  const hasMoreRef = useRef(true);
-  const allDataRef = useRef<WorkOrderListItem[]>([]);
+export interface UsePaginatedWorkOrdersOptions {
+  pageSize?: number;
+  filters?: WorkOrderQueryFilters;
+  excludeCancelled?: boolean;
+}
 
-  const loadPage = useCallback(async (page: number): Promise<WorkOrderListItem[]> => {
+export function usePaginatedWorkOrders({ pageSize = 25, filters, excludeCancelled = true }: UsePaginatedWorkOrdersOptions = {}) {
+  const pageRef = useRef(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [additionalPages, setAdditionalPages] = useState<WorkOrderListItem[]>([]);
+  const [totalCount, setTotalCount] = useState<number | null>(null);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+
+  const filtersKey = useMemo(() => JSON.stringify(filters || {}), [filters]);
+
+  const applyFilters = useCallback((query: any) => {
+    if (excludeCancelled) {
+      query = query.neq('status', 'cancelled');
+    }
+
+    if (filters?.statusFilter) {
+      query = query.eq('status', filters.statusFilter);
+    }
+
+    if (filters?.productFilter) {
+      query = query.eq('product_type', filters.productFilter);
+    }
+
+    if (filters?.customerFilter) {
+      query = query.eq('customer_name', filters.customerFilter);
+    }
+
+    if (filters?.deliveryMonthFilter) {
+      const monthStart = startOfMonth(new Date(`${filters.deliveryMonthFilter}-01`));
+      const monthEnd = endOfMonth(monthStart);
+      query = query.gte('shipping_date', monthStart.toISOString()).lte('shipping_date', monthEnd.toISOString());
+    }
+
+    if (filters?.createdMonthFilter) {
+      const monthStart = startOfMonth(new Date(`${filters.createdMonthFilter}-01`));
+      const monthEnd = endOfMonth(monthStart);
+      query = query.gte('created_at', monthStart.toISOString()).lte('created_at', monthEnd.toISOString());
+    }
+
+    if (filters?.ageFilter) {
+      const now = new Date();
+      switch (filters.ageFilter) {
+        case 'today': {
+          const start = startOfDay(now).toISOString();
+          query = query.gte('created_at', start);
+          break;
+        }
+        case 'week': {
+          const start = subDays(startOfDay(now), 7).toISOString();
+          query = query.gte('created_at', start);
+          break;
+        }
+        case 'month': {
+          const start = subDays(startOfDay(now), 30).toISOString();
+          query = query.gte('created_at', start);
+          break;
+        }
+        case 'older': {
+          const cutoff = subDays(startOfDay(now), 30).toISOString();
+          query = query.lt('created_at', cutoff);
+          break;
+        }
+        default:
+          break;
+      }
+    }
+
+    if (filters?.batchSizeFilter) {
+      if (filters.batchSizeFilter === 'small') {
+        query = query.lte('batch_size', 5);
+      } else if (filters.batchSizeFilter === 'medium') {
+        query = query.gt('batch_size', 5).lte('batch_size', 20);
+      } else if (filters.batchSizeFilter === 'large') {
+        query = query.gt('batch_size', 20);
+      }
+    }
+
+    if (filters?.searchTerm) {
+      const term = `%${filters.searchTerm}%`;
+      query = query.or(`wo_number.ilike.${term},product_type.ilike.${term},customer_name.ilike.${term}`);
+    }
+
+    return query;
+  }, [excludeCancelled, filters]);
+
+  const loadPage = useCallback(async (page: number): Promise<{ data: WorkOrderListItem[]; total: number | null }> => {
     const from = page * pageSize;
     const to = from + pageSize - 1;
 
-    const { data: workOrdersData, error } = await supabase
+    let query = supabase
       .from('work_orders')
-      .select('id, wo_number, product_type, batch_size, status, created_at, created_by, customer_name, external_order_number, order_value, start_date, shipping_date, completed_at')
-      .neq('status', 'cancelled')
+      .select('id, wo_number, product_type, batch_size, status, created_at, created_by, customer_name, external_order_number, order_value, start_date, shipping_date, completed_at', { count: 'exact' })
       .order('created_at', { ascending: false })
       .range(from, to);
 
+    query = applyFilters(query);
+
+    const { data: workOrdersData, error, count } = await query;
+
     if (error) throw error;
 
-    if (!workOrdersData || workOrdersData.length < pageSize) {
-      hasMoreRef.current = false;
-    }
-
     if (!workOrdersData || workOrdersData.length === 0) {
-      return [];
+      return { data: [], total: count ?? null };
     }
 
     const woIds = workOrdersData.map(wo => wo.id);
-    
+
     const [itemsResult, profilesResult] = await Promise.all([
       supabase.from('work_order_items').select('work_order_id, serial_number').in('work_order_id', woIds),
       (async () => {
@@ -304,7 +400,7 @@ export function usePaginatedWorkOrders(pageSize = 25) {
       return acc;
     }, {} as Record<string, { full_name: string; avatar_url: string | null }>);
 
-    return workOrdersData.map(wo => {
+    const enrichedData = workOrdersData.map(wo => {
       const breakdown = getProductBreakdown(itemsMap[wo.id] || []);
       return {
         ...wo,
@@ -314,44 +410,77 @@ export function usePaginatedWorkOrders(pageSize = 25) {
         hasSubassemblies: breakdown.some(b => ['SENSOR', 'MLA', 'HMI', 'TRANSMITTER'].includes(b.type))
       };
     }) as WorkOrderListItem[];
-  }, [pageSize]);
+
+    return { data: enrichedData, total: count ?? null };
+  }, [pageSize, applyFilters]);
 
   const { data: initialData, loading, error, refetch } = useResilientQuery<WorkOrderListItem[]>({
-    queryFn: () => loadPage(0),
+    queryFn: async () => {
+      const { data, total } = await loadPage(0);
+      setTotalCount(total);
+      setHasMore(total !== null ? data.length < total : data.length === pageSize);
+      return data;
+    },
     fallbackData: [],
     timeout: 15000,
     retryCount: 3,
   });
 
   const loadMore = useCallback(async () => {
-    if (!hasMoreRef.current) return;
-    
-    pageRef.current += 1;
-    const newData = await loadPage(pageRef.current);
-    allDataRef.current = [...allDataRef.current, ...newData];
-  }, [loadPage]);
+    if (!hasMore || isLoadingMore) return;
+
+    setIsLoadingMore(true);
+    try {
+      const nextPage = pageRef.current + 1;
+      const { data } = await loadPage(nextPage);
+      pageRef.current = nextPage;
+
+      setAdditionalPages(prev => [...prev, ...data]);
+      setHasMore(prevHasMore => {
+        if (!prevHasMore) return prevHasMore;
+        if (totalCount !== null) {
+          const loadedCount = (initialData?.length || 0) + [...additionalPages, ...data].length;
+          return loadedCount < totalCount;
+        }
+        return data.length === pageSize;
+      });
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }, [additionalPages, hasMore, initialData?.length, isLoadingMore, loadPage, pageSize, totalCount]);
 
   const reset = useCallback(() => {
     pageRef.current = 0;
-    hasMoreRef.current = true;
-    allDataRef.current = [];
+    setHasMore(true);
+    setAdditionalPages([]);
+    setTotalCount(null);
     refetch();
   }, [refetch]);
 
-  // Merge initial data with loaded pages
+  useEffect(() => {
+    pageRef.current = 0;
+    setAdditionalPages([]);
+    setTotalCount(null);
+    setHasMore(true);
+    refetch();
+  }, [filtersKey, refetch]);
+
   const allWorkOrders = useMemo(() => {
-    if (allDataRef.current.length > 0) {
-      return [...(initialData || []), ...allDataRef.current];
+    const base = initialData || [];
+    if (additionalPages.length > 0) {
+      return [...base, ...additionalPages];
     }
-    return initialData || [];
-  }, [initialData]);
+    return base;
+  }, [additionalPages, initialData]);
 
   return {
     workOrders: allWorkOrders,
     loading,
     error,
     loadMore,
-    hasMore: hasMoreRef.current,
+    hasMore,
     reset,
+    totalCount,
+    isLoadingMore,
   };
 }
