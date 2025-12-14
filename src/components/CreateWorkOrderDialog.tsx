@@ -445,9 +445,9 @@ export function CreateWorkOrderDialog({ open, onOpenChange, onSuccess, trigger }
                     <Input
                       type="number"
                       min="1"
-                      max="50"
+                      max="500"
                       value={batch.quantity}
-                      onChange={(e) => updateProductBatch(batch.id, 'quantity', parseInt(e.target.value) || 1)}
+                      onChange={(e) => updateProductBatch(batch.id, 'quantity', Math.min(500, Math.max(1, parseInt(e.target.value) || 1)))}
                       className="h-8 text-center text-xs"
                     />
                   </div>
