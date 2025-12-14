@@ -9,19 +9,19 @@
   /* ========================================
      RHOSONICS BRAND COLORS
      ======================================== */
-  --rhosonics-green: 142 76% 36%;
-  --rhosonics-green-light: 142 76% 45%;
-  --rhosonics-green-glow: 142 76% 55%;
-  
+  --rhosonics-green: 138 68% 36%;
+  --rhosonics-green-light: 138 68% 45%;
+  --rhosonics-green-glow: 138 68% 55%;
+
   /* Lime accent for highlights */
-  --lime-accent: 82 85% 45%;
-  --lime-accent-light: 82 85% 55%;
-  
+  --lime-accent: 128 57% 55%;
+  --lime-accent-light: 128 57% 65%;
+
   /* ========================================
      OBSIDIAN/SLATE PALETTE
      ======================================== */
-  --obsidian: 228 25% 10%;
-  --obsidian-light: 228 20% 15%;
+  --obsidian: 215 33% 10%;
+  --obsidian-light: 215 28% 15%;
   --slate-50: 210 40% 98%;
   --slate-100: 210 40% 96%;
   --slate-200: 214 32% 91%;
@@ -36,9 +36,9 @@
   /* ========================================
      ECO SURFACE COLORS (for cards, panels)
      ======================================== */
-  --eco-surface: 142 10% 98%;
-  --eco-surface-hover: 142 15% 96%;
-  --eco-border: 142 10% 90%;
+  --eco-surface: 131 44% 93%;
+  --eco-surface-hover: 131 44% 90%;
+  --eco-border: 140 84% 81%;
   
   /* ========================================
      SEMANTIC COLOR TOKENS
@@ -51,7 +51,7 @@
   --popover-foreground: 228 25% 10%;
   
   /* Primary - Rhosonics green for buttons only */
-  --primary: 142 76% 36%;
+  --primary: 138 68% 36%;
   --primary-foreground: 0 0% 100%;
   
   /* Secondary - slate grays */
@@ -71,7 +71,7 @@
   --destructive-foreground: 0 0% 100%;
   
   /* Semantic status colors */
-  --success: 142 76% 36%;
+  --success: 138 68% 36%;
   --success-foreground: 0 0% 100%;
   --warning: 45 93% 47%;
   --warning-foreground: 228 25% 10%;
@@ -81,12 +81,12 @@
   /* Borders and inputs */
   --border: 214 32% 91%;
   --input: 214 32% 91%;
-  --ring: 142 76% 36%;
-  
+  --ring: 138 68% 36%;
+
   /* Charts - brand-aligned */
-  --chart-1: 142 76% 36%;
+  --chart-1: 138 68% 36%;
   --chart-2: 200 70% 50%;
-  --chart-3: 82 85% 45%;
+  --chart-3: 128 57% 55%;
   --chart-4: 45 93% 47%;
   --chart-5: 0 70% 55%;
   
@@ -94,14 +94,14 @@
   --radius: 0.5rem;
   
   /* Sidebar - obsidian dark */
-  --sidebar: 228 25% 10%;
+  --sidebar: 215 33% 10%;
   --sidebar-foreground: 210 40% 98%;
-  --sidebar-primary: 142 76% 36%;
+  --sidebar-primary: 138 68% 36%;
   --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 217 33% 17%;
+  --sidebar-accent: 215 28% 17%;
   --sidebar-accent-foreground: 210 40% 98%;
-  --sidebar-border: 217 33% 17%;
-  --sidebar-ring: 142 76% 36%;
+  --sidebar-border: 215 28% 17%;
+  --sidebar-ring: 138 68% 36%;
   
   /* ========================================
      MOTION TIMING TOKENS
@@ -128,50 +128,50 @@
 
 .dark {
   /* Dark mode using obsidian/slate palette - WCAG AA compliant */
-  --background: 228 25% 10%;
+  --background: 215 33% 10%;
   --foreground: 210 20% 95%;
-  --card: 217 33% 14%;
+  --card: 215 28% 14%;
   --card-foreground: 210 20% 95%;
-  --popover: 217 33% 14%;
+  --popover: 215 28% 14%;
   --popover-foreground: 210 20% 95%;
-  --primary: 142 70% 50%;
-  --primary-foreground: 228 25% 8%;
-  --secondary: 222 30% 18%;
+  --primary: 138 68% 50%;
+  --primary-foreground: 215 33% 8%;
+  --secondary: 215 25% 18%;
   --secondary-foreground: 210 20% 93%;
-  --muted: 222 30% 20%;
+  --muted: 215 25% 20%;
   --muted-foreground: 215 20% 75%;
-  --accent: 222 30% 20%;
+  --accent: 215 25% 20%;
   --accent-foreground: 210 20% 93%;
   --destructive: 0 72% 55%;
   --destructive-foreground: 0 0% 100%;
-  --success: 142 70% 50%;
-  --success-foreground: 142 80% 8%;
+  --success: 138 68% 50%;
+  --success-foreground: 138 80% 8%;
   --warning: 45 93% 58%;
   --warning-foreground: 45 90% 10%;
   --info: 200 80% 65%;
   --info-foreground: 200 80% 10%;
-  --border: 217 25% 28%;
-  --input: 217 25% 28%;
-  --ring: 142 70% 50%;
-  --chart-1: 142 70% 50%;
+  --border: 215 25% 28%;
+  --input: 215 25% 28%;
+  --ring: 138 68% 50%;
+  --chart-1: 138 68% 50%;
   --chart-2: 200 80% 65%;
-  --chart-3: 82 80% 58%;
+  --chart-3: 128 57% 58%;
   --chart-4: 45 93% 58%;
   --chart-5: 0 72% 62%;
-  
+
   /* Dark eco surface */
-  --eco-surface: 217 33% 14%;
-  --eco-surface-hover: 217 33% 20%;
-  --eco-border: 217 25% 28%;
-  
-  --sidebar: 222 40% 8%;
+  --eco-surface: 215 28% 14%;
+  --eco-surface-hover: 215 28% 20%;
+  --eco-border: 215 25% 28%;
+
+  --sidebar: 215 40% 8%;
   --sidebar-foreground: 210 20% 95%;
-  --sidebar-primary: 142 70% 50%;
-  --sidebar-primary-foreground: 228 25% 8%;
-  --sidebar-accent: 217 33% 16%;
+  --sidebar-primary: 138 68% 50%;
+  --sidebar-primary-foreground: 215 33% 8%;
+  --sidebar-accent: 215 28% 16%;
   --sidebar-accent-foreground: 210 20% 93%;
-  --sidebar-border: 217 25% 25%;
-  --sidebar-ring: 142 70% 50%;
+  --sidebar-border: 215 25% 25%;
+  --sidebar-ring: 138 68% 50%;
   
   /* Dark shadows */
   --shadow-glow: 0 0 20px hsl(var(--primary) / 0.25);
