@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -156,14 +155,16 @@ export function ProductionOverview() {
 
   if (loading) {
     return (
-      <section>
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <Package className="h-5 w-5 text-warning" />
-            <h2 className="font-semibold">{t('activeWorkOrdersTitle')}</h2>
+      <div className="rounded-xl border bg-card overflow-hidden">
+        <div className="p-4 sm:p-5 border-b bg-muted/30">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-warning/10">
+              <Package className="h-4 w-4 text-warning" />
+            </div>
+            <h2 className="font-semibold text-sm">{t('activeWorkOrdersTitle')}</h2>
           </div>
         </div>
-        <div className="space-y-2">
+        <div className="p-4 sm:p-5 space-y-2">
           {[1, 2, 3].map((i) => (
             <div key={i} className="flex items-center gap-4 py-3">
               <Skeleton className="h-4 w-24" />
@@ -172,84 +173,94 @@ export function ProductionOverview() {
             </div>
           ))}
         </div>
-      </section>
+      </div>
     );
   }
 
   if (error && (!workOrders || workOrders.length === 0)) {
     return (
-      <section>
-        <div className="flex items-center gap-2 mb-4">
-          <Package className="h-5 w-5 text-warning" />
-          <h2 className="font-semibold">{t('activeWorkOrdersTitle')}</h2>
+      <div className="rounded-xl border bg-card overflow-hidden">
+        <div className="p-4 sm:p-5 border-b bg-muted/30">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-warning/10">
+              <Package className="h-4 w-4 text-warning" />
+            </div>
+            <h2 className="font-semibold text-sm">{t('activeWorkOrdersTitle')}</h2>
+          </div>
         </div>
-        <div className="flex items-center justify-center py-8 gap-3 text-muted-foreground">
-          <AlertCircle className="h-5 w-5" />
-          <span className="text-sm">Failed to load work orders</span>
-          <Button variant="ghost" size="sm" onClick={() => refetch()}>
-            <RefreshCw className="h-4 w-4" />
-          </Button>
+        <div className="p-4 sm:p-5">
+          <div className="flex items-center justify-center py-6 gap-3 text-muted-foreground">
+            <AlertCircle className="h-5 w-5" />
+            <span className="text-sm">Failed to load work orders</span>
+            <Button variant="ghost" size="sm" onClick={() => refetch()}>
+              <RefreshCw className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
-      </section>
+      </div>
     );
   }
 
   return (
     <>
-      <section>
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
-          <div className="flex items-center gap-2 flex-wrap">
-            <Package className="h-5 w-5 text-warning" />
-            <h2 className="font-semibold">{t('activeWorkOrdersTitle')}</h2>
-            <Badge variant="warning">{inProgressCount}</Badge>
-            {plannedCount > 0 && !showAll && (
-              <span className="text-sm text-muted-foreground">
-                +{plannedCount} {language === 'nl' ? 'gepland' : 'planned'}
-              </span>
-            )}
-            {isStale && (
-              <Button variant="ghost" size="sm" className="h-6 px-2" onClick={() => refetch()}>
-                <RefreshCw className="h-3 w-3" />
+      <div className="rounded-xl border bg-card overflow-hidden">
+        {/* Section Header */}
+        <div className="p-4 sm:p-5 border-b bg-muted/30">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-warning/10">
+                <Package className="h-4 w-4 text-warning" />
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h2 className="font-semibold text-sm">{t('activeWorkOrdersTitle')}</h2>
+                <Badge variant="warning" className="text-xs">{inProgressCount}</Badge>
+                {plannedCount > 0 && !showAll && (
+                  <span className="text-xs text-muted-foreground">
+                    +{plannedCount} {language === 'nl' ? 'gepland' : 'planned'}
+                  </span>
+                )}
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {isStale && (
+                <Button variant="ghost" size="sm" className="h-7" onClick={() => refetch()}>
+                  <RefreshCw className="h-3 w-3" />
+                </Button>
+              )}
+              {(plannedCount > 0 || showAll) && (
+                <Button variant="ghost" size="sm" onClick={() => setShowAll(!showAll)}>
+                  <Eye className="h-4 w-4 mr-1.5" />
+                  {showAll
+                    ? language === 'nl' ? 'Actief' : 'Active'
+                    : language === 'nl' ? 'Alles' : 'All'}
+                </Button>
+              )}
+              <Button variant="default" size="sm" onClick={() => setDialogOpen(true)}>
+                <Plus className="mr-1.5 h-4 w-4" />
+                {language === 'nl' ? 'Nieuw' : 'New'}
               </Button>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            {(plannedCount > 0 || showAll) && (
-              <Button variant="ghost" size="sm" onClick={() => setShowAll(!showAll)}>
-                <Eye className="h-4 w-4 mr-1.5" />
-                {showAll
-                  ? language === 'nl'
-                    ? 'Actief'
-                    : 'Active'
-                  : language === 'nl'
-                    ? 'Alles'
-                    : 'All'}
-              </Button>
-            )}
-            <Button variant="default" size="sm" onClick={() => setDialogOpen(true)}>
-              <Plus className="mr-1.5 h-4 w-4" />
-              {language === 'nl' ? 'Nieuw' : 'New'}
-            </Button>
+            </div>
           </div>
         </div>
 
-        {displayedOrders.length > 0 ? (
-          <div className="space-y-3">
-            {displayedOrders.map((wo) => (
-              <Card
-                key={wo.id}
-                onClick={() => navigate(`/production/${wo.id}`)}
-                className="group cursor-pointer hover:-translate-y-[1px] transition-transform"
-              >
-                <div className="flex items-center gap-4 p-3 sm:p-4">
+        {/* Content */}
+        <div className="p-4 sm:p-5">
+          {displayedOrders.length > 0 ? (
+            <div className="space-y-2">
+              {displayedOrders.map((wo) => (
+                <div
+                  key={wo.id}
+                  onClick={() => navigate(`/production/${wo.id}`)}
+                  className="group flex items-center gap-3 p-3 cursor-pointer rounded-lg border border-border bg-background hover:border-primary/30 hover:shadow-sm transition-all"
+                >
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-mono font-medium text-sm">{wo.wo_number}</span>
+                      <span className="font-mono font-semibold text-sm">{wo.wo_number}</span>
                       <Badge variant={getStatusVariant(wo.status)} className="text-[10px]">
                         {getStatusLabel(wo.status)}
                       </Badge>
                     </div>
-                    <div className="mt-0.5 text-xs text-muted-foreground truncate">
+                    <div className="mt-1 text-xs text-muted-foreground truncate">
                       {wo.productBreakdown.length > 0
                         ? formatProductBreakdownText(wo.productBreakdown)
                         : `${wo.batch_size} items`}
@@ -258,21 +269,26 @@ export function ProductionOverview() {
                       )}
                     </div>
                   </div>
-                  <ExternalLink className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                  <ExternalLink className="h-4 w-4 text-muted-foreground/50 group-hover:text-primary transition-colors shrink-0" />
                 </div>
-              </Card>
-            ))}
-          </div>
-        ) : (
-          <div className="py-12 text-center text-sm text-muted-foreground">
-            {showAll
-              ? t('noActiveWorkOrders')
-              : language === 'nl'
-                ? 'Geen actieve werkorders'
-                : 'No work orders in progress'}
-          </div>
-        )}
-      </section>
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-8 text-center">
+              <div className="p-3 rounded-full bg-muted/50 mb-3">
+                <Package className="h-5 w-5 text-muted-foreground" />
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {showAll
+                  ? t('noActiveWorkOrders')
+                  : language === 'nl'
+                    ? 'Geen actieve werkorders'
+                    : 'No work orders in progress'}
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
 
       <CreateWorkOrderDialog
         open={dialogOpen}

@@ -8,7 +8,6 @@ import { formatDistanceToNow } from 'date-fns';
 import { nl, enUS } from 'date-fns/locale';
 import { useResilientQuery } from '@/hooks/useResilientQuery';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Card } from '@/components/ui/card';
 
 interface ActivityDetails {
   step_number?: number;
@@ -122,69 +121,85 @@ export const RecentActivity = memo(function RecentActivity() {
 
   if (loading) {
     return (
-      <section>
-        <div className="flex items-center gap-2 mb-4">
-          <Activity className="h-5 w-5 text-muted-foreground" />
-          <h2 className="font-semibold">{t('recentActivityTitle')}</h2>
+      <div className="rounded-xl border bg-card overflow-hidden">
+        <div className="p-4 sm:p-5 border-b bg-muted/30">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-muted">
+              <Activity className="h-4 w-4 text-muted-foreground" />
+            </div>
+            <h2 className="font-semibold text-sm">{t('recentActivityTitle')}</h2>
+          </div>
         </div>
-        <div className="space-y-3">
+        <div className="p-4 sm:p-5 space-y-2">
           {[1, 2, 3].map((i) => (
-            <Card key={i} className="shadow-card">
-              <div className="flex items-start gap-3 p-3 sm:p-4">
-                <Skeleton className="h-5 w-20 rounded-full" />
-                <div className="space-y-1.5 flex-1">
-                  <Skeleton className="h-3 w-24" />
-                  <Skeleton className="h-3 w-16" />
-                </div>
+            <div key={i} className="flex items-start gap-3 p-3 rounded-lg border">
+              <Skeleton className="h-5 w-20 rounded-full" />
+              <div className="space-y-1.5 flex-1">
+                <Skeleton className="h-3 w-24" />
+                <Skeleton className="h-3 w-16" />
               </div>
-            </Card>
+            </div>
           ))}
         </div>
-      </section>
+      </div>
     );
   }
 
   if (error && displayActivities.length === 0) {
     return (
-      <section>
-        <div className="flex items-center gap-2 mb-4">
-          <Activity className="h-5 w-5 text-muted-foreground" />
-          <h2 className="font-semibold">{t('recentActivityTitle')}</h2>
+      <div className="rounded-xl border bg-card overflow-hidden">
+        <div className="p-4 sm:p-5 border-b bg-muted/30">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-muted">
+              <Activity className="h-4 w-4 text-muted-foreground" />
+            </div>
+            <h2 className="font-semibold text-sm">{t('recentActivityTitle')}</h2>
+          </div>
         </div>
-        <div className="flex items-center justify-center py-8 gap-3 text-muted-foreground">
-          <AlertCircle className="h-5 w-5" />
-          <span className="text-sm">Failed to load activity</span>
-          <Button variant="ghost" size="sm" onClick={() => refetch()}>
-            <RefreshCw className="h-4 w-4" />
-          </Button>
+        <div className="p-4 sm:p-5">
+          <div className="flex items-center justify-center py-6 gap-3 text-muted-foreground">
+            <AlertCircle className="h-5 w-5" />
+            <span className="text-sm">Failed to load activity</span>
+            <Button variant="ghost" size="sm" onClick={() => refetch()}>
+              <RefreshCw className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
-      </section>
+      </div>
     );
   }
 
   return (
-    <section>
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <Activity className="h-5 w-5 text-muted-foreground" />
-          <h2 className="font-semibold">{t('recentActivityTitle')}</h2>
+    <div className="rounded-xl border bg-card overflow-hidden">
+      {/* Section Header */}
+      <div className="p-4 sm:p-5 border-b bg-muted/30">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-muted">
+              <Activity className="h-4 w-4 text-muted-foreground" />
+            </div>
+            <h2 className="font-semibold text-sm">{t('recentActivityTitle')}</h2>
+          </div>
+          {isStale && (
+            <Button variant="ghost" size="sm" className="h-7" onClick={() => refetch()}>
+              <RefreshCw className="h-3 w-3" />
+            </Button>
+          )}
         </div>
-        {isStale && (
-          <Button variant="ghost" size="sm" className="h-7" onClick={() => refetch()}>
-            <RefreshCw className="h-3 w-3 mr-1" />
-            Refresh
-          </Button>
-        )}
       </div>
 
-      {displayActivities.length > 0 ? (
-        <div className="space-y-3">
-          {displayActivities.map((activity) => {
-            const detailsText = formatActivityDetails(activity);
+      {/* Content */}
+      <div className="p-4 sm:p-5">
+        {displayActivities.length > 0 ? (
+          <div className="space-y-2">
+            {displayActivities.map((activity) => {
+              const detailsText = formatActivityDetails(activity);
 
-            return (
-              <Card key={activity.id} className="shadow-card">
-                <div className="flex items-center gap-3 p-3 sm:p-4">
+              return (
+                <div
+                  key={activity.id}
+                  className="flex items-center gap-3 p-3 rounded-lg border border-border bg-background"
+                >
                   <Badge
                     className={`${getActionColor(activity.action)} text-[10px] shrink-0 whitespace-nowrap`}
                   >
@@ -208,15 +223,20 @@ export const RecentActivity = memo(function RecentActivity() {
                     })}
                   </span>
                 </div>
-              </Card>
-            );
-          })}
-        </div>
-      ) : (
-        <div className="py-12 text-center text-sm text-muted-foreground">
-          {t('noRecentActivity')}
-        </div>
-      )}
-    </section>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-8 text-center">
+            <div className="p-3 rounded-full bg-muted/50 mb-3">
+              <Activity className="h-5 w-5 text-muted-foreground" />
+            </div>
+            <p className="text-sm text-muted-foreground">
+              {t('noRecentActivity')}
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
   );
 });
