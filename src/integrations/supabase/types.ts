@@ -1178,6 +1178,177 @@ export type Database = {
         }
         Relationships: []
       }
+      work_instructions: {
+        Row: {
+          id: string
+          product_type: Database["public"]["Enums"]["product_type"]
+          production_step_id: string | null
+          title_en: string
+          title_nl: string | null
+          description_en: string | null
+          description_nl: string | null
+          is_active: boolean
+          sort_order: number
+          created_by: string | null
+          updated_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          product_type: Database["public"]["Enums"]["product_type"]
+          production_step_id?: string | null
+          title_en: string
+          title_nl?: string | null
+          description_en?: string | null
+          description_nl?: string | null
+          is_active?: boolean
+          sort_order?: number
+          created_by?: string | null
+          updated_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          product_type?: Database["public"]["Enums"]["product_type"]
+          production_step_id?: string | null
+          title_en?: string
+          title_nl?: string | null
+          description_en?: string | null
+          description_nl?: string | null
+          is_active?: boolean
+          sort_order?: number
+          created_by?: string | null
+          updated_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "work_instructions_production_step_id_fkey"
+            columns: ["production_step_id"]
+            isOneToOne: false
+            referencedRelation: "production_steps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      instruction_steps: {
+        Row: {
+          id: string
+          work_instruction_id: string
+          step_number: number
+          title_en: string
+          title_nl: string | null
+          content_en: string | null
+          content_nl: string | null
+          warning_text_en: string | null
+          warning_text_nl: string | null
+          tip_text_en: string | null
+          tip_text_nl: string | null
+          estimated_duration_minutes: number | null
+          required_tools: string[] | null
+          sort_order: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          work_instruction_id: string
+          step_number: number
+          title_en: string
+          title_nl?: string | null
+          content_en?: string | null
+          content_nl?: string | null
+          warning_text_en?: string | null
+          warning_text_nl?: string | null
+          tip_text_en?: string | null
+          tip_text_nl?: string | null
+          estimated_duration_minutes?: number | null
+          required_tools?: string[] | null
+          sort_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          work_instruction_id?: string
+          step_number?: number
+          title_en?: string
+          title_nl?: string | null
+          content_en?: string | null
+          content_nl?: string | null
+          warning_text_en?: string | null
+          warning_text_nl?: string | null
+          tip_text_en?: string | null
+          tip_text_nl?: string | null
+          estimated_duration_minutes?: number | null
+          required_tools?: string[] | null
+          sort_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "instruction_steps_work_instruction_id_fkey"
+            columns: ["work_instruction_id"]
+            isOneToOne: false
+            referencedRelation: "work_instructions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      instruction_media: {
+        Row: {
+          id: string
+          instruction_step_id: string
+          media_type: string
+          url: string
+          thumbnail_url: string | null
+          title_en: string | null
+          title_nl: string | null
+          alt_text_en: string | null
+          alt_text_nl: string | null
+          sort_order: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          instruction_step_id: string
+          media_type: string
+          url: string
+          thumbnail_url?: string | null
+          title_en?: string | null
+          title_nl?: string | null
+          alt_text_en?: string | null
+          alt_text_nl?: string | null
+          sort_order?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          instruction_step_id?: string
+          media_type?: string
+          url?: string
+          thumbnail_url?: string | null
+          title_en?: string | null
+          title_nl?: string | null
+          alt_text_en?: string | null
+          alt_text_nl?: string | null
+          sort_order?: number
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "instruction_media_instruction_step_id_fkey"
+            columns: ["instruction_step_id"]
+            isOneToOne: false
+            referencedRelation: "instruction_steps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
