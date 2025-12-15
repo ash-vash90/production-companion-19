@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { RichTextContent } from '@/components/ui/rich-text-editor';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import {
@@ -311,24 +312,24 @@ export function WorkInstructionViewer({
                       {currentStep.warning_text_en && (
                         <div className="flex gap-3 p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900">
                           <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
-                          <div>
+                          <div className="flex-1 min-w-0">
                             <h4 className="font-medium text-amber-800 dark:text-amber-200 text-sm mb-1">
                               {language === 'nl' ? 'Waarschuwing' : 'Warning'}
                             </h4>
-                            <p className="text-sm text-amber-700 dark:text-amber-300">
-                              {getText(currentStep.warning_text_en, currentStep.warning_text_nl)}
-                            </p>
+                            <RichTextContent
+                              content={getText(currentStep.warning_text_en, currentStep.warning_text_nl)}
+                              className="text-sm text-amber-700 dark:text-amber-300 [&_p]:m-0"
+                            />
                           </div>
                         </div>
                       )}
 
                       {/* Main content */}
                       {currentStep.content_en && (
-                        <div className="prose prose-sm dark:prose-invert max-w-none">
-                          <p className="whitespace-pre-wrap">
-                            {getText(currentStep.content_en, currentStep.content_nl)}
-                          </p>
-                        </div>
+                        <RichTextContent
+                          content={getText(currentStep.content_en, currentStep.content_nl)}
+                          className="prose-sm dark:prose-invert"
+                        />
                       )}
 
                       {/* Required tools */}
@@ -354,13 +355,14 @@ export function WorkInstructionViewer({
                       {currentStep.tip_text_en && (
                         <div className="flex gap-3 p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900">
                           <Lightbulb className="h-5 w-5 text-blue-600 shrink-0 mt-0.5" />
-                          <div>
+                          <div className="flex-1 min-w-0">
                             <h4 className="font-medium text-blue-800 dark:text-blue-200 text-sm mb-1">
                               {language === 'nl' ? 'Tip' : 'Tip'}
                             </h4>
-                            <p className="text-sm text-blue-700 dark:text-blue-300">
-                              {getText(currentStep.tip_text_en, currentStep.tip_text_nl)}
-                            </p>
+                            <RichTextContent
+                              content={getText(currentStep.tip_text_en, currentStep.tip_text_nl)}
+                              className="text-sm text-blue-700 dark:text-blue-300 [&_p]:m-0"
+                            />
                           </div>
                         </div>
                       )}
