@@ -24,8 +24,42 @@ import {
 import type { Database } from '@/integrations/supabase/types';
 
 type ProductType = Database['public']['Enums']['product_type'];
-type WorkInstruction = Database['public']['Tables']['work_instructions']['Row'];
-type InstructionStep = Database['public']['Tables']['instruction_steps']['Row'];
+
+// Type definitions for work instructions (until types are regenerated)
+interface WorkInstruction {
+  id: string;
+  product_type: ProductType;
+  production_step_id: string | null;
+  title_en: string;
+  title_nl: string | null;
+  description_en: string | null;
+  description_nl: string | null;
+  is_active: boolean;
+  sort_order: number;
+  created_by: string | null;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+interface InstructionStep {
+  id: string;
+  work_instruction_id: string;
+  step_number: number;
+  title_en: string;
+  title_nl: string | null;
+  content_en: string | null;
+  content_nl: string | null;
+  warning_text_en: string | null;
+  warning_text_nl: string | null;
+  tip_text_en: string | null;
+  tip_text_nl: string | null;
+  estimated_duration_minutes: number | null;
+  required_tools: string[] | null;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
 
 interface InstructionWithSteps extends WorkInstruction {
   instruction_steps: InstructionStep[];
@@ -64,7 +98,7 @@ export function WorkInstructionViewer({
 
       // Build query - get instructions for this product type
       let query = supabase
-        .from('work_instructions')
+        .from('work_instructions' as any)
         .select(`
           *,
           instruction_steps (*)
