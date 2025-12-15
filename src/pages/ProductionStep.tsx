@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -10,8 +10,10 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Loader2, ArrowLeft, CheckCircle2, AlertCircle, ScanBarcode, History, XCircle, Users, Link2 } from 'lucide-react';
+import { Loader2, ArrowLeft, CheckCircle2, AlertCircle, ScanBarcode, History, XCircle, Users, Link2, MoreVertical, ChevronLeft, ChevronRight, RefreshCw, Play, ClipboardCheck, Ruler } from 'lucide-react';
 import { formatDateTime } from '@/lib/utils';
+import { useTouchDevice, useSwipeGesture, usePullToRefresh, useHapticFeedback } from '@/hooks/useTouchDevice';
+import { FloatingActionButton, ActionSheet, MobileActionBar } from '@/components/mobile/MobileActionBar';
 import MeasurementDialog from '@/components/production/MeasurementDialog';
 import ChecklistDialog from '@/components/production/ChecklistDialog';
 import BatchScanDialog from '@/components/production/BatchScanDialog';
@@ -45,14 +47,21 @@ const ProductionStep = () => {
   const { user } = useAuth();
   const { t } = useLanguage();
   const navigate = useNavigate();
-  
+
+  // Mobile-specific hooks
+  const isTouchDevice = useTouchDevice();
+  const haptic = useHapticFeedback();
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [showMobileActions, setShowMobileActions] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
   const [loading, setLoading] = useState(true);
   const [item, setItem] = useState<any>(null);
   const [workOrder, setWorkOrder] = useState<any>(null);
   const [productionSteps, setProductionSteps] = useState<any[]>([]);
   const [currentStep, setCurrentStep] = useState<any>(null);
   const [stepExecution, setStepExecution] = useState<any>(null);
-  
+
   const [showMeasurementDialog, setShowMeasurementDialog] = useState(false);
   const [showChecklistDialog, setShowChecklistDialog] = useState(false);
   const [showBatchScanDialog, setShowBatchScanDialog] = useState(false);
@@ -483,6 +492,143 @@ const ProductionStep = () => {
       .slice(0, 2);
   };
 
+  // Pull-to-refresh handler
+  const handleRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    haptic.medium();
+    await fetchData();
+    setIsRefreshing(false);
+  }, [haptic]);
+
+  // Use pull-to-refresh on touch devices
+  usePullToRefresh({
+    onRefresh: handleRefresh,
+    threshold: 80,
+    enabled: isTouchDevice && !loading,
+  });
+
+  // Swipe gesture handlers for step navigation (view previous completed steps)
+  useSwipeGesture(
+    {
+      onSwipeLeft: () => {
+        // Show next completed step if available
+        if (item && viewingStepNumber !== null) {
+          const nextStep = viewingStepNumber + 1;
+          if (nextStep < item.current_step) {
+            haptic.light();
+            setViewingStepNumber(nextStep);
+          }
+        }
+      },
+      onSwipeRight: () => {
+        // Show previous completed step if available
+        if (item && viewingStepNumber !== null) {
+          const prevStep = viewingStepNumber - 1;
+          if (prevStep >= 1) {
+            haptic.light();
+            setViewingStepNumber(prevStep);
+          }
+        } else if (item && item.current_step > 1) {
+          // Open the previous step viewer
+          haptic.light();
+          setViewingStepNumber(item.current_step - 1);
+          setShowStepDetail(true);
+        }
+      },
+    },
+    {
+      threshold: 75,
+      enabled: isTouchDevice && showStepDetail,
+    }
+  );
+
+  // Mobile action handlers with haptic feedback
+  const handleMobileStartStep = () => {
+    haptic.medium();
+    handleStartStep();
+  };
+
+  const handleMobileCompleteStep = () => {
+    haptic.heavy();
+    handleCompleteStep();
+  };
+
+  // Get mobile actions for the action sheet
+  const getMobileActions = () => {
+    const actions: Array<{
+      label: string;
+      icon?: React.ReactNode;
+      onClick: () => void;
+      variant?: 'default' | 'destructive';
+    }> = [];
+
+    if (stepExecution) {
+      // Show available actions based on step requirements
+      const itemProductType = item?.product_type || workOrder?.product_type;
+
+      if (itemProductType === 'SDM_ECO' && currentStep?.requires_barcode_scan) {
+        actions.push({
+          label: t('linkComponent') || 'Link Component',
+          icon: <Link2 className="h-5 w-5" />,
+          onClick: () => {
+            const stepTitle = currentStep.title_en.toLowerCase();
+            if (stepTitle.includes('sensor')) setExpectedLinkType('SENSOR');
+            else if (stepTitle.includes('mla')) setExpectedLinkType('MLA');
+            else if (stepTitle.includes('hmi')) setExpectedLinkType('HMI');
+            else if (stepTitle.includes('transmitter')) setExpectedLinkType('TRANSMITTER');
+            setShowSubAssemblyLink(true);
+            setShowMobileActions(false);
+          },
+        });
+      }
+
+      if (currentStep?.requires_batch_number) {
+        actions.push({
+          label: t('scanMaterials'),
+          icon: <ScanBarcode className="h-5 w-5" />,
+          onClick: () => {
+            setShowBatchScanDialog(true);
+            setShowMobileActions(false);
+          },
+        });
+      }
+
+      if (currentStep?.requires_value_input || currentStep?.measurement_fields) {
+        actions.push({
+          label: t('enterMeasurements'),
+          icon: <Ruler className="h-5 w-5" />,
+          onClick: () => {
+            setShowMeasurementDialog(true);
+            setShowMobileActions(false);
+          },
+        });
+      }
+
+      if (currentStep?.has_checklist) {
+        actions.push({
+          label: t('completeChecklist'),
+          icon: <ClipboardCheck className="h-5 w-5" />,
+          onClick: () => {
+            setShowChecklistDialog(true);
+            setShowMobileActions(false);
+          },
+        });
+      }
+    }
+
+    // Always add history action
+    actions.push({
+      label: t('history'),
+      icon: <History className="h-5 w-5" />,
+      onClick: () => {
+        setShowValidationHistory(true);
+        setShowMobileActions(false);
+      },
+    });
+
+    return actions;
+  };
+
   if (loading) {
     return (
       <Layout>
@@ -509,38 +655,51 @@ const ProductionStep = () => {
 
   return (
     <Layout>
-      <div className="space-y-6 md:space-y-8 max-w-3xl mx-auto">
+      <div ref={containerRef} className="space-y-6 md:space-y-8 max-w-3xl mx-auto pb-24 md:pb-8">
+        {/* Pull-to-refresh indicator */}
+        {isRefreshing && (
+          <div className="fixed top-16 left-1/2 -translate-x-1/2 z-50 bg-primary text-primary-foreground px-4 py-2 rounded-full shadow-lg flex items-center gap-2 animate-in slide-in-from-top">
+            <RefreshCw className="h-4 w-4 animate-spin" />
+            <span className="text-sm font-medium">{t('refreshing') || 'Refreshing...'}</span>
+          </div>
+        )}
+
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate(`/production/${item.work_order_id}`)} className="h-12 w-12 md:h-10 md:w-10">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate(`/production/${item.work_order_id}`)}
+              className="h-12 w-12 md:h-10 md:w-10 touch-target"
+            >
               <ArrowLeft className="h-6 w-6 md:h-5 md:w-5" />
             </Button>
             <div className="space-y-1">
-              <h1 className="text-3xl md:text-4xl font-bold tracking-tight font-data">{item.serial_number}</h1>
-              <p className="text-base md:text-lg text-muted-foreground font-data">
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight font-data">{item.serial_number}</h1>
+              <p className="text-sm sm:text-base md:text-lg text-muted-foreground font-data">
                 {item.product_type || workOrder.product_type} • {t('step')} {item.current_step} {t('of')} {productionSteps.length}
               </p>
             </div>
           </div>
-          
-          <div className="flex items-center gap-3">
+
+          <div className="flex items-center gap-2 sm:gap-3">
             {/* Active users indicator */}
             {presentUsers.length > 0 && (
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <div className="flex items-center gap-2 px-3 py-2 bg-accent/50 rounded-lg border">
+                    <div className="flex items-center gap-2 px-2 sm:px-3 py-2 bg-accent/50 rounded-lg border">
                       <Users className="h-4 w-4 text-muted-foreground" />
                       <div className="flex -space-x-2">
                         {presentUsers.slice(0, 3).map((pUser) => (
-                          <Avatar key={pUser.id} className="h-8 w-8 border-2 border-background">
+                          <Avatar key={pUser.id} className="h-7 w-7 sm:h-8 sm:w-8 border-2 border-background">
                             <AvatarFallback className="bg-primary text-primary-foreground text-xs">
                               {getInitials(pUser.name)}
                             </AvatarFallback>
                           </Avatar>
                         ))}
                         {presentUsers.length > 3 && (
-                          <div className="h-8 w-8 rounded-full bg-muted border-2 border-background flex items-center justify-center text-xs font-medium">
+                          <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-full bg-muted border-2 border-background flex items-center justify-center text-xs font-medium">
                             +{presentUsers.length - 3}
                           </div>
                         )}
@@ -558,17 +717,30 @@ const ProductionStep = () => {
                 </Tooltip>
               </TooltipProvider>
             )}
-            
-            <Button variant="outline" size="lg" onClick={() => setShowValidationHistory(true)} className="gap-2">
-              <History className="h-5 w-5" />
-              <span className="hidden sm:inline">{t('history')}</span>
-            </Button>
 
-            <WorkInstructionViewer
-              productType={(item.product_type || workOrder.product_type) as 'SDM_ECO' | 'SENSOR' | 'MLA' | 'HMI' | 'TRANSMITTER'}
-              productionStepId={currentStep?.id}
-              productionStepNumber={currentStep?.step_number}
-            />
+            {/* Desktop actions */}
+            <div className="hidden sm:flex items-center gap-2">
+              <Button variant="outline" size="lg" onClick={() => setShowValidationHistory(true)} className="gap-2">
+                <History className="h-5 w-5" />
+                <span className="hidden md:inline">{t('history')}</span>
+              </Button>
+
+              <WorkInstructionViewer
+                productType={(item.product_type || workOrder.product_type) as 'SDM_ECO' | 'SENSOR' | 'MLA' | 'HMI' | 'TRANSMITTER'}
+                productionStepId={currentStep?.id}
+                productionStepNumber={currentStep?.step_number}
+              />
+            </div>
+
+            {/* Mobile more actions button */}
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setShowMobileActions(true)}
+              className="sm:hidden h-12 w-12 touch-target"
+            >
+              <MoreVertical className="h-5 w-5" />
+            </Button>
           </div>
         </div>
 
@@ -608,57 +780,100 @@ const ProductionStep = () => {
               </div>
             )}
 
-            {!stepExecution ? (
-              <Button onClick={handleStartStep} variant="default" size="lg" className="w-full">
-                {t('startStep')}
-              </Button>
-            ) : (
-              <div className="space-y-4">
-                {/* SDM_ECO component linking button */}
-                {(item.product_type || workOrder.product_type) === 'SDM_ECO' && currentStep.requires_barcode_scan && (
-                  <Button 
-                    onClick={() => {
-                      const stepTitle = currentStep.title_en.toLowerCase();
-                      if (stepTitle.includes('sensor')) setExpectedLinkType('SENSOR');
-                      else if (stepTitle.includes('mla')) setExpectedLinkType('MLA');
-                      else if (stepTitle.includes('hmi')) setExpectedLinkType('HMI');
-                      else if (stepTitle.includes('transmitter')) setExpectedLinkType('TRANSMITTER');
-                      setShowSubAssemblyLink(true);
-                    }} 
-                    variant="outline" 
-                    size="lg" 
-                    className="w-full"
-                  >
-                    <Link2 className="mr-2 h-5 w-5" />
-                    {t('linkComponent') || 'Link Component'}
-                  </Button>
-                )}
-                
-                {currentStep.requires_batch_number && (
-                  <Button onClick={() => setShowBatchScanDialog(true)} variant="outline" size="lg" className="w-full">
-                    <ScanBarcode className="mr-2" />
-                    {t('scanMaterials')}
-                  </Button>
-                )}
-                
-                {(currentStep.requires_value_input || currentStep.measurement_fields) && (
-                  <Button onClick={() => setShowMeasurementDialog(true)} variant="outline" size="lg" className="w-full">
-                    {t('enterMeasurements')}
-                  </Button>
-                )}
-
-                {currentStep.has_checklist && (
-                  <Button onClick={() => setShowChecklistDialog(true)} variant="outline" size="lg" className="w-full">
-                    {t('completeChecklist')}
-                  </Button>
-                )}
-
-                <Button onClick={handleCompleteStep} variant="default" size="lg" className="w-full">
-                  <CheckCircle2 className="mr-2" />
-                  {t('completeStep')}
+            {/* Desktop/tablet action buttons - hidden on mobile where FAB is used */}
+            <div className="hidden sm:block">
+              {!stepExecution ? (
+                <Button onClick={handleStartStep} variant="default" size="lg" className="w-full h-14 text-base">
+                  <Play className="mr-2 h-5 w-5" />
+                  {t('startStep')}
                 </Button>
+              ) : (
+                <div className="space-y-3">
+                  {/* SDM_ECO component linking button */}
+                  {(item.product_type || workOrder.product_type) === 'SDM_ECO' && currentStep.requires_barcode_scan && (
+                    <Button
+                      onClick={() => {
+                        const stepTitle = currentStep.title_en.toLowerCase();
+                        if (stepTitle.includes('sensor')) setExpectedLinkType('SENSOR');
+                        else if (stepTitle.includes('mla')) setExpectedLinkType('MLA');
+                        else if (stepTitle.includes('hmi')) setExpectedLinkType('HMI');
+                        else if (stepTitle.includes('transmitter')) setExpectedLinkType('TRANSMITTER');
+                        setShowSubAssemblyLink(true);
+                      }}
+                      variant="outline"
+                      size="lg"
+                      className="w-full h-14 text-base"
+                    >
+                      <Link2 className="mr-2 h-5 w-5" />
+                      {t('linkComponent') || 'Link Component'}
+                    </Button>
+                  )}
+
+                  {currentStep.requires_batch_number && (
+                    <Button onClick={() => setShowBatchScanDialog(true)} variant="outline" size="lg" className="w-full h-14 text-base">
+                      <ScanBarcode className="mr-2 h-5 w-5" />
+                      {t('scanMaterials')}
+                    </Button>
+                  )}
+
+                  {(currentStep.requires_value_input || currentStep.measurement_fields) && (
+                    <Button onClick={() => setShowMeasurementDialog(true)} variant="outline" size="lg" className="w-full h-14 text-base">
+                      <Ruler className="mr-2 h-5 w-5" />
+                      {t('enterMeasurements')}
+                    </Button>
+                  )}
+
+                  {currentStep.has_checklist && (
+                    <Button onClick={() => setShowChecklistDialog(true)} variant="outline" size="lg" className="w-full h-14 text-base">
+                      <ClipboardCheck className="mr-2 h-5 w-5" />
+                      {t('completeChecklist')}
+                    </Button>
+                  )}
+
+                  <Button onClick={handleCompleteStep} variant="default" size="lg" className="w-full h-14 text-base">
+                    <CheckCircle2 className="mr-2 h-5 w-5" />
+                    {t('completeStep')}
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            {/* Mobile action summary - shows on mobile where FAB is primary action */}
+            <div className="sm:hidden">
+              <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg border">
+                <div className="space-y-1">
+                  <p className="text-sm font-medium">
+                    {stepExecution ? t('stepInProgress') || 'Step in progress' : t('readyToStart') || 'Ready to start'}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {stepExecution
+                      ? t('tapFabToComplete') || 'Tap the button below to complete'
+                      : t('tapFabToStart') || 'Tap the button below to start'}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  {stepExecution && (
+                    <>
+                      {currentStep.requires_batch_number && (
+                        <Button onClick={() => setShowBatchScanDialog(true)} variant="outline" size="icon" className="h-10 w-10 touch-target">
+                          <ScanBarcode className="h-5 w-5" />
+                        </Button>
+                      )}
+                      {(currentStep.requires_value_input || currentStep.measurement_fields) && (
+                        <Button onClick={() => setShowMeasurementDialog(true)} variant="outline" size="icon" className="h-10 w-10 touch-target">
+                          <Ruler className="h-5 w-5" />
+                        </Button>
+                      )}
+                      {currentStep.has_checklist && (
+                        <Button onClick={() => setShowChecklistDialog(true)} variant="outline" size="icon" className="h-10 w-10 touch-target">
+                          <ClipboardCheck className="h-5 w-5" />
+                        </Button>
+                      )}
+                    </>
+                  )}
+                </div>
               </div>
-            )}
+            </div>
           </CardContent>
         </Card>
 
@@ -820,6 +1035,43 @@ const ProductionStep = () => {
           productType={item.product_type || workOrder.product_type}
           onSave={fetchData}
         />
+      )}
+
+      {/* Mobile action sheet */}
+      <ActionSheet
+        open={showMobileActions}
+        onClose={() => setShowMobileActions(false)}
+        title={t('actions') || 'Actions'}
+        description={`${t('step')} ${item.current_step}: ${currentStep.title_en}`}
+        actions={getMobileActions()}
+        cancelLabel={t('cancel') || 'Cancel'}
+      />
+
+      {/* Mobile floating action button */}
+      {isTouchDevice && (
+        <FloatingActionButton
+          icon={stepExecution ? <CheckCircle2 className="h-6 w-6" /> : <Play className="h-6 w-6" />}
+          onClick={stepExecution ? handleMobileCompleteStep : handleMobileStartStep}
+          label={stepExecution ? t('completeStep') : t('startStep')}
+          variant={stepExecution ? 'default' : 'default'}
+          position="bottom-right"
+        />
+      )}
+
+      {/* Mobile step navigation hint */}
+      {isTouchDevice && item.current_step > 1 && (
+        <div className="fixed bottom-24 left-4 right-4 sm:hidden pointer-events-none">
+          <div className="flex items-center justify-between text-xs text-muted-foreground bg-background/80 backdrop-blur-sm px-3 py-2 rounded-lg border shadow-sm">
+            <div className="flex items-center gap-1">
+              <ChevronLeft className="h-3 w-3" />
+              <span>{t('swipeToViewPrevious') || 'Swipe to view previous'}</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <span>{t('pullToRefresh') || 'Pull to refresh'}</span>
+              <RefreshCw className="h-3 w-3" />
+            </div>
+          </div>
+        </div>
       )}
     </Layout>
   );
