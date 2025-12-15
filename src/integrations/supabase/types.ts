@@ -651,6 +651,8 @@ export type Database = {
           notification_prefs: Json | null
           role: Database["public"]["Enums"]["app_role"]
           updated_at: string
+          daily_capacity_hours: number | null
+          is_available: boolean
         }
         Insert: {
           avatar_url?: string | null
@@ -661,6 +663,8 @@ export type Database = {
           notification_prefs?: Json | null
           role?: Database["public"]["Enums"]["app_role"]
           updated_at?: string
+          daily_capacity_hours?: number | null
+          is_available?: boolean
         }
         Update: {
           avatar_url?: string | null
@@ -671,6 +675,85 @@ export type Database = {
           notification_prefs?: Json | null
           role?: Database["public"]["Enums"]["app_role"]
           updated_at?: string
+          daily_capacity_hours?: number | null
+          is_available?: boolean
+        }
+        Relationships: []
+      }
+      operator_assignments: {
+        Row: {
+          id: string
+          work_order_id: string
+          operator_id: string
+          assigned_date: string
+          planned_hours: number
+          actual_hours: number | null
+          notes: string | null
+          assigned_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          work_order_id: string
+          operator_id: string
+          assigned_date: string
+          planned_hours?: number
+          actual_hours?: number | null
+          notes?: string | null
+          assigned_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          work_order_id?: string
+          operator_id?: string
+          assigned_date?: string
+          planned_hours?: number
+          actual_hours?: number | null
+          notes?: string | null
+          assigned_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "operator_assignments_work_order_id_fkey"
+            columns: ["work_order_id"]
+            isOneToOne: false
+            referencedRelation: "work_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      operator_availability: {
+        Row: {
+          id: string
+          operator_id: string
+          date: string
+          available_hours: number
+          reason: string | null
+          created_by: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          operator_id: string
+          date: string
+          available_hours?: number
+          reason?: string | null
+          created_by?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          operator_id?: string
+          date?: string
+          available_hours?: number
+          reason?: string | null
+          created_by?: string | null
+          created_at?: string
         }
         Relationships: []
       }
@@ -1090,6 +1173,8 @@ export type Database = {
           status: Database["public"]["Enums"]["work_order_status"]
           updated_at: string
           wo_number: string
+          estimated_hours: number | null
+          priority: number
         }
         Insert: {
           assigned_to?: string | null
@@ -1112,6 +1197,8 @@ export type Database = {
           status?: Database["public"]["Enums"]["work_order_status"]
           updated_at?: string
           wo_number: string
+          estimated_hours?: number | null
+          priority?: number
         }
         Update: {
           assigned_to?: string | null
@@ -1134,6 +1221,8 @@ export type Database = {
           status?: Database["public"]["Enums"]["work_order_status"]
           updated_at?: string
           wo_number?: string
+          estimated_hours?: number | null
+          priority?: number
         }
         Relationships: [
           {
