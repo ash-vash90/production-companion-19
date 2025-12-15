@@ -318,6 +318,121 @@ export type Database = {
         }
         Relationships: []
       }
+      instruction_media: {
+        Row: {
+          alt_text_en: string | null
+          alt_text_nl: string | null
+          created_at: string
+          id: string
+          instruction_step_id: string
+          media_type: string
+          sort_order: number
+          thumbnail_url: string | null
+          title_en: string | null
+          title_nl: string | null
+          url: string
+        }
+        Insert: {
+          alt_text_en?: string | null
+          alt_text_nl?: string | null
+          created_at?: string
+          id?: string
+          instruction_step_id: string
+          media_type: string
+          sort_order?: number
+          thumbnail_url?: string | null
+          title_en?: string | null
+          title_nl?: string | null
+          url: string
+        }
+        Update: {
+          alt_text_en?: string | null
+          alt_text_nl?: string | null
+          created_at?: string
+          id?: string
+          instruction_step_id?: string
+          media_type?: string
+          sort_order?: number
+          thumbnail_url?: string | null
+          title_en?: string | null
+          title_nl?: string | null
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "instruction_media_instruction_step_id_fkey"
+            columns: ["instruction_step_id"]
+            isOneToOne: false
+            referencedRelation: "instruction_steps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      instruction_steps: {
+        Row: {
+          content_en: string | null
+          content_nl: string | null
+          created_at: string
+          estimated_duration_minutes: number | null
+          id: string
+          required_tools: string[] | null
+          sort_order: number
+          step_number: number
+          tip_text_en: string | null
+          tip_text_nl: string | null
+          title_en: string
+          title_nl: string | null
+          updated_at: string
+          warning_text_en: string | null
+          warning_text_nl: string | null
+          work_instruction_id: string
+        }
+        Insert: {
+          content_en?: string | null
+          content_nl?: string | null
+          created_at?: string
+          estimated_duration_minutes?: number | null
+          id?: string
+          required_tools?: string[] | null
+          sort_order?: number
+          step_number: number
+          tip_text_en?: string | null
+          tip_text_nl?: string | null
+          title_en: string
+          title_nl?: string | null
+          updated_at?: string
+          warning_text_en?: string | null
+          warning_text_nl?: string | null
+          work_instruction_id: string
+        }
+        Update: {
+          content_en?: string | null
+          content_nl?: string | null
+          created_at?: string
+          estimated_duration_minutes?: number | null
+          id?: string
+          required_tools?: string[] | null
+          sort_order?: number
+          step_number?: number
+          tip_text_en?: string | null
+          tip_text_nl?: string | null
+          title_en?: string
+          title_nl?: string | null
+          updated_at?: string
+          warning_text_en?: string | null
+          warning_text_nl?: string | null
+          work_instruction_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "instruction_steps_work_instruction_id_fkey"
+            columns: ["work_instruction_id"]
+            isOneToOne: false
+            referencedRelation: "work_instructions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       inventory_stock: {
         Row: {
           batch_number: string | null
@@ -563,6 +678,51 @@ export type Database = {
         }
         Relationships: []
       }
+      operator_assignments: {
+        Row: {
+          assigned_date: string
+          created_at: string
+          id: string
+          operator_id: string
+          planned_hours: number
+          updated_at: string
+          work_order_id: string
+        }
+        Insert: {
+          assigned_date: string
+          created_at?: string
+          id?: string
+          operator_id: string
+          planned_hours?: number
+          updated_at?: string
+          work_order_id: string
+        }
+        Update: {
+          assigned_date?: string
+          created_at?: string
+          id?: string
+          operator_id?: string
+          planned_hours?: number
+          updated_at?: string
+          work_order_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "operator_assignments_operator_id_fkey"
+            columns: ["operator_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "operator_assignments_work_order_id_fkey"
+            columns: ["work_order_id"]
+            isOneToOne: false
+            referencedRelation: "work_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       production_steps: {
         Row: {
           batch_type: string | null
@@ -645,115 +805,38 @@ export type Database = {
         Row: {
           avatar_url: string | null
           created_at: string
+          daily_capacity_hours: number
           full_name: string
           id: string
+          is_available: boolean
           language: string
           notification_prefs: Json | null
           role: Database["public"]["Enums"]["app_role"]
           updated_at: string
-          daily_capacity_hours: number | null
-          is_available: boolean
         }
         Insert: {
           avatar_url?: string | null
           created_at?: string
+          daily_capacity_hours?: number
           full_name: string
           id: string
+          is_available?: boolean
           language?: string
           notification_prefs?: Json | null
           role?: Database["public"]["Enums"]["app_role"]
           updated_at?: string
-          daily_capacity_hours?: number | null
-          is_available?: boolean
         }
         Update: {
           avatar_url?: string | null
           created_at?: string
+          daily_capacity_hours?: number
           full_name?: string
           id?: string
+          is_available?: boolean
           language?: string
           notification_prefs?: Json | null
           role?: Database["public"]["Enums"]["app_role"]
           updated_at?: string
-          daily_capacity_hours?: number | null
-          is_available?: boolean
-        }
-        Relationships: []
-      }
-      operator_assignments: {
-        Row: {
-          id: string
-          work_order_id: string
-          operator_id: string
-          assigned_date: string
-          planned_hours: number
-          actual_hours: number | null
-          notes: string | null
-          assigned_by: string | null
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          work_order_id: string
-          operator_id: string
-          assigned_date: string
-          planned_hours?: number
-          actual_hours?: number | null
-          notes?: string | null
-          assigned_by?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          work_order_id?: string
-          operator_id?: string
-          assigned_date?: string
-          planned_hours?: number
-          actual_hours?: number | null
-          notes?: string | null
-          assigned_by?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "operator_assignments_work_order_id_fkey"
-            columns: ["work_order_id"]
-            isOneToOne: false
-            referencedRelation: "work_orders"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      operator_availability: {
-        Row: {
-          id: string
-          operator_id: string
-          date: string
-          available_hours: number
-          reason: string | null
-          created_by: string | null
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          operator_id: string
-          date: string
-          available_hours?: number
-          reason?: string | null
-          created_by?: string | null
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          operator_id?: string
-          date?: string
-          available_hours?: number
-          reason?: string | null
-          created_by?: string | null
-          created_at?: string
         }
         Relationships: []
       }
@@ -1013,6 +1096,62 @@ export type Database = {
           },
         ]
       }
+      work_instructions: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description_en: string | null
+          description_nl: string | null
+          id: string
+          is_active: boolean
+          product_type: Database["public"]["Enums"]["product_type"]
+          production_step_id: string | null
+          sort_order: number
+          title_en: string
+          title_nl: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description_en?: string | null
+          description_nl?: string | null
+          id?: string
+          is_active?: boolean
+          product_type: Database["public"]["Enums"]["product_type"]
+          production_step_id?: string | null
+          sort_order?: number
+          title_en: string
+          title_nl?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description_en?: string | null
+          description_nl?: string | null
+          id?: string
+          is_active?: boolean
+          product_type?: Database["public"]["Enums"]["product_type"]
+          production_step_id?: string | null
+          sort_order?: number
+          title_en?: string
+          title_nl?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "work_instructions_production_step_id_fkey"
+            columns: ["production_step_id"]
+            isOneToOne: false
+            referencedRelation: "production_steps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       work_order_items: {
         Row: {
           assigned_to: string | null
@@ -1173,8 +1312,6 @@ export type Database = {
           status: Database["public"]["Enums"]["work_order_status"]
           updated_at: string
           wo_number: string
-          estimated_hours: number | null
-          priority: number
         }
         Insert: {
           assigned_to?: string | null
@@ -1197,8 +1334,6 @@ export type Database = {
           status?: Database["public"]["Enums"]["work_order_status"]
           updated_at?: string
           wo_number: string
-          estimated_hours?: number | null
-          priority?: number
         }
         Update: {
           assigned_to?: string | null
@@ -1221,8 +1356,6 @@ export type Database = {
           status?: Database["public"]["Enums"]["work_order_status"]
           updated_at?: string
           wo_number?: string
-          estimated_hours?: number | null
-          priority?: number
         }
         Relationships: [
           {
@@ -1266,177 +1399,6 @@ export type Database = {
           webhook_url?: string
         }
         Relationships: []
-      }
-      work_instructions: {
-        Row: {
-          id: string
-          product_type: Database["public"]["Enums"]["product_type"]
-          production_step_id: string | null
-          title_en: string
-          title_nl: string | null
-          description_en: string | null
-          description_nl: string | null
-          is_active: boolean
-          sort_order: number
-          created_by: string | null
-          updated_by: string | null
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          product_type: Database["public"]["Enums"]["product_type"]
-          production_step_id?: string | null
-          title_en: string
-          title_nl?: string | null
-          description_en?: string | null
-          description_nl?: string | null
-          is_active?: boolean
-          sort_order?: number
-          created_by?: string | null
-          updated_by?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          product_type?: Database["public"]["Enums"]["product_type"]
-          production_step_id?: string | null
-          title_en?: string
-          title_nl?: string | null
-          description_en?: string | null
-          description_nl?: string | null
-          is_active?: boolean
-          sort_order?: number
-          created_by?: string | null
-          updated_by?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "work_instructions_production_step_id_fkey"
-            columns: ["production_step_id"]
-            isOneToOne: false
-            referencedRelation: "production_steps"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      instruction_steps: {
-        Row: {
-          id: string
-          work_instruction_id: string
-          step_number: number
-          title_en: string
-          title_nl: string | null
-          content_en: string | null
-          content_nl: string | null
-          warning_text_en: string | null
-          warning_text_nl: string | null
-          tip_text_en: string | null
-          tip_text_nl: string | null
-          estimated_duration_minutes: number | null
-          required_tools: string[] | null
-          sort_order: number
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          work_instruction_id: string
-          step_number: number
-          title_en: string
-          title_nl?: string | null
-          content_en?: string | null
-          content_nl?: string | null
-          warning_text_en?: string | null
-          warning_text_nl?: string | null
-          tip_text_en?: string | null
-          tip_text_nl?: string | null
-          estimated_duration_minutes?: number | null
-          required_tools?: string[] | null
-          sort_order?: number
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          work_instruction_id?: string
-          step_number?: number
-          title_en?: string
-          title_nl?: string | null
-          content_en?: string | null
-          content_nl?: string | null
-          warning_text_en?: string | null
-          warning_text_nl?: string | null
-          tip_text_en?: string | null
-          tip_text_nl?: string | null
-          estimated_duration_minutes?: number | null
-          required_tools?: string[] | null
-          sort_order?: number
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "instruction_steps_work_instruction_id_fkey"
-            columns: ["work_instruction_id"]
-            isOneToOne: false
-            referencedRelation: "work_instructions"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      instruction_media: {
-        Row: {
-          id: string
-          instruction_step_id: string
-          media_type: string
-          url: string
-          thumbnail_url: string | null
-          title_en: string | null
-          title_nl: string | null
-          alt_text_en: string | null
-          alt_text_nl: string | null
-          sort_order: number
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          instruction_step_id: string
-          media_type: string
-          url: string
-          thumbnail_url?: string | null
-          title_en?: string | null
-          title_nl?: string | null
-          alt_text_en?: string | null
-          alt_text_nl?: string | null
-          sort_order?: number
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          instruction_step_id?: string
-          media_type?: string
-          url?: string
-          thumbnail_url?: string | null
-          title_en?: string | null
-          title_nl?: string | null
-          alt_text_en?: string | null
-          alt_text_nl?: string | null
-          sort_order?: number
-          created_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "instruction_media_instruction_step_id_fkey"
-            columns: ["instruction_step_id"]
-            isOneToOne: false
-            referencedRelation: "instruction_steps"
-            referencedColumns: ["id"]
-          },
-        ]
       }
     }
     Views: {

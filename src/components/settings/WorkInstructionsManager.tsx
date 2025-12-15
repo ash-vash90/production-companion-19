@@ -566,14 +566,14 @@ export function WorkInstructionsManager() {
                   <div className="space-y-2">
                     <Label>Link to Production Step (Optional)</Label>
                     <Select
-                      value={formData.production_step_id}
-                      onValueChange={(value) => setFormData({ ...formData, production_step_id: value })}
+                      value={formData.production_step_id || 'none'}
+                      onValueChange={(value) => setFormData({ ...formData, production_step_id: value === 'none' ? '' : value })}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select a production step..." />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">No specific step (general instruction)</SelectItem>
+                        <SelectItem value="none">No specific step (general instruction)</SelectItem>
                         {currentProductionSteps.map(step => (
                           <SelectItem key={step.id} value={step.id}>
                             Step {step.step_number}: {language === 'nl' ? step.title_nl : step.title_en}
@@ -824,14 +824,14 @@ export function WorkInstructionsManager() {
             <div className="space-y-2">
               <Label>Link to Production Step</Label>
               <Select
-                value={formData.production_step_id}
-                onValueChange={(value) => setFormData({ ...formData, production_step_id: value })}
+                value={formData.production_step_id || 'none'}
+                onValueChange={(value) => setFormData({ ...formData, production_step_id: value === 'none' ? '' : value })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select a production step..." />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">No specific step</SelectItem>
+                  <SelectItem value="none">No specific step</SelectItem>
                   {currentProductionSteps.map(step => (
                     <SelectItem key={step.id} value={step.id}>
                       Step {step.step_number}: {language === 'nl' ? step.title_nl : step.title_en}
