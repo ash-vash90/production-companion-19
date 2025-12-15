@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import Layout from '@/components/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { PageHeader } from '@/components/PageHeader';
@@ -36,6 +36,8 @@ import { useStockLevels, useLowStock, useReceiveStock, useRecentTransactions } f
 import { useMaterials, getMaterialName } from '@/hooks/useMaterials';
 import { LowStockAlert } from '@/components/inventory/LowStockAlert';
 import { CameraScannerDialog } from '@/components/scanner/CameraScannerDialog';
+import { useTouchDevice, usePullToRefresh, useHapticFeedback } from '@/hooks/useTouchDevice';
+import { FloatingActionButton } from '@/components/mobile/MobileActionBar';
 import {
   Package,
   Plus,
@@ -49,10 +51,19 @@ import {
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { nl, enUS } from 'date-fns/locale';
+import { useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 
 export default function Inventory() {
   const { language, t } = useLanguage();
   const { canManageInventory } = useUserProfile();
+  const queryClient = useQueryClient();
+
+  // Mobile-specific hooks
+  const isTouchDevice = useTouchDevice();
+  const haptic = useHapticFeedback();
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
   const [searchQuery, setSearchQuery] = useState('');
   const [showReceiveDialog, setShowReceiveDialog] = useState(false);
   const [showScannerDialog, setShowScannerDialog] = useState(false);
@@ -63,7 +74,7 @@ export default function Inventory() {
   const [quantity, setQuantity] = useState('');
   const [expiryDate, setExpiryDate] = useState('');
 
-  const { data: stockLevels, isLoading: stockLoading } = useStockLevels();
+  const { data: stockLevels, isLoading: stockLoading, refetch: refetchStock } = useStockLevels();
   const { data: materials } = useMaterials();
   const { data: lowStockItems } = useLowStock();
   const { data: recentTransactions } = useRecentTransactions(10);
@@ -138,6 +149,25 @@ export default function Inventory() {
     return labels[type]?.[language as 'en' | 'nl'] || type;
   };
 
+  // Pull-to-refresh handler
+  const handleRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    haptic.medium();
+    await queryClient.invalidateQueries({ queryKey: ['stock-levels'] });
+    await queryClient.invalidateQueries({ queryKey: ['low-stock'] });
+    await queryClient.invalidateQueries({ queryKey: ['recent-transactions'] });
+    await refetchStock();
+    setIsRefreshing(false);
+    toast.success(language === 'nl' ? 'Vernieuwd' : 'Refreshed');
+  }, [haptic, queryClient, refetchStock, language]);
+
+  // Use pull-to-refresh on touch devices
+  usePullToRefresh({
+    onRefresh: handleRefresh,
+    threshold: 80,
+    enabled: isTouchDevice && !stockLoading,
+  });
+
   if (!canManageInventory) {
     return (
       <ProtectedRoute>
@@ -161,16 +191,25 @@ export default function Inventory() {
   return (
     <ProtectedRoute>
       <Layout>
-        <PageHeader
-          title={language === 'nl' ? 'Voorraad' : 'Inventory'}
-          description={
-            language === 'nl'
-              ? 'Beheer materiaalvoorraad en batches'
-              : 'Manage material stock and batches'
-          }
-        />
+        <div className="pb-20 sm:pb-4">
+          {/* Pull-to-refresh indicator */}
+          {isRefreshing && (
+            <div className="fixed top-16 left-1/2 -translate-x-1/2 z-50 bg-primary text-primary-foreground px-4 py-2 rounded-full shadow-lg flex items-center gap-2 animate-in slide-in-from-top">
+              <RefreshCw className="h-4 w-4 animate-spin" />
+              <span className="text-sm font-medium">{language === 'nl' ? 'Vernieuwen...' : 'Refreshing...'}</span>
+            </div>
+          )}
 
-        <div className="space-y-4 md:space-y-6">
+          <PageHeader
+            title={language === 'nl' ? 'Voorraad' : 'Inventory'}
+            description={
+              language === 'nl'
+                ? 'Beheer materiaalvoorraad en batches'
+                : 'Manage material stock and batches'
+            }
+          />
+
+          <div className="space-y-4 md:space-y-6">
           {/* Summary Cards */}
           <div className="grid gap-3 md:gap-4 grid-cols-1 md:grid-cols-3">
             <Card>
@@ -405,7 +444,22 @@ export default function Inventory() {
               )}
             </CardContent>
           </Card>
+          </div>
         </div>
+
+        {/* Mobile FAB for receiving stock */}
+        {isTouchDevice && (
+          <FloatingActionButton
+            icon={<Plus className="h-6 w-6" />}
+            onClick={() => {
+              haptic.medium();
+              setShowReceiveDialog(true);
+            }}
+            label={language === 'nl' ? 'Ontvangen' : 'Receive'}
+            variant="default"
+            position="bottom-right"
+          />
+        )}
 
         {/* Receive Stock Dialog */}
         <Dialog open={showReceiveDialog} onOpenChange={setShowReceiveDialog}>

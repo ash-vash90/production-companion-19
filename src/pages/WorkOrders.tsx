@@ -26,6 +26,8 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { Plus, Package, RotateCcw, LayoutGrid, Table as TableIcon, Filter, Loader2, ChevronDown, ChevronRight } from 'lucide-react';
 import { format, differenceInDays, parseISO } from 'date-fns';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { useTouchDevice, useHapticFeedback } from '@/hooks/useTouchDevice';
+import { FloatingActionButton } from '@/components/mobile/MobileActionBar';
 
 // Type alias for backwards compatibility
 type WorkOrderWithItems = WorkOrderListItem;
@@ -54,6 +56,11 @@ const WorkOrders = () => {
   const { t, language } = useLanguage();
   const { isAdmin } = useUserProfile();
   const navigate = useNavigate();
+
+  // Mobile-specific hooks
+  const isTouchDevice = useTouchDevice();
+  const haptic = useHapticFeedback();
+
   const [dialogOpen, setDialogOpen] = useState(false);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [cancellingWorkOrder, setCancellingWorkOrder] = useState<{ id: string; wo_number: string } | null>(null);
@@ -384,32 +391,36 @@ const WorkOrders = () => {
         <WorkOrderCard
           key={wo.id}
           workOrder={toRowData(wo)}
-          onClick={() => navigate(`/production/${wo.id}`)}
+          onClick={() => {
+            if (isTouchDevice) haptic.light();
+            navigate(`/production/${wo.id}`);
+          }}
           onCancel={isAdmin ? () => openCancelDialog({ id: wo.id, wo_number: wo.wo_number }) : undefined}
           onHover={() => prefetchProductionOnHover(wo.id)}
         />
       ))}
     </div>
-  ), [toRowData, navigate, isAdmin, openCancelDialog]);
+  ), [toRowData, navigate, isAdmin, openCancelDialog, isTouchDevice, haptic]);
 
   const isMobile = useIsMobile();
 
   // Pull to refresh handler
   const handlePullRefresh = useCallback(async () => {
+    if (isTouchDevice) haptic.medium();
     invalidateWorkOrdersCache();
     await refetch();
     toast.success(t('refreshed') || 'Refreshed');
-  }, [refetch, t]);
+  }, [refetch, t, isTouchDevice, haptic]);
 
   return (
     <ProtectedRoute>
       <Layout>
-        <PullToRefresh 
-          onRefresh={handlePullRefresh} 
+        <PullToRefresh
+          onRefresh={handlePullRefresh}
           disabled={!isMobile || loading}
           className="h-full"
         >
-        <div className="space-y-3 lg:space-y-4">
+        <div className="space-y-3 lg:space-y-4 pb-20 sm:pb-4">
           <PageHeader
             title={t('workOrders')}
             description={t('manageWorkOrders')}
@@ -588,6 +599,20 @@ const WorkOrders = () => {
           onConfirm={handleCancelWorkOrder}
           isLoading={isCancelling}
         />
+
+        {/* Mobile FAB for creating work orders */}
+        {isTouchDevice && (
+          <FloatingActionButton
+            icon={<Plus className="h-6 w-6" />}
+            onClick={() => {
+              haptic.medium();
+              setDialogOpen(true);
+            }}
+            label={t('createWorkOrder')}
+            variant="default"
+            position="bottom-right"
+          />
+        )}
       </Layout>
     </ProtectedRoute>
   );
