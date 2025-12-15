@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -7,92 +7,22 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import { Button } from '@/components/ui/button';
 import { WorkOrderStatusBadge } from '@/components/workorders/WorkOrderStatusBadge';
 import { ProductBreakdownBadges } from '@/components/workorders/ProductBreakdownBadges';
-import { ReportDetailContent } from '@/components/reports/ReportDetailContent';
-import { supabase } from '@/integrations/supabase/client';
+import { ReportDetailContentV2 } from '@/components/reports/ReportDetailContentV2';
+import { useProductionReportDetail } from '@/services/reportDataService';
 import { toast } from 'sonner';
 import { Loader2, ArrowLeft, Package } from 'lucide-react';
 import { getProductBreakdown } from '@/lib/utils';
-import { generateProductionReportPdf, ExportSections } from '@/services/reportPdfService';
-interface ReportData {
-  workOrder: {
-    id: string;
-    wo_number: string;
-    product_type: string;
-    batch_size: number;
-    status: string;
-    created_at: string;
-    completed_at: string | null;
-    start_date: string | null;
-    shipping_date: string | null;
-    customer_name: string | null;
-  };
-  items: Array<{
-    id: string;
-    serial_number: string;
-    status: string;
-    completed_at: string | null;
-    label_printed: boolean;
-    label_printed_at: string | null;
-    label_printed_by: string | null;
-    label_printed_by_name?: string;
-  }>;
-  stepExecutions: Array<{
-    id: string;
-    step_number: number;
-    step_title: string;
-    status: string;
-    operator_name: string;
-    operator_avatar: string | null;
-    operator_initials: string | null;
-    completed_at: string | null;
-    measurement_values: Record<string, unknown>;
-    validation_status: string | null;
-    serial_number: string;
-  }>;
-  batchMaterials: Array<{
-    material_type: string;
-    batch_number: string;
-    serial_number: string;
-    scanned_at: string;
-  }>;
-  operators: Array<{
-    id: string;
-    full_name: string;
-    avatar_url: string | null;
-    steps_completed: number;
-  }>;
-  certificates: Array<{
-    id: string;
-    serial_number: string;
-    generated_at: string | null;
-    generated_by_name: string | null;
-    pdf_url: string | null;
-  }>;
-  checklistResponses: Array<{
-    id: string;
-    serial_number: string;
-    item_text: string;
-    checked: boolean;
-    checked_at: string | null;
-    checked_by_name: string | null;
-  }>;
-  activityLog: Array<{
-    id: string;
-    action: string;
-    created_at: string;
-    user_name: string | null;
-    details: any;
-  }>;
-}
+import { generateProductionReportPdf } from '@/services/reportPdfService';
+import type { ExportSections } from '@/types/reports';
 
 const ProductionReportDetail = () => {
   const { id } = useParams();
   const { user } = useAuth();
   const { t, language } = useLanguage();
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
-  const [exporting, setExporting] = useState(false);
-  const [data, setData] = useState<ReportData | null>(null);
+
+  const { data, loading, error, fetchReport } = useProductionReportDetail();
+  const [exporting, setExporting] = React.useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -100,185 +30,26 @@ const ProductionReportDetail = () => {
       return;
     }
     if (id) {
-      fetchReportData();
+      fetchReport(id, language as 'en' | 'nl');
     }
-  }, [user, id, navigate]);
+  }, [user, id, navigate, fetchReport, language]);
 
-  const fetchReportData = async () => {
-    try {
-      setLoading(true);
-
-      const { data: wo, error: woError } = await supabase
-        .from('work_orders')
-        .select('id, wo_number, product_type, batch_size, status, created_at, completed_at, start_date, shipping_date, customer_name')
-        .eq('id', id)
-        .single();
-
-      if (woError) throw woError;
-
-      const { data: items, error: itemsError } = await supabase
-        .from('work_order_items')
-        .select('id, serial_number, status, completed_at, label_printed, label_printed_at, label_printed_by')
-        .eq('work_order_id', id)
-        .order('position_in_batch', { ascending: true });
-
-      if (itemsError) throw itemsError;
-
-      const itemIds = items?.map(i => i.id) || [];
-
-      const [executionsResult, materialsResult, certificatesResult, checklistResult, activityResult] = await Promise.all([
-        itemIds.length > 0 ? supabase
-          .from('step_executions')
-          .select(`id, status, completed_at, measurement_values, validation_status, operator_initials, executed_by, work_order_item_id, production_step:production_steps(step_number, title_en, title_nl)`)
-          .in('work_order_item_id', itemIds)
-          .eq('status', 'completed')
-          .order('completed_at', { ascending: true }) : { data: [] },
-        
-        itemIds.length > 0 ? supabase
-          .from('batch_materials')
-          .select('material_type, batch_number, scanned_at, work_order_item_id')
-          .in('work_order_item_id', itemIds)
-          .order('scanned_at', { ascending: true }) : { data: [] },
-        
-        itemIds.length > 0 ? supabase
-          .from('quality_certificates')
-          .select('id, work_order_item_id, generated_at, generated_by, pdf_url')
-          .in('work_order_item_id', itemIds) : { data: [] },
-        
-        itemIds.length > 0 ? supabase
-          .from('checklist_responses')
-          .select(`id, checked, checked_at, checked_by, step_execution_id, checklist_item:checklist_items(item_text_en, item_text_nl)`)
-          .in('step_execution_id', (await supabase.from('step_executions').select('id').in('work_order_item_id', itemIds)).data?.map(e => e.id) || []) : { data: [] },
-        
-        supabase
-          .from('activity_logs')
-          .select('id, action, created_at, user_id, details')
-          .eq('entity_type', 'work_order')
-          .eq('entity_id', id)
-          .order('created_at', { ascending: false })
-          .limit(50)
-      ]);
-
-      const userIds = new Set<string>();
-      (executionsResult.data || []).forEach(e => e.executed_by && userIds.add(e.executed_by));
-      (certificatesResult.data || []).forEach(c => c.generated_by && userIds.add(c.generated_by));
-      (checklistResult.data || []).forEach(c => c.checked_by && userIds.add(c.checked_by));
-      (activityResult.data || []).forEach(a => a.user_id && userIds.add(a.user_id));
-      (items || []).forEach(i => i.label_printed_by && userIds.add(i.label_printed_by));
-
-      let profilesMap: Record<string, { full_name: string; avatar_url: string | null }> = {};
-      if (userIds.size > 0) {
-        const { data: profiles } = await supabase.from('profiles').select('id, full_name, avatar_url').in('id', Array.from(userIds));
-        for (const p of profiles || []) {
-          profilesMap[p.id] = { full_name: p.full_name, avatar_url: p.avatar_url };
-        }
-      }
-
-      const itemSerialMap: Record<string, string> = {};
-      for (const item of items || []) {
-        itemSerialMap[item.id] = item.serial_number;
-      }
-
-      const stepExecutions = (executionsResult.data || []).map(e => {
-        const step = e.production_step as any;
-        const operator = e.executed_by ? profilesMap[e.executed_by] : null;
-        const measurementVals = typeof e.measurement_values === 'object' && e.measurement_values !== null && !Array.isArray(e.measurement_values) ? e.measurement_values as Record<string, unknown> : {};
-        return {
-          id: e.id,
-          step_number: step?.step_number || 0,
-          step_title: language === 'nl' ? step?.title_nl : step?.title_en || 'Unknown',
-          status: e.status,
-          operator_name: operator?.full_name || 'Unknown',
-          operator_avatar: operator?.avatar_url || null,
-          operator_initials: e.operator_initials || null,
-          completed_at: e.completed_at,
-          measurement_values: measurementVals,
-          validation_status: e.validation_status,
-          serial_number: itemSerialMap[e.work_order_item_id] || 'Unknown',
-        };
-      });
-
-      const batchMaterials = (materialsResult.data || []).map(m => ({
-        material_type: m.material_type,
-        batch_number: m.batch_number,
-        serial_number: itemSerialMap[m.work_order_item_id] || 'Unknown',
-        scanned_at: m.scanned_at,
-      }));
-
-      const certificates = (certificatesResult.data || []).map(c => ({
-        id: c.id,
-        serial_number: itemSerialMap[c.work_order_item_id] || 'Unknown',
-        generated_at: c.generated_at,
-        generated_by_name: c.generated_by ? profilesMap[c.generated_by]?.full_name || null : null,
-        pdf_url: c.pdf_url,
-      }));
-
-      const stepExecToItem: Record<string, string> = {};
-      for (const e of executionsResult.data || []) {
-        stepExecToItem[e.id] = e.work_order_item_id;
-      }
-
-      const checklistResponses = (checklistResult.data || []).map(c => {
-        const item = c.checklist_item as any;
-        return {
-          id: c.id,
-          serial_number: itemSerialMap[stepExecToItem[c.step_execution_id]] || 'Unknown',
-          item_text: language === 'nl' ? item?.item_text_nl : item?.item_text_en || 'Unknown',
-          checked: c.checked,
-          checked_at: c.checked_at,
-          checked_by_name: c.checked_by ? profilesMap[c.checked_by]?.full_name || null : null,
-        };
-      });
-
-      const activityLog = (activityResult.data || []).map(a => ({
-        id: a.id,
-        action: a.action,
-        created_at: a.created_at,
-        user_name: a.user_id ? profilesMap[a.user_id]?.full_name || null : null,
-        details: a.details,
-      }));
-
-      const operatorStats: Record<string, { id: string; full_name: string; avatar_url: string | null; steps_completed: number }> = {};
-      for (const exec of stepExecutions) {
-        const key = exec.operator_name;
-        if (!operatorStats[key]) {
-          operatorStats[key] = { id: key, full_name: exec.operator_name, avatar_url: exec.operator_avatar, steps_completed: 0 };
-        }
-        operatorStats[key].steps_completed++;
-      }
-
-      const itemsWithNames = (items || []).map(item => ({
-        ...item,
-        label_printed_by_name: item.label_printed_by ? profilesMap[item.label_printed_by]?.full_name : undefined,
-      }));
-
-      setData({
-        workOrder: wo,
-        items: itemsWithNames,
-        stepExecutions,
-        batchMaterials,
-        operators: Object.values(operatorStats).sort((a, b) => b.steps_completed - a.steps_completed),
-        certificates,
-        checklistResponses,
-        activityLog,
-      });
-    } catch (error: any) {
-      console.error('Error fetching report:', error);
-      toast.error(t('error'), { description: error.message || 'Failed to load report' });
-    } finally {
-      setLoading(false);
+  // Show error toast if fetch fails
+  useEffect(() => {
+    if (error) {
+      toast.error(t('error'), { description: error });
     }
-  };
+  }, [error, t]);
 
-  const handleExportPdf = async (sections: ExportSections) => {
+  const handleExportPdf = async (sections?: ExportSections) => {
     if (!data) return;
     setExporting(true);
     try {
       await generateProductionReportPdf(data, { language: language as 'en' | 'nl', sections });
       toast.success(t('pdfExported'));
-    } catch (error: any) {
-      console.error('PDF export error:', error);
-      toast.error(t('error'), { description: error.message || 'Failed to export PDF' });
+    } catch (err: any) {
+      console.error('PDF export error:', err);
+      toast.error(t('error'), { description: err.message || 'Failed to export PDF' });
     } finally {
       setExporting(false);
     }
@@ -343,9 +114,9 @@ const ProductionReportDetail = () => {
             </div>
           </div>
 
-          {/* Main Content - no card wrapper on mobile */}
-          <ReportDetailContent 
-            data={data} 
+          {/* Main Content - uses new entity-based components */}
+          <ReportDetailContentV2
+            data={data}
             onExportPdf={handleExportPdf}
             exporting={exporting}
           />

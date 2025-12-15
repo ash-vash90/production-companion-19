@@ -25,7 +25,8 @@ import {
 } from 'lucide-react';
 import { format, parseISO, differenceInDays, differenceInHours } from 'date-fns';
 import type { ProductionReportData, TimelineEvent, ProductionStats } from '@/types/reports';
-import { buildTimelineEvents, calculateStats } from '@/services/reportDataService';
+import { calculateStats } from '@/types/reports';
+import { buildTimelineEvents } from '@/services/reportDataService';
 import { cn } from '@/lib/utils';
 
 interface ProductionStoryProps {
