@@ -141,16 +141,16 @@ export function useCapacityData(startDate: Date, endDate: Date, viewMode: 'month
         .from('profiles')
         .select('id, daily_capacity_hours, is_available')
         .in('role', ['operator', 'supervisor', 'admin'])
-        .eq('is_available', true);
+        .eq('is_available', true) as { data: { id: string; daily_capacity_hours: number; is_available: boolean }[] | null; error: any };
 
       if (profilesError) throw profilesError;
 
       // Fetch all assignments in the date range
       const { data: assignmentsData, error: assignmentsError } = await supabase
-        .from('operator_assignments')
+        .from('operator_assignments' as any)
         .select('operator_id, assigned_date, planned_hours')
         .gte('assigned_date', startStr)
-        .lte('assigned_date', endStr);
+        .lte('assigned_date', endStr) as { data: { operator_id: string; assigned_date: string; planned_hours: number }[] | null; error: any };
 
       if (assignmentsError) throw assignmentsError;
 

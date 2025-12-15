@@ -72,13 +72,13 @@ export function OperatorCapacityPanel({ selectedDate, onAssignOperator }: Operat
       const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
         .select('id, full_name, avatar_url, role, daily_capacity_hours, is_available')
-        .in('role', ['operator', 'supervisor', 'admin']);
+        .in('role', ['operator', 'supervisor', 'admin']) as { data: { id: string; full_name: string; avatar_url: string | null; role: string; daily_capacity_hours: number; is_available: boolean }[] | null; error: any };
 
       if (profilesError) throw profilesError;
 
       // Fetch assignments for the date range
       const { data: assignmentsData, error: assignmentsError } = await supabase
-        .from('operator_assignments')
+        .from('operator_assignments' as any)
         .select(`
           id,
           operator_id,
@@ -91,7 +91,7 @@ export function OperatorCapacityPanel({ selectedDate, onAssignOperator }: Operat
           )
         `)
         .gte('assigned_date', startDate)
-        .lte('assigned_date', endDate);
+        .lte('assigned_date', endDate) as { data: { id: string; operator_id: string; assigned_date: string; planned_hours: number; work_order_id: string; work_orders: { wo_number: string; product_type: string } }[] | null; error: any };
 
       if (assignmentsError) throw assignmentsError;
 
