@@ -16,10 +16,13 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { toast } from 'sonner';
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, parseISO, addWeeks, subWeeks, differenceInDays, isWithinInterval, addMonths, subMonths } from 'date-fns';
-import { ChevronLeft, ChevronRight, Package, CalendarIcon, LayoutGrid, List, ArrowRight, Play, Flag, Plus, GanttChartSquare, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Package, CalendarIcon, LayoutGrid, List, ArrowRight, Play, Flag, Plus, GanttChartSquare, X, Users } from 'lucide-react';
 import { cn, formatProductType } from '@/lib/utils';
 import { CreateWorkOrderDialogWithDate } from '@/components/calendar/CreateWorkOrderFromCalendar';
 import { CancelWorkOrderDialog } from '@/components/workorders/CancelWorkOrderDialog';
+import { OperatorCapacityPanel } from '@/components/calendar/OperatorCapacityPanel';
+import { OperatorAssignmentSelect } from '@/components/calendar/OperatorAssignmentSelect';
+import { CapacityIndicator, useCapacityData } from '@/components/calendar/CapacityIndicator';
 
 interface WorkOrder {
   id: string;
@@ -58,6 +61,7 @@ const ProductionCalendar = () => {
   const [unscheduledOrders, setUnscheduledOrders] = useState<WorkOrder[]>([]);
   const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
   const [selectedUnscheduledOrder, setSelectedUnscheduledOrder] = useState<string>('');
+  const [operatorAssignments, setOperatorAssignments] = useState<{ operatorId: string; plannedHours: number }[]>([]);
   
   // Create new work order from calendar
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -67,11 +71,31 @@ const ProductionCalendar = () => {
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
 
+  // Capacity panel state
+  const [selectedCapacityDate, setSelectedCapacityDate] = useState(new Date());
+  const [showCapacityPanel, setShowCapacityPanel] = useState(true);
+
+  // Calculate date range for current view
+  const viewStartDate = calendarView === 'month'
+    ? startOfMonth(currentDate)
+    : startOfWeek(currentDate, { weekStartsOn: 1 });
+  const viewEndDate = calendarView === 'month'
+    ? endOfMonth(currentDate)
+    : endOfWeek(currentDate, { weekStartsOn: 1 });
+
+  // Capacity data for calendar indicators
+  const { getCapacityForDate } = useCapacityData(viewStartDate, viewEndDate, calendarView);
+
   useEffect(() => {
     if (user) {
       fetchWorkOrders();
     }
   }, [user, currentDate, calendarView]);
+
+  // Sync capacity panel date with calendar navigation
+  useEffect(() => {
+    setSelectedCapacityDate(currentDate);
+  }, [currentDate]);
 
   const fetchWorkOrders = async () => {
     try {
@@ -226,9 +250,13 @@ const ProductionCalendar = () => {
 
   // Click on empty day to schedule or create new
   const handleDayClick = (date: Date) => {
+    // Always update capacity panel date when clicking on a day
+    setSelectedCapacityDate(date);
+
     if (!isAdmin) return;
     setSchedulingDate(date);
     setSelectedUnscheduledOrder('');
+    setOperatorAssignments([]);
     setScheduleDialogOpen(true);
   };
   
@@ -274,22 +302,48 @@ const ProductionCalendar = () => {
 
   const handleQuickSchedule = async () => {
     if (!schedulingDate || !selectedUnscheduledOrder) return;
-    
+
     setUpdating(true);
     try {
-      const { error } = await supabase
+      const dateStr = format(schedulingDate, 'yyyy-MM-dd');
+
+      // Update work order start date
+      const { error: woError } = await supabase
         .from('work_orders')
-        .update({ start_date: format(schedulingDate, 'yyyy-MM-dd') })
+        .update({ start_date: dateStr })
         .eq('id', selectedUnscheduledOrder);
 
-      if (error) throw error;
+      if (woError) throw woError;
 
-      toast.success(t('success'), { description: 'Work order scheduled' });
+      // Save operator assignments if any
+      if (operatorAssignments.length > 0) {
+        const assignmentRecords = operatorAssignments.map(a => ({
+          work_order_id: selectedUnscheduledOrder,
+          operator_id: a.operatorId,
+          assigned_date: dateStr,
+          planned_hours: a.plannedHours,
+          assigned_by: user?.id,
+        }));
+
+        const { error: assignError } = await supabase
+          .from('operator_assignments')
+          .upsert(assignmentRecords, {
+            onConflict: 'work_order_id,operator_id,assigned_date',
+          });
+
+        if (assignError) {
+          console.error('Error saving operator assignments:', assignError);
+          // Don't fail the whole operation, just log it
+        }
+      }
+
+      toast.success(t('success'), { description: language === 'nl' ? 'Werkorder gepland' : 'Work order scheduled' });
       setScheduleDialogOpen(false);
+      setOperatorAssignments([]);
       fetchWorkOrders();
     } catch (error) {
       console.error('Error scheduling work order:', error);
-      toast.error(t('error'), { description: 'Failed to schedule work order' });
+      toast.error(t('error'), { description: language === 'nl' ? 'Kon werkorder niet plannen' : 'Failed to schedule work order' });
     } finally {
       setUpdating(false);
     }
@@ -464,9 +518,16 @@ const ProductionCalendar = () => {
                   isToday ? "text-primary" : "text-foreground"
                 )}>
                   <span>{format(date, 'd')}</span>
-                  {hasUnscheduled && dayOrders.length === 0 && (
-                    <Plus className="h-3 w-3 opacity-0 group-hover:opacity-100 text-primary transition-opacity" />
-                  )}
+                  <div className="flex items-center gap-1">
+                    <CapacityIndicator
+                      date={date}
+                      capacityData={getCapacityForDate(date)}
+                      compact
+                    />
+                    {hasUnscheduled && dayOrders.length === 0 && (
+                      <Plus className="h-3 w-3 opacity-0 group-hover:opacity-100 text-primary transition-opacity" />
+                    )}
+                  </div>
                 </div>
                 <div className="space-y-0.5">
                   {dayOrders.slice(0, 2).map((order) => (
@@ -524,14 +585,20 @@ const ProductionCalendar = () => {
                 "text-sm font-semibold mb-3 pb-2 border-b flex items-center justify-between",
                 isToday ? "text-primary" : "text-foreground"
               )}>
-                <div>
-                  {format(date, 'EEEE, MMMM d')}
-                  {isToday && <span className="ml-2 text-xs font-normal text-muted-foreground">(Today)</span>}
+                <div className="flex items-center gap-3">
+                  <span>
+                    {format(date, 'EEEE, MMMM d')}
+                    {isToday && <span className="ml-2 text-xs font-normal text-muted-foreground">(Today)</span>}
+                  </span>
+                  <CapacityIndicator
+                    date={date}
+                    capacityData={getCapacityForDate(date)}
+                  />
                 </div>
                 {hasUnscheduled && (
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     className="h-7 text-xs"
                     onClick={() => handleDayClick(date)}
                   >
@@ -609,7 +676,10 @@ const ProductionCalendar = () => {
           </CardContent>
         </Card>
 
-        <div className="w-full">
+        {/* Main content with calendar and capacity panel */}
+        <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
+          {/* Calendar card */}
+          <div className="flex-1 min-w-0">
           <Card>
             <CardHeader className="px-3 sm:px-6 pb-3 sm:pb-4">
               <div className="flex flex-col gap-3">
@@ -688,6 +758,17 @@ const ProductionCalendar = () => {
                       {unscheduledOrders.length} unscheduled
                     </Badge>
                   )}
+
+                  {/* Capacity panel toggle */}
+                  <Button
+                    variant={showCapacityPanel ? 'secondary' : 'outline'}
+                    size="sm"
+                    className="h-8 text-xs px-2 sm:px-3 hidden lg:flex"
+                    onClick={() => setShowCapacityPanel(!showCapacityPanel)}
+                  >
+                    <Users className="h-3.5 w-3.5 sm:mr-1" />
+                    <span className="hidden sm:inline">{language === 'nl' ? 'Capaciteit' : 'Capacity'}</span>
+                  </Button>
                 </div>
               </div>
             </CardHeader>
@@ -705,6 +786,21 @@ const ProductionCalendar = () => {
               )}
             </CardContent>
           </Card>
+          </div>
+
+          {/* Capacity Panel Sidebar */}
+          {showCapacityPanel && (
+            <div className="hidden lg:block w-[340px] flex-shrink-0">
+              <OperatorCapacityPanel
+                selectedDate={selectedCapacityDate}
+                onAssignOperator={(operatorId, date) => {
+                  // Open scheduling dialog to assign operator to a work order
+                  setSchedulingDate(date);
+                  setScheduleDialogOpen(true);
+                }}
+              />
+            </div>
+          )}
         </div>
 
         {/* Edit Work Order Dialog */}
@@ -853,7 +949,17 @@ const ProductionCalendar = () => {
                   </Select>
                 </div>
               )}
-              
+
+              {/* Operator Assignment Section */}
+              {selectedUnscheduledOrder && schedulingDate && (
+                <OperatorAssignmentSelect
+                  selectedDate={schedulingDate}
+                  workOrderId={selectedUnscheduledOrder}
+                  initialAssignments={operatorAssignments}
+                  onChange={setOperatorAssignments}
+                />
+              )}
+
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
                   <span className="w-full border-t" />
@@ -864,9 +970,9 @@ const ProductionCalendar = () => {
                   </span>
                 </div>
               </div>
-              
-              <Button 
-                variant="outline" 
+
+              <Button
+                variant="outline"
                 className="w-full"
                 onClick={handleCreateNewFromCalendar}
               >

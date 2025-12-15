@@ -144,7 +144,25 @@ export const translations = {
     setDate: 'Set Date',
     changeDate: 'Change Date',
     scheduledDateUpdated: 'Scheduled date updated',
-    
+
+    // Capacity Planning
+    capacity: 'Capacity',
+    teamCapacity: 'Team Capacity',
+    operatorCapacity: 'Operator Capacity',
+    assignOperators: 'Assign Operators',
+    operatorsAssigned: 'operator(s) assigned',
+    utilization: 'Utilization',
+    planned: 'Planned',
+    available: 'Available',
+    overloaded: 'Overloaded',
+    nearCapacity: 'Near Capacity',
+    underCapacity: 'Under Capacity',
+    noOperatorsAvailable: 'No operators available',
+    exceedsCapacity: 'Exceeds capacity',
+    hoursPlanned: 'hours planned',
+    hoursTotal: 'hours total',
+    hoursFree: 'free',
+
     // Production Page
     failedLoadProduction: 'Failed to load production data',
     productionStarted: 'Production started',
@@ -725,7 +743,25 @@ export const translations = {
     setDate: 'Datum Instellen',
     changeDate: 'Datum Wijzigen',
     scheduledDateUpdated: 'Geplande datum bijgewerkt',
-    
+
+    // Capacity Planning
+    capacity: 'Capaciteit',
+    teamCapacity: 'Team Capaciteit',
+    operatorCapacity: 'Operator Capaciteit',
+    assignOperators: 'Operators Toewijzen',
+    operatorsAssigned: 'operator(s) toegewezen',
+    utilization: 'Bezetting',
+    planned: 'Gepland',
+    available: 'Beschikbaar',
+    overloaded: 'Overbezet',
+    nearCapacity: 'Bijna Vol',
+    underCapacity: 'Onder Capaciteit',
+    noOperatorsAvailable: 'Geen operators beschikbaar',
+    exceedsCapacity: 'Overschrijdt capaciteit',
+    hoursPlanned: 'uren gepland',
+    hoursTotal: 'uren totaal',
+    hoursFree: 'vrij',
+
     // Production Page
     failedLoadProduction: 'Kan productiegegevens niet laden',
     productionStarted: 'Productie gestart',
