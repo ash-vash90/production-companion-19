@@ -7,6 +7,7 @@ import { RecentActivity } from '@/components/dashboard/RecentActivity';
 import { ActiveOperators } from '@/components/dashboard/ActiveOperators';
 import { TodaysSchedule } from '@/components/dashboard/TodaysSchedule';
 import { WeatherWidget } from '@/components/dashboard/WeatherWidget';
+import { LowStockAlerts } from '@/components/dashboard/LowStockAlerts';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2 } from 'lucide-react';
 
@@ -100,7 +101,10 @@ const Index = () => {
         {/* Dashboard Sections */}
         <div className="space-y-4">
           <TodaysSchedule />
-          <ActiveOperators />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <ActiveOperators />
+            <LowStockAlerts />
+          </div>
           <ProductionOverview />
           <RecentActivity />
         </div>
