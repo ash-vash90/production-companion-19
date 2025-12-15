@@ -631,3 +631,316 @@
     transform: scale(0.98);
   }
 }
+
+/* ========================================
+   MOBILE & TOUCH SPECIFIC STYLES
+   ======================================== */
+
+/* Safe area utilities */
+.safe-area-top {
+  padding-top: env(safe-area-inset-top);
+}
+
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.safe-area-left {
+  padding-left: env(safe-area-inset-left);
+}
+
+.safe-area-right {
+  padding-right: env(safe-area-inset-right);
+}
+
+.safe-area-pb {
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+}
+
+.safe-area-pt {
+  padding-top: max(0.5rem, env(safe-area-inset-top));
+}
+
+/* Touch-friendly form elements */
+@layer components {
+  /* Larger touch targets on mobile */
+  @media (hover: none) and (pointer: coarse) {
+    /* Larger checkboxes and radios */
+    input[type="checkbox"],
+    input[type="radio"] {
+      min-height: 24px;
+      min-width: 24px;
+    }
+
+    /* Larger select dropdowns */
+    select {
+      min-height: 48px;
+      padding: 12px 16px;
+    }
+
+    /* Better text inputs */
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input[type="number"],
+    input[type="tel"],
+    input[type="url"],
+    input[type="search"],
+    textarea {
+      min-height: 48px;
+      padding: 12px 16px;
+      font-size: 16px; /* Prevents iOS zoom on focus */
+    }
+
+    /* Touch-friendly buttons */
+    .touch-btn {
+      min-height: 48px;
+      min-width: 48px;
+      padding: 12px 20px;
+    }
+
+    /* Touch-friendly list items */
+    .touch-list-item {
+      min-height: 56px;
+      padding: 12px 16px;
+    }
+
+    /* Touch card - larger padding and better tap areas */
+    .touch-card {
+      padding: 16px;
+    }
+
+    .touch-card-header {
+      padding: 16px 16px 12px;
+    }
+
+    .touch-card-content {
+      padding: 12px 16px 16px;
+    }
+  }
+
+  /* Mobile action bar spacing */
+  .has-action-bar {
+    padding-bottom: 80px;
+  }
+
+  /* Pull to refresh indicator */
+  .pull-refresh-indicator {
+    @apply absolute left-1/2 -translate-x-1/2 flex items-center justify-center;
+    top: -60px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: hsl(var(--background));
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    transition: transform 0.2s ease-out;
+  }
+
+  .pull-refresh-indicator.active {
+    background: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+  }
+
+  /* Swipe gesture feedback */
+  .swipe-container {
+    touch-action: pan-y;
+    overflow-x: hidden;
+  }
+
+  .swipe-item {
+    transition: transform 0.2s ease-out;
+  }
+
+  .swipe-item.swiping {
+    transition: none;
+  }
+
+  /* Bottom sheet handle */
+  .sheet-handle {
+    width: 40px;
+    height: 4px;
+    border-radius: 2px;
+    background: hsl(var(--muted-foreground) / 0.3);
+    margin: 12px auto;
+  }
+}
+
+/* Mobile-specific layout utilities */
+@layer utilities {
+  /* Full screen mobile container */
+  .mobile-fullscreen {
+    @apply min-h-[100dvh] flex flex-col;
+  }
+
+  /* Mobile content area (accounts for header and action bar) */
+  .mobile-content {
+    @apply flex-1 overflow-y-auto;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* Mobile header */
+  .mobile-header {
+    @apply sticky top-0 z-40 bg-background/95 backdrop-blur-md border-b;
+    padding-top: env(safe-area-inset-top);
+  }
+
+  /* Stacked mobile layout */
+  .mobile-stack {
+    @apply flex flex-col gap-3;
+  }
+
+  @media (min-width: 640px) {
+    .mobile-stack {
+      @apply gap-4;
+    }
+  }
+
+  /* Touch-friendly spacing */
+  .touch-spacing {
+    @apply p-4 gap-4;
+  }
+
+  @media (min-width: 640px) {
+    .touch-spacing {
+      @apply p-6 gap-6;
+    }
+  }
+
+  /* Large touch target */
+  .touch-target {
+    @apply relative;
+  }
+
+  .touch-target::before {
+    content: '';
+    @apply absolute;
+    top: -8px;
+    right: -8px;
+    bottom: -8px;
+    left: -8px;
+  }
+
+  /* Mobile-optimized text */
+  .mobile-text-lg {
+    @apply text-lg;
+  }
+
+  @media (min-width: 640px) {
+    .mobile-text-lg {
+      @apply text-base;
+    }
+  }
+
+  /* Hide on touch devices */
+  @media (hover: none) and (pointer: coarse) {
+    .hide-touch {
+      display: none !important;
+    }
+  }
+
+  /* Show only on touch devices */
+  .show-touch {
+    display: none !important;
+  }
+
+  @media (hover: none) and (pointer: coarse) {
+    .show-touch {
+      display: flex !important;
+    }
+  }
+
+  /* Prevent text selection on interactive elements */
+  .no-select {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+
+  /* Smooth momentum scrolling */
+  .momentum-scroll {
+    -webkit-overflow-scrolling: touch;
+    overflow-y: auto;
+  }
+}
+
+/* Tablet-specific optimizations */
+@media (min-width: 640px) and (max-width: 1023px) {
+  /* Two-column layout for tablets */
+  .tablet-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+
+  /* Larger touch targets for tablets */
+  .tablet-touch-target {
+    min-height: 52px;
+    padding: 14px 18px;
+  }
+
+  /* Tablet sidebar adjustments */
+  .tablet-sidebar {
+    width: 280px;
+  }
+
+  /* Tablet card sizing */
+  .tablet-card {
+    padding: 20px;
+  }
+}
+
+/* Large tablet / landscape optimizations */
+@media (min-width: 768px) and (max-width: 1023px) and (orientation: landscape) {
+  .tablet-landscape-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+  }
+}
+
+/* Animation for mobile interactions */
+@keyframes tap-feedback {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(0.97);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.tap-feedback:active {
+  animation: tap-feedback 0.15s ease-out;
+}
+
+/* Ripple effect for buttons */
+.ripple {
+  position: relative;
+  overflow: hidden;
+}
+
+.ripple::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  background: currentColor;
+  opacity: 0.1;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: width 0.3s ease-out, height 0.3s ease-out, opacity 0.3s ease-out;
+}
+
+.ripple:active::after {
+  width: 200%;
+  height: 200%;
+  opacity: 0;
+}
