@@ -1,4 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
+import { checkAndNotifyLowStock } from '@/services/notificationService';
+import { triggerWebhook } from '@/lib/webhooks';
 
 // Types
 export interface Material {
@@ -430,7 +432,61 @@ export async function consumeStock(params: {
     userId,
   });
 
+  // Check for low stock and trigger notifications/webhooks
+  await checkLowStockAfterConsumption(materialId, newQuantity);
+
   return { success: true };
+}
+
+/**
+ * Check stock levels after consumption and trigger alerts if needed
+ */
+async function checkLowStockAfterConsumption(
+  materialId: string,
+  newQuantity: number
+): Promise<void> {
+  try {
+    // Get material details
+    const { data: material, error } = await supabase
+      .from('materials')
+      .select('id, name, reorder_point')
+      .eq('id', materialId)
+      .single();
+
+    if (error || !material) return;
+
+    // Get total stock for this material across all batches
+    const { data: allStock } = await supabase
+      .from('inventory_stock')
+      .select('quantity_on_hand, quantity_reserved')
+      .eq('material_id', materialId);
+
+    const totalOnHand = (allStock || []).reduce((sum, s) => sum + Number(s.quantity_on_hand), 0);
+    const totalReserved = (allStock || []).reduce((sum, s) => sum + Number(s.quantity_reserved), 0);
+    const totalAvailable = totalOnHand - totalReserved;
+
+    // Check if below reorder point
+    if (totalAvailable <= material.reorder_point) {
+      // Trigger in-app notifications
+      await checkAndNotifyLowStock(
+        materialId,
+        material.name,
+        totalAvailable,
+        material.reorder_point
+      );
+
+      // Trigger webhook for low stock
+      await triggerWebhook('low_stock_alert', {
+        material_id: materialId,
+        material_name: material.name,
+        current_quantity: totalAvailable,
+        reorder_point: material.reorder_point,
+        is_out_of_stock: totalAvailable <= 0,
+      });
+    }
+  } catch (err) {
+    console.error('Error checking low stock after consumption:', err);
+  }
 }
 
 /**
