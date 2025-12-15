@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,10 +11,14 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { RichTextEditor } from '@/components/ui/rich-text-editor';
+import { uploadInstructionImage } from '@/services/instructionMediaService';
+import { translateText } from '@/services/translationService';
 import {
   Plus,
   Trash2,
@@ -29,7 +33,9 @@ import {
   ChevronUp,
   Edit2,
   Eye,
-  Copy
+  Copy,
+  Languages,
+  Sparkles
 } from 'lucide-react';
 import type { Database } from '@/integrations/supabase/types';
 
@@ -88,6 +94,73 @@ export function WorkInstructionsManager() {
     estimated_duration_minutes: '',
     required_tools: '',
   });
+
+  // Translation state
+  const [translating, setTranslating] = useState(false);
+  const [editingLanguage, setEditingLanguage] = useState<'en' | 'nl'>('en');
+
+  // Auto-translate content from one language to another
+  const handleAutoTranslate = useCallback(async () => {
+    const sourceLang = editingLanguage;
+    const targetLang = editingLanguage === 'en' ? 'nl' : 'en';
+
+    // Collect all content to translate
+    const contentToTranslate = {
+      title: sourceLang === 'en' ? stepFormData.title_en : stepFormData.title_nl,
+      content: sourceLang === 'en' ? stepFormData.content_en : stepFormData.content_nl,
+      warning: sourceLang === 'en' ? stepFormData.warning_text_en : stepFormData.warning_text_nl,
+      tip: sourceLang === 'en' ? stepFormData.tip_text_en : stepFormData.tip_text_nl,
+    };
+
+    if (!contentToTranslate.title && !contentToTranslate.content) {
+      toast.error('Nothing to translate', { description: 'Please enter some content first' });
+      return;
+    }
+
+    setTranslating(true);
+    try {
+      const translations = await Promise.all([
+        contentToTranslate.title ? translateText(contentToTranslate.title, { from: sourceLang, to: targetLang }) : { text: '' },
+        contentToTranslate.content ? translateText(contentToTranslate.content, { from: sourceLang, to: targetLang, preserveHtml: true }) : { text: '' },
+        contentToTranslate.warning ? translateText(contentToTranslate.warning, { from: sourceLang, to: targetLang, preserveHtml: true }) : { text: '' },
+        contentToTranslate.tip ? translateText(contentToTranslate.tip, { from: sourceLang, to: targetLang, preserveHtml: true }) : { text: '' },
+      ]);
+
+      if (targetLang === 'nl') {
+        setStepFormData(prev => ({
+          ...prev,
+          title_nl: translations[0].text || prev.title_nl,
+          content_nl: translations[1].text || prev.content_nl,
+          warning_text_nl: translations[2].text || prev.warning_text_nl,
+          tip_text_nl: translations[3].text || prev.tip_text_nl,
+        }));
+      } else {
+        setStepFormData(prev => ({
+          ...prev,
+          title_en: translations[0].text || prev.title_en,
+          content_en: translations[1].text || prev.content_en,
+          warning_text_en: translations[2].text || prev.warning_text_en,
+          tip_text_en: translations[3].text || prev.tip_text_en,
+        }));
+      }
+
+      toast.success('Translation complete', {
+        description: `Content translated to ${targetLang === 'nl' ? 'Dutch' : 'English'}`,
+      });
+    } catch (error: any) {
+      console.error('Translation error:', error);
+      toast.error('Translation failed', {
+        description: error.message || 'Could not translate content. Please try again.',
+      });
+    } finally {
+      setTranslating(false);
+    }
+  }, [editingLanguage, stepFormData]);
+
+  // Handle image upload for rich text editor
+  const handleImageUpload = useCallback(async (file: File) => {
+    return await uploadInstructionImage(file, selectedInstruction?.id);
+  }, [selectedInstruction]);
 
   useEffect(() => {
     loadInstructions();
@@ -781,7 +854,7 @@ export function WorkInstructionsManager() {
 
       {/* Add/Edit Step Dialog */}
       <Dialog open={stepDialogOpen} onOpenChange={setStepDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {selectedStep ? 'Edit Instruction Step' : 'Add Instruction Step'}
@@ -793,6 +866,7 @@ export function WorkInstructionsManager() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
+            {/* Basic Info */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Step Number *</Label>
@@ -815,104 +889,6 @@ export function WorkInstructionsManager() {
               </div>
             </div>
 
-            <Separator />
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Step Title (English) *</Label>
-                <Input
-                  value={stepFormData.title_en}
-                  onChange={(e) => setStepFormData({ ...stepFormData, title_en: e.target.value })}
-                  placeholder="e.g., Install PCB"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Step Title (Dutch)</Label>
-                <Input
-                  value={stepFormData.title_nl}
-                  onChange={(e) => setStepFormData({ ...stepFormData, title_nl: e.target.value })}
-                  placeholder="e.g., Installeer PCB"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Instructions (English)</Label>
-                <Textarea
-                  value={stepFormData.content_en}
-                  onChange={(e) => setStepFormData({ ...stepFormData, content_en: e.target.value })}
-                  placeholder="Detailed step-by-step instructions..."
-                  rows={4}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Instructions (Dutch)</Label>
-                <Textarea
-                  value={stepFormData.content_nl}
-                  onChange={(e) => setStepFormData({ ...stepFormData, content_nl: e.target.value })}
-                  placeholder="Gedetailleerde stapsgewijze instructies..."
-                  rows={4}
-                />
-              </div>
-            </div>
-
-            <Separator />
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="flex items-center gap-2">
-                  <AlertTriangle className="h-4 w-4 text-amber-500" />
-                  Warning (English)
-                </Label>
-                <Textarea
-                  value={stepFormData.warning_text_en}
-                  onChange={(e) => setStepFormData({ ...stepFormData, warning_text_en: e.target.value })}
-                  placeholder="Safety warnings or critical notes..."
-                  rows={2}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="flex items-center gap-2">
-                  <AlertTriangle className="h-4 w-4 text-amber-500" />
-                  Warning (Dutch)
-                </Label>
-                <Textarea
-                  value={stepFormData.warning_text_nl}
-                  onChange={(e) => setStepFormData({ ...stepFormData, warning_text_nl: e.target.value })}
-                  placeholder="Veiligheidswaarschuwingen..."
-                  rows={2}
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="flex items-center gap-2">
-                  <Lightbulb className="h-4 w-4 text-blue-500" />
-                  Tip (English)
-                </Label>
-                <Textarea
-                  value={stepFormData.tip_text_en}
-                  onChange={(e) => setStepFormData({ ...stepFormData, tip_text_en: e.target.value })}
-                  placeholder="Helpful tips for this step..."
-                  rows={2}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="flex items-center gap-2">
-                  <Lightbulb className="h-4 w-4 text-blue-500" />
-                  Tip (Dutch)
-                </Label>
-                <Textarea
-                  value={stepFormData.tip_text_nl}
-                  onChange={(e) => setStepFormData({ ...stepFormData, tip_text_nl: e.target.value })}
-                  placeholder="Handige tips voor deze stap..."
-                  rows={2}
-                />
-              </div>
-            </div>
-
             <div className="space-y-2">
               <Label className="flex items-center gap-2">
                 <Wrench className="h-4 w-4" />
@@ -923,9 +899,144 @@ export function WorkInstructionsManager() {
                 onChange={(e) => setStepFormData({ ...stepFormData, required_tools: e.target.value })}
                 placeholder="e.g., Soldering iron, Multimeter, ESD strap (comma-separated)"
               />
-              <p className="text-xs text-muted-foreground">
-                Enter tools separated by commas
-              </p>
+            </div>
+
+            <Separator />
+
+            {/* Language Tabs with Rich Text */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-base font-semibold flex items-center gap-2">
+                  <Languages className="h-4 w-4" />
+                  Content
+                </Label>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleAutoTranslate}
+                  disabled={translating}
+                >
+                  {translating ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Sparkles className="h-4 w-4 mr-2" />
+                  )}
+                  Auto-translate to {editingLanguage === 'en' ? 'Dutch' : 'English'}
+                </Button>
+              </div>
+
+              <Tabs value={editingLanguage} onValueChange={(v) => setEditingLanguage(v as 'en' | 'nl')}>
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="en">
+                    🇬🇧 English
+                    {stepFormData.title_en && <Badge variant="secondary" className="ml-2 text-xs">has content</Badge>}
+                  </TabsTrigger>
+                  <TabsTrigger value="nl">
+                    🇳🇱 Dutch
+                    {stepFormData.title_nl && <Badge variant="secondary" className="ml-2 text-xs">has content</Badge>}
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="en" className="space-y-4 mt-4">
+                  <div className="space-y-2">
+                    <Label>Step Title *</Label>
+                    <Input
+                      value={stepFormData.title_en}
+                      onChange={(e) => setStepFormData({ ...stepFormData, title_en: e.target.value })}
+                      placeholder="e.g., Install PCB"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Instructions</Label>
+                    <RichTextEditor
+                      content={stepFormData.content_en}
+                      onChange={(html) => setStepFormData({ ...stepFormData, content_en: html })}
+                      placeholder="Enter detailed instructions with formatting, images, and videos..."
+                      onImageUpload={handleImageUpload}
+                      minHeight="150px"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2">
+                      <AlertTriangle className="h-4 w-4 text-amber-500" />
+                      Warning
+                    </Label>
+                    <RichTextEditor
+                      content={stepFormData.warning_text_en}
+                      onChange={(html) => setStepFormData({ ...stepFormData, warning_text_en: html })}
+                      placeholder="Safety warnings or critical notes..."
+                      onImageUpload={handleImageUpload}
+                      minHeight="80px"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2">
+                      <Lightbulb className="h-4 w-4 text-blue-500" />
+                      Tip
+                    </Label>
+                    <RichTextEditor
+                      content={stepFormData.tip_text_en}
+                      onChange={(html) => setStepFormData({ ...stepFormData, tip_text_en: html })}
+                      placeholder="Helpful tips for this step..."
+                      onImageUpload={handleImageUpload}
+                      minHeight="80px"
+                    />
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="nl" className="space-y-4 mt-4">
+                  <div className="space-y-2">
+                    <Label>Stap Titel *</Label>
+                    <Input
+                      value={stepFormData.title_nl}
+                      onChange={(e) => setStepFormData({ ...stepFormData, title_nl: e.target.value })}
+                      placeholder="bijv., Installeer PCB"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Instructies</Label>
+                    <RichTextEditor
+                      content={stepFormData.content_nl}
+                      onChange={(html) => setStepFormData({ ...stepFormData, content_nl: html })}
+                      placeholder="Voer gedetailleerde instructies in met opmaak, afbeeldingen en video's..."
+                      onImageUpload={handleImageUpload}
+                      minHeight="150px"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2">
+                      <AlertTriangle className="h-4 w-4 text-amber-500" />
+                      Waarschuwing
+                    </Label>
+                    <RichTextEditor
+                      content={stepFormData.warning_text_nl}
+                      onChange={(html) => setStepFormData({ ...stepFormData, warning_text_nl: html })}
+                      placeholder="Veiligheidswaarschuwingen of kritieke opmerkingen..."
+                      onImageUpload={handleImageUpload}
+                      minHeight="80px"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2">
+                      <Lightbulb className="h-4 w-4 text-blue-500" />
+                      Tip
+                    </Label>
+                    <RichTextEditor
+                      content={stepFormData.tip_text_nl}
+                      onChange={(html) => setStepFormData({ ...stepFormData, tip_text_nl: html })}
+                      placeholder="Handige tips voor deze stap..."
+                      onImageUpload={handleImageUpload}
+                      minHeight="80px"
+                    />
+                  </div>
+                </TabsContent>
+              </Tabs>
             </div>
           </div>
           <DialogFooter>
