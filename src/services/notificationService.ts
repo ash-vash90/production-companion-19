@@ -21,6 +21,7 @@ interface CreateNotificationParams {
   entityId?: string;
   priority?: NotificationPriority;
   sendPush?: boolean;
+  emailData?: Record<string, unknown>;
 }
 
 export async function createNotification(params: CreateNotificationParams): Promise<void> {
@@ -37,6 +38,32 @@ export async function createNotification(params: CreateNotificationParams): Prom
 
   if (error) {
     console.error('Failed to create notification:', error);
+  }
+
+  // Send email notification if email data is provided
+  if (params.emailData) {
+    try {
+      await sendEmailNotification(params.userId, params.type, params.emailData);
+    } catch (emailError) {
+      console.error('Failed to send email notification:', emailError);
+    }
+  }
+}
+
+/**
+ * Send email notification via edge function
+ */
+async function sendEmailNotification(
+  userId: string,
+  type: NotificationType,
+  data: Record<string, unknown>
+): Promise<void> {
+  const { error } = await supabase.functions.invoke('send-email', {
+    body: { userId, type, data },
+  });
+
+  if (error) {
+    console.error('Email notification failed:', error);
   }
 }
 
