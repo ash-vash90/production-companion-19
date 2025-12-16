@@ -28,6 +28,10 @@ export const ActiveOperators = memo(function ActiveOperators() {
   const [currentUserProfile, setCurrentUserProfile] = useState<any>(null);
   const isMountedRef = useRef(true);
 
+  // Move hooks to top - must be called unconditionally
+  const onlineUserIds = useMemo(() => onlineUsers.map(u => u.id), [onlineUsers]);
+  const { teamsMap } = useUsersTeams(onlineUserIds);
+
   useEffect(() => {
     isMountedRef.current = true;
     
@@ -218,10 +222,6 @@ export const ActiveOperators = memo(function ActiveOperators() {
       </div>
     );
   }
-
-  // Get teams for online users
-  const onlineUserIds = useMemo(() => onlineUsers.map(u => u.id), [onlineUsers]);
-  const { teamsMap } = useUsersTeams(onlineUserIds);
 
   return (
     <div className="rounded-xl border bg-card overflow-hidden">
