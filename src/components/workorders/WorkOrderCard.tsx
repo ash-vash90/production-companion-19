@@ -1,9 +1,11 @@
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { WorkOrderStatusBadge } from './WorkOrderStatusBadge';
+import { WorkOrderStatusSelect } from './WorkOrderStatusSelect';
 import { ProductBreakdownBadges } from './ProductBreakdownBadges';
 import { formatDate, ProductBreakdown } from '@/lib/utils';
-import { AlertTriangle, Clock, ChevronRight, X } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
+import { AlertTriangle, Clock, ChevronRight, X, Calendar, Truck } from 'lucide-react';
 import { parseISO, isBefore, differenceInDays } from 'date-fns';
 
 export interface WorkOrderCardData {
@@ -18,8 +20,9 @@ export interface WorkOrderCardData {
   order_value?: number | null;
   cancellation_reason?: string | null;
   productBreakdown: ProductBreakdown[];
-  isMainAssembly?: boolean;
-  hasSubassemblies?: boolean;
+  progressPercent?: number;
+  completedItems?: number;
+  totalItems?: number;
 }
 
 interface WorkOrderCardProps {
@@ -27,6 +30,7 @@ interface WorkOrderCardProps {
   onClick?: () => void;
   onCancel?: () => void;
   onHover?: () => void;
+  onStatusChange?: () => void;
   showActions?: boolean;
   showUrgency?: boolean;
   linkTo?: string;
@@ -37,12 +41,13 @@ export function WorkOrderCard({
   onClick,
   onCancel,
   onHover,
+  onStatusChange,
   showActions = true,
   showUrgency = true,
   linkTo,
 }: WorkOrderCardProps) {
   const navigate = useNavigate();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   // Urgency calculations
   const isShippingOverdue = (): boolean => {
@@ -91,71 +96,124 @@ export function WorkOrderCard({
     onCancel?.();
   };
 
+  // Progress color based on percentage
+  const getProgressColor = () => {
+    const percent = workOrder.progressPercent || 0;
+    if (percent === 100) return 'bg-emerald-500';
+    if (percent >= 50) return 'bg-blue-500';
+    return 'bg-muted-foreground/30';
+  };
+
   return (
     <div
-      className={`group relative rounded-lg border border-l-4 bg-card p-3 md:p-4 transition-all cursor-pointer hover:shadow-md hover:border-primary/30 ${urgencyClass}`}
+      className={`group relative rounded-xl border border-l-4 bg-card p-4 md:p-5 transition-all cursor-pointer hover:shadow-lg hover:border-primary/30 ${urgencyClass}`}
       onClick={handleClick}
       onMouseEnter={onHover}
     >
-      {/* Cancel button - always visible when onCancel provided */}
+      {/* Cancel button */}
       {showActions && onCancel && workOrder.status !== 'completed' && workOrder.status !== 'cancelled' && (
         <button
           onClick={handleCancelClick}
-          className="absolute top-2 right-2 p-1 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors z-10"
+          className="absolute top-3 right-3 p-1.5 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors z-10"
           title={t('cancel')}
         >
           <X className="h-4 w-4" />
         </button>
       )}
 
-      {/* Header row */}
-      <div className="flex items-start justify-between gap-2 mb-2 pr-6">
+      {/* Header: WO Number + Status */}
+      <div className="flex items-start justify-between gap-3 mb-3 pr-8">
         <div className="flex items-center gap-2 min-w-0">
-          <span className="font-mono font-semibold text-sm truncate">{workOrder.wo_number}</span>
-          {shippingOverdue && <AlertTriangle className="h-3.5 w-3.5 text-destructive shrink-0" />}
-          {startOverdue && !shippingOverdue && <Clock className="h-3.5 w-3.5 text-warning shrink-0" />}
+          <span className="font-mono font-bold text-base md:text-lg truncate">{workOrder.wo_number}</span>
+          {shippingOverdue && <AlertTriangle className="h-4 w-4 text-destructive shrink-0" />}
+          {startOverdue && !shippingOverdue && <Clock className="h-4 w-4 text-warning shrink-0" />}
         </div>
-        <WorkOrderStatusBadge status={workOrder.status} className="shrink-0" />
+        <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
+          <WorkOrderStatusSelect
+            workOrderId={workOrder.id}
+            currentStatus={workOrder.status}
+            onStatusChange={onStatusChange}
+            compact
+          />
+        </div>
       </div>
 
       {/* Product badges */}
-      <div className="mb-2">
+      <div className="mb-3">
         <ProductBreakdownBadges
           breakdown={workOrder.productBreakdown}
           batchSize={workOrder.batch_size}
-          isMainAssembly={workOrder.isMainAssembly}
-          hasSubassemblies={workOrder.hasSubassemblies}
           compact
         />
       </div>
 
-      {/* Cancellation reason for cancelled orders */}
+      {/* Customer name - prominent */}
+      {workOrder.customer_name && (
+        <div className="mb-3">
+          <span className="text-sm font-medium text-foreground">{workOrder.customer_name}</span>
+        </div>
+      )}
+
+      {/* Cancellation reason */}
       {workOrder.status === 'cancelled' && workOrder.cancellation_reason && (
-        <div className="mb-2 text-xs text-destructive/80 italic">
+        <div className="mb-3 text-xs text-destructive/80 italic bg-destructive/5 px-2 py-1 rounded">
           "{workOrder.cancellation_reason}"
         </div>
       )}
 
-      {/* Details - compact list */}
-      <div className="flex items-end justify-between gap-2">
-        <div className="space-y-0.5 text-xs text-muted-foreground flex-1 min-w-0">
-          {workOrder.customer_name && (
-            <div className="truncate">{workOrder.customer_name}</div>
-          )}
-          <div className="flex items-center gap-3">
-            {workOrder.shipping_date && (
-              <span className={shippingOverdue ? 'text-destructive font-medium' : ''}>
-                {t('ship')}: {formatDate(workOrder.shipping_date)}
-              </span>
-            )}
-            {workOrder.order_value && (
-              <span className="font-medium text-foreground">€{workOrder.order_value.toLocaleString('nl-NL')}</span>
-            )}
+      {/* Dates row */}
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mb-3 text-xs text-muted-foreground">
+        {workOrder.start_date && (
+          <div className="flex items-center gap-1.5">
+            <Calendar className="h-3.5 w-3.5" />
+            <span className={startOverdue ? 'text-warning font-medium' : ''}>
+              {language === 'nl' ? 'Start' : 'Start'}: {formatDate(workOrder.start_date)}
+            </span>
           </div>
+        )}
+        {workOrder.shipping_date && (
+          <div className="flex items-center gap-1.5">
+            <Truck className="h-3.5 w-3.5" />
+            <span className={shippingOverdue ? 'text-destructive font-medium' : ''}>
+              {language === 'nl' ? 'Verzending' : 'Ship'}: {formatDate(workOrder.shipping_date)}
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* Bottom row: Price + Progress */}
+      <div className="flex items-center justify-between gap-4">
+        {/* Order value */}
+        <div className="shrink-0">
+          {workOrder.order_value ? (
+            <span className="text-sm font-semibold text-foreground">
+              €{workOrder.order_value.toLocaleString('nl-NL')}
+            </span>
+          ) : (
+            <span className="text-sm text-muted-foreground">-</span>
+          )}
         </div>
 
-        {/* Arrow indicator - always visible */}
-        <ChevronRight className="h-5 w-5 text-muted-foreground/50 group-hover:text-primary transition-colors shrink-0" />
+        {/* Progress bar + percentage */}
+        <div className="flex-1 max-w-[180px] flex items-center gap-2">
+          <Progress 
+            value={workOrder.progressPercent || 0} 
+            className="h-2 flex-1"
+          />
+          <span className="text-xs font-medium text-muted-foreground w-10 text-right">
+            {workOrder.progressPercent || 0}%
+          </span>
+        </div>
+
+        {/* Arrow indicator */}
+        <ChevronRight className="h-5 w-5 text-muted-foreground/40 group-hover:text-primary transition-colors shrink-0" />
+      </div>
+
+      {/* Fallback status badge when user can't change status */}
+      <div className="absolute top-3 right-10">
+        {workOrder.status !== 'cancelled' && workOrder.status !== 'completed' && (
+          <WorkOrderStatusBadge status={workOrder.status} className="hidden" />
+        )}
       </div>
     </div>
   );

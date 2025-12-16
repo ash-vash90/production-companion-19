@@ -45,7 +45,7 @@ const ProductionStep = () => {
   const { itemId } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const navigate = useNavigate();
 
   // Mobile-specific hooks
@@ -757,13 +757,15 @@ const ProductionStep = () => {
         <Card>
           <CardHeader>
             <CardTitle className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <span className="text-2xl md:text-xl font-ui">{currentStep.title_en}</span>
+              <span className="text-2xl md:text-xl font-ui">
+                {language === 'nl' ? currentStep.title_nl : currentStep.title_en}
+              </span>
               <Badge variant={stepExecution ? 'default' : 'outline'} className="h-10 px-5 text-base md:h-auto md:px-3 md:text-sm self-start">
                 {stepExecution ? t('inProgress') : t('notStarted')}
               </Badge>
             </CardTitle>
             <CardDescription className="text-base md:text-sm">
-              {currentStep.description_en || t('followInstructions')}
+              {(language === 'nl' ? currentStep.description_nl : currentStep.description_en) || t('followInstructions')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -933,7 +935,9 @@ const ProductionStep = () => {
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <span className="text-sm font-medium">{step.title_en}</span>
+                      <span className="text-sm font-medium">
+                        {language === 'nl' ? step.title_nl : step.title_en}
+                      </span>
                       {isCompleted && completion && (
                         <p className="text-xs text-muted-foreground">
                           {completion.completed_by_name} • {formatDateTime(completion.completed_at)}

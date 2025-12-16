@@ -29,10 +29,13 @@ export interface WorkOrderListItem {
   customer_name: string | null;
   external_order_number: string | null;
   order_value: number | null;
+  cancellation_reason: string | null;
   profiles: { full_name: string; avatar_url: string | null } | null;
   productBreakdown: ProductBreakdown[];
-  isMainAssembly: boolean;
-  hasSubassemblies: boolean;
+  // Progress tracking
+  progressPercent: number;
+  completedItems: number;
+  totalItems: number;
 }
 
 type WorkOrderStatus = 'planned' | 'in_progress' | 'completed' | 'on_hold' | 'cancelled';
@@ -68,7 +71,7 @@ export function useWorkOrders(options: UseWorkOrdersOptions = {}) {
 
     let query = supabase
       .from('work_orders')
-      .select('id, wo_number, product_type, batch_size, status, created_at, created_by, customer_name, external_order_number, order_value, start_date, shipping_date')
+      .select('id, wo_number, product_type, batch_size, status, created_at, created_by, customer_name, external_order_number, order_value, start_date, shipping_date, cancellation_reason')
       .order('created_at', { ascending: false });
 
     if (excludeCancelled) {
@@ -88,12 +91,12 @@ export function useWorkOrders(options: UseWorkOrdersOptions = {}) {
 
     const woIds = workOrdersData?.map(wo => wo.id) || [];
     
-    // Parallel fetch items and profiles
+    // Parallel fetch items (with status for progress) and profiles
     const [itemsResult, profilesResult] = await Promise.all([
       woIds.length > 0 
         ? supabase
             .from('work_order_items')
-            .select('work_order_id, serial_number')
+            .select('work_order_id, serial_number, status')
             .in('work_order_id', woIds)
         : { data: [] },
       (async () => {
@@ -106,13 +109,13 @@ export function useWorkOrders(options: UseWorkOrdersOptions = {}) {
       })()
     ]);
 
-    // Build lookup maps
-    const itemsMap: Record<string, Array<{ serial_number: string }>> = {};
+    // Build lookup maps with progress tracking
+    const itemsMap: Record<string, Array<{ serial_number: string; status: string }>> = {};
     for (const item of itemsResult.data || []) {
       if (!itemsMap[item.work_order_id]) {
         itemsMap[item.work_order_id] = [];
       }
-      itemsMap[item.work_order_id].push({ serial_number: item.serial_number });
+      itemsMap[item.work_order_id].push({ serial_number: item.serial_number, status: item.status });
     }
 
     const profilesMap = (profilesResult.data || []).reduce((acc, p) => {
@@ -120,11 +123,13 @@ export function useWorkOrders(options: UseWorkOrdersOptions = {}) {
       return acc;
     }, {} as Record<string, { full_name: string; avatar_url: string | null }>);
 
-    // Enrich data
+    // Enrich data with progress
     const enrichedData = (workOrdersData || []).map(wo => {
-      const breakdown = getProductBreakdown(itemsMap[wo.id] || []);
-      const hasSDM_ECO = breakdown.some(b => b.type === 'SDM_ECO');
-      const hasSubassemblies = breakdown.some(b => ['SENSOR', 'MLA', 'HMI', 'TRANSMITTER'].includes(b.type));
+      const items = itemsMap[wo.id] || [];
+      const breakdown = getProductBreakdown(items);
+      const completedItems = items.filter(i => i.status === 'completed').length;
+      const totalItems = items.length || wo.batch_size;
+      const progressPercent = totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
       
       return {
         ...wo,
@@ -132,8 +137,9 @@ export function useWorkOrders(options: UseWorkOrdersOptions = {}) {
           ? profilesMap[wo.created_by] 
           : null,
         productBreakdown: breakdown,
-        isMainAssembly: hasSDM_ECO,
-        hasSubassemblies: hasSubassemblies
+        progressPercent,
+        completedItems,
+        totalItems,
       };
     }) as WorkOrderListItem[];
 
@@ -279,7 +285,7 @@ export function usePaginatedWorkOrders(pageSize = 25) {
 
     const { data: workOrdersData, error } = await supabase
       .from('work_orders')
-      .select('id, wo_number, product_type, batch_size, status, created_at, created_by, customer_name, external_order_number, order_value, start_date, shipping_date')
+      .select('id, wo_number, product_type, batch_size, status, created_at, created_by, customer_name, external_order_number, order_value, start_date, shipping_date, cancellation_reason')
       .neq('status', 'cancelled')
       .order('created_at', { ascending: false })
       .range(from, to);
@@ -297,7 +303,7 @@ export function usePaginatedWorkOrders(pageSize = 25) {
     const woIds = workOrdersData.map(wo => wo.id);
     
     const [itemsResult, profilesResult] = await Promise.all([
-      supabase.from('work_order_items').select('work_order_id, serial_number').in('work_order_id', woIds),
+      supabase.from('work_order_items').select('work_order_id, serial_number, status').in('work_order_id', woIds),
       (async () => {
         const creatorIds = [...new Set(workOrdersData.map(wo => wo.created_by).filter(Boolean))];
         if (creatorIds.length === 0) return { data: [] };
@@ -305,10 +311,10 @@ export function usePaginatedWorkOrders(pageSize = 25) {
       })()
     ]);
 
-    const itemsMap: Record<string, Array<{ serial_number: string }>> = {};
+    const itemsMap: Record<string, Array<{ serial_number: string; status: string }>> = {};
     for (const item of itemsResult.data || []) {
       if (!itemsMap[item.work_order_id]) itemsMap[item.work_order_id] = [];
-      itemsMap[item.work_order_id].push({ serial_number: item.serial_number });
+      itemsMap[item.work_order_id].push({ serial_number: item.serial_number, status: item.status });
     }
 
     const profilesMap = (profilesResult.data || []).reduce((acc, p) => {
@@ -317,13 +323,19 @@ export function usePaginatedWorkOrders(pageSize = 25) {
     }, {} as Record<string, { full_name: string; avatar_url: string | null }>);
 
     return workOrdersData.map(wo => {
-      const breakdown = getProductBreakdown(itemsMap[wo.id] || []);
+      const items = itemsMap[wo.id] || [];
+      const breakdown = getProductBreakdown(items);
+      const completedItems = items.filter(i => i.status === 'completed').length;
+      const totalItems = items.length || wo.batch_size;
+      const progressPercent = totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
+      
       return {
         ...wo,
         profiles: wo.created_by && profilesMap[wo.created_by] ? profilesMap[wo.created_by] : null,
         productBreakdown: breakdown,
-        isMainAssembly: breakdown.some(b => b.type === 'SDM_ECO'),
-        hasSubassemblies: breakdown.some(b => ['SENSOR', 'MLA', 'HMI', 'TRANSMITTER'].includes(b.type))
+        progressPercent,
+        completedItems,
+        totalItems,
       };
     }) as WorkOrderListItem[];
   }, [pageSize]);

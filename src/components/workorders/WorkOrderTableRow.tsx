@@ -22,8 +22,7 @@ export interface WorkOrderRowData {
   order_value?: number | null;
   cancellation_reason?: string | null;
   productBreakdown: ProductBreakdown[];
-  isMainAssembly?: boolean;
-  hasSubassemblies?: boolean;
+  progressPercent?: number;
 }
 
 interface WorkOrderTableRowProps {
@@ -86,8 +85,6 @@ export function WorkOrderTableRow({
         <ProductBreakdownBadges
           breakdown={workOrder.productBreakdown}
           batchSize={workOrder.batch_size}
-          isMainAssembly={workOrder.isMainAssembly}
-          hasSubassemblies={workOrder.hasSubassemblies}
           compact
           maxVisible={2}
         />

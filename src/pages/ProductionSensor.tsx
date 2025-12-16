@@ -14,7 +14,7 @@ import { Loader2, ArrowLeft, CheckCircle2, Clock, AlertCircle } from 'lucide-rea
 const ProductionSensor = () => {
   const { itemId } = useParams();
   const { user } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const navigate = useNavigate();
   
   const [loading, setLoading] = useState(true);
@@ -156,9 +156,13 @@ const ProductionSensor = () => {
                         )}
                       </div>
                       <div className="flex-1">
-                        <div className="font-medium">{step.title_en}</div>
-                        {step.description_en && (
-                          <div className="text-sm text-muted-foreground">{step.description_en}</div>
+                        <div className="font-medium">
+                          {language === 'nl' ? step.title_nl : step.title_en}
+                        </div>
+                        {(language === 'nl' ? step.description_nl : step.description_en) && (
+                          <div className="text-sm text-muted-foreground">
+                            {language === 'nl' ? step.description_nl : step.description_en}
+                          </div>
                         )}
                       </div>
                       {status === 'current' && (
