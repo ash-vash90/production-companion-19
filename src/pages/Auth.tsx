@@ -768,7 +768,7 @@ const Auth = () => {
   const showTabs = view === 'login' || view === 'signup';
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4">
+    <div className="min-h-screen w-full flex items-center justify-center bg-muted/30 p-4">
       <Card className="w-full max-w-md shadow-2xl border-2">
         <CardHeader className="space-y-3 text-center">
           <div className="flex justify-center mb-4">
