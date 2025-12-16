@@ -15,6 +15,8 @@ import { Loader2, Users, Trash2 } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { InviteUserDialog } from '@/components/settings/InviteUserDialog';
+import { PermissionEditor } from '@/components/settings/PermissionEditor';
 
 interface UserProfile {
   id: string;
@@ -208,11 +210,16 @@ const RoleManagement = () => {
 
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-sm lg:text-base">
-                <Users className="h-4 w-4" />
-                {t('systemUsers')}
-              </CardTitle>
-              <CardDescription className="text-xs lg:text-sm">{t('manageUserPermissions')}</CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2 text-sm lg:text-base">
+                    <Users className="h-4 w-4" />
+                    {t('systemUsers')}
+                  </CardTitle>
+                  <CardDescription className="text-xs lg:text-sm">{t('manageUserPermissions')}</CardDescription>
+                </div>
+                <InviteUserDialog onInviteCreated={fetchUsers} />
+              </div>
             </CardHeader>
             <CardContent>
               {loading ? (
@@ -298,60 +305,8 @@ const RoleManagement = () => {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base lg:text-lg">{t('rolePermissions')}</CardTitle>
-              <CardDescription className="text-sm">{t('rolePermissionsDescription')}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="p-4 border rounded-lg">
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="text-xl">👑</span>
-                    <h4 className="font-semibold text-base">{t('admin')}</h4>
-                  </div>
-                  <ul className="text-sm text-muted-foreground space-y-1 ml-7">
-                    <li>• {t('fullSystemAccess')}</li>
-                    <li>• {t('manageRolesPermission')}</li>
-                    <li>• {t('configureSystemWebhooks')}</li>
-                  </ul>
-                </div>
-                <div className="p-4 border rounded-lg">
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="text-xl">👔</span>
-                    <h4 className="font-semibold text-base">{t('supervisor')}</h4>
-                  </div>
-                  <ul className="text-sm text-muted-foreground space-y-1 ml-7">
-                    <li>• {t('manageAllWorkOrders')}</li>
-                    <li>• {t('assignTasks')}</li>
-                    <li>• {t('viewReports')}</li>
-                  </ul>
-                </div>
-                <div className="p-4 border rounded-lg">
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="text-xl">🔧</span>
-                    <h4 className="font-semibold text-base">{t('operator')}</h4>
-                  </div>
-                  <ul className="text-sm text-muted-foreground space-y-1 ml-7">
-                    <li>• {t('executeSteps')}</li>
-                    <li>• {t('scanBatchMaterials')}</li>
-                    <li>• {t('recordMeasurements')}</li>
-                  </ul>
-                </div>
-                <div className="p-4 border rounded-lg">
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="text-xl">📦</span>
-                    <h4 className="font-semibold text-base">{t('logistics')}</h4>
-                  </div>
-                  <ul className="text-sm text-muted-foreground space-y-1 ml-7">
-                    <li>• {t('printLabels')}</li>
-                    <li>• {t('trackShipments')}</li>
-                    <li>• {t('manageMaterials')}</li>
-                  </ul>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          {/* Dynamic Permission Editor */}
+          <PermissionEditor />
         </div>
       </Layout>
     </ProtectedRoute>
