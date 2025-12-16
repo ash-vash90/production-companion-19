@@ -143,6 +143,10 @@ export default {
           from: { opacity: "0" },
           to: { opacity: "1" },
         },
+        "page-enter": {
+          from: { opacity: "0", transform: "scale(0.995)" },
+          to: { opacity: "1", transform: "scale(1)" },
+        },
         "fade-out": {
           from: { opacity: "1" },
           to: { opacity: "0" },
@@ -188,6 +192,7 @@ export default {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         "fade-in": "fade-in 0.3s ease-out forwards",
+        "page-enter": "page-enter 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards",
         "fade-out": "fade-out 0.3s ease-out forwards",
         "slide-up": "slide-up 0.3s ease-out forwards",
         "slide-down": "slide-down 0.3s ease-out forwards",
