@@ -105,7 +105,8 @@ export function NotificationCenter() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user?.id, pushEnabled, sendNotification]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   const markAsRead = async (id: string) => {
     await supabase
