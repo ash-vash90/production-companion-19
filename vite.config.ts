@@ -15,6 +15,7 @@ export default defineConfig(({ mode }) => ({
     mode === "development" && componentTagger(),
     VitePWA({
       registerType: "autoUpdate",
+      injectRegister: "script-defer", // Non-render-blocking SW registration
       includeAssets: ["favicon.ico", "robots.txt", "sw-custom.js"],
       manifest: {
         name: "Rhosonics PMS",
