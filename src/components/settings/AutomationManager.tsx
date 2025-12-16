@@ -22,12 +22,18 @@ interface IncomingWebhook {
   name: string;
   description: string | null;
   endpoint_key: string;
-  secret_key: string;
+  secret_key: string; // Only shown masked (last 4 chars) from DB, full secret only on create/regenerate
   enabled: boolean;
   trigger_count: number;
   last_triggered_at: string | null;
   created_at: string;
 }
+
+// Mask a secret key to show only last 4 characters
+const maskSecret = (secret: string): string => {
+  if (!secret || secret.length <= 4) return '••••••••••••';
+  return '••••••••' + secret.slice(-4);
+};
 
 interface AutomationRule {
   id: string;
@@ -116,7 +122,8 @@ const AutomationManager = () => {
   const [logs, setLogs] = useState<WebhookLog[]>([]);
   const [selectedWebhook, setSelectedWebhook] = useState<IncomingWebhook | null>(null);
   const [showSecrets, setShowSecrets] = useState<Record<string, boolean>>({});
-  
+  const [newlyCreatedSecrets, setNewlyCreatedSecrets] = useState<Record<string, string>>({});
+  const [regeneratingSecret, setRegeneratingSecret] = useState(false);
   const [webhookDialogOpen, setWebhookDialogOpen] = useState(false);
   const [ruleDialogOpen, setRuleDialogOpen] = useState(false);
   const [logsDialogOpen, setLogsDialogOpen] = useState(false);
@@ -211,14 +218,37 @@ const AutomationManager = () => {
       
       if (error) throw error;
       
+      // Store the secret temporarily so user can copy it once
+      setNewlyCreatedSecrets(prev => ({ ...prev, [data.id]: data.secret_key }));
+      
       setWebhooks(prev => [data, ...prev]);
       setSelectedWebhook(data);
       setNewWebhook({ name: '', description: '' });
       setWebhookDialogOpen(false);
-      toast.success('Webhook endpoint created');
+      toast.success('Webhook created! Copy the secret now - it will be hidden after you leave this page.');
     } catch (error: any) {
       console.error('Error creating webhook:', error);
       toast.error(error.message);
+    }
+  };
+
+  const regenerateSecret = async (webhookId: string) => {
+    setRegeneratingSecret(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('regenerate-webhook-secret', {
+        body: { webhook_id: webhookId }
+      });
+      
+      if (error) throw error;
+      
+      // Store the new secret temporarily
+      setNewlyCreatedSecrets(prev => ({ ...prev, [webhookId]: data.secret }));
+      toast.success('Secret regenerated! Copy it now - it will be hidden after you leave this page.');
+    } catch (error: any) {
+      console.error('Error regenerating secret:', error);
+      toast.error(error.message || 'Failed to regenerate secret');
+    } finally {
+      setRegeneratingSecret(false);
     }
   };
 
@@ -500,17 +530,45 @@ const AutomationManager = () => {
             {/* Secret Key */}
             <div className="space-y-2">
               <Label className="text-sm text-muted-foreground">Secret Key (X-Webhook-Secret)</Label>
-              <div className="flex items-center gap-2">
-                <code className="flex-1 text-[10px] sm:text-xs bg-muted p-2 rounded border font-mono truncate">
-                  {showSecrets[selectedWebhook.id] ? selectedWebhook.secret_key : '••••••••••••••••'}
-                </code>
-                <Button variant="outline" size="icon" className="shrink-0 h-8 w-8" onClick={() => setShowSecrets(prev => ({ ...prev, [selectedWebhook.id]: !prev[selectedWebhook.id] }))}>
-                  {showSecrets[selectedWebhook.id] ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-                </Button>
-                <Button variant="outline" size="icon" className="shrink-0 h-8 w-8" onClick={() => copyToClipboard(selectedWebhook.secret_key)}>
-                  <Copy className="h-3.5 w-3.5" />
-                </Button>
-              </div>
+              {newlyCreatedSecrets[selectedWebhook.id] ? (
+                // Show full secret only when newly created/regenerated
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <code className="flex-1 text-[10px] sm:text-xs bg-green-500/10 border-green-500/30 p-2 rounded border font-mono truncate text-green-700 dark:text-green-400">
+                      {newlyCreatedSecrets[selectedWebhook.id]}
+                    </code>
+                    <Button variant="outline" size="icon" className="shrink-0 h-8 w-8" onClick={() => copyToClipboard(newlyCreatedSecrets[selectedWebhook.id])}>
+                      <Copy className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-amber-600 dark:text-amber-400">
+                    <AlertCircle className="h-3.5 w-3.5" />
+                    <span>Copy this secret now! It will be hidden when you leave this page.</span>
+                  </div>
+                </div>
+              ) : (
+                // Show masked secret with regenerate option
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <code className="flex-1 text-[10px] sm:text-xs bg-muted p-2 rounded border font-mono truncate">
+                      {maskSecret(selectedWebhook.secret_key)}
+                    </code>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="shrink-0 h-8 text-xs"
+                      onClick={() => regenerateSecret(selectedWebhook.id)}
+                      disabled={regeneratingSecret}
+                    >
+                      {regeneratingSecret ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : null}
+                      Regenerate
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Secret is hidden for security. Regenerate to get a new secret.
+                  </p>
+                </div>
+              )}
             </div>
 
             <Separator />
