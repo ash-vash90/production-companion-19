@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/AppSidebar';
 import { NotificationCenter } from '@/components/notifications/NotificationCenter';
@@ -13,6 +14,7 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [searchOpen, setSearchOpen] = useState(false);
+  const location = useLocation();
 
   return (
     <SidebarProvider defaultOpen={true}>
@@ -34,7 +36,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           </header>
           
           <main className="flex-1 px-3 md:px-4 lg:px-6 py-3 md:py-4 lg:py-6 w-full overflow-x-hidden">
-            <div className="mx-auto w-full max-w-7xl">
+            <div key={location.pathname} className="mx-auto w-full max-w-7xl animate-page-enter">
               {children}
             </div>
           </main>
