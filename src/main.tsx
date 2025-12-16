@@ -9,7 +9,10 @@ console.log("[MES] Bootstrapping React app");
 // on the preview domain to keep production PWA behavior intact.
 async function disableServiceWorkerInPreview() {
   const host = window.location.hostname;
-  const isPreview = host.endsWith("lovableproject.com");
+  // Lovable preview hosts can be on different domains; detect by domain + preview marker.
+  const isPreview =
+    host.endsWith("lovableproject.com") ||
+    (host.endsWith("lovable.app") && host.includes("preview--"));
   if (!isPreview) return;
   if (!("serviceWorker" in navigator)) return;
 
