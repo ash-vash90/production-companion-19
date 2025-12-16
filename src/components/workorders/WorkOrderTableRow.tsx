@@ -2,11 +2,13 @@ import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { TableRow, TableCell } from '@/components/ui/table';
+import { Progress } from '@/components/ui/progress';
 import { WorkOrderStatusBadge } from './WorkOrderStatusBadge';
+import { WorkOrderStatusSelect } from './WorkOrderStatusSelect';
 import { ProductBreakdownBadges } from './ProductBreakdownBadges';
 import { formatDate, ProductBreakdown } from '@/lib/utils';
-import { AlertTriangle, Clock } from 'lucide-react';
-import { parseISO, isBefore, differenceInDays } from 'date-fns';
+import { AlertTriangle, Clock, Calendar, Truck, Eye, X } from 'lucide-react';
+import { parseISO, isBefore } from 'date-fns';
 
 export interface WorkOrderRowData {
   id: string;
@@ -29,23 +31,34 @@ interface WorkOrderTableRowProps {
   workOrder: WorkOrderRowData;
   onClick?: () => void;
   onCancel?: () => void;
+  onStatusChange?: () => void;
   showUrgency?: boolean;
   linkTo?: string;
   showCompletedDate?: boolean;
   actionLabel?: string;
+  /** Show editable status dropdown instead of badge */
+  editableStatus?: boolean;
+  /** Show progress bar column */
+  showProgress?: boolean;
+  /** Show price column */
+  showPrice?: boolean;
 }
 
 export function WorkOrderTableRow({
   workOrder,
   onClick,
   onCancel,
+  onStatusChange,
   showUrgency = true,
   linkTo,
   showCompletedDate = false,
   actionLabel,
+  editableStatus = false,
+  showProgress = false,
+  showPrice = false,
 }: WorkOrderTableRowProps) {
   const navigate = useNavigate();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   // Urgency calculations
   const isShippingOverdue = (): boolean => {
@@ -74,6 +87,7 @@ export function WorkOrderTableRow({
       className="cursor-pointer hover:bg-muted/50" 
       onClick={handleClick}
     >
+      {/* WO Number + Urgency icons */}
       <TableCell className="font-mono font-semibold whitespace-nowrap">
         <div className="flex items-center gap-2">
           {workOrder.wo_number}
@@ -81,6 +95,8 @@ export function WorkOrderTableRow({
           {startOverdue && !shippingOverdue && <Clock className="h-3.5 w-3.5 text-warning" />}
         </div>
       </TableCell>
+
+      {/* Product breakdown */}
       <TableCell>
         <ProductBreakdownBadges
           breakdown={workOrder.productBreakdown}
@@ -89,12 +105,25 @@ export function WorkOrderTableRow({
           maxVisible={2}
         />
       </TableCell>
+
+      {/* Customer */}
       <TableCell className="text-sm text-muted-foreground whitespace-nowrap hidden md:table-cell">
         {workOrder.customer_name || '-'}
       </TableCell>
-      <TableCell>
+
+      {/* Status - editable or badge */}
+      <TableCell onClick={(e) => e.stopPropagation()}>
         <div className="flex flex-col gap-0.5">
-          <WorkOrderStatusBadge status={workOrder.status} />
+          {editableStatus ? (
+            <WorkOrderStatusSelect
+              workOrderId={workOrder.id}
+              currentStatus={workOrder.status}
+              onStatusChange={onStatusChange}
+              compact
+            />
+          ) : (
+            <WorkOrderStatusBadge status={workOrder.status} />
+          )}
           {workOrder.status === 'cancelled' && workOrder.cancellation_reason && (
             <span className="text-xs text-destructive/80 italic truncate max-w-[150px]" title={workOrder.cancellation_reason}>
               "{workOrder.cancellation_reason}"
@@ -102,41 +131,85 @@ export function WorkOrderTableRow({
           )}
         </div>
       </TableCell>
-      <TableCell className="text-sm whitespace-nowrap hidden lg:table-cell">
-        {workOrder.shipping_date ? (
-          <span className={shippingOverdue ? 'text-destructive font-medium' : ''}>
-            {formatDate(workOrder.shipping_date)}
-          </span>
-        ) : '-'}
+
+      {/* Dates - Start & Ship */}
+      <TableCell className="text-xs whitespace-nowrap hidden lg:table-cell">
+        <div className="flex flex-col gap-0.5">
+          {workOrder.start_date && (
+            <div className="flex items-center gap-1">
+              <Calendar className="h-3 w-3 text-muted-foreground" />
+              <span className={startOverdue ? 'text-warning font-medium' : 'text-muted-foreground'}>
+                {formatDate(workOrder.start_date)}
+              </span>
+            </div>
+          )}
+          {workOrder.shipping_date && (
+            <div className="flex items-center gap-1">
+              <Truck className="h-3 w-3 text-muted-foreground" />
+              <span className={shippingOverdue ? 'text-destructive font-medium' : 'text-muted-foreground'}>
+                {formatDate(workOrder.shipping_date)}
+              </span>
+            </div>
+          )}
+          {!workOrder.start_date && !workOrder.shipping_date && '-'}
+        </div>
       </TableCell>
+
+      {/* Price */}
+      {showPrice && (
+        <TableCell className="text-sm whitespace-nowrap hidden xl:table-cell">
+          {workOrder.order_value ? (
+            <span className="font-medium">€{workOrder.order_value.toLocaleString('nl-NL')}</span>
+          ) : '-'}
+        </TableCell>
+      )}
+
+      {/* Progress */}
+      {showProgress && (
+        <TableCell className="hidden sm:table-cell">
+          <div className="flex items-center gap-2 min-w-[100px]">
+            <Progress value={workOrder.progressPercent || 0} className="h-2 flex-1" />
+            <span className="text-xs font-medium text-muted-foreground w-8 text-right">
+              {workOrder.progressPercent || 0}%
+            </span>
+          </div>
+        </TableCell>
+      )}
+
+      {/* Completed date (for reports) */}
       {showCompletedDate && (
         <TableCell className="text-sm whitespace-nowrap">
           {workOrder.completed_at ? formatDate(workOrder.completed_at) : '-'}
         </TableCell>
       )}
+
+      {/* Actions */}
       <TableCell className="text-right whitespace-nowrap">
         <div className="flex justify-end gap-1">
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
+            className="h-8 w-8 p-0"
             onClick={(e) => {
               e.stopPropagation();
               handleClick();
             }}
+            title={actionLabel || t('view')}
           >
-            {actionLabel || t('view')}
+            <Eye className="h-4 w-4" />
           </Button>
-          {onCancel && (
+          {onCancel && workOrder.status !== 'completed' && workOrder.status !== 'cancelled' && (
             <Button
               variant="ghost"
               size="sm"
-              className="text-destructive hover:text-destructive"
+              className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
               onClick={(e) => {
                 e.stopPropagation();
                 onCancel();
               }}
+              title={t('cancel')}
             >
-              {t('cancel')}
+              <X className="h-4 w-4" />
             </Button>
           )}
         </div>
