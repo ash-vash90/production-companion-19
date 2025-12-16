@@ -842,13 +842,13 @@ const Auth = () => {
                   </TabsTrigger>
                 </TabsList>
                 
-                <TabsContent value="login" className="mt-6">
+                <TabsContent value="login" className="mt-6 data-[state=active]:animate-in data-[state=active]:fade-in-0 data-[state=active]:slide-in-from-left-2 data-[state=inactive]:animate-out data-[state=inactive]:fade-out-0 duration-200">
                   <div className="auth-form-dark">
                     {renderContent()}
                   </div>
                 </TabsContent>
                 
-                <TabsContent value="signup" className="mt-6">
+                <TabsContent value="signup" className="mt-6 data-[state=active]:animate-in data-[state=active]:fade-in-0 data-[state=active]:slide-in-from-right-2 data-[state=inactive]:animate-out data-[state=inactive]:fade-out-0 duration-200 max-h-[420px] overflow-y-auto">
                   <div className="auth-form-dark">
                     {renderContent()}
                   </div>
