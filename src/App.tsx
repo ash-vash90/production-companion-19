@@ -11,10 +11,8 @@ import { Loader2 } from "lucide-react";
 import { initializePrefetch } from "./services/prefetchService";
 import ProtectedRoute from "./components/ProtectedRoute";
 
-// Auth page loads eagerly for fast initial login experience
-import Auth from "./pages/Auth";
-
-// Lazy load all other pages to reduce initial bundle size
+// Lazy load all pages including Auth to reduce initial bundle size
+const Auth = lazy(() => import("./pages/Auth"));
 const Index = lazy(() => import("./pages/Index"));
 const WorkOrders = lazy(() => import("./pages/WorkOrders"));
 const Production = lazy(() => import("./pages/Production"));
