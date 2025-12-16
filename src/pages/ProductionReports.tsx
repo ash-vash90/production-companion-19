@@ -8,7 +8,7 @@ import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
+
 import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { WorkOrderCard } from '@/components/workorders/WorkOrderCard';
 import { WorkOrderTableRow } from '@/components/workorders/WorkOrderTableRow';
@@ -264,7 +264,7 @@ const ProductionReports = () => {
                 </CardContent>
               </Card>
             ) : (
-              <ScrollArea className="flex-1 touch-pan-x">
+              <div className="flex-1 overflow-auto">
                 <div className="space-y-4 pr-4">
                   {Object.entries(groupedWorkOrders).map(([groupKey, orders]) => (
                     <div key={groupKey} className="space-y-2">
@@ -360,7 +360,7 @@ const ProductionReports = () => {
                     </div>
                   ))}
                 </div>
-              </ScrollArea>
+              </div>
             )}
           </div>
 
