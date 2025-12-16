@@ -209,6 +209,8 @@ const Sidebar = React.forwardRef<
           side === "left"
             ? "left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)] border-r border-sidebar-border"
             : "right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)] border-l border-sidebar-border",
+          // Ensure sidebar stays anchored to edge
+          side === "left" ? "!left-0" : "!right-0",
           "group-data-[collapsible=icon]:w-[--sidebar-width-icon]",
           className,
         )}
