@@ -345,8 +345,7 @@ const WorkOrders = () => {
     start_date: wo.start_date,
     order_value: wo.order_value,
     productBreakdown: wo.productBreakdown,
-    isMainAssembly: wo.isMainAssembly,
-    hasSubassemblies: wo.hasSubassemblies,
+    progressPercent: wo.progressPercent,
   }), []);
 
   // Render table view with shared component
