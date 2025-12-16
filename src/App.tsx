@@ -7,9 +7,9 @@ import { BrowserRouter, Routes, Route, useLocation, useNavigate } from "react-ro
 import { AuthProvider } from "./contexts/AuthContext";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import { UserProfileProvider } from "./contexts/UserProfileContext";
-import { Loader2 } from "lucide-react";
 import { initializePrefetch, cleanupPrefetch } from "./services/prefetchService";
 import ProtectedRoute from "./components/ProtectedRoute";
+import LoadingScreen from "./components/LoadingScreen";
 
 // Lazy load all pages including Auth to reduce initial bundle size
 const Auth = lazy(() => import("./pages/Auth"));
@@ -42,11 +42,7 @@ const queryClient = new QueryClient({
 });
 
 // Loading fallback component
-const PageLoader = () => (
-  <div className="flex items-center justify-center min-h-screen">
-    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-  </div>
-);
+const PageLoader = () => <LoadingScreen />;
 
 // Persist and restore the last non-auth route so hard refresh keeps you on the same page
 const LAST_ROUTE_KEY = "last_route";
