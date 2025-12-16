@@ -1,5 +1,41 @@
 import { z } from 'zod';
 
+// Rhosonics domain email validation
+export const rhosonicsEmailSchema = z
+  .string()
+  .trim()
+  .min(1, { message: 'Email is required' })
+  .email({ message: 'Invalid email address' })
+  .max(255, { message: 'Email must be less than 255 characters' })
+  .refine(
+    (email) => email.toLowerCase().endsWith('@rhosonics.com'),
+    { message: 'Only @rhosonics.com email addresses are allowed' }
+  );
+
+// Verification code validation
+export const verificationCodeSchema = z
+  .string()
+  .length(6, { message: 'Code must be 6 digits' })
+  .regex(/^\d{6}$/, { message: 'Code must be 6 digits' });
+
+// Password validation with strength requirements
+export const passwordSchema = z
+  .string()
+  .min(8, { message: 'Password must be at least 8 characters' })
+  .max(128, { message: 'Password must be less than 128 characters' })
+  .regex(/[A-Z]/, { message: 'Password must contain at least one uppercase letter' })
+  .regex(/[a-z]/, { message: 'Password must contain at least one lowercase letter' })
+  .regex(/[0-9]/, { message: 'Password must contain at least one number' });
+
+// Password reset schema with confirmation
+export const passwordResetSchema = z.object({
+  password: passwordSchema,
+  confirmPassword: z.string()
+}).refine(data => data.password === data.confirmPassword, {
+  message: 'Passwords must match',
+  path: ['confirmPassword']
+});
+
 // Authentication validation schemas
 export const loginSchema = z.object({
   email: z
@@ -20,19 +56,8 @@ export const signupSchema = z.object({
     .trim()
     .min(1, { message: 'Full name is required' })
     .max(100, { message: 'Full name must be less than 100 characters' }),
-  email: z
-    .string()
-    .trim()
-    .min(1, { message: 'Email is required' })
-    .email({ message: 'Invalid email address' })
-    .max(255, { message: 'Email must be less than 255 characters' }),
-  password: z
-    .string()
-    .min(8, { message: 'Password must be at least 8 characters' })
-    .max(128, { message: 'Password must be less than 128 characters' })
-    .regex(/[A-Z]/, { message: 'Password must contain at least one uppercase letter' })
-    .regex(/[a-z]/, { message: 'Password must contain at least one lowercase letter' })
-    .regex(/[0-9]/, { message: 'Password must contain at least one number' }),
+  email: rhosonicsEmailSchema,
+  password: passwordSchema,
 });
 
 // Work order validation schema
@@ -229,3 +254,4 @@ export function validateWebhookRequest(
 export type LoginInput = z.infer<typeof loginSchema>;
 export type SignupInput = z.infer<typeof signupSchema>;
 export type WorkOrderInput = z.infer<typeof workOrderSchema>;
+export type PasswordResetInput = z.infer<typeof passwordResetSchema>;

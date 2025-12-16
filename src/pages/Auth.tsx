@@ -9,9 +9,11 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Loader2, Factory, UserPlus } from 'lucide-react';
-import { loginSchema, signupSchema } from '@/lib/validation';
+import { Loader2, Factory, UserPlus, Mail, ArrowLeft, CheckCircle2, KeyRound, Eye, EyeOff } from 'lucide-react';
+import { loginSchema, signupSchema, rhosonicsEmailSchema, verificationCodeSchema, passwordResetSchema } from '@/lib/validation';
 import { supabase } from '@/integrations/supabase/client';
+import { VerificationCodeInput } from '@/components/auth/VerificationCodeInput';
+import { PasswordStrengthIndicator, isPasswordValid } from '@/components/auth/PasswordStrengthIndicator';
 
 interface InviteData {
   email: string;
@@ -19,22 +21,32 @@ interface InviteData {
   invite_token: string;
 }
 
+type AuthView = 'login' | 'signup' | 'signup-verify' | 'signup-success' | 'forgot-password' | 'forgot-verify' | 'reset-password' | 'reset-success';
+
 const Auth = () => {
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [selectedLanguage, setSelectedLanguage] = useState<'en' | 'nl'>('en');
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [inviteData, setInviteData] = useState<InviteData | null>(null);
-  const [activeTab, setActiveTab] = useState('login');
+  const [view, setView] = useState<AuthView>('login');
+  const [verificationCode, setVerificationCode] = useState('');
+  const [verificationToken, setVerificationToken] = useState('');
+  const [codeExpiresAt, setCodeExpiresAt] = useState<Date | null>(null);
+  const [countdown, setCountdown] = useState(0);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+
   const { signIn, signUp, user } = useAuth();
   const { language, setLanguage, t } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
 
-  // Get the intended destination from location state, or default to dashboard
   const from = (location.state as any)?.from?.pathname || '/';
 
   // Check for invite token on mount
@@ -44,6 +56,34 @@ const Auth = () => {
       checkInviteToken(inviteToken);
     }
   }, [searchParams]);
+
+  // Countdown timer for code expiry
+  useEffect(() => {
+    if (!codeExpiresAt) return;
+    
+    const interval = setInterval(() => {
+      const now = new Date();
+      const remaining = Math.max(0, Math.floor((codeExpiresAt.getTime() - now.getTime()) / 1000));
+      setCountdown(remaining);
+      
+      if (remaining === 0) {
+        clearInterval(interval);
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [codeExpiresAt]);
+
+  // Resend cooldown timer
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    
+    const interval = setInterval(() => {
+      setResendCooldown(prev => Math.max(0, prev - 1));
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [resendCooldown]);
 
   const checkInviteToken = async (token: string) => {
     try {
@@ -63,7 +103,7 @@ const Auth = () => {
       const invite = data as unknown as InviteData;
       setInviteData(invite);
       setEmail(invite.email);
-      setActiveTab('signup');
+      setView('signup');
       toast.success(t('success'), { 
         description: `You've been invited as ${invite.role}. Complete your registration below.` 
       });
@@ -82,7 +122,6 @@ const Auth = () => {
     e.preventDefault();
     setValidationErrors({});
     
-    // Validate input with zod
     const result = loginSchema.safeParse({ email, password });
     if (!result.success) {
       const errors: Record<string, string> = {};
@@ -111,11 +150,11 @@ const Auth = () => {
     }
   };
 
-  const handleSignUp = async (e: React.FormEvent) => {
+  const handleSignupStart = async (e: React.FormEvent) => {
     e.preventDefault();
     setValidationErrors({});
     
-    // Validate input with zod
+    // Validate all fields
     const result = signupSchema.safeParse({ email, password, fullName });
     if (!result.success) {
       const errors: Record<string, string> = {};
@@ -129,40 +168,604 @@ const Auth = () => {
       return;
     }
 
+    // Send verification code
     setLoading(true);
-    const { error } = await signUp(email.trim(), password, fullName.trim(), selectedLanguage);
-    setLoading(false);
+    try {
+      const response = await supabase.functions.invoke('send-verification-code', {
+        body: { email: email.trim(), type: 'signup', language: selectedLanguage }
+      });
 
-    if (error) {
-      const errorMessage = error.message.includes('already registered')
-        ? 'This email is already registered. Please log in instead.'
-        : error.message;
-      toast.error(t('error'), { description: errorMessage });
-    } else {
-      // If this was an invite, mark it as used and assign the role
+      if (response.error) throw response.error;
+      
+      const data = response.data;
+      if (!data.success) {
+        toast.error(t('error'), { description: data.error || 'Failed to send verification code' });
+        setLoading(false);
+        return;
+      }
+
+      setCodeExpiresAt(new Date(Date.now() + 10 * 60 * 1000));
+      setVerificationCode('');
+      setView('signup-verify');
+      toast.success(t('success'), { description: 'Verification code sent to your email' });
+    } catch (error: any) {
+      console.error('Error sending verification code:', error);
+      toast.error(t('error'), { description: 'Failed to send verification code. Please try again.' });
+    }
+    setLoading(false);
+  };
+
+  const handleVerifySignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    const codeResult = verificationCodeSchema.safeParse(verificationCode);
+    if (!codeResult.success) {
+      toast.error(t('error'), { description: 'Please enter a valid 6-digit code' });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Verify the code
+      const verifyResponse = await supabase.functions.invoke('verify-code', {
+        body: { email: email.trim(), code: verificationCode, type: 'signup' }
+      });
+
+      if (verifyResponse.error) throw verifyResponse.error;
+      
+      const verifyData = verifyResponse.data;
+      if (!verifyData.success) {
+        toast.error(t('error'), { description: verifyData.error || 'Invalid verification code' });
+        setLoading(false);
+        return;
+      }
+
+      // Code verified - now create the account
+      const { error: signUpError } = await signUp(email.trim(), password, fullName.trim(), selectedLanguage);
+      
+      if (signUpError) {
+        const errorMessage = signUpError.message.includes('already registered')
+          ? 'This email is already registered. Please log in instead.'
+          : signUpError.message;
+        toast.error(t('error'), { description: errorMessage });
+        setLoading(false);
+        return;
+      }
+
+      // If this was an invite, mark it as used
       if (inviteData) {
         try {
-          // Mark invite as used
           await supabase
             .from('user_invites' as any)
             .update({ used_at: new Date().toISOString() })
             .eq('invite_token', inviteData.invite_token);
-
-          // The role will be assigned via trigger or we need to handle it
-          // For now, we'll trust the signup flow and the admin can adjust if needed
-          toast.success(t('success'), { 
-            description: `Account created with ${inviteData.role} role. You can now log in.` 
-          });
         } catch (inviteError) {
           console.error('Error updating invite:', inviteError);
         }
-      } else {
-        toast.success(t('success'), { description: 'Account created successfully! You can now log in.' });
       }
+
       setLanguage(selectedLanguage);
-      setActiveTab('login');
+      setView('signup-success');
+      toast.success(t('success'), { description: 'Account created successfully!' });
+    } catch (error: any) {
+      console.error('Error verifying code:', error);
+      toast.error(t('error'), { description: 'Verification failed. Please try again.' });
+    }
+    setLoading(false);
+  };
+
+  const handleForgotPasswordStart = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setValidationErrors({});
+    
+    const result = rhosonicsEmailSchema.safeParse(email);
+    if (!result.success) {
+      setValidationErrors({ email: result.error.errors[0].message });
+      toast.error(t('error'), { description: result.error.errors[0].message });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await supabase.functions.invoke('send-verification-code', {
+        body: { email: email.trim(), type: 'password_reset', language }
+      });
+
+      if (response.error) throw response.error;
+
+      // Always show success (security - don't reveal if email exists)
+      setCodeExpiresAt(new Date(Date.now() + 10 * 60 * 1000));
+      setVerificationCode('');
+      setView('forgot-verify');
+      toast.success(t('success'), { description: 'If this email is registered, you will receive a reset code.' });
+    } catch (error: any) {
+      console.error('Error sending reset code:', error);
+      toast.error(t('error'), { description: 'Failed to send reset code. Please try again.' });
+    }
+    setLoading(false);
+  };
+
+  const handleVerifyReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    const codeResult = verificationCodeSchema.safeParse(verificationCode);
+    if (!codeResult.success) {
+      toast.error(t('error'), { description: 'Please enter a valid 6-digit code' });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const verifyResponse = await supabase.functions.invoke('verify-code', {
+        body: { email: email.trim(), code: verificationCode, type: 'password_reset' }
+      });
+
+      if (verifyResponse.error) throw verifyResponse.error;
+      
+      const verifyData = verifyResponse.data;
+      if (!verifyData.success) {
+        toast.error(t('error'), { description: verifyData.error || 'Invalid verification code' });
+        setLoading(false);
+        return;
+      }
+
+      setVerificationToken(verifyData.token);
+      setPassword('');
+      setConfirmPassword('');
+      setView('reset-password');
+    } catch (error: any) {
+      console.error('Error verifying code:', error);
+      toast.error(t('error'), { description: 'Verification failed. Please try again.' });
+    }
+    setLoading(false);
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setValidationErrors({});
+
+    const result = passwordResetSchema.safeParse({ password, confirmPassword });
+    if (!result.success) {
+      const errors: Record<string, string> = {};
+      result.error.errors.forEach((err) => {
+        if (err.path[0]) {
+          errors[err.path[0] as string] = err.message;
+        }
+      });
+      setValidationErrors(errors);
+      toast.error(t('error'), { description: Object.values(errors)[0] });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await supabase.functions.invoke('reset-password', {
+        body: { token: verificationToken, newPassword: password }
+      });
+
+      if (response.error) throw response.error;
+      
+      const data = response.data;
+      if (!data.success) {
+        toast.error(t('error'), { description: data.error || 'Failed to reset password' });
+        setLoading(false);
+        return;
+      }
+
+      setView('reset-success');
+      toast.success(t('success'), { description: 'Password reset successfully!' });
+    } catch (error: any) {
+      console.error('Error resetting password:', error);
+      toast.error(t('error'), { description: 'Failed to reset password. Please try again.' });
+    }
+    setLoading(false);
+  };
+
+  const handleResendCode = async (type: 'signup' | 'password_reset') => {
+    if (resendCooldown > 0) return;
+    
+    setLoading(true);
+    try {
+      const response = await supabase.functions.invoke('send-verification-code', {
+        body: { email: email.trim(), type, language }
+      });
+
+      if (response.error) throw response.error;
+      
+      setCodeExpiresAt(new Date(Date.now() + 10 * 60 * 1000));
+      setVerificationCode('');
+      setResendCooldown(60);
+      toast.success(t('success'), { description: 'New verification code sent' });
+    } catch (error: any) {
+      console.error('Error resending code:', error);
+      toast.error(t('error'), { description: 'Failed to resend code. Please try again.' });
+    }
+    setLoading(false);
+  };
+
+  const resetToLogin = () => {
+    setView('login');
+    setEmail('');
+    setPassword('');
+    setConfirmPassword('');
+    setFullName('');
+    setVerificationCode('');
+    setVerificationToken('');
+    setValidationErrors({});
+  };
+
+  const formatCountdown = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  // Render different views
+  const renderContent = () => {
+    switch (view) {
+      case 'signup-verify':
+      case 'forgot-verify':
+        const isSignupVerify = view === 'signup-verify';
+        return (
+          <div className="space-y-6">
+            <div className="text-center space-y-2">
+              <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
+                <Mail className="h-8 w-8 text-primary" />
+              </div>
+              <h2 className="text-xl font-semibold text-foreground">
+                {isSignupVerify ? 'Verify Your Email' : 'Enter Reset Code'}
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                We sent a 6-digit code to<br />
+                <span className="font-medium text-foreground">{email}</span>
+              </p>
+            </div>
+
+            <form onSubmit={isSignupVerify ? handleVerifySignup : handleVerifyReset} className="space-y-6">
+              <div className="space-y-4">
+                <Label className="block text-center text-sm text-muted-foreground">
+                  Enter verification code
+                </Label>
+                <VerificationCodeInput
+                  value={verificationCode}
+                  onChange={setVerificationCode}
+                  disabled={loading}
+                />
+                
+                {countdown > 0 && (
+                  <p className="text-center text-sm text-warning flex items-center justify-center gap-2">
+                    <span>⏱️</span>
+                    Code expires in {formatCountdown(countdown)}
+                  </p>
+                )}
+              </div>
+
+              <Button type="submit" className="w-full" size="lg" disabled={loading || verificationCode.length !== 6}>
+                {loading && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
+                Verify Code
+              </Button>
+
+              <div className="flex items-center justify-between">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setView(isSignupVerify ? 'signup' : 'forgot-password')}
+                >
+                  <ArrowLeft className="h-4 w-4 mr-1" />
+                  Back
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleResendCode(isSignupVerify ? 'signup' : 'password_reset')}
+                  disabled={loading || resendCooldown > 0}
+                >
+                  {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend Code'}
+                </Button>
+              </div>
+            </form>
+          </div>
+        );
+
+      case 'signup-success':
+      case 'reset-success':
+        const isSignupSuccess = view === 'signup-success';
+        return (
+          <div className="space-y-6 text-center">
+            <div className="mx-auto w-20 h-20 bg-success/10 rounded-full flex items-center justify-center">
+              <CheckCircle2 className="h-10 w-10 text-success" />
+            </div>
+            <div className="space-y-2">
+              <h2 className="text-xl font-semibold text-foreground">
+                {isSignupSuccess ? 'Account Created!' : 'Password Reset!'}
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                {isSignupSuccess 
+                  ? 'Your account has been created successfully. You can now sign in.'
+                  : 'Your password has been reset successfully. You can now sign in with your new password.'}
+              </p>
+            </div>
+            <Button onClick={resetToLogin} className="w-full" size="lg">
+              Sign In
+            </Button>
+          </div>
+        );
+
+      case 'forgot-password':
+        return (
+          <div className="space-y-6">
+            <div className="text-center space-y-2">
+              <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
+                <KeyRound className="h-8 w-8 text-primary" />
+              </div>
+              <h2 className="text-xl font-semibold text-foreground">Reset Password</h2>
+              <p className="text-sm text-muted-foreground">
+                Enter your email address and we'll send you a code to reset your password.
+              </p>
+            </div>
+
+            <form onSubmit={handleForgotPasswordStart} className="space-y-5">
+              <div className="space-y-3">
+                <Label htmlFor="reset-email" className="font-data text-sm uppercase tracking-wider">
+                  Email
+                </Label>
+                <Input
+                  id="reset-email"
+                  type="email"
+                  placeholder="your.name@rhosonics.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className={validationErrors.email ? 'border-destructive' : ''}
+                  maxLength={255}
+                  required
+                />
+                {validationErrors.email && (
+                  <p className="text-xs text-destructive">{validationErrors.email}</p>
+                )}
+                <p className="text-xs text-muted-foreground">Only @rhosonics.com email addresses</p>
+              </div>
+
+              <Button type="submit" className="w-full" size="lg" disabled={loading}>
+                {loading && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
+                Send Reset Code
+              </Button>
+
+              <Button
+                type="button"
+                variant="ghost"
+                className="w-full"
+                onClick={() => setView('login')}
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Login
+              </Button>
+            </form>
+          </div>
+        );
+
+      case 'reset-password':
+        return (
+          <div className="space-y-6">
+            <div className="text-center space-y-2">
+              <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
+                <KeyRound className="h-8 w-8 text-primary" />
+              </div>
+              <h2 className="text-xl font-semibold text-foreground">Set New Password</h2>
+              <p className="text-sm text-muted-foreground">
+                Choose a strong password for your account.
+              </p>
+            </div>
+
+            <form onSubmit={handleResetPassword} className="space-y-5">
+              <div className="space-y-3">
+                <Label htmlFor="new-password" className="font-data text-sm uppercase tracking-wider">
+                  New Password
+                </Label>
+                <div className="relative">
+                  <Input
+                    id="new-password"
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className={validationErrors.password ? 'border-destructive pr-10' : 'pr-10'}
+                    maxLength={128}
+                    required
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 p-0"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                </div>
+                {validationErrors.password && (
+                  <p className="text-xs text-destructive">{validationErrors.password}</p>
+                )}
+                <PasswordStrengthIndicator password={password} />
+              </div>
+
+              <div className="space-y-3">
+                <Label htmlFor="confirm-password" className="font-data text-sm uppercase tracking-wider">
+                  Confirm Password
+                </Label>
+                <div className="relative">
+                  <Input
+                    id="confirm-password"
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className={validationErrors.confirmPassword ? 'border-destructive pr-10' : 'pr-10'}
+                    maxLength={128}
+                    required
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 p-0"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  >
+                    {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                </div>
+                {validationErrors.confirmPassword && (
+                  <p className="text-xs text-destructive">{validationErrors.confirmPassword}</p>
+                )}
+              </div>
+
+              <Button 
+                type="submit" 
+                className="w-full" 
+                size="lg" 
+                disabled={loading || !isPasswordValid(password) || password !== confirmPassword}
+              >
+                {loading && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
+                Reset Password
+              </Button>
+            </form>
+          </div>
+        );
+
+      case 'signup':
+        return (
+          <form onSubmit={handleSignupStart} className="space-y-5">
+            <div className="space-y-3">
+              <Label htmlFor="fullName" className="font-data text-sm md:text-base uppercase tracking-wider">{t('fullName')}</Label>
+              <Input
+                id="fullName"
+                type="text"
+                placeholder="John Doe"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                className={validationErrors.fullName ? 'border-destructive' : ''}
+                maxLength={100}
+                required
+              />
+              {validationErrors.fullName && <p className="text-xs text-destructive">{validationErrors.fullName}</p>}
+            </div>
+            <div className="space-y-3">
+              <Label htmlFor="signup-email" className="font-data text-sm md:text-base uppercase tracking-wider">{t('email')}</Label>
+              <Input
+                id="signup-email"
+                type="email"
+                placeholder="your.name@rhosonics.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className={validationErrors.email ? 'border-destructive' : ''}
+                maxLength={255}
+                required
+                disabled={!!inviteData}
+              />
+              {validationErrors.email && <p className="text-xs text-destructive">{validationErrors.email}</p>}
+              <p className="text-xs text-muted-foreground">Only @rhosonics.com email addresses</p>
+            </div>
+            <div className="space-y-3">
+              <Label htmlFor="signup-password" className="font-data text-sm md:text-base uppercase tracking-wider">{t('password')}</Label>
+              <div className="relative">
+                <Input
+                  id="signup-password"
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className={validationErrors.password ? 'border-destructive pr-10' : 'pr-10'}
+                  maxLength={128}
+                  required
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 p-0"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </Button>
+              </div>
+              {validationErrors.password && <p className="text-xs text-destructive">{validationErrors.password}</p>}
+              <PasswordStrengthIndicator password={password} />
+            </div>
+            <div className="space-y-3">
+              <Label htmlFor="language" className="font-data text-sm md:text-base uppercase tracking-wider">Language / Taal</Label>
+              <Select value={selectedLanguage} onValueChange={(value) => setSelectedLanguage(value as 'en' | 'nl')}>
+                <SelectTrigger className="h-10 md:h-11 text-sm md:text-base border-2">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="en" className="h-10 md:h-11 text-sm md:text-base">English</SelectItem>
+                  <SelectItem value="nl" className="h-10 md:h-11 text-sm md:text-base">Nederlands</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <Button 
+              type="submit" 
+              className="w-full" 
+              variant="default" 
+              size="lg" 
+              disabled={loading || !isPasswordValid(password)}
+            >
+              {loading && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
+              Continue
+            </Button>
+          </form>
+        );
+
+      default: // login
+        return (
+          <form onSubmit={handleSignIn} className="space-y-5">
+            <div className="space-y-3">
+              <Label htmlFor="email" className="font-data text-sm md:text-base uppercase tracking-wider">{t('email')}</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="operator@rhosonics.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className={validationErrors.email ? 'border-destructive' : ''}
+                maxLength={255}
+                required
+              />
+              {validationErrors.email && <p className="text-xs text-destructive">{validationErrors.email}</p>}
+            </div>
+            <div className="space-y-3">
+              <Label htmlFor="password" className="font-data text-sm md:text-base uppercase tracking-wider">{t('password')}</Label>
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className={validationErrors.password ? 'border-destructive' : ''}
+                maxLength={128}
+                required
+              />
+            </div>
+            <Button type="submit" className="w-full" variant="default" size="lg" disabled={loading}>
+              {loading && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
+              {t('login')}
+            </Button>
+            <Button
+              type="button"
+              variant="link"
+              className="w-full text-sm text-muted-foreground hover:text-primary"
+              onClick={() => {
+                setEmail('');
+                setValidationErrors({});
+                setView('forgot-password');
+              }}
+            >
+              Forgot your password?
+            </Button>
+          </form>
+        );
     }
   };
+
+  // Determine if we should show tabs
+  const showTabs = view === 'login' || view === 'signup';
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4">
@@ -177,7 +780,7 @@ const Auth = () => {
           <CardDescription className="text-xs md:text-sm uppercase tracking-wider text-muted-foreground">
             MES Production System
           </CardDescription>
-          {inviteData && (
+          {inviteData && view === 'signup' && (
             <div className="flex items-center justify-center gap-2 p-2 bg-primary/10 rounded-lg">
               <UserPlus className="h-4 w-4 text-primary" />
               <span className="text-sm text-primary font-medium">
@@ -187,110 +790,26 @@ const Auth = () => {
           )}
         </CardHeader>
         <CardContent>
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-2 h-10 md:h-11">
-              <TabsTrigger value="login" className="font-data text-xs md:text-sm uppercase">{t('login')}</TabsTrigger>
-              <TabsTrigger value="signup" className="font-data text-xs md:text-sm uppercase">{t('signup')}</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="login" className="mt-6">
-              <form onSubmit={handleSignIn} className="space-y-5">
-                <div className="space-y-3">
-                  <Label htmlFor="email" className="font-data text-sm md:text-base uppercase tracking-wider">{t('email')}</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="operator@rhosonics.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className={validationErrors.email ? 'border-destructive' : ''}
-                    maxLength={255}
-                    required
-                  />
-                  {validationErrors.email && <p className="text-xs text-destructive">{validationErrors.email}</p>}
-                </div>
-                <div className="space-y-3">
-                  <Label htmlFor="password" className="font-data text-sm md:text-base uppercase tracking-wider">{t('password')}</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className={validationErrors.password ? 'border-destructive' : ''}
-                    maxLength={128}
-                    required
-                  />
-                </div>
-                <Button type="submit" className="w-full" variant="default" size="lg" disabled={loading}>
-                  {loading && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
-                  {t('login')}
-                </Button>
-              </form>
-            </TabsContent>
-            
-            <TabsContent value="signup" className="mt-6">
-              <form onSubmit={handleSignUp} className="space-y-5">
-                <div className="space-y-3">
-                  <Label htmlFor="fullName" className="font-data text-sm md:text-base uppercase tracking-wider">{t('fullName')}</Label>
-                  <Input
-                    id="fullName"
-                    type="text"
-                    placeholder="John Doe"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    className={validationErrors.fullName ? 'border-destructive' : ''}
-                    maxLength={100}
-                    required
-                  />
-                  {validationErrors.fullName && <p className="text-xs text-destructive">{validationErrors.fullName}</p>}
-                </div>
-                <div className="space-y-3">
-                  <Label htmlFor="signup-email" className="font-data text-sm md:text-base uppercase tracking-wider">{t('email')}</Label>
-                  <Input
-                    id="signup-email"
-                    type="email"
-                    placeholder="operator@rhosonics.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className={validationErrors.email ? 'border-destructive' : ''}
-                    maxLength={255}
-                    required
-                  />
-                  {validationErrors.email && <p className="text-xs text-destructive">{validationErrors.email}</p>}
-                </div>
-                <div className="space-y-3">
-                  <Label htmlFor="signup-password" className="font-data text-sm md:text-base uppercase tracking-wider">{t('password')}</Label>
-                  <Input
-                    id="signup-password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className={validationErrors.password ? 'border-destructive' : ''}
-                    maxLength={128}
-                    required
-                  />
-                  {validationErrors.password && <p className="text-xs text-destructive">{validationErrors.password}</p>}
-                  <p className="text-xs text-muted-foreground">Min 8 chars, 1 uppercase, 1 lowercase, 1 number</p>
-                </div>
-                <div className="space-y-3">
-                  <Label htmlFor="language" className="font-data text-sm md:text-base uppercase tracking-wider">Language / Taal</Label>
-                  <Select value={selectedLanguage} onValueChange={(value) => setSelectedLanguage(value as 'en' | 'nl')}>
-                    <SelectTrigger className="h-10 md:h-11 text-sm md:text-base border-2">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="en" className="h-10 md:h-11 text-sm md:text-base">English</SelectItem>
-                      <SelectItem value="nl" className="h-10 md:h-11 text-sm md:text-base">Nederlands</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Button type="submit" className="w-full" variant="default" size="lg" disabled={loading}>
-                  {loading && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
-                  {t('signup')}
-                </Button>
-              </form>
-            </TabsContent>
-          </Tabs>
+          {showTabs ? (
+            <Tabs value={view === 'signup' ? 'signup' : 'login'} onValueChange={(v) => setView(v as AuthView)} className="w-full">
+              <TabsList className="grid w-full grid-cols-2 h-10 md:h-11">
+                <TabsTrigger value="login" className="font-data text-xs md:text-sm uppercase">{t('login')}</TabsTrigger>
+                <TabsTrigger value="signup" className="font-data text-xs md:text-sm uppercase">{t('signup')}</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="login" className="mt-6">
+                {renderContent()}
+              </TabsContent>
+              
+              <TabsContent value="signup" className="mt-6">
+                {renderContent()}
+              </TabsContent>
+            </Tabs>
+          ) : (
+            <div className="mt-2">
+              {renderContent()}
+            </div>
+          )}
         </CardContent>
         <CardFooter className="flex justify-center">
           <Button
