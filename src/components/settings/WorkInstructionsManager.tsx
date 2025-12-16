@@ -3,15 +3,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -24,18 +21,13 @@ import {
   Trash2,
   BookOpen,
   Loader2,
-  GripVertical,
   AlertTriangle,
   Lightbulb,
   Clock,
   Wrench,
-  ChevronDown,
-  ChevronUp,
   Edit2,
-  Eye,
-  Copy,
   Languages,
-  Sparkles
+  Globe
 } from 'lucide-react';
 import type { Database } from '@/integrations/supabase/types';
 
@@ -71,11 +63,11 @@ export function WorkInstructionsManager() {
   const [selectedInstruction, setSelectedInstruction] = useState<InstructionWithSteps | null>(null);
   const [selectedStep, setSelectedStep] = useState<InstructionStep | null>(null);
 
-  // Form states
+  // Form states - single language input with auto-translate
   const [formData, setFormData] = useState({
-    title_en: '',
+    title: '',
     title_nl: '',
-    description_en: '',
+    description: '',
     description_nl: '',
     production_step_id: '',
     is_active: true,
@@ -83,79 +75,61 @@ export function WorkInstructionsManager() {
 
   const [stepFormData, setStepFormData] = useState({
     step_number: 1,
-    title_en: '',
+    title: '',
     title_nl: '',
-    content_en: '',
+    content: '',
     content_nl: '',
-    warning_text_en: '',
+    warning_text: '',
     warning_text_nl: '',
-    tip_text_en: '',
+    tip_text: '',
     tip_text_nl: '',
     estimated_duration_minutes: '',
     required_tools: '',
   });
 
-  // Translation state
+  // Auto-translate toggle
+  const [autoTranslate, setAutoTranslate] = useState(true);
   const [translating, setTranslating] = useState(false);
-  const [editingLanguage, setEditingLanguage] = useState<'en' | 'nl'>('en');
 
-  // Auto-translate content from one language to another
-  const handleAutoTranslate = useCallback(async () => {
-    const sourceLang = editingLanguage;
-    const targetLang = editingLanguage === 'en' ? 'nl' : 'en';
-
-    // Collect all content to translate
-    const contentToTranslate = {
-      title: sourceLang === 'en' ? stepFormData.title_en : stepFormData.title_nl,
-      content: sourceLang === 'en' ? stepFormData.content_en : stepFormData.content_nl,
-      warning: sourceLang === 'en' ? stepFormData.warning_text_en : stepFormData.warning_text_nl,
-      tip: sourceLang === 'en' ? stepFormData.tip_text_en : stepFormData.tip_text_nl,
-    };
-
-    if (!contentToTranslate.title && !contentToTranslate.content) {
-      toast.error('Nothing to translate', { description: 'Please enter some content first' });
-      return;
-    }
-
+  // Debounced auto-translate for step content
+  const translateStepContent = useCallback(async (field: string, value: string) => {
+    if (!autoTranslate || !value.trim()) return;
+    
     setTranslating(true);
     try {
-      const translations = await Promise.all([
-        contentToTranslate.title ? translateText(contentToTranslate.title, { from: sourceLang, to: targetLang }) : { text: '' },
-        contentToTranslate.content ? translateText(contentToTranslate.content, { from: sourceLang, to: targetLang, preserveHtml: true }) : { text: '' },
-        contentToTranslate.warning ? translateText(contentToTranslate.warning, { from: sourceLang, to: targetLang, preserveHtml: true }) : { text: '' },
-        contentToTranslate.tip ? translateText(contentToTranslate.tip, { from: sourceLang, to: targetLang, preserveHtml: true }) : { text: '' },
-      ]);
-
-      if (targetLang === 'nl') {
+      const result = await translateText(value, { from: 'en', to: 'nl', preserveHtml: true });
+      if (result.text) {
         setStepFormData(prev => ({
           ...prev,
-          title_nl: translations[0].text || prev.title_nl,
-          content_nl: translations[1].text || prev.content_nl,
-          warning_text_nl: translations[2].text || prev.warning_text_nl,
-          tip_text_nl: translations[3].text || prev.tip_text_nl,
-        }));
-      } else {
-        setStepFormData(prev => ({
-          ...prev,
-          title_en: translations[0].text || prev.title_en,
-          content_en: translations[1].text || prev.content_en,
-          warning_text_en: translations[2].text || prev.warning_text_en,
-          tip_text_en: translations[3].text || prev.tip_text_en,
+          [`${field}_nl`]: result.text,
         }));
       }
-
-      toast.success('Translation complete', {
-        description: `Content translated to ${targetLang === 'nl' ? 'Dutch' : 'English'}`,
-      });
-    } catch (error: any) {
-      console.error('Translation error:', error);
-      toast.error('Translation failed', {
-        description: error.message || 'Could not translate content. Please try again.',
-      });
+    } catch (error) {
+      console.error('Auto-translate error:', error);
     } finally {
       setTranslating(false);
     }
-  }, [editingLanguage, stepFormData]);
+  }, [autoTranslate]);
+
+  // Translate instruction title/description
+  const translateInstructionContent = useCallback(async (field: string, value: string) => {
+    if (!autoTranslate || !value.trim()) return;
+    
+    setTranslating(true);
+    try {
+      const result = await translateText(value, { from: 'en', to: 'nl' });
+      if (result.text) {
+        setFormData(prev => ({
+          ...prev,
+          [`${field}_nl`]: result.text,
+        }));
+      }
+    } catch (error) {
+      console.error('Auto-translate error:', error);
+    } finally {
+      setTranslating(false);
+    }
+  }, [autoTranslate]);
 
   // Handle image upload for rich text editor
   const handleImageUpload = useCallback(async (file: File) => {
@@ -199,7 +173,6 @@ export function WorkInstructionsManager() {
 
       if (error) throw error;
 
-      // Group by product type
       const grouped: Record<string, typeof data> = {};
       data?.forEach(step => {
         if (!grouped[step.product_type]) {
@@ -221,9 +194,9 @@ export function WorkInstructionsManager() {
         .from('work_instructions')
         .insert({
           product_type: selectedProductType,
-          title_en: formData.title_en,
+          title_en: formData.title,
           title_nl: formData.title_nl || null,
-          description_en: formData.description_en || null,
+          description_en: formData.description || null,
           description_nl: formData.description_nl || null,
           production_step_id: formData.production_step_id || null,
           is_active: formData.is_active,
@@ -251,9 +224,9 @@ export function WorkInstructionsManager() {
       const { error } = await supabase
         .from('work_instructions')
         .update({
-          title_en: formData.title_en,
+          title_en: formData.title,
           title_nl: formData.title_nl || null,
-          description_en: formData.description_en || null,
+          description_en: formData.description || null,
           description_nl: formData.description_nl || null,
           production_step_id: formData.production_step_id || null,
           is_active: formData.is_active,
@@ -325,13 +298,13 @@ export function WorkInstructionsManager() {
         .insert({
           work_instruction_id: selectedInstruction.id,
           step_number: stepFormData.step_number,
-          title_en: stepFormData.title_en,
+          title_en: stepFormData.title,
           title_nl: stepFormData.title_nl || null,
-          content_en: stepFormData.content_en || null,
+          content_en: stepFormData.content || null,
           content_nl: stepFormData.content_nl || null,
-          warning_text_en: stepFormData.warning_text_en || null,
+          warning_text_en: stepFormData.warning_text || null,
           warning_text_nl: stepFormData.warning_text_nl || null,
-          tip_text_en: stepFormData.tip_text_en || null,
+          tip_text_en: stepFormData.tip_text || null,
           tip_text_nl: stepFormData.tip_text_nl || null,
           estimated_duration_minutes: stepFormData.estimated_duration_minutes
             ? parseInt(stepFormData.estimated_duration_minutes)
@@ -366,13 +339,13 @@ export function WorkInstructionsManager() {
         .from('instruction_steps')
         .update({
           step_number: stepFormData.step_number,
-          title_en: stepFormData.title_en,
+          title_en: stepFormData.title,
           title_nl: stepFormData.title_nl || null,
-          content_en: stepFormData.content_en || null,
+          content_en: stepFormData.content || null,
           content_nl: stepFormData.content_nl || null,
-          warning_text_en: stepFormData.warning_text_en || null,
+          warning_text_en: stepFormData.warning_text || null,
           warning_text_nl: stepFormData.warning_text_nl || null,
-          tip_text_en: stepFormData.tip_text_en || null,
+          tip_text_en: stepFormData.tip_text || null,
           tip_text_nl: stepFormData.tip_text_nl || null,
           estimated_duration_minutes: stepFormData.estimated_duration_minutes
             ? parseInt(stepFormData.estimated_duration_minutes)
@@ -415,9 +388,9 @@ export function WorkInstructionsManager() {
 
   const resetForm = () => {
     setFormData({
-      title_en: '',
+      title: '',
       title_nl: '',
-      description_en: '',
+      description: '',
       description_nl: '',
       production_step_id: '',
       is_active: true,
@@ -427,13 +400,13 @@ export function WorkInstructionsManager() {
   const resetStepForm = () => {
     setStepFormData({
       step_number: 1,
-      title_en: '',
+      title: '',
       title_nl: '',
-      content_en: '',
+      content: '',
       content_nl: '',
-      warning_text_en: '',
+      warning_text: '',
       warning_text_nl: '',
-      tip_text_en: '',
+      tip_text: '',
       tip_text_nl: '',
       estimated_duration_minutes: '',
       required_tools: '',
@@ -443,9 +416,9 @@ export function WorkInstructionsManager() {
   const openEditDialog = (instruction: InstructionWithSteps) => {
     setSelectedInstruction(instruction);
     setFormData({
-      title_en: instruction.title_en,
+      title: instruction.title_en,
       title_nl: instruction.title_nl || '',
-      description_en: instruction.description_en || '',
+      description: instruction.description_en || '',
       description_nl: instruction.description_nl || '',
       production_step_id: instruction.production_step_id || '',
       is_active: instruction.is_active,
@@ -459,13 +432,13 @@ export function WorkInstructionsManager() {
       setSelectedStep(step);
       setStepFormData({
         step_number: step.step_number,
-        title_en: step.title_en,
+        title: step.title_en,
         title_nl: step.title_nl || '',
-        content_en: step.content_en || '',
+        content: step.content_en || '',
         content_nl: step.content_nl || '',
-        warning_text_en: step.warning_text_en || '',
+        warning_text: step.warning_text_en || '',
         warning_text_nl: step.warning_text_nl || '',
-        tip_text_en: step.tip_text_en || '',
+        tip_text: step.tip_text_en || '',
         tip_text_nl: step.tip_text_nl || '',
         estimated_duration_minutes: step.estimated_duration_minutes?.toString() || '',
         required_tools: step.required_tools?.join(', ') || '',
@@ -482,6 +455,19 @@ export function WorkInstructionsManager() {
   };
 
   const currentProductionSteps = productionSteps[selectedProductType] || [];
+
+  // Auto-translate toggle component
+  const AutoTranslateToggle = () => (
+    <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50 border">
+      <Globe className="h-4 w-4 text-primary" />
+      <div className="flex-1">
+        <p className="text-sm font-medium">Auto-translate to Dutch</p>
+        <p className="text-xs text-muted-foreground">Automatically translate content using DeepL</p>
+      </div>
+      <Switch checked={autoTranslate} onCheckedChange={setAutoTranslate} />
+      {translating && <Loader2 className="h-4 w-4 animate-spin text-primary" />}
+    </div>
+  );
 
   return (
     <Card>
@@ -527,42 +513,42 @@ export function WorkInstructionsManager() {
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
+                  <AutoTranslateToggle />
+                  
                   <div className="space-y-2">
-                    <Label>Title (English) *</Label>
+                    <Label>Title *</Label>
                     <Input
-                      value={formData.title_en}
-                      onChange={(e) => setFormData({ ...formData, title_en: e.target.value })}
+                      value={formData.title}
+                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                      onBlur={() => translateInstructionContent('title', formData.title)}
                       placeholder="e.g., PCB Assembly Guide"
                     />
+                    {formData.title_nl && (
+                      <p className="text-xs text-muted-foreground flex items-center gap-1">
+                        <Languages className="h-3 w-3" />
+                        Dutch: {formData.title_nl}
+                      </p>
+                    )}
                   </div>
+                  
                   <div className="space-y-2">
-                    <Label>Title (Dutch)</Label>
+                    <Label>Description</Label>
                     <Input
-                      value={formData.title_nl}
-                      onChange={(e) => setFormData({ ...formData, title_nl: e.target.value })}
-                      placeholder="e.g., PCB Montage Handleiding"
-                    />
-                  </div>
-                  <Separator />
-                  <div className="space-y-2">
-                    <Label>Description (English)</Label>
-                    <Textarea
-                      value={formData.description_en}
-                      onChange={(e) => setFormData({ ...formData, description_en: e.target.value })}
+                      value={formData.description}
+                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                      onBlur={() => translateInstructionContent('description', formData.description)}
                       placeholder="Brief overview of this instruction..."
-                      rows={2}
                     />
+                    {formData.description_nl && (
+                      <p className="text-xs text-muted-foreground flex items-center gap-1">
+                        <Languages className="h-3 w-3" />
+                        Dutch: {formData.description_nl}
+                      </p>
+                    )}
                   </div>
-                  <div className="space-y-2">
-                    <Label>Description (Dutch)</Label>
-                    <Textarea
-                      value={formData.description_nl}
-                      onChange={(e) => setFormData({ ...formData, description_nl: e.target.value })}
-                      placeholder="Kort overzicht van deze instructie..."
-                      rows={2}
-                    />
-                  </div>
+                  
                   <Separator />
+                  
                   <div className="space-y-2">
                     <Label>Link to Production Step (Optional)</Label>
                     <Select
@@ -585,6 +571,7 @@ export function WorkInstructionsManager() {
                       Link this instruction to a specific production step to show it automatically
                     </p>
                   </div>
+                  
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
                       <Label>Active</Label>
@@ -602,7 +589,7 @@ export function WorkInstructionsManager() {
                   <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>
                     {t('cancel')}
                   </Button>
-                  <Button onClick={handleCreateInstruction} disabled={!formData.title_en}>
+                  <Button onClick={handleCreateInstruction} disabled={!formData.title}>
                     Create Instruction
                   </Button>
                 </DialogFooter>
@@ -789,38 +776,40 @@ export function WorkInstructionsManager() {
             <DialogTitle>Edit Work Instruction</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
+            <AutoTranslateToggle />
+            
             <div className="space-y-2">
-              <Label>Title (English) *</Label>
+              <Label>Title *</Label>
               <Input
-                value={formData.title_en}
-                onChange={(e) => setFormData({ ...formData, title_en: e.target.value })}
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                onBlur={() => translateInstructionContent('title', formData.title)}
               />
+              {formData.title_nl && (
+                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                  <Languages className="h-3 w-3" />
+                  Dutch: {formData.title_nl}
+                </p>
+              )}
             </div>
+            
             <div className="space-y-2">
-              <Label>Title (Dutch)</Label>
+              <Label>Description</Label>
               <Input
-                value={formData.title_nl}
-                onChange={(e) => setFormData({ ...formData, title_nl: e.target.value })}
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                onBlur={() => translateInstructionContent('description', formData.description)}
               />
+              {formData.description_nl && (
+                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                  <Languages className="h-3 w-3" />
+                  Dutch: {formData.description_nl}
+                </p>
+              )}
             </div>
+            
             <Separator />
-            <div className="space-y-2">
-              <Label>Description (English)</Label>
-              <Textarea
-                value={formData.description_en}
-                onChange={(e) => setFormData({ ...formData, description_en: e.target.value })}
-                rows={2}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Description (Dutch)</Label>
-              <Textarea
-                value={formData.description_nl}
-                onChange={(e) => setFormData({ ...formData, description_nl: e.target.value })}
-                rows={2}
-              />
-            </div>
-            <Separator />
+            
             <div className="space-y-2">
               <Label>Link to Production Step</Label>
               <Select
@@ -845,7 +834,7 @@ export function WorkInstructionsManager() {
             <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
               {t('cancel')}
             </Button>
-            <Button onClick={handleUpdateInstruction} disabled={!formData.title_en}>
+            <Button onClick={handleUpdateInstruction} disabled={!formData.title}>
               Save Changes
             </Button>
           </DialogFooter>
@@ -866,6 +855,8 @@ export function WorkInstructionsManager() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
+            <AutoTranslateToggle />
+            
             {/* Basic Info */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -903,140 +894,71 @@ export function WorkInstructionsManager() {
 
             <Separator />
 
-            {/* Language Tabs with Rich Text */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <Label className="text-base font-semibold flex items-center gap-2">
-                  <Languages className="h-4 w-4" />
-                  Content
-                </Label>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleAutoTranslate}
-                  disabled={translating}
-                >
-                  {translating ? (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  ) : (
-                    <Sparkles className="h-4 w-4 mr-2" />
-                  )}
-                  Auto-translate to {editingLanguage === 'en' ? 'Dutch' : 'English'}
-                </Button>
+            {/* Single Language Content with Auto-Translate */}
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>Step Title *</Label>
+                <Input
+                  value={stepFormData.title}
+                  onChange={(e) => setStepFormData({ ...stepFormData, title: e.target.value })}
+                  onBlur={() => translateStepContent('title', stepFormData.title)}
+                  placeholder="e.g., Install PCB"
+                />
+                {stepFormData.title_nl && (
+                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Languages className="h-3 w-3" />
+                    Dutch: {stepFormData.title_nl}
+                  </p>
+                )}
               </div>
 
-              <Tabs value={editingLanguage} onValueChange={(v) => setEditingLanguage(v as 'en' | 'nl')}>
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="en">
-                    🇬🇧 English
-                    {stepFormData.title_en && <Badge variant="secondary" className="ml-2 text-xs">has content</Badge>}
-                  </TabsTrigger>
-                  <TabsTrigger value="nl">
-                    🇳🇱 Dutch
-                    {stepFormData.title_nl && <Badge variant="secondary" className="ml-2 text-xs">has content</Badge>}
-                  </TabsTrigger>
-                </TabsList>
+              <div className="space-y-2">
+                <Label>Instructions</Label>
+                <RichTextEditor
+                  content={stepFormData.content}
+                  onChange={(html) => setStepFormData({ ...stepFormData, content: html })}
+                  onBlur={() => translateStepContent('content', stepFormData.content)}
+                  placeholder="Enter detailed instructions with formatting, images, and videos..."
+                  onImageUpload={handleImageUpload}
+                  minHeight="150px"
+                />
+                {stepFormData.content_nl && (
+                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Languages className="h-3 w-3" />
+                    Dutch translation saved
+                  </p>
+                )}
+              </div>
 
-                <TabsContent value="en" className="space-y-4 mt-4">
-                  <div className="space-y-2">
-                    <Label>Step Title *</Label>
-                    <Input
-                      value={stepFormData.title_en}
-                      onChange={(e) => setStepFormData({ ...stepFormData, title_en: e.target.value })}
-                      placeholder="e.g., Install PCB"
-                    />
-                  </div>
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4 text-amber-500" />
+                  Warning
+                </Label>
+                <RichTextEditor
+                  content={stepFormData.warning_text}
+                  onChange={(html) => setStepFormData({ ...stepFormData, warning_text: html })}
+                  onBlur={() => translateStepContent('warning_text', stepFormData.warning_text)}
+                  placeholder="Safety warnings or critical notes..."
+                  onImageUpload={handleImageUpload}
+                  minHeight="80px"
+                />
+              </div>
 
-                  <div className="space-y-2">
-                    <Label>Instructions</Label>
-                    <RichTextEditor
-                      content={stepFormData.content_en}
-                      onChange={(html) => setStepFormData({ ...stepFormData, content_en: html })}
-                      placeholder="Enter detailed instructions with formatting, images, and videos..."
-                      onImageUpload={handleImageUpload}
-                      minHeight="150px"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label className="flex items-center gap-2">
-                      <AlertTriangle className="h-4 w-4 text-amber-500" />
-                      Warning
-                    </Label>
-                    <RichTextEditor
-                      content={stepFormData.warning_text_en}
-                      onChange={(html) => setStepFormData({ ...stepFormData, warning_text_en: html })}
-                      placeholder="Safety warnings or critical notes..."
-                      onImageUpload={handleImageUpload}
-                      minHeight="80px"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label className="flex items-center gap-2">
-                      <Lightbulb className="h-4 w-4 text-blue-500" />
-                      Tip
-                    </Label>
-                    <RichTextEditor
-                      content={stepFormData.tip_text_en}
-                      onChange={(html) => setStepFormData({ ...stepFormData, tip_text_en: html })}
-                      placeholder="Helpful tips for this step..."
-                      onImageUpload={handleImageUpload}
-                      minHeight="80px"
-                    />
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="nl" className="space-y-4 mt-4">
-                  <div className="space-y-2">
-                    <Label>Stap Titel *</Label>
-                    <Input
-                      value={stepFormData.title_nl}
-                      onChange={(e) => setStepFormData({ ...stepFormData, title_nl: e.target.value })}
-                      placeholder="bijv., Installeer PCB"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Instructies</Label>
-                    <RichTextEditor
-                      content={stepFormData.content_nl}
-                      onChange={(html) => setStepFormData({ ...stepFormData, content_nl: html })}
-                      placeholder="Voer gedetailleerde instructies in met opmaak, afbeeldingen en video's..."
-                      onImageUpload={handleImageUpload}
-                      minHeight="150px"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label className="flex items-center gap-2">
-                      <AlertTriangle className="h-4 w-4 text-amber-500" />
-                      Waarschuwing
-                    </Label>
-                    <RichTextEditor
-                      content={stepFormData.warning_text_nl}
-                      onChange={(html) => setStepFormData({ ...stepFormData, warning_text_nl: html })}
-                      placeholder="Veiligheidswaarschuwingen of kritieke opmerkingen..."
-                      onImageUpload={handleImageUpload}
-                      minHeight="80px"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label className="flex items-center gap-2">
-                      <Lightbulb className="h-4 w-4 text-blue-500" />
-                      Tip
-                    </Label>
-                    <RichTextEditor
-                      content={stepFormData.tip_text_nl}
-                      onChange={(html) => setStepFormData({ ...stepFormData, tip_text_nl: html })}
-                      placeholder="Handige tips voor deze stap..."
-                      onImageUpload={handleImageUpload}
-                      minHeight="80px"
-                    />
-                  </div>
-                </TabsContent>
-              </Tabs>
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <Lightbulb className="h-4 w-4 text-blue-500" />
+                  Tip
+                </Label>
+                <RichTextEditor
+                  content={stepFormData.tip_text}
+                  onChange={(html) => setStepFormData({ ...stepFormData, tip_text: html })}
+                  onBlur={() => translateStepContent('tip_text', stepFormData.tip_text)}
+                  placeholder="Helpful tips for this step..."
+                  onImageUpload={handleImageUpload}
+                  minHeight="80px"
+                />
+              </div>
             </div>
           </div>
           <DialogFooter>
@@ -1045,7 +967,7 @@ export function WorkInstructionsManager() {
             </Button>
             <Button
               onClick={selectedStep ? handleUpdateStep : handleCreateStep}
-              disabled={!stepFormData.title_en}
+              disabled={!stepFormData.title}
             >
               {selectedStep ? 'Save Changes' : 'Add Step'}
             </Button>
