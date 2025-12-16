@@ -23,7 +23,7 @@ import { PullToRefresh } from '@/components/PullToRefresh';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Plus, Package, RotateCcw, LayoutGrid, Table as TableIcon, Filter, Loader2, ChevronDown, ChevronRight } from 'lucide-react';
+import { Plus, Package, RotateCcw, LayoutGrid, List, Loader2, ChevronDown, ChevronRight } from 'lucide-react';
 import { format, differenceInDays, parseISO } from 'date-fns';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
@@ -92,10 +92,10 @@ const WorkOrders = () => {
     }
   });
   
-  // Load persisted viewMode from sessionStorage
+  // Load persisted viewMode from localStorage (perpetual)
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     try {
-      const saved = sessionStorage.getItem(VIEWMODE_STORAGE_KEY);
+      const saved = localStorage.getItem(VIEWMODE_STORAGE_KEY);
       return (saved as ViewMode) || 'cards';
     } catch {
       return 'cards';
@@ -114,9 +114,9 @@ const WorkOrders = () => {
     sessionStorage.setItem(GROUPBY_STORAGE_KEY, groupBy);
   }, [groupBy]);
 
-  // Persist viewMode to sessionStorage
+  // Persist viewMode to localStorage (perpetual)
   useEffect(() => {
-    sessionStorage.setItem(VIEWMODE_STORAGE_KEY, viewMode);
+    localStorage.setItem(VIEWMODE_STORAGE_KEY, viewMode);
   }, [viewMode]);
 
   useEffect(() => {
@@ -350,7 +350,7 @@ const WorkOrders = () => {
 
   // Render table view with shared component
   const renderTableView = (orders: WorkOrderWithItems[]) => (
-    <div className="rounded-lg border overflow-hidden">
+    <div className="rounded-lg border overflow-hidden overflow-x-auto">
       <Table>
         <TableHeader>
           <TableRow className="bg-muted/30">
@@ -358,7 +358,9 @@ const WorkOrders = () => {
             <TableHead className="text-xs">{t('products')}</TableHead>
             <TableHead className="text-xs hidden md:table-cell">{t('customer')}</TableHead>
             <TableHead className="text-xs">{t('status')}</TableHead>
-            <TableHead className="text-xs hidden lg:table-cell">{language === 'nl' ? 'Verzending' : 'Ship'}</TableHead>
+            <TableHead className="text-xs hidden lg:table-cell">{t('dates')}</TableHead>
+            <TableHead className="text-xs hidden xl:table-cell">{t('price')}</TableHead>
+            <TableHead className="text-xs hidden sm:table-cell">{t('progress')}</TableHead>
             <TableHead className="text-xs text-right">{t('actions')}</TableHead>
           </TableRow>
         </TableHeader>
@@ -369,6 +371,10 @@ const WorkOrders = () => {
               workOrder={toRowData(wo)}
               linkTo={`/production/${wo.id}`}
               onCancel={isAdmin ? () => openCancelDialog({ id: wo.id, wo_number: wo.wo_number }) : undefined}
+              onStatusChange={refetch}
+              editableStatus={isAdmin}
+              showProgress
+              showPrice
             />
           ))}
         </TableBody>
@@ -465,7 +471,7 @@ const WorkOrders = () => {
                 className="h-8 px-2 rounded-l-none"
                 onClick={() => setViewMode('table')}
               >
-                <TableIcon className="h-4 w-4" />
+                <List className="h-4 w-4" />
               </Button>
             </div>
           </div>
@@ -492,7 +498,7 @@ const WorkOrders = () => {
               ) : (
                 <Card className="shadow-sm">
                   <CardContent className="py-8 text-center">
-                    <Filter className="h-10 w-10 mx-auto mb-4 text-muted-foreground/50" />
+                    <Package className="h-10 w-10 mx-auto mb-4 text-muted-foreground/50" />
                     <h3 className="text-sm font-semibold mb-2">{t('noMatchingOrders')}</h3>
                     <p className="text-xs text-muted-foreground mb-4">{t('tryDifferentFilters')}</p>
                     <Button onClick={resetFilters} variant="outline" size="sm">

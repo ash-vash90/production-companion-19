@@ -18,7 +18,7 @@ import { ReportDetailContentV2 } from '@/components/reports/ReportDetailContentV
 import { useProductionReports, ProductionReportItem } from '@/hooks/useProductionReports';
 import { useProductionReportDetail } from '@/services/reportDataService';
 import { toast } from 'sonner';
-import { LayoutGrid, Table as TableIcon, RefreshCw, AlertCircle, BarChart3, X, ChevronRight, Loader2 } from 'lucide-react';
+import { LayoutGrid, List, RefreshCw, AlertCircle, BarChart3, X, ChevronRight, Loader2 } from 'lucide-react';
 import { format, isToday, isThisWeek, isThisMonth, subDays } from 'date-fns';
 import { ReportFilters, ReportFilterState } from '@/components/reports/ReportFilters';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -43,7 +43,7 @@ const ProductionReports = () => {
   
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     try {
-      const saved = sessionStorage.getItem(VIEWMODE_STORAGE_KEY);
+      const saved = localStorage.getItem(VIEWMODE_STORAGE_KEY);
       return (saved as ViewMode) || 'table';
     } catch {
       return 'table';
@@ -66,9 +66,9 @@ const ProductionReports = () => {
   const { data: selectedReportData, loading: loadingDetail, fetchReport, clear: clearReport } = useProductionReportDetail();
   const [exporting, setExporting] = useState(false);
 
-  // Persist view mode
+  // Persist view mode to localStorage (perpetual)
   React.useEffect(() => {
-    sessionStorage.setItem(VIEWMODE_STORAGE_KEY, viewMode);
+    localStorage.setItem(VIEWMODE_STORAGE_KEY, viewMode);
   }, [viewMode]);
 
   // Extract unique customers and months for filter options
@@ -225,7 +225,7 @@ const ProductionReports = () => {
                     className="rounded-none"
                     onClick={() => setViewMode('table')}
                   >
-                    <TableIcon className="h-4 w-4" />
+                    <List className="h-4 w-4" />
                   </Button>
                 </div>
                 {(isStale || error) && (
@@ -335,7 +335,7 @@ const ProductionReports = () => {
                                     <TableHead>{t('productType')}</TableHead>
                                     <TableHead className="hidden md:table-cell">{t('customer')}</TableHead>
                                     <TableHead>{t('status')}</TableHead>
-                                    <TableHead className="hidden lg:table-cell">{t('ship')}</TableHead>
+                                    <TableHead className="hidden lg:table-cell">{t('dates')}</TableHead>
                                     <TableHead>{t('completed')}</TableHead>
                                     <TableHead className="text-right">{t('actions')}</TableHead>
                                   </TableRow>
@@ -344,7 +344,10 @@ const ProductionReports = () => {
                                   {orders.map((wo) => (
                                     <WorkOrderTableRow
                                       key={wo.id}
-                                      workOrder={wo}
+                                      workOrder={{
+                                        ...wo,
+                                        progressPercent: wo.status === 'completed' ? 100 : 0,
+                                      }}
                                       showUrgency={false}
                                       showCompletedDate={true}
                                       onClick={() => handleSelectReport(wo)}
