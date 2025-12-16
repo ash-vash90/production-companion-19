@@ -7,18 +7,42 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import { MobileHeader } from '@/components/MobileHeader';
 import { SearchModal } from '@/components/SearchModal';
 import { GlobalSearch } from '@/components/GlobalSearch';
+import { useHapticFeedback } from '@/hooks/useTouchDevice';
 
 interface LayoutProps {
   children: React.ReactNode;
 }
 
-// Visual indicator for swipe hint on left edge
+// Visual indicator for swipe hint on left edge - fades out after delay
 const SwipeHintIndicator: React.FC<{ visible: boolean }> = ({ visible }) => {
-  if (!visible) return null;
+  const [show, setShow] = useState(false);
+  const [fading, setFading] = useState(false);
+
+  useEffect(() => {
+    if (visible) {
+      setShow(true);
+      setFading(false);
+      
+      // Start fading after 3 seconds
+      const fadeTimer = setTimeout(() => setFading(true), 3000);
+      // Hide completely after fade animation (500ms)
+      const hideTimer = setTimeout(() => setShow(false), 3500);
+      
+      return () => {
+        clearTimeout(fadeTimer);
+        clearTimeout(hideTimer);
+      };
+    } else {
+      setShow(false);
+      setFading(false);
+    }
+  }, [visible]);
+
+  if (!show) return null;
   
   return (
     <div 
-      className="fixed left-0 top-0 bottom-0 w-1 z-50 pointer-events-none md:hidden"
+      className={`fixed left-0 top-0 bottom-0 w-1 z-50 pointer-events-none md:hidden transition-opacity duration-500 ${fading ? 'opacity-0' : 'opacity-100'}`}
       aria-hidden="true"
     >
       <div className="h-full w-full bg-gradient-to-r from-primary/30 to-transparent animate-pulse" />
@@ -32,6 +56,7 @@ const LayoutContent: React.FC<LayoutProps> = ({ children }) => {
   const location = useLocation();
   const { setOpenMobile, openMobile, isMobile } = useSidebar();
   const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
+  const haptic = useHapticFeedback();
 
   // Add touch listeners to detect swipes
   useEffect(() => {
@@ -66,11 +91,13 @@ const LayoutContent: React.FC<LayoutProps> = ({ children }) => {
 
       // Swipe right from left edge to OPEN
       if (!openMobile && touchStartRef.current.x < edgeThreshold && deltaX > swipeThreshold) {
+        haptic.lightTap();
         setOpenMobile(true);
       }
       
       // Swipe left to CLOSE (when sidebar is open)
       if (openMobile && deltaX < -swipeThreshold) {
+        haptic.lightTap();
         setOpenMobile(false);
       }
 
@@ -84,7 +111,7 @@ const LayoutContent: React.FC<LayoutProps> = ({ children }) => {
       document.removeEventListener('touchstart', handleTouchStart);
       document.removeEventListener('touchend', handleTouchEnd);
     };
-  }, [isMobile, openMobile, setOpenMobile]);
+  }, [isMobile, openMobile, setOpenMobile, haptic]);
 
   return (
     <>
