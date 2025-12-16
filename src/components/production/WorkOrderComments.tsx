@@ -8,7 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { toast } from 'sonner';
-import { MessageSquare, Send, Loader2, Trash2, Reply, X, CornerDownRight } from 'lucide-react';
+import { MessageSquare, Send, Loader2, Trash2, Reply, X, CornerDownRight, Pencil, Check } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { nl, enUS } from 'date-fns/locale';
 import { createNotification } from '@/services/notificationService';
@@ -50,6 +50,8 @@ export function WorkOrderComments({ workOrderId, workOrderItemId, currentStepNum
   const [showMentions, setShowMentions] = useState(false);
   const [mentionQuery, setMentionQuery] = useState('');
   const [mentionIndex, setMentionIndex] = useState(0);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState('');
   const [cursorPosition, setCursorPosition] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const commentsEndRef = useRef<HTMLDivElement>(null);
@@ -273,6 +275,34 @@ export function WorkOrderComments({ workOrderId, workOrderItemId, currentStepNum
     }
   };
 
+  const handleEdit = (comment: Comment) => {
+    setEditingId(comment.id);
+    setEditContent(comment.content);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setEditContent('');
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editContent.trim() || !editingId) return;
+
+    try {
+      const { error } = await supabase
+        .from('work_order_notes')
+        .update({ content: editContent.trim(), updated_at: new Date().toISOString() })
+        .eq('id', editingId);
+
+      if (error) throw error;
+      toast.success(language === 'nl' ? 'Bijgewerkt' : 'Updated');
+      setEditingId(null);
+      setEditContent('');
+    } catch (error: any) {
+      toast.error(t('error'), { description: error.message });
+    }
+  };
+
   const handleReply = (comment: Comment) => {
     setReplyingTo(comment);
     inputRef.current?.focus();
@@ -335,6 +365,7 @@ export function WorkOrderComments({ workOrderId, workOrderItemId, currentStepNum
   const renderComment = (comment: Comment, isReply = false) => {
     const replies = !isReply ? getReplies(comment.id) : [];
     const isOwn = comment.user_id === user?.id;
+    const isEditing = editingId === comment.id;
     
     return (
       <div key={comment.id} className={cn("group", isReply && "ml-8 md:ml-10")}>
@@ -363,35 +394,69 @@ export function WorkOrderComments({ workOrderId, workOrderItemId, currentStepNum
                   })}
                 </span>
               </div>
-              <p className={cn("text-sm break-words whitespace-pre-wrap", isOwn ? "text-primary-foreground" : "text-foreground")}>
-                {renderContent(comment.content, isOwn)}
-              </p>
+              
+              {isEditing ? (
+                <div className="flex items-center gap-2 mt-1">
+                  <Input
+                    value={editContent}
+                    onChange={(e) => setEditContent(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleSaveEdit();
+                      if (e.key === 'Escape') handleCancelEdit();
+                    }}
+                    className="h-7 text-sm bg-background text-foreground"
+                    autoFocus
+                  />
+                  <Button size="icon" variant="ghost" className="h-7 w-7 shrink-0" onClick={handleSaveEdit}>
+                    <Check className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button size="icon" variant="ghost" className="h-7 w-7 shrink-0" onClick={handleCancelEdit}>
+                    <X className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              ) : (
+                <p className={cn("text-sm break-words whitespace-pre-wrap", isOwn ? "text-primary-foreground" : "text-foreground")}>
+                  {renderContent(comment.content, isOwn)}
+                </p>
+              )}
             </div>
             
             {/* Actions - always visible on mobile, hover on desktop */}
-            <div className="flex items-center gap-1 mt-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
-              {!isReply && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-6 px-2 text-[10px] text-muted-foreground"
-                  onClick={() => handleReply(comment)}
-                >
-                  <Reply className="h-3 w-3 mr-1" />
-                  {language === 'nl' ? 'Reageer' : 'Reply'}
-                </Button>
-              )}
-              {isOwn && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-6 px-2 text-[10px] text-muted-foreground hover:text-destructive"
-                  onClick={() => handleDelete(comment.id)}
-                >
-                  <Trash2 className="h-3 w-3" />
-                </Button>
-              )}
-            </div>
+            {!isEditing && (
+              <div className="flex items-center gap-1 mt-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                {!isReply && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 px-2 text-[10px] text-muted-foreground"
+                    onClick={() => handleReply(comment)}
+                  >
+                    <Reply className="h-3 w-3 mr-1" />
+                    {language === 'nl' ? 'Reageer' : 'Reply'}
+                  </Button>
+                )}
+                {isOwn && (
+                  <>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 px-2 text-[10px] text-muted-foreground"
+                      onClick={() => handleEdit(comment)}
+                    >
+                      <Pencil className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 px-2 text-[10px] text-muted-foreground hover:text-destructive"
+                      onClick={() => handleDelete(comment.id)}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </>
+                )}
+              </div>
+            )}
             
             {/* Replies */}
             {replies.length > 0 && (
