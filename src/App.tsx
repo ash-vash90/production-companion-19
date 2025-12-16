@@ -8,7 +8,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import { UserProfileProvider } from "./contexts/UserProfileContext";
 import { Loader2 } from "lucide-react";
-import { initializePrefetch } from "./services/prefetchService";
+import { initializePrefetch, cleanupPrefetch } from "./services/prefetchService";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 // Lazy load all pages including Auth to reduce initial bundle size
@@ -97,9 +97,12 @@ export const clearRouteRestoredFlag = () => {
 };
 
 const App = () => {
-  // Initialize prefetch on app load
+  // Initialize prefetch on app load and cleanup on unmount
   useEffect(() => {
     initializePrefetch();
+    return () => {
+      cleanupPrefetch();
+    };
   }, []);
 
   return (
