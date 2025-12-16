@@ -67,13 +67,46 @@ export function OperatorAssignmentSelect({
       setLoading(true);
       const dateStr = format(selectedDate, 'yyyy-MM-dd');
 
-      // Fetch operators
-      const { data: profilesData, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, full_name, avatar_url, role, daily_capacity_hours, is_available')
-        .in('role', ['operator', 'supervisor', 'admin']) as { data: { id: string; full_name: string; avatar_url: string | null; role: string; daily_capacity_hours: number; is_available: boolean }[] | null; error: any };
+      // First try to get the Production team
+      const { data: productionTeam } = await supabase
+        .from('teams' as any)
+        .select('id')
+        .eq('name', 'Production')
+        .single() as { data: { id: string } | null; error: any };
 
-      if (profilesError) throw profilesError;
+      let profilesData: { id: string; full_name: string; avatar_url: string | null; role: string; daily_capacity_hours: number; is_available: boolean }[] | null = null;
+
+      if (productionTeam) {
+        // Fetch operators from Production team
+        const { data: teamMembers, error: teamError } = await supabase
+          .from('user_teams' as any)
+          .select('user_id')
+          .eq('team_id', productionTeam.id) as { data: { user_id: string }[] | null; error: any };
+
+        if (!teamError && teamMembers && teamMembers.length > 0) {
+          const userIds = teamMembers.map(m => m.user_id);
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('id, full_name, avatar_url, role, daily_capacity_hours, is_available')
+            .in('id', userIds) as { data: typeof profilesData; error: any };
+          
+          if (!error) {
+            profilesData = data;
+          }
+        }
+      }
+
+      // Fallback to role-based query if no Production team or no members
+      if (!profilesData || profilesData.length === 0) {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('id, full_name, avatar_url, role, daily_capacity_hours, is_available')
+          .in('role', ['operator', 'supervisor', 'admin']) as { data: typeof profilesData; error: any };
+
+        if (!error) {
+          profilesData = data;
+        }
+      }
 
       // Fetch existing assignments for this date
       const { data: assignmentsData, error: assignmentsError } = await supabase
