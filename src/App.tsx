@@ -10,24 +10,52 @@ import { UserProfileProvider } from "./contexts/UserProfileContext";
 import { initializePrefetch, cleanupPrefetch } from "./services/prefetchService";
 import ProtectedRoute from "./components/ProtectedRoute";
 
-// Lazy load all pages including Auth to reduce initial bundle size
-const Auth = lazy(() => import("./pages/Auth"));
-const Index = lazy(() => import("./pages/Index"));
-const WorkOrders = lazy(() => import("./pages/WorkOrders"));
-const Production = lazy(() => import("./pages/Production"));
-const ProductionStep = lazy(() => import("./pages/ProductionStep"));
-const ProductionSensor = lazy(() => import("./pages/ProductionSensor"));
-const QualityCertificates = lazy(() => import("./pages/QualityCertificates"));
-const ProductionReports = lazy(() => import("./pages/ProductionReports"));
-const ProductionReportDetail = lazy(() => import("./pages/ProductionReportDetail"));
-const Settings = lazy(() => import("./pages/Settings"));
-const PersonalSettings = lazy(() => import("./pages/PersonalSettings"));
-const Analytics = lazy(() => import("./pages/Analytics"));
-const RoleManagement = lazy(() => import("./pages/RoleManagement"));
-const ProductionCalendar = lazy(() => import("./pages/ProductionCalendar"));
-const Genealogy = lazy(() => import("./pages/Genealogy"));
-const Search = lazy(() => import("./pages/Search"));
-const Inventory = lazy(() => import("./pages/Inventory"));
+// Lazy load all pages - store imports for prefetching
+const pageImports = {
+  '/auth': () => import("./pages/Auth"),
+  '/': () => import("./pages/Index"),
+  '/work-orders': () => import("./pages/WorkOrders"),
+  '/production': () => import("./pages/Production"),
+  '/production/step': () => import("./pages/ProductionStep"),
+  '/production/sensor': () => import("./pages/ProductionSensor"),
+  '/quality-certificates': () => import("./pages/QualityCertificates"),
+  '/production-reports': () => import("./pages/ProductionReports"),
+  '/production-reports-detail': () => import("./pages/ProductionReportDetail"),
+  '/analytics': () => import("./pages/Analytics"),
+  '/role-management': () => import("./pages/RoleManagement"),
+  '/calendar': () => import("./pages/ProductionCalendar"),
+  '/search': () => import("./pages/Search"),
+  '/genealogy': () => import("./pages/Genealogy"),
+  '/settings': () => import("./pages/Settings"),
+  '/personal-settings': () => import("./pages/PersonalSettings"),
+  '/inventory': () => import("./pages/Inventory"),
+};
+
+// Export prefetch function for use in sidebar
+export const prefetchRoute = (url: string) => {
+  const importFn = pageImports[url as keyof typeof pageImports];
+  if (importFn) {
+    importFn();
+  }
+};
+
+const Auth = lazy(pageImports['/auth']);
+const Index = lazy(pageImports['/']);
+const WorkOrders = lazy(pageImports['/work-orders']);
+const Production = lazy(pageImports['/production']);
+const ProductionStep = lazy(pageImports['/production/step']);
+const ProductionSensor = lazy(pageImports['/production/sensor']);
+const QualityCertificates = lazy(pageImports['/quality-certificates']);
+const ProductionReports = lazy(pageImports['/production-reports']);
+const ProductionReportDetail = lazy(pageImports['/production-reports-detail']);
+const Settings = lazy(pageImports['/settings']);
+const PersonalSettings = lazy(pageImports['/personal-settings']);
+const Analytics = lazy(pageImports['/analytics']);
+const RoleManagement = lazy(pageImports['/role-management']);
+const ProductionCalendar = lazy(pageImports['/calendar']);
+const Genealogy = lazy(pageImports['/genealogy']);
+const Search = lazy(pageImports['/search']);
+const Inventory = lazy(pageImports['/inventory']);
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient({
