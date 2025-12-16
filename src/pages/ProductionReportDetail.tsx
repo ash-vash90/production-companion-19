@@ -37,7 +37,7 @@ const ProductionReportDetail = () => {
   // Show error toast if fetch fails
   useEffect(() => {
     if (error) {
-      toast.error(t('error'), { description: error });
+      toast.error(t('error'), { description: error.message });
     }
   }, [error, t]);
 

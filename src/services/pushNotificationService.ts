@@ -87,9 +87,10 @@ export async function subscribeToPush(userId: string): Promise<PushSubscriptionJ
 
     if (!subscription && VAPID_PUBLIC_KEY) {
       // Create new subscription
+      const applicationServerKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
       subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+        applicationServerKey: applicationServerKey.buffer as ArrayBuffer,
       });
     }
 
@@ -136,8 +137,8 @@ async function savePushSubscription(
   const json = subscription.toJSON();
   const keys = json.keys || {};
 
-  const { error } = await supabase
-    .from('push_subscriptions')
+  const { error } = await (supabase
+    .from('push_subscriptions' as any)
     .upsert({
       user_id: userId,
       endpoint: json.endpoint!,
@@ -145,7 +146,7 @@ async function savePushSubscription(
       auth: keys.auth || '',
     }, {
       onConflict: 'user_id,endpoint',
-    });
+    }) as any);
 
   if (error) {
     console.error('Error saving push subscription:', error);
@@ -157,11 +158,11 @@ async function savePushSubscription(
  * Delete push subscription from database
  */
 async function deletePushSubscription(userId: string, endpoint: string): Promise<void> {
-  const { error } = await supabase
-    .from('push_subscriptions')
+  const { error } = await (supabase
+    .from('push_subscriptions' as any)
     .delete()
     .eq('user_id', userId)
-    .eq('endpoint', endpoint);
+    .eq('endpoint', endpoint) as any);
 
   if (error) {
     console.error('Error deleting push subscription:', error);

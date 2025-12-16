@@ -269,7 +269,7 @@ export function ProductionStory({
                           ) : (
                             <AlertTriangle className="h-3 w-3 mr-1" />
                           )}
-                          {event.metadata.validation_status}
+                          {String(event.metadata.validation_status)}
                         </Badge>
                       )}
                       <span className="text-xs text-muted-foreground">
