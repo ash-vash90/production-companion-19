@@ -10,7 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Loader2, ArrowLeft, CheckCircle2, AlertCircle, ScanBarcode, History, XCircle, Users, Link2, MoreVertical, ChevronLeft, ChevronRight, RefreshCw, Play, ClipboardCheck, Ruler } from 'lucide-react';
+import { Loader2, ArrowLeft, CheckCircle2, AlertCircle, ScanBarcode, History, XCircle, Users, Link2, MoreVertical, ChevronLeft, ChevronRight, RefreshCw, Play, ClipboardCheck, Ruler, type LucideIcon } from 'lucide-react';
 import { formatDateTime } from '@/lib/utils';
 import { useTouchDevice, useSwipeGesture, usePullToRefresh, useHapticFeedback } from '@/hooks/useTouchDevice';
 import { FloatingActionButton, ActionSheet, MobileActionBar } from '@/components/mobile/MobileActionBar';
@@ -495,27 +495,26 @@ const ProductionStep = () => {
   // Pull-to-refresh handler
   const handleRefresh = useCallback(async () => {
     setIsRefreshing(true);
-    haptic.medium();
+    haptic.mediumTap();
     await fetchData();
     setIsRefreshing(false);
   }, [haptic]);
 
   // Use pull-to-refresh on touch devices
-  usePullToRefresh({
+  const pullToRefresh = usePullToRefresh({
     onRefresh: handleRefresh,
     threshold: 80,
-    enabled: isTouchDevice && !loading,
   });
 
   // Swipe gesture handlers for step navigation (view previous completed steps)
-  useSwipeGesture(
+  const swipeHandlers = useSwipeGesture(
     {
       onSwipeLeft: () => {
         // Show next completed step if available
         if (item && viewingStepNumber !== null) {
           const nextStep = viewingStepNumber + 1;
           if (nextStep < item.current_step) {
-            haptic.light();
+            haptic.lightTap();
             setViewingStepNumber(nextStep);
           }
         }
@@ -525,12 +524,12 @@ const ProductionStep = () => {
         if (item && viewingStepNumber !== null) {
           const prevStep = viewingStepNumber - 1;
           if (prevStep >= 1) {
-            haptic.light();
+            haptic.lightTap();
             setViewingStepNumber(prevStep);
           }
         } else if (item && item.current_step > 1) {
           // Open the previous step viewer
-          haptic.light();
+          haptic.lightTap();
           setViewingStepNumber(item.current_step - 1);
           setShowStepDetail(true);
         }
@@ -538,28 +537,34 @@ const ProductionStep = () => {
     },
     {
       threshold: 75,
-      enabled: isTouchDevice && showStepDetail,
     }
   );
 
   // Mobile action handlers with haptic feedback
   const handleMobileStartStep = () => {
-    haptic.medium();
+    haptic.mediumTap();
     handleStartStep();
   };
 
   const handleMobileCompleteStep = () => {
-    haptic.heavy();
+    haptic.heavyTap();
     handleCompleteStep();
   };
 
   // Get mobile actions for the action sheet
-  const getMobileActions = () => {
+  const getMobileActions = (): Array<{
+    id: string;
+    label: string;
+    icon?: LucideIcon;
+    onClick: () => void;
+    destructive?: boolean;
+  }> => {
     const actions: Array<{
+      id: string;
       label: string;
-      icon?: React.ReactNode;
+      icon?: LucideIcon;
       onClick: () => void;
-      variant?: 'default' | 'destructive';
+      destructive?: boolean;
     }> = [];
 
     if (stepExecution) {
@@ -568,8 +573,9 @@ const ProductionStep = () => {
 
       if (itemProductType === 'SDM_ECO' && currentStep?.requires_barcode_scan) {
         actions.push({
+          id: 'link-component',
           label: t('linkComponent') || 'Link Component',
-          icon: <Link2 className="h-5 w-5" />,
+          icon: Link2,
           onClick: () => {
             const stepTitle = currentStep.title_en.toLowerCase();
             if (stepTitle.includes('sensor')) setExpectedLinkType('SENSOR');
@@ -584,8 +590,9 @@ const ProductionStep = () => {
 
       if (currentStep?.requires_batch_number) {
         actions.push({
+          id: 'scan-materials',
           label: t('scanMaterials'),
-          icon: <ScanBarcode className="h-5 w-5" />,
+          icon: ScanBarcode,
           onClick: () => {
             setShowBatchScanDialog(true);
             setShowMobileActions(false);
@@ -595,8 +602,9 @@ const ProductionStep = () => {
 
       if (currentStep?.requires_value_input || currentStep?.measurement_fields) {
         actions.push({
+          id: 'enter-measurements',
           label: t('enterMeasurements'),
-          icon: <Ruler className="h-5 w-5" />,
+          icon: Ruler,
           onClick: () => {
             setShowMeasurementDialog(true);
             setShowMobileActions(false);
@@ -606,8 +614,9 @@ const ProductionStep = () => {
 
       if (currentStep?.has_checklist) {
         actions.push({
+          id: 'complete-checklist',
           label: t('completeChecklist'),
-          icon: <ClipboardCheck className="h-5 w-5" />,
+          icon: ClipboardCheck,
           onClick: () => {
             setShowChecklistDialog(true);
             setShowMobileActions(false);
@@ -618,8 +627,9 @@ const ProductionStep = () => {
 
     // Always add history action
     actions.push({
+      id: 'history',
       label: t('history'),
-      icon: <History className="h-5 w-5" />,
+      icon: History,
       onClick: () => {
         setShowValidationHistory(true);
         setShowMobileActions(false);
@@ -1050,7 +1060,7 @@ const ProductionStep = () => {
       {/* Mobile floating action button */}
       {isTouchDevice && (
         <FloatingActionButton
-          icon={stepExecution ? <CheckCircle2 className="h-6 w-6" /> : <Play className="h-6 w-6" />}
+          icon={stepExecution ? CheckCircle2 : Play}
           onClick={stepExecution ? handleMobileCompleteStep : handleMobileStartStep}
           label={stepExecution ? t('completeStep') : t('startStep')}
           variant={stepExecution ? 'default' : 'default'}

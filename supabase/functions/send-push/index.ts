@@ -148,7 +148,8 @@ async function sendPushToSubscription(
 
     return { success: true };
   } catch (error) {
-    return { success: false, error: error.message };
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return { success: false, error: message };
   }
 }
 
@@ -239,8 +240,9 @@ Deno.serve(async (req) => {
     );
   } catch (error) {
     console.error('Send push error:', error);
+    const message = error instanceof Error ? error.message : 'Unknown error';
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

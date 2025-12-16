@@ -155,9 +155,9 @@ export async function checkAndNotifyLowStock(
 ): Promise<void> {
   // Get users with inventory_manager or admin role to notify
   const { data: adminUsers, error } = await supabase
-    .from('user_profiles')
+    .from('profiles')
     .select('id')
-    .or('role.eq.admin,role.eq.inventory_manager,role.eq.supervisor');
+    .or('role.eq.admin,role.eq.supervisor');
 
   if (error || !adminUsers?.length) {
     console.warn('No admin users found for low stock notification');
@@ -195,9 +195,9 @@ export async function getNotificationSubscribers(
   // In the future, this could be based on user preferences
   if (['low_stock_alert', 'material_out_of_stock', 'stock_consumed'].includes(notificationType)) {
     const { data } = await supabase
-      .from('user_profiles')
+      .from('profiles')
       .select('id')
-      .or('role.eq.admin,role.eq.inventory_manager,role.eq.supervisor');
+      .or('role.eq.admin,role.eq.supervisor');
     return data?.map(u => u.id) || [];
   }
 

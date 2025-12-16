@@ -226,7 +226,17 @@ export function ReportDetailContentV2({
         open={showExportDialog}
         onOpenChange={setShowExportDialog}
         onExport={handleExport}
-        data={data}
+        exporting={false}
+        woNumber={data.workOrder.wo_number}
+        sectionCounts={{
+          steps: data.stepExecutions.length,
+          materials: data.batchMaterials.length,
+          certificates: data.certificates.length,
+          labels: data.items.filter(i => i.label_printed).length,
+          checklists: data.checklistResponses.length,
+          operators: data.operators.length,
+          activity: data.activityLog.length,
+        }}
       />
     </div>
   );
@@ -306,7 +316,7 @@ function SectionsView({ data }: { data: ProductionReportData }) {
 
       <div className="mt-4">
         <TabsContent value="steps" className="m-0">
-          <StepTimeline executions={data.stepExecutions} />
+          <StepTimeline stepExecutions={data.stepExecutions} />
         </TabsContent>
 
         <TabsContent value="materials" className="m-0">

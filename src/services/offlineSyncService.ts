@@ -289,9 +289,9 @@ export async function processSyncQueue(): Promise<{
 
       switch (item.operation) {
         case 'insert': {
-          const { error: insertError } = await supabase
-            .from(item.table)
-            .insert(item.data);
+          const { error: insertError } = await (supabase
+            .from(item.table as any)
+            .insert(item.data as any));
           error = insertError;
           break;
         }
@@ -299,10 +299,10 @@ export async function processSyncQueue(): Promise<{
           if (!item.primaryKey) {
             throw new Error('Primary key required for update');
           }
-          const { error: updateError } = await supabase
-            .from(item.table)
-            .update(item.data)
-            .eq('id', item.primaryKey);
+          const { error: updateError } = await (supabase
+            .from(item.table as any)
+            .update(item.data as any)
+            .eq('id', item.primaryKey));
           error = updateError;
           break;
         }
@@ -310,10 +310,10 @@ export async function processSyncQueue(): Promise<{
           if (!item.primaryKey) {
             throw new Error('Primary key required for delete');
           }
-          const { error: deleteError } = await supabase
-            .from(item.table)
+          const { error: deleteError } = await (supabase
+            .from(item.table as any)
             .delete()
-            .eq('id', item.primaryKey);
+            .eq('id', item.primaryKey));
           error = deleteError;
           break;
         }

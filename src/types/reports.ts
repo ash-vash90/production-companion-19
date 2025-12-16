@@ -210,25 +210,25 @@ export interface ReportFilterState {
 export interface ExportSections {
   overview: boolean;
   statistics: boolean;
-  productionSteps: boolean;
+  steps: boolean;
   materials: boolean;
-  qualityCertificates: boolean;
+  certificates: boolean;
   labels: boolean;
   checklists: boolean;
   operators: boolean;
-  activityLog: boolean;
+  activity: boolean;
 }
 
 export const DEFAULT_EXPORT_SECTIONS: ExportSections = {
   overview: true,
   statistics: true,
-  productionSteps: true,
+  steps: true,
   materials: true,
-  qualityCertificates: true,
+  certificates: true,
   labels: true,
   checklists: true,
   operators: true,
-  activityLog: false,
+  activity: false,
 };
 
 // ============================================================================
