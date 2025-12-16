@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { SidebarProvider, SidebarInset, useSidebar } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/AppSidebar';
@@ -7,49 +7,74 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import { MobileHeader } from '@/components/MobileHeader';
 import { SearchModal } from '@/components/SearchModal';
 import { GlobalSearch } from '@/components/GlobalSearch';
-import { useSwipeGesture } from '@/hooks/useTouchDevice';
 
 interface LayoutProps {
   children: React.ReactNode;
 }
 
+// Visual indicator for swipe hint on left edge
+const SwipeHintIndicator: React.FC<{ visible: boolean }> = ({ visible }) => {
+  if (!visible) return null;
+  
+  return (
+    <div 
+      className="fixed left-0 top-0 bottom-0 w-1 z-50 pointer-events-none md:hidden"
+      aria-hidden="true"
+    >
+      <div className="h-full w-full bg-gradient-to-r from-primary/30 to-transparent animate-pulse" />
+    </div>
+  );
+};
+
 // Inner component that can use useSidebar
 const LayoutContent: React.FC<LayoutProps> = ({ children }) => {
   const [searchOpen, setSearchOpen] = useState(false);
   const location = useLocation();
-  const { setOpenMobile, isMobile } = useSidebar();
+  const { setOpenMobile, openMobile, isMobile } = useSidebar();
+  const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
 
-  // Swipe from left edge to open sidebar
-  const swipeHandlers = useSwipeGesture(
-    {
-      onSwipeRight: () => {
-        if (isMobile) {
-          setOpenMobile(true);
-        }
-      },
-    },
-    { threshold: 30, timeout: 500 }
-  );
-
-  // Add touch listeners to detect swipes starting from left edge
+  // Add touch listeners to detect swipes
   useEffect(() => {
     if (!isMobile) return;
 
-    let startX = 0;
-    const edgeThreshold = 30; // pixels from left edge
+    const edgeThreshold = 30; // pixels from left edge to trigger open
+    const swipeThreshold = 50; // minimum swipe distance
+    const maxVerticalMovement = 100; // prevent diagonal swipes
 
     const handleTouchStart = (e: TouchEvent) => {
-      startX = e.touches[0].clientX;
+      touchStartRef.current = {
+        x: e.touches[0].clientX,
+        y: e.touches[0].clientY,
+        time: Date.now(),
+      };
     };
 
     const handleTouchEnd = (e: TouchEvent) => {
-      const endX = e.changedTouches[0].clientX;
-      const deltaX = endX - startX;
+      if (!touchStartRef.current) return;
       
-      // Only trigger if started from left edge and swiped right
-      if (startX < edgeThreshold && deltaX > 50) {
+      const endX = e.changedTouches[0].clientX;
+      const endY = e.changedTouches[0].clientY;
+      const deltaX = endX - touchStartRef.current.x;
+      const deltaY = Math.abs(endY - touchStartRef.current.y);
+      const duration = Date.now() - touchStartRef.current.time;
+      
+      // Only process quick swipes (under 500ms) that are mostly horizontal
+      if (duration > 500 || deltaY > maxVerticalMovement) {
+        touchStartRef.current = null;
+        return;
+      }
+
+      // Swipe right from left edge to OPEN
+      if (!openMobile && touchStartRef.current.x < edgeThreshold && deltaX > swipeThreshold) {
         setOpenMobile(true);
       }
+      
+      // Swipe left to CLOSE (when sidebar is open)
+      if (openMobile && deltaX < -swipeThreshold) {
+        setOpenMobile(false);
+      }
+
+      touchStartRef.current = null;
     };
 
     document.addEventListener('touchstart', handleTouchStart, { passive: true });
@@ -59,10 +84,13 @@ const LayoutContent: React.FC<LayoutProps> = ({ children }) => {
       document.removeEventListener('touchstart', handleTouchStart);
       document.removeEventListener('touchend', handleTouchEnd);
     };
-  }, [isMobile, setOpenMobile]);
+  }, [isMobile, openMobile, setOpenMobile]);
 
   return (
     <>
+      {/* Swipe hint indicator - only visible on mobile when sidebar is closed */}
+      <SwipeHintIndicator visible={isMobile && !openMobile} />
+      
       <div className="flex min-h-screen w-full bg-background overflow-x-hidden">
         <AppSidebar />
         <SidebarInset className="flex flex-col overflow-x-hidden">
