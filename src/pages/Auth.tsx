@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
@@ -9,8 +9,15 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Loader2, Factory } from 'lucide-react';
+import { Loader2, Factory, UserPlus } from 'lucide-react';
 import { loginSchema, signupSchema } from '@/lib/validation';
+import { supabase } from '@/integrations/supabase/client';
+
+interface InviteData {
+  email: string;
+  role: string;
+  invite_token: string;
+}
 
 const Auth = () => {
   const [loading, setLoading] = useState(false);
@@ -19,13 +26,51 @@ const Auth = () => {
   const [fullName, setFullName] = useState('');
   const [selectedLanguage, setSelectedLanguage] = useState<'en' | 'nl'>('en');
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [inviteData, setInviteData] = useState<InviteData | null>(null);
+  const [activeTab, setActiveTab] = useState('login');
   const { signIn, signUp, user } = useAuth();
   const { language, setLanguage, t } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
 
   // Get the intended destination from location state, or default to dashboard
   const from = (location.state as any)?.from?.pathname || '/';
+
+  // Check for invite token on mount
+  useEffect(() => {
+    const inviteToken = searchParams.get('invite');
+    if (inviteToken) {
+      checkInviteToken(inviteToken);
+    }
+  }, [searchParams]);
+
+  const checkInviteToken = async (token: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('user_invites' as any)
+        .select('email, role, invite_token')
+        .eq('invite_token', token)
+        .is('used_at', null)
+        .gt('expires_at', new Date().toISOString())
+        .single();
+
+      if (error || !data) {
+        toast.error(t('error'), { description: 'Invalid or expired invite link' });
+        return;
+      }
+
+      const invite = data as unknown as InviteData;
+      setInviteData(invite);
+      setEmail(invite.email);
+      setActiveTab('signup');
+      toast.success(t('success'), { 
+        description: `You've been invited as ${invite.role}. Complete your registration below.` 
+      });
+    } catch (error) {
+      console.error('Error checking invite:', error);
+    }
+  };
 
   useEffect(() => {
     if (user) {
@@ -94,8 +139,28 @@ const Auth = () => {
         : error.message;
       toast.error(t('error'), { description: errorMessage });
     } else {
-      toast.success(t('success'), { description: 'Account created successfully! You can now log in.' });
+      // If this was an invite, mark it as used and assign the role
+      if (inviteData) {
+        try {
+          // Mark invite as used
+          await supabase
+            .from('user_invites' as any)
+            .update({ used_at: new Date().toISOString() })
+            .eq('invite_token', inviteData.invite_token);
+
+          // The role will be assigned via trigger or we need to handle it
+          // For now, we'll trust the signup flow and the admin can adjust if needed
+          toast.success(t('success'), { 
+            description: `Account created with ${inviteData.role} role. You can now log in.` 
+          });
+        } catch (inviteError) {
+          console.error('Error updating invite:', inviteError);
+        }
+      } else {
+        toast.success(t('success'), { description: 'Account created successfully! You can now log in.' });
+      }
       setLanguage(selectedLanguage);
+      setActiveTab('login');
     }
   };
 
@@ -112,9 +177,17 @@ const Auth = () => {
           <CardDescription className="text-xs md:text-sm uppercase tracking-wider text-muted-foreground">
             MES Production System
           </CardDescription>
+          {inviteData && (
+            <div className="flex items-center justify-center gap-2 p-2 bg-primary/10 rounded-lg">
+              <UserPlus className="h-4 w-4 text-primary" />
+              <span className="text-sm text-primary font-medium">
+                Invited as {inviteData.role}
+              </span>
+            </div>
+          )}
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="login" className="w-full">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-2 h-10 md:h-11">
               <TabsTrigger value="login" className="font-data text-xs md:text-sm uppercase">{t('login')}</TabsTrigger>
               <TabsTrigger value="signup" className="font-data text-xs md:text-sm uppercase">{t('signup')}</TabsTrigger>

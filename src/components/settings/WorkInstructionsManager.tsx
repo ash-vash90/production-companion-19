@@ -87,9 +87,13 @@ export function WorkInstructionsManager() {
     required_tools: '',
   });
 
-  // Auto-translate toggle
+  // Auto-translate toggle and base language
   const [autoTranslate, setAutoTranslate] = useState(true);
+  const [baseLanguage, setBaseLanguage] = useState<'en' | 'nl'>('en');
   const [translating, setTranslating] = useState(false);
+
+  // Get target language based on base language
+  const targetLanguage = baseLanguage === 'en' ? 'nl' : 'en';
 
   // Debounced auto-translate for step content
   const translateStepContent = useCallback(async (field: string, value: string) => {
@@ -97,11 +101,12 @@ export function WorkInstructionsManager() {
     
     setTranslating(true);
     try {
-      const result = await translateText(value, { from: 'en', to: 'nl', preserveHtml: true });
+      const result = await translateText(value, { from: baseLanguage, to: targetLanguage, preserveHtml: true });
       if (result.text) {
+        const targetField = baseLanguage === 'en' ? `${field}_nl` : field.replace('_nl', '');
         setStepFormData(prev => ({
           ...prev,
-          [`${field}_nl`]: result.text,
+          [targetField === field ? `${field}_nl` : targetField]: result.text,
         }));
       }
     } catch (error) {
@@ -109,7 +114,7 @@ export function WorkInstructionsManager() {
     } finally {
       setTranslating(false);
     }
-  }, [autoTranslate]);
+  }, [autoTranslate, baseLanguage, targetLanguage]);
 
   // Translate instruction title/description
   const translateInstructionContent = useCallback(async (field: string, value: string) => {
@@ -117,11 +122,12 @@ export function WorkInstructionsManager() {
     
     setTranslating(true);
     try {
-      const result = await translateText(value, { from: 'en', to: 'nl' });
+      const result = await translateText(value, { from: baseLanguage, to: targetLanguage });
       if (result.text) {
+        const targetField = baseLanguage === 'en' ? `${field}_nl` : field.replace('_nl', '');
         setFormData(prev => ({
           ...prev,
-          [`${field}_nl`]: result.text,
+          [targetField === field ? `${field}_nl` : targetField]: result.text,
         }));
       }
     } catch (error) {
@@ -129,7 +135,7 @@ export function WorkInstructionsManager() {
     } finally {
       setTranslating(false);
     }
-  }, [autoTranslate]);
+  }, [autoTranslate, baseLanguage, targetLanguage]);
 
   // Handle image upload for rich text editor
   const handleImageUpload = useCallback(async (file: File) => {
@@ -456,14 +462,25 @@ export function WorkInstructionsManager() {
 
   const currentProductionSteps = productionSteps[selectedProductType] || [];
 
-  // Auto-translate toggle component
+  // Auto-translate toggle component with language selector
   const AutoTranslateToggle = () => (
     <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50 border">
       <Globe className="h-4 w-4 text-primary" />
       <div className="flex-1">
-        <p className="text-sm font-medium">Auto-translate to Dutch</p>
-        <p className="text-xs text-muted-foreground">Automatically translate content using DeepL</p>
+        <p className="text-sm font-medium">Auto-translate</p>
+        <p className="text-xs text-muted-foreground">
+          {baseLanguage === 'en' ? 'English → Dutch' : 'Dutch → English'}
+        </p>
       </div>
+      <Select value={baseLanguage} onValueChange={(v) => setBaseLanguage(v as 'en' | 'nl')}>
+        <SelectTrigger className="w-[100px] h-8">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="en">EN → NL</SelectItem>
+          <SelectItem value="nl">NL → EN</SelectItem>
+        </SelectContent>
+      </Select>
       <Switch checked={autoTranslate} onCheckedChange={setAutoTranslate} />
       {translating && <Loader2 className="h-4 w-4 animate-spin text-primary" />}
     </div>

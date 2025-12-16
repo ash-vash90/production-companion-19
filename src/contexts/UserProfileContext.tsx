@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -13,6 +13,8 @@ interface UserProfileContextType {
   isAdmin: boolean;
   isSupervisor: boolean;
   canManageInventory: boolean;
+  permissions: string[];
+  hasPermission: (permissionId: string) => boolean;
   loading: boolean;
   refreshProfile: () => Promise<void>;
 }
@@ -24,6 +26,7 @@ export function UserProfileProvider({ children }: { children: React.ReactNode })
   const [profile, setProfile] = useState<UserProfileData | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isSupervisor, setIsSupervisor] = useState(false);
+  const [permissions, setPermissions] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchProfile = async () => {
@@ -31,6 +34,7 @@ export function UserProfileProvider({ children }: { children: React.ReactNode })
       setProfile(null);
       setIsAdmin(false);
       setIsSupervisor(false);
+      setPermissions([]);
       setLoading(false);
       return;
     }
@@ -54,8 +58,26 @@ export function UserProfileProvider({ children }: { children: React.ReactNode })
         .eq('user_id', user.id);
 
       const roles = roleData?.map(r => r.role) || [];
-      setIsAdmin(roles.includes('admin'));
-      setIsSupervisor(roles.includes('supervisor'));
+      const userIsAdmin = roles.includes('admin');
+      const userIsSupervisor = roles.includes('supervisor');
+      
+      setIsAdmin(userIsAdmin);
+      setIsSupervisor(userIsSupervisor);
+
+      // Fetch permissions for user's role(s)
+      if (roles.length > 0) {
+        const { data: permData } = await supabase
+          .from('role_permissions' as any)
+          .select('permission_id')
+          .in('role', roles)
+          .eq('granted', true);
+        
+        const userPermissions = (permData as unknown as { permission_id: string }[] || [])
+          .map(p => p.permission_id);
+        setPermissions([...new Set(userPermissions)]); // Remove duplicates
+      } else {
+        setPermissions([]);
+      }
     } catch (error) {
       console.error('Error fetching user profile:', error);
     } finally {
@@ -71,11 +93,27 @@ export function UserProfileProvider({ children }: { children: React.ReactNode })
     await fetchProfile();
   };
 
+  // Check if user has a specific permission
+  const hasPermission = useCallback((permissionId: string): boolean => {
+    // Admins always have all permissions
+    if (isAdmin) return true;
+    return permissions.includes(permissionId);
+  }, [isAdmin, permissions]);
+
   // Computed permission for inventory management
-  const canManageInventory = isAdmin || isSupervisor;
+  const canManageInventory = isAdmin || isSupervisor || permissions.includes('manage_inventory');
 
   return (
-    <UserProfileContext.Provider value={{ profile, isAdmin, isSupervisor, canManageInventory, loading, refreshProfile }}>
+    <UserProfileContext.Provider value={{ 
+      profile, 
+      isAdmin, 
+      isSupervisor, 
+      canManageInventory, 
+      permissions,
+      hasPermission,
+      loading, 
+      refreshProfile 
+    }}>
       {children}
     </UserProfileContext.Provider>
   );
