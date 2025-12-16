@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -9,7 +9,6 @@ import { LanguageProvider } from "./contexts/LanguageContext";
 import { UserProfileProvider } from "./contexts/UserProfileContext";
 import { initializePrefetch, cleanupPrefetch } from "./services/prefetchService";
 import ProtectedRoute from "./components/ProtectedRoute";
-import LoadingScreen from "./components/LoadingScreen";
 
 // Lazy load all pages including Auth to reduce initial bundle size
 const Auth = lazy(() => import("./pages/Auth"));
@@ -92,24 +91,45 @@ export const clearRouteRestoredFlag = () => {
   sessionStorage.removeItem(ROUTE_RESTORED_KEY);
 };
 
-const App = () => {
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
+const AnimatedRoutes = () => {
+  const location = useLocation();
+  const key = `${location.pathname}${location.search}${location.hash}`;
 
+  return (
+    <div key={key} className="animate-fade-in">
+      <Routes location={location}>
+        <Route path="/auth" element={<Auth />} />
+        <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+        <Route path="/work-orders" element={<ProtectedRoute><WorkOrders /></ProtectedRoute>} />
+        <Route path="/production/:itemId" element={<ProtectedRoute><Production /></ProtectedRoute>} />
+        <Route path="/production/step/:itemId" element={<ProtectedRoute><ProductionStep /></ProtectedRoute>} />
+        <Route path="/production/sensor/:itemId" element={<ProtectedRoute><ProductionSensor /></ProtectedRoute>} />
+        <Route path="/quality-certificates" element={<ProtectedRoute><QualityCertificates /></ProtectedRoute>} />
+        <Route path="/production-reports" element={<ProtectedRoute><ProductionReports /></ProtectedRoute>} />
+        <Route path="/production-reports/:id" element={<ProtectedRoute><ProductionReportDetail /></ProtectedRoute>} />
+        <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
+        <Route path="/role-management" element={<ProtectedRoute><RoleManagement /></ProtectedRoute>} />
+        <Route path="/calendar" element={<ProtectedRoute><ProductionCalendar /></ProtectedRoute>} />
+        <Route path="/search" element={<ProtectedRoute><Search /></ProtectedRoute>} />
+        <Route path="/genealogy/:serialNumber" element={<ProtectedRoute><Genealogy /></ProtectedRoute>} />
+        <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+        <Route path="/personal-settings" element={<ProtectedRoute><PersonalSettings /></ProtectedRoute>} />
+        <Route path="/inventory" element={<ProtectedRoute><Inventory /></ProtectedRoute>} />
+        {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </div>
+  );
+};
+
+const App = () => {
   // Initialize prefetch on app load and cleanup on unmount
   useEffect(() => {
     initializePrefetch();
-    // Mark initial load complete after a short delay
-    const timer = setTimeout(() => setIsInitialLoad(false), 100);
     return () => {
       cleanupPrefetch();
-      clearTimeout(timer);
     };
   }, []);
-
-  // Show branded loading screen only on initial app load
-  if (isInitialLoad) {
-    return <LoadingScreen />;
-  }
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -123,27 +143,7 @@ const App = () => {
             <LanguageProvider>
               <UserProfileProvider>
                 <Suspense fallback={<PageLoader />}>
-                  <Routes>
-                    <Route path="/auth" element={<Auth />} />
-                    <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-                    <Route path="/work-orders" element={<ProtectedRoute><WorkOrders /></ProtectedRoute>} />
-                    <Route path="/production/:itemId" element={<ProtectedRoute><Production /></ProtectedRoute>} />
-                    <Route path="/production/step/:itemId" element={<ProtectedRoute><ProductionStep /></ProtectedRoute>} />
-                    <Route path="/production/sensor/:itemId" element={<ProtectedRoute><ProductionSensor /></ProtectedRoute>} />
-                    <Route path="/quality-certificates" element={<ProtectedRoute><QualityCertificates /></ProtectedRoute>} />
-                    <Route path="/production-reports" element={<ProtectedRoute><ProductionReports /></ProtectedRoute>} />
-                    <Route path="/production-reports/:id" element={<ProtectedRoute><ProductionReportDetail /></ProtectedRoute>} />
-                    <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
-                    <Route path="/role-management" element={<ProtectedRoute><RoleManagement /></ProtectedRoute>} />
-                    <Route path="/calendar" element={<ProtectedRoute><ProductionCalendar /></ProtectedRoute>} />
-                    <Route path="/search" element={<ProtectedRoute><Search /></ProtectedRoute>} />
-                    <Route path="/genealogy/:serialNumber" element={<ProtectedRoute><Genealogy /></ProtectedRoute>} />
-                    <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-                    <Route path="/personal-settings" element={<ProtectedRoute><PersonalSettings /></ProtectedRoute>} />
-                    <Route path="/inventory" element={<ProtectedRoute><Inventory /></ProtectedRoute>} />
-                    {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
+                  <AnimatedRoutes />
                 </Suspense>
               </UserProfileProvider>
             </LanguageProvider>
