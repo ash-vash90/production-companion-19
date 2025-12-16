@@ -804,7 +804,7 @@ const Auth = () => {
 
       {/* Content */}
       <div className="relative z-10 w-full max-w-md mx-4 animate-fade-in">
-        <Card className="border-white/10 bg-slate-900/80 backdrop-blur-xl shadow-2xl max-h-[85vh] overflow-hidden flex flex-col">
+        <Card className="border-white/10 bg-slate-900/80 backdrop-blur-xl shadow-2xl min-h-[80vh] max-h-[85vh] overflow-hidden flex flex-col">
           <CardHeader className="space-y-6 text-center pb-2 flex-shrink-0">
             {/* Logo */}
             <div className="flex flex-col items-center gap-4">
