@@ -94,6 +94,22 @@ export default {
           DEFAULT: "hsl(var(--lime-accent))",
           light: "hsl(var(--lime-accent-light))",
         },
+        obsidian: {
+          DEFAULT: "hsl(var(--obsidian))",
+          light: "hsl(var(--obsidian-light))",
+        },
+        slate: {
+          50: "hsl(var(--slate-50))",
+          100: "hsl(var(--slate-100))",
+          200: "hsl(var(--slate-200))",
+          300: "hsl(var(--slate-300))",
+          400: "hsl(var(--slate-400))",
+          500: "hsl(var(--slate-500))",
+          600: "hsl(var(--slate-600))",
+          700: "hsl(var(--slate-700))",
+          800: "hsl(var(--slate-800))",
+          900: "hsl(var(--slate-900))",
+        },
         eco: {
           surface: "hsl(var(--eco-surface))",
           "surface-hover": "hsl(var(--eco-surface-hover))",
