@@ -107,7 +107,7 @@ export default defineConfig(({ mode }) => ({
           'vendor-supabase': ['@supabase/supabase-js'],
           'vendor-charts': ['recharts'],
           'vendor-pdf': ['jspdf', 'pdf-lib'],
-          'vendor-editor': ['@tiptap/react', '@tiptap/starter-kit', '@tiptap/pm'],
+          'vendor-editor': ['@tiptap/react', '@tiptap/starter-kit'],
         },
       },
     },
