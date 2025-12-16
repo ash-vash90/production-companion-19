@@ -96,4 +96,21 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Vendor chunks - split large libraries
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          'vendor-ui': ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-popover', '@radix-ui/react-select', '@radix-ui/react-tabs', '@radix-ui/react-tooltip'],
+          'vendor-query': ['@tanstack/react-query'],
+          'vendor-supabase': ['@supabase/supabase-js'],
+          'vendor-charts': ['recharts'],
+          'vendor-pdf': ['jspdf', 'pdf-lib'],
+          'vendor-editor': ['@tiptap/react', '@tiptap/starter-kit', '@tiptap/pm'],
+        },
+      },
+    },
+    chunkSizeWarningLimit: 500,
+  },
 }));
