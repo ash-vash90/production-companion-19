@@ -7,11 +7,11 @@
 
 :root {
   /* ========================================
-     RHOSONICS BRAND COLORS
+     RHOSONICS BRAND COLORS - WCAG AA compliant
      ======================================== */
-  --rhosonics-green: 138 68% 36%;
-  --rhosonics-green-light: 138 68% 45%;
-  --rhosonics-green-glow: 138 68% 55%;
+  --rhosonics-green: 138 68% 28%;
+  --rhosonics-green-light: 138 68% 40%;
+  --rhosonics-green-glow: 138 68% 50%;
 
   /* Lime accent for highlights */
   --lime-accent: 128 57% 55%;
@@ -50,17 +50,17 @@
   --popover: 0 0% 100%;
   --popover-foreground: 228 25% 10%;
   
-  /* Primary - Rhosonics green for buttons only */
-  --primary: 138 68% 36%;
+  /* Primary - Rhosonics green for buttons only - WCAG AA compliant */
+  --primary: 138 68% 28%;
   --primary-foreground: 0 0% 100%;
   
   /* Secondary - slate grays */
   --secondary: 210 40% 96%;
   --secondary-foreground: 228 25% 10%;
   
-  /* Muted elements */
+  /* Muted elements - WCAG AA compliant */
   --muted: 214 32% 91%;
-  --muted-foreground: 215 16% 47%;
+  --muted-foreground: 215 19% 35%;
   
   /* Accent */
   --accent: 210 40% 96%;
@@ -70,8 +70,8 @@
   --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 100%;
   
-  /* Semantic status colors */
-  --success: 138 68% 36%;
+  /* Semantic status colors - WCAG AA compliant */
+  --success: 138 68% 28%;
   --success-foreground: 0 0% 100%;
   --warning: 45 93% 47%;
   --warning-foreground: 228 25% 10%;
@@ -81,10 +81,10 @@
   /* Borders and inputs */
   --border: 214 32% 91%;
   --input: 214 32% 91%;
-  --ring: 138 68% 36%;
+  --ring: 138 68% 28%;
 
   /* Charts - brand-aligned */
-  --chart-1: 138 68% 36%;
+  --chart-1: 138 68% 28%;
   --chart-2: 200 70% 50%;
   --chart-3: 128 57% 55%;
   --chart-4: 45 93% 47%;
@@ -96,12 +96,12 @@
   /* Sidebar - obsidian dark */
   --sidebar: 215 33% 10%;
   --sidebar-foreground: 210 40% 98%;
-  --sidebar-primary: 138 68% 36%;
+  --sidebar-primary: 138 68% 28%;
   --sidebar-primary-foreground: 0 0% 100%;
   --sidebar-accent: 215 28% 17%;
   --sidebar-accent-foreground: 210 40% 98%;
   --sidebar-border: 215 28% 17%;
-  --sidebar-ring: 138 68% 36%;
+  --sidebar-ring: 138 68% 28%;
   
   /* ========================================
      MOTION TIMING TOKENS
