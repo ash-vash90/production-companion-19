@@ -768,41 +768,38 @@ const Auth = () => {
   const showTabs = view === 'login' || view === 'signup';
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center relative overflow-hidden">
-      {/* Animated gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900" />
+    <div className="min-h-screen w-full flex items-center justify-center relative overflow-hidden bg-slate-950">
+      {/* Dark gradient background */}
+      <div className="absolute inset-0 bg-gradient-to-b from-slate-900 via-slate-950 to-slate-900" />
       
-      {/* Animated background elements */}
+      {/* Particle animation */}
       <div className="absolute inset-0 overflow-hidden">
-        {/* Large glow orb */}
-        <div className="absolute -top-40 -right-40 w-96 h-96 bg-primary/20 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-primary/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
-        
-        {/* Floating arcs - brand element */}
-        <svg className="absolute top-1/4 right-10 w-32 h-32 opacity-10 animate-float" viewBox="0 0 80 80">
-          <path d="M 80 60 L 80 49 A 31 31 0 0 0 49 80 L 60 80 A 20 20 0 0 1 80 60 Z" fill="currentColor" className="text-primary" />
-          <path d="M 80 41 L 80 30 A 50 50 0 0 0 30 80 L 41 80 A 39 39 0 0 1 80 41 Z" fill="currentColor" className="text-primary" opacity="0.7" />
-          <path d="M 80 22 L 80 11 A 69 69 0 0 0 11 80 L 22 80 A 58 58 0 0 1 80 22 Z" fill="currentColor" className="text-primary" opacity="0.4" />
-        </svg>
-        
-        <svg className="absolute bottom-1/4 left-10 w-24 h-24 opacity-10 animate-float" style={{ animationDelay: '2s' }} viewBox="0 0 80 80">
-          <path d="M 80 60 L 80 49 A 31 31 0 0 0 49 80 L 60 80 A 20 20 0 0 1 80 60 Z" fill="currentColor" className="text-primary" />
-          <path d="M 80 41 L 80 30 A 50 50 0 0 0 30 80 L 41 80 A 39 39 0 0 1 80 41 Z" fill="currentColor" className="text-primary" opacity="0.7" />
-        </svg>
-        
-        {/* Grid pattern overlay */}
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:64px_64px]" />
+        {[...Array(30)].map((_, i) => (
+          <div
+            key={i}
+            className="auth-particle absolute w-1 h-1 bg-primary/30 rounded-full"
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              animationDelay: `${Math.random() * 8}s`,
+              animationDuration: `${8 + Math.random() * 12}s`,
+            }}
+          />
+        ))}
       </div>
+      
+      {/* Subtle vignette */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,rgba(0,0,0,0.4)_100%)]" />
 
       {/* Content */}
       <div className="relative z-10 w-full max-w-md mx-4 animate-fade-in">
-        <Card className="border-white/10 bg-white/5 backdrop-blur-xl shadow-2xl">
+        <Card className="border-white/10 bg-slate-900/80 backdrop-blur-xl shadow-2xl">
           <CardHeader className="space-y-6 text-center pb-2">
             {/* Logo */}
             <div className="flex flex-col items-center gap-4">
               <div className="relative">
-                <div className="absolute inset-0 bg-primary/30 blur-xl rounded-full scale-150" />
-                <div className="relative p-4 rounded-2xl bg-gradient-to-br from-primary to-primary/80 shadow-lg shadow-primary/25">
+                <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full scale-150" />
+                <div className="relative p-4 rounded-2xl bg-gradient-to-br from-primary to-primary/80 shadow-lg shadow-primary/20">
                   <RhosonicsLogo size={48} className="text-white" />
                 </div>
               </div>
@@ -811,7 +808,7 @@ const Auth = () => {
                 <h1 className="text-3xl md:text-4xl font-logo text-white lowercase tracking-tight">
                   rhosonics
                 </h1>
-                <p className="text-xs md:text-sm font-data uppercase tracking-[0.2em] text-white/50">
+                <p className="text-xs md:text-sm font-data uppercase tracking-[0.2em] text-slate-400">
                   Production System
                 </p>
               </div>
@@ -830,16 +827,16 @@ const Auth = () => {
           <CardContent className="pt-2">
             {showTabs ? (
               <Tabs value={view === 'signup' ? 'signup' : 'login'} onValueChange={(v) => setView(v as AuthView)} className="w-full">
-                <TabsList className="grid w-full grid-cols-2 h-12 bg-white/5 border border-white/10 p-1">
+                <TabsList className="grid w-full grid-cols-2 h-12 bg-slate-800/50 border border-white/10 p-1">
                   <TabsTrigger 
                     value="login" 
-                    className="font-data text-sm uppercase tracking-wider text-white/60 data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg"
+                    className="font-data text-sm uppercase tracking-wider text-slate-400 data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg"
                   >
                     {t('login')}
                   </TabsTrigger>
                   <TabsTrigger 
                     value="signup" 
-                    className="font-data text-sm uppercase tracking-wider text-white/60 data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg"
+                    className="font-data text-sm uppercase tracking-wider text-slate-400 data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg"
                   >
                     {t('signup')}
                   </TabsTrigger>
@@ -869,7 +866,7 @@ const Auth = () => {
               variant="ghost"
               size="sm"
               onClick={() => setLanguage(language === 'en' ? 'nl' : 'en')}
-              className="text-white/40 hover:text-white/80 hover:bg-white/5 gap-2"
+              className="text-slate-500 hover:text-white hover:bg-white/5 gap-2"
             >
               <Globe className="h-4 w-4" />
               <span className="font-data text-xs uppercase tracking-wider">
@@ -880,30 +877,42 @@ const Auth = () => {
         </Card>
         
         {/* Footer text */}
-        <p className="text-center text-white/30 text-xs mt-6 font-data">
+        <p className="text-center text-slate-600 text-xs mt-6 font-data">
           © {new Date().getFullYear()} Rhosonics B.V.
         </p>
       </div>
       
-      {/* CSS for floating animation */}
+      {/* CSS for particle animation */}
       <style>{`
-        @keyframes float {
-          0%, 100% { transform: translateY(0) rotate(0deg); }
-          50% { transform: translateY(-20px) rotate(5deg); }
+        @keyframes float-up {
+          0% {
+            transform: translateY(100vh) scale(0);
+            opacity: 0;
+          }
+          10% {
+            opacity: 1;
+          }
+          90% {
+            opacity: 1;
+          }
+          100% {
+            transform: translateY(-100vh) scale(1);
+            opacity: 0;
+          }
         }
-        .animate-float {
-          animation: float 8s ease-in-out infinite;
+        .auth-particle {
+          animation: float-up linear infinite;
         }
         .auth-form-dark label {
-          color: rgba(255, 255, 255, 0.7) !important;
+          color: rgba(255, 255, 255, 0.8) !important;
         }
         .auth-form-dark input {
           background: rgba(255, 255, 255, 0.05) !important;
-          border-color: rgba(255, 255, 255, 0.1) !important;
+          border-color: rgba(255, 255, 255, 0.15) !important;
           color: white !important;
         }
         .auth-form-dark input::placeholder {
-          color: rgba(255, 255, 255, 0.3) !important;
+          color: rgba(255, 255, 255, 0.35) !important;
         }
         .auth-form-dark input:focus {
           border-color: hsl(var(--primary)) !important;
@@ -913,7 +922,7 @@ const Auth = () => {
           color: white !important;
         }
         .auth-form-dark .text-muted-foreground {
-          color: rgba(255, 255, 255, 0.5) !important;
+          color: rgba(255, 255, 255, 0.6) !important;
         }
         .auth-form-dark .text-destructive {
           color: hsl(0 84% 60%) !important;
@@ -921,7 +930,7 @@ const Auth = () => {
         .auth-form-dark select,
         .auth-form-dark [data-radix-select-trigger] {
           background: rgba(255, 255, 255, 0.05) !important;
-          border-color: rgba(255, 255, 255, 0.1) !important;
+          border-color: rgba(255, 255, 255, 0.15) !important;
           color: white !important;
         }
       `}</style>
