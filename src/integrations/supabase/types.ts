@@ -1168,6 +1168,48 @@ export type Database = {
         }
         Relationships: []
       }
+      verification_codes: {
+        Row: {
+          attempts: number | null
+          code_hash: string
+          code_type: string
+          created_at: string | null
+          email: string
+          expires_at: string
+          id: string
+          ip_address: string | null
+          max_attempts: number | null
+          used_at: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          attempts?: number | null
+          code_hash: string
+          code_type: string
+          created_at?: string | null
+          email: string
+          expires_at: string
+          id?: string
+          ip_address?: string | null
+          max_attempts?: number | null
+          used_at?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          attempts?: number | null
+          code_hash?: string
+          code_type?: string
+          created_at?: string | null
+          email?: string
+          expires_at?: string
+          id?: string
+          ip_address?: string | null
+          max_attempts?: number | null
+          used_at?: string | null
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       webhook_logs: {
         Row: {
           created_at: string
