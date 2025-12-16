@@ -195,8 +195,8 @@ const PersonalSettings = () => {
             </CardHeader>
             <CardContent>
               <div className="flex items-center gap-3">
-                <div className="relative">
-                  <Avatar className="h-16 w-16">
+                <div className="relative group">
+                  <Avatar className="h-16 w-16 ring-2 ring-border transition-all duration-200">
                     {contextProfile?.avatar_url && (
                       <AvatarImage src={contextProfile.avatar_url} alt={displayName} />
                     )}
@@ -204,16 +204,24 @@ const PersonalSettings = () => {
                       {getInitials(displayName)}
                     </AvatarFallback>
                   </Avatar>
+                  
+                  {/* Upload progress overlay */}
+                  {uploading && (
+                    <div className="absolute inset-0 rounded-full bg-background/80 backdrop-blur-sm flex flex-col items-center justify-center">
+                      <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                      <span className="text-[8px] font-medium text-primary mt-0.5">
+                        {language === 'nl' ? 'Uploaden...' : 'Uploading...'}
+                      </span>
+                    </div>
+                  )}
+                  
+                  {/* Camera button */}
                   <button
                     onClick={() => fileInputRef.current?.click()}
                     disabled={uploading}
-                    className="absolute bottom-0 right-0 h-6 w-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-colors disabled:opacity-50"
+                    className="absolute bottom-0 right-0 h-6 w-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-all duration-200 disabled:opacity-0 shadow-sm hover:scale-105"
                   >
-                    {uploading ? (
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                    ) : (
-                      <Camera className="h-3 w-3" />
-                    )}
+                    <Camera className="h-3 w-3" />
                   </button>
                   <input
                     ref={fileInputRef}
@@ -225,7 +233,12 @@ const PersonalSettings = () => {
                 </div>
                 <div className="space-y-0.5">
                   <p className="font-medium text-sm">{displayName}</p>
-                  <p className="text-[10px] text-muted-foreground">{t('uploadPhotoHint')}</p>
+                  <p className="text-[10px] text-muted-foreground">
+                    {uploading 
+                      ? (language === 'nl' ? 'Foto wordt geüpload...' : 'Uploading photo...') 
+                      : t('uploadPhotoHint')
+                    }
+                  </p>
                 </div>
               </div>
             </CardContent>
