@@ -46,6 +46,24 @@ export function useResilientQuery<T>({
   const lastSuccessfulDataRef = useRef<T | undefined>(fallbackData);
   const abortControllerRef = useRef<AbortController | null>(null);
   const refetchIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  
+  // Stabilize callbacks using refs to prevent re-subscription issues
+  const queryFnRef = useRef(queryFn);
+  const onErrorRef = useRef(onError);
+  const fallbackDataRef = useRef(fallbackData);
+  
+  // Update refs when props change (without triggering re-renders)
+  useEffect(() => {
+    queryFnRef.current = queryFn;
+  }, [queryFn]);
+  
+  useEffect(() => {
+    onErrorRef.current = onError;
+  }, [onError]);
+  
+  useEffect(() => {
+    fallbackDataRef.current = fallbackData;
+  }, [fallbackData]);
 
   const executeQuery = useCallback(async (signal: AbortSignal, attempt = 0): Promise<T | undefined> => {
     // Create timeout that respects abort signal
@@ -60,7 +78,7 @@ export function useResilientQuery<T>({
         throw new Error('Query aborted');
       }
       
-      const result = await queryFn();
+      const result = await queryFnRef.current();
       clearTimeout(timeoutId);
       
       if (signal.aborted) {
@@ -93,7 +111,7 @@ export function useResilientQuery<T>({
       
       throw error;
     }
-  }, [queryFn, timeout, retryCount, retryDelay]);
+  }, [timeout, retryCount, retryDelay]);
 
   const refetch = useCallback(async () => {
     if (!isMountedRef.current) return;
@@ -128,15 +146,15 @@ export function useResilientQuery<T>({
         if (lastSuccessfulDataRef.current !== undefined) {
           setData(lastSuccessfulDataRef.current);
           setIsStale(true);
-        } else if (fallbackData !== undefined) {
-          setData(fallbackData);
+        } else if (fallbackDataRef.current !== undefined) {
+          setData(fallbackDataRef.current);
           setIsStale(true);
         }
         
-        onError?.(error);
+        onErrorRef.current?.(error);
       }
     }
-  }, [executeQuery, fallbackData, onError]);
+  }, [executeQuery]);
 
   useEffect(() => {
     isMountedRef.current = true;

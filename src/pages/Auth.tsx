@@ -104,26 +104,26 @@ const Auth = () => {
       <Card className="w-full max-w-md shadow-2xl border-2">
         <CardHeader className="space-y-3 text-center">
           <div className="flex justify-center mb-4">
-            <div className="h-16 w-16 md:h-14 md:w-14 rounded-lg bg-primary flex items-center justify-center shadow-sm">
-              <Factory className="h-9 w-9 md:h-7 md:w-7 text-primary-foreground" />
+            <div className="h-12 w-12 md:h-14 md:w-14 rounded-lg bg-primary flex items-center justify-center shadow-sm">
+              <Factory className="h-6 w-6 md:h-7 md:w-7 text-primary-foreground" />
             </div>
           </div>
-          <CardTitle className="text-3xl md:text-2xl font-logo text-foreground lowercase">rhosonics</CardTitle>
-          <CardDescription className="text-sm md:text-xs uppercase tracking-wider text-muted-foreground">
+          <CardTitle className="text-2xl md:text-3xl font-logo text-foreground lowercase">rhosonics</CardTitle>
+          <CardDescription className="text-xs md:text-sm uppercase tracking-wider text-muted-foreground">
             MES Production System
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="login" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 h-12 md:h-10">
-              <TabsTrigger value="login" className="font-data text-sm md:text-xs uppercase">{t('login')}</TabsTrigger>
-              <TabsTrigger value="signup" className="font-data text-sm md:text-xs uppercase">{t('signup')}</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-2 h-10 md:h-11">
+              <TabsTrigger value="login" className="font-data text-xs md:text-sm uppercase">{t('login')}</TabsTrigger>
+              <TabsTrigger value="signup" className="font-data text-xs md:text-sm uppercase">{t('signup')}</TabsTrigger>
             </TabsList>
             
             <TabsContent value="login" className="mt-6">
               <form onSubmit={handleSignIn} className="space-y-5">
                 <div className="space-y-3">
-                  <Label htmlFor="email" className="font-data text-base md:text-sm uppercase tracking-wider">{t('email')}</Label>
+                  <Label htmlFor="email" className="font-data text-sm md:text-base uppercase tracking-wider">{t('email')}</Label>
                   <Input
                     id="email"
                     type="email"
@@ -137,7 +137,7 @@ const Auth = () => {
                   {validationErrors.email && <p className="text-xs text-destructive">{validationErrors.email}</p>}
                 </div>
                 <div className="space-y-3">
-                  <Label htmlFor="password" className="font-data text-base md:text-sm uppercase tracking-wider">{t('password')}</Label>
+                  <Label htmlFor="password" className="font-data text-sm md:text-base uppercase tracking-wider">{t('password')}</Label>
                   <Input
                     id="password"
                     type="password"
@@ -158,7 +158,7 @@ const Auth = () => {
             <TabsContent value="signup" className="mt-6">
               <form onSubmit={handleSignUp} className="space-y-5">
                 <div className="space-y-3">
-                  <Label htmlFor="fullName" className="font-data text-base md:text-sm uppercase tracking-wider">{t('fullName')}</Label>
+                  <Label htmlFor="fullName" className="font-data text-sm md:text-base uppercase tracking-wider">{t('fullName')}</Label>
                   <Input
                     id="fullName"
                     type="text"
@@ -172,7 +172,7 @@ const Auth = () => {
                   {validationErrors.fullName && <p className="text-xs text-destructive">{validationErrors.fullName}</p>}
                 </div>
                 <div className="space-y-3">
-                  <Label htmlFor="signup-email" className="font-data text-base md:text-sm uppercase tracking-wider">{t('email')}</Label>
+                  <Label htmlFor="signup-email" className="font-data text-sm md:text-base uppercase tracking-wider">{t('email')}</Label>
                   <Input
                     id="signup-email"
                     type="email"
@@ -186,7 +186,7 @@ const Auth = () => {
                   {validationErrors.email && <p className="text-xs text-destructive">{validationErrors.email}</p>}
                 </div>
                 <div className="space-y-3">
-                  <Label htmlFor="signup-password" className="font-data text-base md:text-sm uppercase tracking-wider">{t('password')}</Label>
+                  <Label htmlFor="signup-password" className="font-data text-sm md:text-base uppercase tracking-wider">{t('password')}</Label>
                   <Input
                     id="signup-password"
                     type="password"
@@ -200,14 +200,14 @@ const Auth = () => {
                   <p className="text-xs text-muted-foreground">Min 8 chars, 1 uppercase, 1 lowercase, 1 number</p>
                 </div>
                 <div className="space-y-3">
-                  <Label htmlFor="language" className="font-data text-base md:text-sm uppercase tracking-wider">Language / Taal</Label>
+                  <Label htmlFor="language" className="font-data text-sm md:text-base uppercase tracking-wider">Language / Taal</Label>
                   <Select value={selectedLanguage} onValueChange={(value) => setSelectedLanguage(value as 'en' | 'nl')}>
-                    <SelectTrigger className="h-12 md:h-11 text-base border-2">
+                    <SelectTrigger className="h-10 md:h-11 text-sm md:text-base border-2">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="en" className="h-12 md:h-10 text-base">English</SelectItem>
-                      <SelectItem value="nl" className="h-12 md:h-10 text-base">Nederlands</SelectItem>
+                      <SelectItem value="en" className="h-10 md:h-11 text-sm md:text-base">English</SelectItem>
+                      <SelectItem value="nl" className="h-10 md:h-11 text-sm md:text-base">Nederlands</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
