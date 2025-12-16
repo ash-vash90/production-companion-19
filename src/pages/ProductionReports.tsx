@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { TableBody, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { WorkOrderCard } from '@/components/workorders/WorkOrderCard';
 import { WorkOrderTableRow } from '@/components/workorders/WorkOrderTableRow';
 import { WorkOrderStatusBadge } from '@/components/workorders/WorkOrderStatusBadge';
@@ -326,43 +326,36 @@ const ProductionReports = () => {
                           ))}
                         </div>
                       ) : (
-                        <Card className="overflow-hidden">
-                          <CardContent className="p-0">
-                            <div
-                              className="w-full overflow-x-auto"
-                              style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-x pan-y' }}
-                            >
-                              <table className="min-w-[720px] w-full caption-bottom text-sm">
-                                <TableHeader>
-                                  <TableRow>
-                                    <TableHead>{t('woNumber')}</TableHead>
-                                    <TableHead>{t('productType')}</TableHead>
-                                    <TableHead className="hidden md:table-cell">{t('customer')}</TableHead>
-                                    <TableHead>{t('status')}</TableHead>
-                                    <TableHead className="hidden lg:table-cell">{t('dates')}</TableHead>
-                                    <TableHead>{t('completed')}</TableHead>
-                                    <TableHead className="text-right">{t('actions')}</TableHead>
-                                  </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                  {orders.map((wo) => (
-                                    <WorkOrderTableRow
-                                      key={wo.id}
-                                      workOrder={{
-                                        ...wo,
-                                        progressPercent: wo.status === 'completed' ? 100 : 0,
-                                      }}
-                                      showUrgency={false}
-                                      showCompletedDate={true}
-                                      onClick={() => handleSelectReport(wo)}
-                                      actionLabel={t('viewReport')}
-                                    />
-                                  ))}
-                                </TableBody>
-                              </table>
-                            </div>
-                          </CardContent>
-                        </Card>
+                        <div className="rounded-lg border overflow-hidden overflow-x-auto">
+                          <Table>
+                            <TableHeader>
+                              <TableRow className="bg-muted/30">
+                                <TableHead className="text-xs">{t('woNumber')}</TableHead>
+                                <TableHead className="text-xs">{t('productType')}</TableHead>
+                                <TableHead className="text-xs hidden md:table-cell">{t('customer')}</TableHead>
+                                <TableHead className="text-xs">{t('status')}</TableHead>
+                                <TableHead className="text-xs hidden lg:table-cell">{t('dates')}</TableHead>
+                                <TableHead className="text-xs">{t('completed')}</TableHead>
+                                <TableHead className="text-xs text-right">{t('actions')}</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {orders.map((wo) => (
+                                <WorkOrderTableRow
+                                  key={wo.id}
+                                  workOrder={{
+                                    ...wo,
+                                    progressPercent: wo.status === 'completed' ? 100 : 0,
+                                  }}
+                                  showUrgency={false}
+                                  showCompletedDate={true}
+                                  onClick={() => handleSelectReport(wo)}
+                                  actionLabel={t('viewReport')}
+                                />
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
                       )}
                     </div>
                   ))}
