@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 export function usePushNotifications() {
   const [permission, setPermission] = useState<NotificationPermission>('default');
@@ -11,7 +11,7 @@ export function usePushNotifications() {
     }
   }, []);
 
-  const requestPermission = async () => {
+  const requestPermission = useCallback(async () => {
     if (!('Notification' in window)) {
       console.warn('This browser does not support notifications');
       return false;
@@ -31,30 +31,30 @@ export function usePushNotifications() {
       console.error('Error requesting notification permission:', error);
       return false;
     }
-  };
+  }, []);
 
-  const enableNotifications = async () => {
+  const enableNotifications = useCallback(async () => {
     if (permission === 'granted') {
       setIsEnabled(true);
       localStorage.setItem('pushNotificationsEnabled', 'true');
       return true;
     }
     return await requestPermission();
-  };
+  }, [permission, requestPermission]);
 
-  const disableNotifications = () => {
+  const disableNotifications = useCallback(() => {
     setIsEnabled(false);
     localStorage.setItem('pushNotificationsEnabled', 'false');
-  };
+  }, []);
 
-  const sendNotification = (title: string, options?: NotificationOptions) => {
-    if (isEnabled && permission === 'granted') {
+  const sendNotification = useCallback((title: string, options?: NotificationOptions) => {
+    if (localStorage.getItem('pushNotificationsEnabled') === 'true' && Notification.permission === 'granted') {
       new Notification(title, {
         icon: '/favicon.ico',
         ...options,
       });
     }
-  };
+  }, []);
 
   return {
     permission,
