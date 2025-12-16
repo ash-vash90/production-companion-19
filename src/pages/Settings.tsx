@@ -16,7 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Plus, Trash2, Webhook, Loader2, Zap, Hash, Settings2, TestTube, FileText, BookOpen } from 'lucide-react';
+import { Plus, Trash2, Webhook, Loader2, Zap, Hash, Settings2, TestTube, FileText, BookOpen, Users } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
@@ -24,6 +24,7 @@ import AutomationManager from '@/components/settings/AutomationManager';
 import NumberFormatSettings from '@/components/settings/NumberFormatSettings';
 import { CertificateTemplateManager } from '@/components/settings/CertificateTemplateManager';
 import { WorkInstructionsManager } from '@/components/settings/WorkInstructionsManager';
+import { TeamsManager } from '@/components/settings/TeamsManager';
 
 const Settings = () => {
   const { user } = useAuth();
@@ -202,10 +203,14 @@ const Settings = () => {
 
           <Tabs defaultValue="numbering" className="space-y-4 sm:space-y-6">
             {/* Mobile-optimized tabs - grid on mobile, flex on desktop */}
-            <TabsList className="grid grid-cols-2 gap-1 h-auto p-1 sm:inline-flex sm:flex-wrap">
+            <TabsList className="grid grid-cols-3 gap-1 h-auto p-1 sm:inline-flex sm:flex-wrap">
               <TabsTrigger value="numbering" className="gap-1.5 text-xs sm:text-sm px-2 py-1.5 sm:px-3 sm:py-2">
                 <Hash className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
                 <span className="truncate">Formats</span>
+              </TabsTrigger>
+              <TabsTrigger value="teams" className="gap-1.5 text-xs sm:text-sm px-2 py-1.5 sm:px-3 sm:py-2">
+                <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
+                <span className="truncate">Teams</span>
               </TabsTrigger>
               <TabsTrigger value="instructions" className="gap-1.5 text-xs sm:text-sm px-2 py-1.5 sm:px-3 sm:py-2">
                 <BookOpen className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
@@ -227,6 +232,10 @@ const Settings = () => {
             
             <TabsContent value="numbering">
               <NumberFormatSettings />
+            </TabsContent>
+
+            <TabsContent value="teams">
+              <TeamsManager />
             </TabsContent>
 
             <TabsContent value="instructions">

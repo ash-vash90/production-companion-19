@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, memo } from 'react';
+import React, { useEffect, useState, useRef, memo, useMemo } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -8,6 +8,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Users, Circle, UserCircle, AlertCircle, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
+import { TeamBadgeList } from '@/components/TeamBadge';
+import { useUsersTeams } from '@/hooks/useUserTeams';
 
 interface OnlineUser {
   id: string;
@@ -217,6 +219,10 @@ export const ActiveOperators = memo(function ActiveOperators() {
     );
   }
 
+  // Get teams for online users
+  const onlineUserIds = useMemo(() => onlineUsers.map(u => u.id), [onlineUsers]);
+  const { teamsMap } = useUsersTeams(onlineUserIds);
+
   return (
     <div className="rounded-xl border bg-card overflow-hidden">
       {/* Section Header */}
@@ -241,30 +247,38 @@ export const ActiveOperators = memo(function ActiveOperators() {
       <div className="p-4 sm:p-5">
         {onlineUsers.length > 0 ? (
           <div className="space-y-2">
-            {onlineUsers.slice(0, 6).map((colleague) => (
-              <div
-                key={colleague.id}
-                className="flex items-center gap-3 p-3 rounded-lg border border-border bg-background hover:border-primary/20 transition-colors"
-              >
-                <div className="relative shrink-0">
-                  <Avatar className="h-9 w-9">
-                    <AvatarImage src={colleague.avatar_url || undefined} />
-                    <AvatarFallback className="text-xs bg-primary/10 text-primary font-semibold">
-                      {getInitials(colleague.name)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-success border-2 border-card" />
+            {onlineUsers.slice(0, 6).map((colleague) => {
+              const userTeams = teamsMap[colleague.id] || [];
+              return (
+                <div
+                  key={colleague.id}
+                  className="flex items-center gap-3 p-3 rounded-lg border border-border bg-background hover:border-primary/20 transition-colors"
+                >
+                  <div className="relative shrink-0">
+                    <Avatar className="h-9 w-9">
+                      <AvatarImage src={colleague.avatar_url || undefined} />
+                      <AvatarFallback className="text-xs bg-primary/10 text-primary font-semibold">
+                        {getInitials(colleague.name)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-success border-2 border-card" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-sm truncate">{colleague.name}</div>
+                    <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                      {colleague.role && (
+                        <Badge variant={getRoleBadgeVariant(colleague.role)} className="text-[10px]">
+                          {getRoleLabel(colleague.role)}
+                        </Badge>
+                      )}
+                      {userTeams.length > 0 && (
+                        <TeamBadgeList teams={userTeams} size="sm" maxDisplay={1} />
+                      )}
+                    </div>
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <div className="font-medium text-sm truncate">{colleague.name}</div>
-                  {colleague.role && (
-                    <Badge variant={getRoleBadgeVariant(colleague.role)} className="text-[10px] mt-0.5">
-                      {getRoleLabel(colleague.role)}
-                    </Badge>
-                  )}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center py-8 text-center">
