@@ -4,6 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { useTheme } from '@/hooks/useTheme';
+import { prefetchRoute } from '@/App';
 import {
   Sidebar,
   SidebarContent,
@@ -110,6 +111,7 @@ export function AppSidebar() {
                   <SidebarMenuButton
                     isActive={isActive(item.url)}
                     onClick={() => navigate(item.url)}
+                    onMouseEnter={() => prefetchRoute(item.url)}
                     tooltip={isCollapsed ? item.title : undefined}
                   >
                     <item.icon className="h-4 w-4" />
@@ -130,6 +132,7 @@ export function AppSidebar() {
                   <SidebarMenuButton
                     isActive={isActive(item.url)}
                     onClick={() => navigate(item.url)}
+                    onMouseEnter={() => prefetchRoute(item.url)}
                     tooltip={isCollapsed ? item.title : undefined}
                   >
                     <item.icon className="h-4 w-4" />
@@ -151,6 +154,7 @@ export function AppSidebar() {
                     <SidebarMenuButton
                       isActive={isActive(item.url)}
                       onClick={() => navigate(item.url)}
+                      onMouseEnter={() => prefetchRoute(item.url)}
                       tooltip={isCollapsed ? item.title : undefined}
                     >
                       <item.icon className="h-4 w-4" />
@@ -172,6 +176,7 @@ export function AppSidebar() {
                   <SidebarMenuButton
                     isActive={isActive(item.url)}
                     onClick={() => navigate(item.url)}
+                    onMouseEnter={() => prefetchRoute(item.url)}
                     tooltip={isCollapsed ? item.title : undefined}
                   >
                     <item.icon className="h-4 w-4" />
