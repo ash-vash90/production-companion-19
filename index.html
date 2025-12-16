@@ -16,6 +16,19 @@
     <meta name="description" content="Production Management System for Rhosonics Manufacturing">
     <meta name="author" content="Rhosonics" />
 
+    <!-- Critical inline CSS for immediate FCP -->
+    <style>
+      /* Minimal critical CSS for loading state */
+      *,*::before,*::after{box-sizing:border-box}
+      html{-webkit-text-size-adjust:100%;line-height:1.5}
+      body{margin:0;font-family:system-ui,-apple-system,sans-serif;background:#0a0a0a;color:#fafafa}
+      #root{min-height:100vh;display:flex;align-items:center;justify-content:center}
+      .initial-loader{display:flex;flex-direction:column;align-items:center;gap:1rem}
+      .initial-spinner{width:2rem;height:2rem;border:2px solid #333;border-top-color:#10b981;border-radius:50%;animation:spin 1s linear infinite}
+      @keyframes spin{to{transform:rotate(360deg)}}
+      .initial-text{font-size:0.875rem;color:#888;letter-spacing:0.05em}
+    </style>
+
     <!-- PWA Meta Tags -->
     <meta name="theme-color" content="#1a1a1a" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -26,18 +39,26 @@
 
     <!-- Open Graph -->
     <meta property="og:type" content="website" />
-
-    <!-- Rhosonics Design System Fonts - loaded after preconnects -->
-    <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Unbounded:wght@500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
     <meta property="og:title" content="Rhosonics PMS">
-  <meta name="twitter:title" content="Rhosonics PMS">
-  <meta property="og:description" content="Production Management System for Rhosonics Manufacturing">
-  <meta name="twitter:description" content="Production Management System for Rhosonics Manufacturing">
-  <meta name="twitter:card" content="summary">
+    <meta property="og:description" content="Production Management System for Rhosonics Manufacturing">
+    <meta name="twitter:title" content="Rhosonics PMS">
+    <meta name="twitter:description" content="Production Management System for Rhosonics Manufacturing">
+    <meta name="twitter:card" content="summary">
+
+    <!-- Fonts - non-render-blocking with preload for critical weight -->
+    <link rel="preload" href="https://fonts.gstatic.com/s/instrumentsans/v4/pxiTypc9vsFDm051Uf6KVwgkfoSxQ0GsQv8ToedPibnr0SZe1ZuWi3g.woff2" as="font" type="font/woff2" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Unbounded:wght@500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+    <noscript><link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Unbounded:wght@500;600;700&display=swap" rel="stylesheet"></noscript>
 </head>
 
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- Initial loading state for faster FCP -->
+      <div class="initial-loader">
+        <div class="initial-spinner"></div>
+        <div class="initial-text">LOADING</div>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
