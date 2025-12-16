@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -41,8 +41,8 @@ const queryClient = new QueryClient({
   },
 });
 
-// Loading fallback component
-const PageLoader = () => <LoadingScreen />;
+// Minimal loading fallback for page transitions (no flash)
+const PageLoader = () => null;
 
 // Persist and restore the last non-auth route so hard refresh keeps you on the same page
 const LAST_ROUTE_KEY = "last_route";
@@ -93,13 +93,23 @@ export const clearRouteRestoredFlag = () => {
 };
 
 const App = () => {
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+
   // Initialize prefetch on app load and cleanup on unmount
   useEffect(() => {
     initializePrefetch();
+    // Mark initial load complete after a short delay
+    const timer = setTimeout(() => setIsInitialLoad(false), 100);
     return () => {
       cleanupPrefetch();
+      clearTimeout(timer);
     };
   }, []);
+
+  // Show branded loading screen only on initial app load
+  if (isInitialLoad) {
+    return <LoadingScreen />;
+  }
 
   return (
     <QueryClientProvider client={queryClient}>
