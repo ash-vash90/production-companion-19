@@ -1,10 +1,20 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useRef, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useResilientQuery } from './useResilientQuery';
 
-// Global cache for production data
+// Global cache with size limit to prevent memory leaks
+const MAX_CACHE_SIZE = 20;
 const productionCache = new Map<string, { data: any; timestamp: number }>();
 const CACHE_TTL = 15000; // 15 seconds for production (needs fresher data)
+
+function setCache(key: string, data: any) {
+  // Enforce size limit - remove oldest entries
+  if (productionCache.size >= MAX_CACHE_SIZE) {
+    const oldestKey = productionCache.keys().next().value;
+    if (oldestKey) productionCache.delete(oldestKey);
+  }
+  productionCache.set(key, { data, timestamp: Date.now() });
+}
 
 export interface ProductionWorkOrder {
   id: string;
@@ -45,7 +55,8 @@ interface ProductionData {
  */
 export function useProduction(workOrderId: string | undefined) {
   const cacheKey = `production_${workOrderId}`;
-  const realtimeChannelRef = useRef<any>(null);
+  const realtimeChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fetchProductionData = useCallback(async (): Promise<ProductionData> => {
     if (!workOrderId) {
@@ -80,7 +91,7 @@ export function useProduction(workOrderId: string | undefined) {
     };
 
     // Update cache
-    productionCache.set(cacheKey, { data: result, timestamp: Date.now() });
+    setCache(cacheKey, result);
     
     return result;
   }, [workOrderId, cacheKey]);
@@ -93,19 +104,20 @@ export function useProduction(workOrderId: string | undefined) {
     enabled: !!workOrderId,
   });
 
-  // Set up realtime subscription
-  const setupRealtime = useCallback(() => {
-    if (!workOrderId || realtimeChannelRef.current) return;
+  // Auto-setup and cleanup realtime subscription
+  useEffect(() => {
+    if (!workOrderId) return;
 
-    let debounceTimer: NodeJS.Timeout;
     const channel = supabase
       .channel(`production-${workOrderId}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'work_order_items', filter: `work_order_id=eq.${workOrderId}` },
         () => {
-          clearTimeout(debounceTimer);
-          debounceTimer = setTimeout(() => {
+          if (debounceTimerRef.current) {
+            clearTimeout(debounceTimerRef.current);
+          }
+          debounceTimerRef.current = setTimeout(() => {
             productionCache.delete(cacheKey);
             refetch();
           }, 300);
@@ -116,7 +128,10 @@ export function useProduction(workOrderId: string | undefined) {
     realtimeChannelRef.current = channel;
 
     return () => {
-      clearTimeout(debounceTimer);
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+        debounceTimerRef.current = null;
+      }
       if (realtimeChannelRef.current) {
         supabase.removeChannel(realtimeChannelRef.current);
         realtimeChannelRef.current = null;
@@ -131,7 +146,6 @@ export function useProduction(workOrderId: string | undefined) {
     error,
     refetch,
     isStale,
-    setupRealtime,
   };
 }
 
@@ -161,12 +175,9 @@ export async function prefetchProduction(workOrderId: string): Promise<void> {
     ]);
 
     if (woResult.data) {
-      productionCache.set(cacheKey, {
-        data: {
-          workOrder: woResult.data,
-          items: itemsResult.data || []
-        },
-        timestamp: Date.now()
+      setCache(cacheKey, {
+        workOrder: woResult.data,
+        items: itemsResult.data || []
       });
     }
   } catch (error) {

@@ -2,12 +2,11 @@
  * Hook for monitoring offline/online status
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   initOfflineSync,
   getSyncQueueStats,
   processSyncQueue,
-  registerOfflineListeners,
 } from '@/services/offlineSyncService';
 
 interface OfflineStatus {
@@ -28,22 +27,28 @@ export function useOfflineStatus() {
     lastSyncTime: null,
     syncError: null,
   });
+  
+  const isMountedRef = useRef(true);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const refreshStats = useCallback(async () => {
+    if (!isMountedRef.current) return;
     try {
       const stats = await getSyncQueueStats();
-      setStatus(prev => ({
-        ...prev,
-        pendingSyncCount: stats.pending,
-        failedSyncCount: stats.failed,
-      }));
+      if (isMountedRef.current) {
+        setStatus(prev => ({
+          ...prev,
+          pendingSyncCount: stats.pending,
+          failedSyncCount: stats.failed,
+        }));
+      }
     } catch (error) {
       console.error('Error refreshing sync stats:', error);
     }
   }, []);
 
   const syncNow = useCallback(async () => {
-    if (!navigator.onLine) {
+    if (!navigator.onLine || !isMountedRef.current) {
       setStatus(prev => ({
         ...prev,
         syncError: 'Cannot sync while offline',
@@ -55,50 +60,66 @@ export function useOfflineStatus() {
 
     try {
       const results = await processSyncQueue();
-      setStatus(prev => ({
-        ...prev,
-        isSyncing: false,
-        lastSyncTime: new Date(),
-        pendingSyncCount: results.failed,
-        failedSyncCount: results.failed,
-        syncError: results.errors.length > 0 ? results.errors[0] : null,
-      }));
+      if (isMountedRef.current) {
+        setStatus(prev => ({
+          ...prev,
+          isSyncing: false,
+          lastSyncTime: new Date(),
+          pendingSyncCount: results.failed,
+          failedSyncCount: results.failed,
+          syncError: results.errors.length > 0 ? results.errors[0] : null,
+        }));
+      }
     } catch (error) {
-      setStatus(prev => ({
-        ...prev,
-        isSyncing: false,
-        syncError: error instanceof Error ? error.message : 'Sync failed',
-      }));
+      if (isMountedRef.current) {
+        setStatus(prev => ({
+          ...prev,
+          isSyncing: false,
+          syncError: error instanceof Error ? error.message : 'Sync failed',
+        }));
+      }
     }
   }, []);
 
   useEffect(() => {
+    isMountedRef.current = true;
+
     // Initialize offline sync system
     initOfflineSync().catch(console.error);
 
-    // Register online/offline listeners
-    const cleanup = registerOfflineListeners(
-      () => {
+    // Online/offline handlers
+    const handleOnline = () => {
+      if (isMountedRef.current) {
         setStatus(prev => ({ ...prev, isOnline: true }));
-        // Auto-sync when coming back online
         syncNow();
-      },
-      () => {
+      }
+    };
+
+    const handleOffline = () => {
+      if (isMountedRef.current) {
         setStatus(prev => ({ ...prev, isOnline: false }));
       }
-    );
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
 
     // Initial stats refresh
     refreshStats();
 
     // Refresh stats periodically
-    const interval = setInterval(refreshStats, 30000);
+    intervalRef.current = setInterval(refreshStats, 30000);
 
     return () => {
-      cleanup();
-      clearInterval(interval);
+      isMountedRef.current = false;
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
     };
-  }, [refreshStats, syncNow]);
+  }, []); // Empty deps - handlers use refs and callbacks are stable
 
   return {
     ...status,

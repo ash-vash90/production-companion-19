@@ -1,11 +1,21 @@
-import { useRef, useCallback, useMemo } from 'react';
+import { useRef, useCallback, useMemo, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useResilientQuery } from './useResilientQuery';
 import { getProductBreakdown, ProductBreakdown } from '@/lib/utils';
 
-// Global cache for work orders data
+// Global cache with size limit to prevent memory leaks
+const MAX_CACHE_SIZE = 10;
 const workOrdersCache = new Map<string, { data: any[]; timestamp: number }>();
 const CACHE_TTL = 30000; // 30 seconds
+
+function setCache(key: string, data: any[]) {
+  // Enforce size limit - remove oldest entries
+  if (workOrdersCache.size >= MAX_CACHE_SIZE) {
+    const oldestKey = workOrdersCache.keys().next().value;
+    if (oldestKey) workOrdersCache.delete(oldestKey);
+  }
+  workOrdersCache.set(key, { data, timestamp: Date.now() });
+}
 
 export interface WorkOrderListItem {
   id: string;
@@ -46,7 +56,8 @@ export function useWorkOrders(options: UseWorkOrdersOptions = {}) {
   } = options;
   
   const cacheKey = `workorders_${excludeCancelled}_${limit}_${statusFilter?.join(',')}`;
-  const realtimeChannelRef = useRef<any>(null);
+  const realtimeChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fetchWorkOrders = useCallback(async (): Promise<WorkOrderListItem[]> => {
     // Check cache first
@@ -127,7 +138,7 @@ export function useWorkOrders(options: UseWorkOrdersOptions = {}) {
     }) as WorkOrderListItem[];
 
     // Update cache
-    workOrdersCache.set(cacheKey, { data: enrichedData, timestamp: Date.now() });
+    setCache(cacheKey, enrichedData);
     
     return enrichedData;
   }, [cacheKey, excludeCancelled, limit, statusFilter]);
@@ -139,20 +150,20 @@ export function useWorkOrders(options: UseWorkOrdersOptions = {}) {
     retryCount: 3,
   });
 
-  // Set up realtime subscription for updates
-  const setupRealtime = useCallback(() => {
-    if (!enableRealtime || realtimeChannelRef.current) return;
+  // Auto-setup and cleanup realtime subscription
+  useEffect(() => {
+    if (!enableRealtime) return;
 
-    let debounceTimer: NodeJS.Timeout;
     const channel = supabase
       .channel(`workorders-list-${cacheKey}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'work_orders' },
         () => {
-          clearTimeout(debounceTimer);
-          debounceTimer = setTimeout(() => {
-            // Invalidate cache and refetch
+          if (debounceTimerRef.current) {
+            clearTimeout(debounceTimerRef.current);
+          }
+          debounceTimerRef.current = setTimeout(() => {
             workOrdersCache.delete(cacheKey);
             refetch();
           }, 500);
@@ -163,7 +174,10 @@ export function useWorkOrders(options: UseWorkOrdersOptions = {}) {
     realtimeChannelRef.current = channel;
 
     return () => {
-      clearTimeout(debounceTimer);
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+        debounceTimerRef.current = null;
+      }
       if (realtimeChannelRef.current) {
         supabase.removeChannel(realtimeChannelRef.current);
         realtimeChannelRef.current = null;
@@ -177,7 +191,6 @@ export function useWorkOrders(options: UseWorkOrdersOptions = {}) {
     error,
     refetch,
     isStale,
-    setupRealtime,
   };
 }
 
@@ -239,7 +252,7 @@ export async function prefetchWorkOrders(): Promise<void> {
       };
     });
 
-    workOrdersCache.set(cacheKey, { data: enrichedData, timestamp: Date.now() });
+    setCache(cacheKey, enrichedData);
   } catch (error) {
     console.error('Prefetch work orders failed:', error);
   }

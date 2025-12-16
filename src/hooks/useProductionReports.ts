@@ -3,9 +3,19 @@ import { supabase } from '@/integrations/supabase/client';
 import { useResilientQuery } from './useResilientQuery';
 import { getProductBreakdown, ProductBreakdown } from '@/lib/utils';
 
-// Global cache for production reports
+// Global cache with size limit to prevent memory leaks
+const MAX_CACHE_SIZE = 5;
 const reportsCache = new Map<string, { data: any[]; timestamp: number }>();
 const CACHE_TTL = 60000; // 60 seconds for reports (less frequently updated)
+
+function setCache(key: string, data: any[]) {
+  // Enforce size limit - remove oldest entries
+  if (reportsCache.size >= MAX_CACHE_SIZE) {
+    const oldestKey = reportsCache.keys().next().value;
+    if (oldestKey) reportsCache.delete(oldestKey);
+  }
+  reportsCache.set(key, { data, timestamp: Date.now() });
+}
 
 export interface ProductionReportItem {
   id: string;
@@ -89,7 +99,7 @@ export function useProductionReports(options: UseProductionReportsOptions = {}) 
     }) as ProductionReportItem[];
 
     // Update cache
-    reportsCache.set(cacheKey, { data: enrichedData, timestamp: Date.now() });
+    setCache(cacheKey, enrichedData);
     
     return enrichedData;
   }, [cacheKey, limit]);
@@ -156,7 +166,7 @@ export async function prefetchProductionReports(): Promise<void> {
       };
     });
 
-    reportsCache.set(cacheKey, { data: enrichedData, timestamp: Date.now() });
+    setCache(cacheKey, enrichedData);
   } catch (error) {
     console.error('Prefetch production reports failed:', error);
   }

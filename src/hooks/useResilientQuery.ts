@@ -25,6 +25,7 @@ interface ResilientQueryResult<T> {
  * - Timeout protection
  * - Stale data fallback
  * - Graceful error handling
+ * - Proper cleanup to prevent memory leaks
  */
 export function useResilientQuery<T>({
   queryFn,
@@ -40,28 +41,54 @@ export function useResilientQuery<T>({
   const [loading, setLoading] = useState(enabled);
   const [error, setError] = useState<Error | null>(null);
   const [isStale, setIsStale] = useState(false);
+  
   const isMountedRef = useRef(true);
   const lastSuccessfulDataRef = useRef<T | undefined>(fallbackData);
-  const refetchIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const refetchIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const executeQuery = useCallback(async (attempt = 0): Promise<T | undefined> => {
-    // Create timeout promise
-    const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(() => reject(new Error('Query timeout')), timeout);
-    });
+  const executeQuery = useCallback(async (signal: AbortSignal, attempt = 0): Promise<T | undefined> => {
+    // Create timeout that respects abort signal
+    const timeoutId = setTimeout(() => {
+      if (!signal.aborted) {
+        abortControllerRef.current?.abort();
+      }
+    }, timeout);
 
     try {
-      // Race between query and timeout
-      const result = await Promise.race([queryFn(), timeoutPromise]);
+      if (signal.aborted) {
+        throw new Error('Query aborted');
+      }
+      
+      const result = await queryFn();
+      clearTimeout(timeoutId);
+      
+      if (signal.aborted) {
+        throw new Error('Query aborted');
+      }
+      
       return result;
     } catch (err) {
+      clearTimeout(timeoutId);
+      
+      if (signal.aborted) {
+        throw new Error('Query aborted');
+      }
+      
       const error = err instanceof Error ? err : new Error(String(err));
       
-      // Retry with exponential backoff
-      if (attempt < retryCount) {
+      // Retry with exponential backoff if not aborted
+      if (attempt < retryCount && !signal.aborted) {
         const delay = retryDelay * Math.pow(2, attempt);
-        await new Promise(resolve => setTimeout(resolve, delay));
-        return executeQuery(attempt + 1);
+        await new Promise((resolve, reject) => {
+          const delayTimeout = setTimeout(resolve, delay);
+          // Listen for abort during delay
+          signal.addEventListener('abort', () => {
+            clearTimeout(delayTimeout);
+            reject(new Error('Query aborted'));
+          }, { once: true });
+        });
+        return executeQuery(signal, attempt + 1);
       }
       
       throw error;
@@ -71,11 +98,15 @@ export function useResilientQuery<T>({
   const refetch = useCallback(async () => {
     if (!isMountedRef.current) return;
     
+    // Cancel any in-flight request
+    abortControllerRef.current?.abort();
+    abortControllerRef.current = new AbortController();
+    
     setLoading(true);
     setError(null);
 
     try {
-      const result = await executeQuery();
+      const result = await executeQuery(abortControllerRef.current.signal);
       
       if (isMountedRef.current) {
         setData(result);
@@ -85,6 +116,9 @@ export function useResilientQuery<T>({
       }
     } catch (err) {
       const error = err instanceof Error ? err : new Error(String(err));
+      
+      // Don't update state for aborted queries
+      if (error.message === 'Query aborted') return;
       
       if (isMountedRef.current) {
         setError(error);
@@ -124,11 +158,14 @@ export function useResilientQuery<T>({
 
     return () => {
       isMountedRef.current = false;
+      // Abort any in-flight requests
+      abortControllerRef.current?.abort();
       if (refetchIntervalRef.current) {
         clearInterval(refetchIntervalRef.current);
+        refetchIntervalRef.current = null;
       }
     };
-  }, [enabled, refetchInterval]); // Note: refetch is stable due to useCallback
+  }, [enabled, refetchInterval, refetch]);
 
   return { data, loading, error, refetch, isStale };
 }
@@ -142,21 +179,36 @@ export async function resilientSupabaseQuery<T>(
     retryCount?: number;
     retryDelay?: number;
     timeout?: number;
+    signal?: AbortSignal;
   } = {}
 ): Promise<T | null> {
-  const { retryCount = 3, retryDelay = 1000, timeout = 10000 } = options;
+  const { retryCount = 3, retryDelay = 1000, timeout = 10000, signal } = options;
 
   const executeWithRetry = async (attempt = 0): Promise<T | null> => {
-    const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(() => reject(new Error('Query timeout')), timeout);
-    });
+    if (signal?.aborted) return null;
+    
+    const timeoutId = setTimeout(() => {}, timeout);
 
     try {
-      const { data, error } = await Promise.race([queryFn(), timeoutPromise]);
+      const { data, error } = await Promise.race([
+        queryFn(),
+        new Promise<never>((_, reject) => {
+          const t = setTimeout(() => reject(new Error('Query timeout')), timeout);
+          signal?.addEventListener('abort', () => {
+            clearTimeout(t);
+            reject(new Error('Query aborted'));
+          }, { once: true });
+        })
+      ]);
       
+      clearTimeout(timeoutId);
       if (error) throw error;
       return data;
     } catch (err) {
+      clearTimeout(timeoutId);
+      
+      if (signal?.aborted) return null;
+      
       if (attempt < retryCount) {
         const delay = retryDelay * Math.pow(2, attempt);
         await new Promise(resolve => setTimeout(resolve, delay));
