@@ -1,8 +1,12 @@
-import { prefetchWorkOrders } from '@/hooks/useWorkOrders';
-import { prefetchProductionReports } from '@/hooks/useProductionReports';
-import { prefetchProduction } from '@/hooks/useProduction';
+import { prefetchWorkOrders, invalidateWorkOrdersCache } from '@/hooks/useWorkOrders';
+import { prefetchProductionReports, invalidateReportsCache } from '@/hooks/useProductionReports';
+import { prefetchProduction, invalidateProductionCache } from '@/hooks/useProduction';
 
 let prefetchInitialized = false;
+let cacheCleanupInterval: ReturnType<typeof setInterval> | null = null;
+
+// Cleanup interval - clear all caches every 5 minutes to prevent memory buildup
+const CACHE_CLEANUP_INTERVAL = 5 * 60 * 1000;
 
 /**
  * Initialize data prefetching on app load
@@ -19,6 +23,30 @@ export async function initializePrefetch(): Promise<void> {
   ]).catch(err => {
     console.warn('Prefetch initialization warning:', err);
   });
+
+  // Set up periodic cache cleanup to prevent memory buildup
+  if (!cacheCleanupInterval) {
+    cacheCleanupInterval = setInterval(() => {
+      // Clear all caches periodically
+      invalidateWorkOrdersCache();
+      invalidateReportsCache();
+      invalidateProductionCache();
+    }, CACHE_CLEANUP_INTERVAL);
+  }
+}
+
+/**
+ * Cleanup prefetch resources (call on app unmount)
+ */
+export function cleanupPrefetch(): void {
+  if (cacheCleanupInterval) {
+    clearInterval(cacheCleanupInterval);
+    cacheCleanupInterval = null;
+  }
+  invalidateWorkOrdersCache();
+  invalidateReportsCache();
+  invalidateProductionCache();
+  prefetchInitialized = false;
 }
 
 /**
