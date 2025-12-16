@@ -505,7 +505,7 @@ export function WorkInstructionsManager() {
                   Add Instruction
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+              <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>Create Work Instruction</DialogTitle>
                   <DialogDescription>
@@ -533,16 +533,18 @@ export function WorkInstructionsManager() {
                   
                   <div className="space-y-2">
                     <Label>Description</Label>
-                    <Input
-                      value={formData.description}
-                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    <RichTextEditor
+                      content={formData.description}
+                      onChange={(html) => setFormData({ ...formData, description: html })}
                       onBlur={() => translateInstructionContent('description', formData.description)}
-                      placeholder="Brief overview of this instruction..."
+                      placeholder="Brief overview of this instruction with rich formatting, images, videos..."
+                      onImageUpload={handleImageUpload}
+                      minHeight="120px"
                     />
                     {formData.description_nl && (
                       <p className="text-xs text-muted-foreground flex items-center gap-1">
                         <Languages className="h-3 w-3" />
-                        Dutch: {formData.description_nl}
+                        Dutch translation saved
                       </p>
                     )}
                   </div>
@@ -771,7 +773,7 @@ export function WorkInstructionsManager() {
 
       {/* Edit Instruction Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Work Instruction</DialogTitle>
           </DialogHeader>
@@ -795,15 +797,18 @@ export function WorkInstructionsManager() {
             
             <div className="space-y-2">
               <Label>Description</Label>
-              <Input
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              <RichTextEditor
+                content={formData.description}
+                onChange={(html) => setFormData({ ...formData, description: html })}
                 onBlur={() => translateInstructionContent('description', formData.description)}
+                placeholder="Brief overview of this instruction with rich formatting, images, videos..."
+                onImageUpload={handleImageUpload}
+                minHeight="120px"
               />
               {formData.description_nl && (
                 <p className="text-xs text-muted-foreground flex items-center gap-1">
                   <Languages className="h-3 w-3" />
-                  Dutch: {formData.description_nl}
+                  Dutch translation saved
                 </p>
               )}
             </div>
