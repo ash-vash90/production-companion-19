@@ -723,6 +723,27 @@ export type Database = {
           },
         ]
       }
+      permissions: {
+        Row: {
+          category: string
+          description: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          category?: string
+          description?: string | null
+          id: string
+          name: string
+        }
+        Update: {
+          category?: string
+          description?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       production_steps: {
         Row: {
           batch_type: string | null
@@ -905,6 +926,41 @@ export type Database = {
           },
         ]
       }
+      role_permissions: {
+        Row: {
+          granted: boolean
+          id: string
+          permission_id: string
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          granted?: boolean
+          id?: string
+          permission_id: string
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          granted?: boolean
+          id?: string
+          permission_id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "role_permissions_permission_id_fkey"
+            columns: ["permission_id"]
+            isOneToOne: false
+            referencedRelation: "permissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       step_executions: {
         Row: {
           barcode_scanned: string | null
@@ -1052,6 +1108,39 @@ export type Database = {
           setting_key?: string
           setting_value?: Json
           updated_at?: string
+        }
+        Relationships: []
+      }
+      user_invites: {
+        Row: {
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          invite_token: string
+          invited_by: string | null
+          role: Database["public"]["Enums"]["app_role"]
+          used_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          expires_at?: string
+          id?: string
+          invite_token?: string
+          invited_by?: string | null
+          role?: Database["public"]["Enums"]["app_role"]
+          used_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          invite_token?: string
+          invited_by?: string | null
+          role?: Database["public"]["Enums"]["app_role"]
+          used_at?: string | null
         }
         Relationships: []
       }
