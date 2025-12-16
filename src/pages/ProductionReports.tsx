@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { TableBody, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { WorkOrderCard } from '@/components/workorders/WorkOrderCard';
 import { WorkOrderTableRow } from '@/components/workorders/WorkOrderTableRow';
 import { WorkOrderStatusBadge } from '@/components/workorders/WorkOrderStatusBadge';
@@ -328,8 +328,11 @@ const ProductionReports = () => {
                       ) : (
                         <Card className="overflow-hidden">
                           <CardContent className="p-0">
-                            <div className="w-full overflow-x-auto touch-pan-x">
-                              <Table className="min-w-[720px]">
+                            <div
+                              className="w-full overflow-x-auto"
+                              style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-x pan-y' }}
+                            >
+                              <table className="min-w-[720px] w-full caption-bottom text-sm">
                                 <TableHeader>
                                   <TableRow>
                                     <TableHead>{t('woNumber')}</TableHead>
@@ -356,7 +359,7 @@ const ProductionReports = () => {
                                     />
                                   ))}
                                 </TableBody>
-                              </Table>
+                              </table>
                             </div>
                           </CardContent>
                         </Card>
