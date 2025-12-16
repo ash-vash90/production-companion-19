@@ -733,15 +733,26 @@ const Auth = () => {
             </div>
             <div className="space-y-3">
               <Label htmlFor="password" className="font-data text-sm md:text-base uppercase tracking-wider">{t('password')}</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className={validationErrors.password ? 'border-destructive' : ''}
-                maxLength={128}
-                required
-              />
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className={validationErrors.password ? 'border-destructive pr-10' : 'pr-10'}
+                  maxLength={128}
+                  required
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </Button>
+              </div>
             </div>
             <Button type="submit" className="w-full" variant="default" size="lg" disabled={loading}>
               {loading && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
