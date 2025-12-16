@@ -804,8 +804,8 @@ const Auth = () => {
 
       {/* Content */}
       <div className="relative z-10 w-full max-w-md mx-4 animate-fade-in">
-        <Card className="border-white/10 bg-slate-900/80 backdrop-blur-xl shadow-2xl">
-          <CardHeader className="space-y-6 text-center pb-2">
+        <Card className="border-white/10 bg-slate-900/80 backdrop-blur-xl shadow-2xl max-h-[85vh] overflow-hidden flex flex-col">
+          <CardHeader className="space-y-6 text-center pb-2 flex-shrink-0">
             {/* Logo */}
             <div className="flex flex-col items-center gap-4">
               <div className="relative">
@@ -835,35 +835,37 @@ const Auth = () => {
             )}
           </CardHeader>
           
-          <CardContent className="pt-2">
+          <CardContent className="pt-2 flex-1 overflow-y-auto">
             {showTabs ? (
               <Tabs value={view === 'signup' ? 'signup' : 'login'} onValueChange={(v) => setView(v as AuthView)} className="w-full">
                 <TabsList className="grid w-full grid-cols-2 h-12 bg-slate-800/50 border border-white/10 p-1">
                   <TabsTrigger 
                     value="login" 
-                    className="font-data text-sm uppercase tracking-wider text-slate-400 data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg"
+                    className="font-data text-sm uppercase tracking-wider text-slate-400 data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg transition-all"
                   >
                     {t('login')}
                   </TabsTrigger>
                   <TabsTrigger 
                     value="signup" 
-                    className="font-data text-sm uppercase tracking-wider text-slate-400 data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg"
+                    className="font-data text-sm uppercase tracking-wider text-slate-400 data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg transition-all"
                   >
                     {t('signup')}
                   </TabsTrigger>
                 </TabsList>
                 
-                <TabsContent value="login" className="mt-6 data-[state=inactive]:hidden">
-                  <div className="auth-form-dark animate-fade-in">
-                    {renderContent()}
-                  </div>
-                </TabsContent>
-                
-                <TabsContent value="signup" className="mt-6 data-[state=inactive]:hidden max-h-[420px] overflow-y-auto">
-                  <div className="auth-form-dark animate-fade-in">
-                    {renderContent()}
-                  </div>
-                </TabsContent>
+                <div className="relative mt-6 min-h-[280px]">
+                  <TabsContent value="login" className="absolute inset-0 data-[state=inactive]:opacity-0 data-[state=inactive]:pointer-events-none data-[state=active]:opacity-100 transition-opacity duration-200">
+                    <div className="auth-form-dark">
+                      {renderContent()}
+                    </div>
+                  </TabsContent>
+                  
+                  <TabsContent value="signup" className="absolute inset-0 data-[state=inactive]:opacity-0 data-[state=inactive]:pointer-events-none data-[state=active]:opacity-100 transition-opacity duration-200">
+                    <div className="auth-form-dark">
+                      {renderContent()}
+                    </div>
+                  </TabsContent>
+                </div>
               </Tabs>
             ) : (
               <div className="mt-2 auth-form-dark">
