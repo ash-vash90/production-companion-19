@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,6 +26,12 @@ interface Comment {
   avatar_url?: string;
 }
 
+interface TeamMember {
+  id: string;
+  full_name: string;
+  avatar_url: string | null;
+}
+
 interface WorkOrderCommentsProps {
   workOrderId: string;
   workOrderItemId?: string;
@@ -40,8 +46,25 @@ export function WorkOrderComments({ workOrderId, workOrderItemId, currentStepNum
   const [newComment, setNewComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [replyingTo, setReplyingTo] = useState<Comment | null>(null);
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [showMentions, setShowMentions] = useState(false);
+  const [mentionQuery, setMentionQuery] = useState('');
+  const [mentionIndex, setMentionIndex] = useState(0);
+  const [cursorPosition, setCursorPosition] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const commentsEndRef = useRef<HTMLDivElement>(null);
+
+  // Fetch team members for mentions
+  useEffect(() => {
+    const fetchTeamMembers = async () => {
+      const { data } = await supabase
+        .from('profiles')
+        .select('id, full_name, avatar_url')
+        .order('full_name');
+      if (data) setTeamMembers(data);
+    };
+    fetchTeamMembers();
+  }, []);
 
   useEffect(() => {
     fetchComments();
@@ -111,11 +134,86 @@ export function WorkOrderComments({ workOrderId, workOrderItemId, currentStepNum
     }
   };
 
+  // Filter team members based on mention query
+  const filteredMembers = useMemo(() => {
+    if (!mentionQuery) return teamMembers.slice(0, 5);
+    const q = mentionQuery.toLowerCase();
+    return teamMembers.filter(m => m.full_name.toLowerCase().includes(q)).slice(0, 5);
+  }, [teamMembers, mentionQuery]);
+
+  // Extract mention user IDs from content
+  const extractMentions = (content: string): string[] => {
+    const mentionRegex = /@\[([^\]]+)\]\(([^)]+)\)/g;
+    const mentions: string[] = [];
+    let match;
+    while ((match = mentionRegex.exec(content)) !== null) {
+      mentions.push(match[2]); // User ID
+    }
+    return mentions;
+  };
+
+  // Convert display format for storage and rendering
+  const formatContentForDisplay = (content: string): string => {
+    // Convert @[Name](id) to @Name for display
+    return content.replace(/@\[([^\]]+)\]\([^)]+\)/g, '@$1');
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    const pos = e.target.selectionStart || 0;
+    setNewComment(value);
+    setCursorPosition(pos);
+
+    // Check if we're in a mention context
+    const textBeforeCursor = value.slice(0, pos);
+    const atIndex = textBeforeCursor.lastIndexOf('@');
+    
+    if (atIndex !== -1) {
+      const textAfterAt = textBeforeCursor.slice(atIndex + 1);
+      // Only show mentions if @ is start of word and no space after it
+      const charBeforeAt = atIndex > 0 ? textBeforeCursor[atIndex - 1] : ' ';
+      if ((charBeforeAt === ' ' || charBeforeAt === '\n' || atIndex === 0) && !textAfterAt.includes(' ')) {
+        setMentionQuery(textAfterAt);
+        setShowMentions(true);
+        setMentionIndex(0);
+        return;
+      }
+    }
+    setShowMentions(false);
+    setMentionQuery('');
+  };
+
+  const insertMention = (member: TeamMember) => {
+    const textBeforeCursor = newComment.slice(0, cursorPosition);
+    const atIndex = textBeforeCursor.lastIndexOf('@');
+    const textAfterCursor = newComment.slice(cursorPosition);
+    
+    const beforeMention = newComment.slice(0, atIndex);
+    const mentionText = `@[${member.full_name}](${member.id}) `;
+    const newValue = beforeMention + mentionText + textAfterCursor;
+    
+    setNewComment(newValue);
+    setShowMentions(false);
+    setMentionQuery('');
+    
+    // Focus and set cursor after mention
+    setTimeout(() => {
+      if (inputRef.current) {
+        const newPos = beforeMention.length + mentionText.length;
+        inputRef.current.focus();
+        inputRef.current.setSelectionRange(newPos, newPos);
+      }
+    }, 0);
+  };
+
   const handleSubmit = async () => {
     if (!newComment.trim() || !user) return;
 
     setSubmitting(true);
     try {
+      const mentionIds = extractMentions(newComment);
+      const displayContent = formatContentForDisplay(newComment);
+
       const { error } = await supabase
         .from('work_order_notes')
         .insert({
@@ -123,13 +221,29 @@ export function WorkOrderComments({ workOrderId, workOrderItemId, currentStepNum
           work_order_item_id: workOrderItemId || null,
           step_number: currentStepNumber || null,
           user_id: user.id,
-          content: newComment.trim(),
+          content: displayContent.trim(),
           reply_to_id: replyingTo?.id || null,
-          mentions: [],
+          mentions: mentionIds,
           type: 'comment',
         });
 
       if (error) throw error;
+
+      // Notify mentioned users
+      for (const mentionedUserId of mentionIds) {
+        if (mentionedUserId !== user.id) {
+          await createNotification({
+            userId: mentionedUserId,
+            type: 'user_mentioned',
+            title: language === 'nl' ? 'Je bent genoemd' : 'You were mentioned',
+            message: language === 'nl' 
+              ? `Je bent genoemd in een opmerking` 
+              : `You were mentioned in a comment`,
+            entityType: 'work_order',
+            entityId: workOrderId,
+          });
+        }
+      }
 
       setNewComment('');
       setReplyingTo(null);
@@ -170,10 +284,48 @@ export function WorkOrderComments({ workOrderId, workOrderItemId, currentStepNum
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (showMentions && filteredMembers.length > 0) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setMentionIndex(i => Math.min(i + 1, filteredMembers.length - 1));
+        return;
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setMentionIndex(i => Math.max(i - 1, 0));
+        return;
+      }
+      if (e.key === 'Enter' || e.key === 'Tab') {
+        e.preventDefault();
+        insertMention(filteredMembers[mentionIndex]);
+        return;
+      }
+      if (e.key === 'Escape') {
+        setShowMentions(false);
+        return;
+      }
+    }
+    
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSubmit();
     }
+  };
+
+  // Render content with highlighted mentions
+  const renderContent = (content: string, isOwn: boolean) => {
+    // Split on @username patterns and highlight them
+    const parts = content.split(/(@\w+(?:\s\w+)?)/g);
+    return parts.map((part, i) => {
+      if (part.startsWith('@')) {
+        return (
+          <span key={i} className={cn("font-semibold", isOwn ? "text-primary-foreground" : "text-primary")}>
+            {part}
+          </span>
+        );
+      }
+      return part;
+    });
   };
 
   // Group comments: parent comments with their replies
@@ -212,7 +364,7 @@ export function WorkOrderComments({ workOrderId, workOrderItemId, currentStepNum
                 </span>
               </div>
               <p className={cn("text-sm break-words whitespace-pre-wrap", isOwn ? "text-primary-foreground" : "text-foreground")}>
-                {comment.content}
+                {renderContent(comment.content, isOwn)}
               </p>
             </div>
             
@@ -308,29 +460,61 @@ export function WorkOrderComments({ workOrderId, workOrderItemId, currentStepNum
           </div>
         )}
 
-        {/* Input */}
-        <div className="flex gap-2">
-          <Input
-            ref={inputRef}
-            value={newComment}
-            onChange={(e) => setNewComment(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={language === 'nl' ? 'Schrijf een opmerking...' : 'Write a comment...'}
-            className="flex-1 h-10 text-sm"
-            disabled={submitting}
-          />
-          <Button
-            onClick={handleSubmit}
-            disabled={!newComment.trim() || submitting}
-            size="icon"
-            className="h-10 w-10 shrink-0"
-          >
-            {submitting ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Send className="h-4 w-4" />
-            )}
-          </Button>
+        {/* Input with mention dropdown */}
+        <div className="relative">
+          {/* Mention autocomplete */}
+          {showMentions && filteredMembers.length > 0 && (
+            <div className="absolute bottom-full left-0 right-0 mb-1 bg-popover border rounded-lg shadow-lg overflow-hidden z-50">
+              {filteredMembers.map((member, idx) => (
+                <button
+                  key={member.id}
+                  type="button"
+                  className={cn(
+                    "w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-accent transition-colors",
+                    idx === mentionIndex && "bg-accent"
+                  )}
+                  onClick={() => insertMention(member)}
+                  onMouseEnter={() => setMentionIndex(idx)}
+                >
+                  <Avatar className="h-6 w-6">
+                    <AvatarImage src={member.avatar_url || undefined} />
+                    <AvatarFallback className="text-[10px] bg-muted">
+                      {getInitials(member.full_name)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="truncate">{member.full_name}</span>
+                </button>
+              ))}
+              <div className="px-3 py-1.5 text-[10px] text-muted-foreground border-t bg-muted/50">
+                {language === 'nl' ? '↑↓ navigeer • Enter selecteer' : '↑↓ navigate • Enter select'}
+              </div>
+            </div>
+          )}
+          
+          <div className="flex gap-2">
+            <Input
+              ref={inputRef}
+              value={formatContentForDisplay(newComment)}
+              onChange={handleInputChange}
+              onKeyDown={handleKeyDown}
+              onBlur={() => setTimeout(() => setShowMentions(false), 150)}
+              placeholder={language === 'nl' ? 'Schrijf een opmerking... Typ @ om iemand te noemen' : 'Write a comment... Type @ to mention someone'}
+              className="flex-1 h-10 text-sm"
+              disabled={submitting}
+            />
+            <Button
+              onClick={handleSubmit}
+              disabled={!newComment.trim() || submitting}
+              size="icon"
+              className="h-10 w-10 shrink-0"
+            >
+              {submitting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
+            </Button>
+          </div>
         </div>
       </CardContent>
     </Card>
