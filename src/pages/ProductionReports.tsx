@@ -210,24 +210,27 @@ const ProductionReports = () => {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <PageHeader title={t('productionReports')} description={t('viewAnalyzeProduction')} />
               <div className="flex items-center gap-2">
-                <div className="flex border rounded-lg overflow-hidden">
-                  <Button
-                    variant={viewMode === 'cards' ? 'secondary' : 'ghost'}
-                    size="sm"
-                    className="rounded-none"
-                    onClick={() => setViewMode('cards')}
-                  >
-                    <LayoutGrid className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant={viewMode === 'table' ? 'secondary' : 'ghost'}
-                    size="sm"
-                    className="rounded-none"
-                    onClick={() => setViewMode('table')}
-                  >
-                    <List className="h-4 w-4" />
-                  </Button>
-                </div>
+                {/* Only show view toggle when not in master-detail mode */}
+                {!selectedReportId && !isMobile && (
+                  <div className="flex border rounded-lg overflow-hidden">
+                    <Button
+                      variant={viewMode === 'cards' ? 'secondary' : 'ghost'}
+                      size="sm"
+                      className="rounded-none"
+                      onClick={() => setViewMode('cards')}
+                    >
+                      <LayoutGrid className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant={viewMode === 'table' ? 'secondary' : 'ghost'}
+                      size="sm"
+                      className="rounded-none"
+                      onClick={() => setViewMode('table')}
+                    >
+                      <List className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
                 {(isStale || error) && (
                   <Button variant="outline" size="sm" onClick={refetch}>
                     {error && <AlertCircle className="h-4 w-4 mr-1 text-destructive" />}
