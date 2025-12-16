@@ -5,16 +5,16 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Loader2, Factory, UserPlus, Mail, ArrowLeft, CheckCircle2, KeyRound, Eye, EyeOff } from 'lucide-react';
+import { Loader2, UserPlus, Mail, ArrowLeft, CheckCircle2, Eye, EyeOff, Globe } from 'lucide-react';
 import { loginSchema, signupSchema, rhosonicsEmailSchema, verificationCodeSchema, passwordResetSchema } from '@/lib/validation';
 import { supabase } from '@/integrations/supabase/client';
 import { VerificationCodeInput } from '@/components/auth/VerificationCodeInput';
 import { PasswordStrengthIndicator, isPasswordValid } from '@/components/auth/PasswordStrengthIndicator';
-
+import { RhosonicsLogo } from '@/components/RhosonicsLogo';
 interface InviteData {
   email: string;
   role: string;
@@ -498,7 +498,7 @@ const Auth = () => {
           <div className="space-y-6">
             <div className="text-center space-y-2">
               <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
-                <KeyRound className="h-8 w-8 text-primary" />
+                <Mail className="h-8 w-8 text-primary" />
               </div>
               <h2 className="text-xl font-semibold text-foreground">Reset Password</h2>
               <p className="text-sm text-muted-foreground">
@@ -550,7 +550,7 @@ const Auth = () => {
           <div className="space-y-6">
             <div className="text-center space-y-2">
               <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
-                <KeyRound className="h-8 w-8 text-primary" />
+                <CheckCircle2 className="h-8 w-8 text-primary" />
               </div>
               <h2 className="text-xl font-semibold text-foreground">Set New Password</h2>
               <p className="text-sm text-muted-foreground">
@@ -768,60 +768,163 @@ const Auth = () => {
   const showTabs = view === 'login' || view === 'signup';
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-muted/30 p-4">
-      <Card className="w-full max-w-md shadow-2xl border-2">
-        <CardHeader className="space-y-3 text-center">
-          <div className="flex justify-center mb-4">
-            <div className="h-12 w-12 md:h-14 md:w-14 rounded-lg bg-primary flex items-center justify-center shadow-sm">
-              <Factory className="h-6 w-6 md:h-7 md:w-7 text-primary-foreground" />
+    <div className="min-h-screen w-full flex items-center justify-center relative overflow-hidden">
+      {/* Animated gradient background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900" />
+      
+      {/* Animated background elements */}
+      <div className="absolute inset-0 overflow-hidden">
+        {/* Large glow orb */}
+        <div className="absolute -top-40 -right-40 w-96 h-96 bg-primary/20 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-primary/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+        
+        {/* Floating arcs - brand element */}
+        <svg className="absolute top-1/4 right-10 w-32 h-32 opacity-10 animate-float" viewBox="0 0 80 80">
+          <path d="M 80 60 L 80 49 A 31 31 0 0 0 49 80 L 60 80 A 20 20 0 0 1 80 60 Z" fill="currentColor" className="text-primary" />
+          <path d="M 80 41 L 80 30 A 50 50 0 0 0 30 80 L 41 80 A 39 39 0 0 1 80 41 Z" fill="currentColor" className="text-primary" opacity="0.7" />
+          <path d="M 80 22 L 80 11 A 69 69 0 0 0 11 80 L 22 80 A 58 58 0 0 1 80 22 Z" fill="currentColor" className="text-primary" opacity="0.4" />
+        </svg>
+        
+        <svg className="absolute bottom-1/4 left-10 w-24 h-24 opacity-10 animate-float" style={{ animationDelay: '2s' }} viewBox="0 0 80 80">
+          <path d="M 80 60 L 80 49 A 31 31 0 0 0 49 80 L 60 80 A 20 20 0 0 1 80 60 Z" fill="currentColor" className="text-primary" />
+          <path d="M 80 41 L 80 30 A 50 50 0 0 0 30 80 L 41 80 A 39 39 0 0 1 80 41 Z" fill="currentColor" className="text-primary" opacity="0.7" />
+        </svg>
+        
+        {/* Grid pattern overlay */}
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:64px_64px]" />
+      </div>
+
+      {/* Content */}
+      <div className="relative z-10 w-full max-w-md mx-4 animate-fade-in">
+        <Card className="border-white/10 bg-white/5 backdrop-blur-xl shadow-2xl">
+          <CardHeader className="space-y-6 text-center pb-2">
+            {/* Logo */}
+            <div className="flex flex-col items-center gap-4">
+              <div className="relative">
+                <div className="absolute inset-0 bg-primary/30 blur-xl rounded-full scale-150" />
+                <div className="relative p-4 rounded-2xl bg-gradient-to-br from-primary to-primary/80 shadow-lg shadow-primary/25">
+                  <RhosonicsLogo size={48} className="text-white" />
+                </div>
+              </div>
+              
+              <div className="space-y-1">
+                <h1 className="text-3xl md:text-4xl font-logo text-white lowercase tracking-tight">
+                  rhosonics
+                </h1>
+                <p className="text-xs md:text-sm font-data uppercase tracking-[0.2em] text-white/50">
+                  Production System
+                </p>
+              </div>
             </div>
-          </div>
-          <CardTitle className="text-2xl md:text-3xl font-logo text-foreground lowercase">rhosonics</CardTitle>
-          <CardDescription className="text-xs md:text-sm uppercase tracking-wider text-muted-foreground">
-            MES Production System
-          </CardDescription>
-          {inviteData && view === 'signup' && (
-            <div className="flex items-center justify-center gap-2 p-2 bg-primary/10 rounded-lg">
-              <UserPlus className="h-4 w-4 text-primary" />
-              <span className="text-sm text-primary font-medium">
-                Invited as {inviteData.role}
+
+            {inviteData && view === 'signup' && (
+              <div className="flex items-center justify-center gap-2 p-3 bg-primary/20 border border-primary/30 rounded-xl">
+                <UserPlus className="h-4 w-4 text-primary" />
+                <span className="text-sm text-primary font-medium">
+                  Invited as {inviteData.role}
+                </span>
+              </div>
+            )}
+          </CardHeader>
+          
+          <CardContent className="pt-2">
+            {showTabs ? (
+              <Tabs value={view === 'signup' ? 'signup' : 'login'} onValueChange={(v) => setView(v as AuthView)} className="w-full">
+                <TabsList className="grid w-full grid-cols-2 h-12 bg-white/5 border border-white/10 p-1">
+                  <TabsTrigger 
+                    value="login" 
+                    className="font-data text-sm uppercase tracking-wider text-white/60 data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg"
+                  >
+                    {t('login')}
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="signup" 
+                    className="font-data text-sm uppercase tracking-wider text-white/60 data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg"
+                  >
+                    {t('signup')}
+                  </TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="login" className="mt-6">
+                  <div className="auth-form-dark">
+                    {renderContent()}
+                  </div>
+                </TabsContent>
+                
+                <TabsContent value="signup" className="mt-6">
+                  <div className="auth-form-dark">
+                    {renderContent()}
+                  </div>
+                </TabsContent>
+              </Tabs>
+            ) : (
+              <div className="mt-2 auth-form-dark">
+                {renderContent()}
+              </div>
+            )}
+          </CardContent>
+          
+          <CardFooter className="flex justify-center pb-6 pt-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setLanguage(language === 'en' ? 'nl' : 'en')}
+              className="text-white/40 hover:text-white/80 hover:bg-white/5 gap-2"
+            >
+              <Globe className="h-4 w-4" />
+              <span className="font-data text-xs uppercase tracking-wider">
+                {language === 'en' ? 'Nederlands' : 'English'}
               </span>
-            </div>
-          )}
-        </CardHeader>
-        <CardContent>
-          {showTabs ? (
-            <Tabs value={view === 'signup' ? 'signup' : 'login'} onValueChange={(v) => setView(v as AuthView)} className="w-full">
-              <TabsList className="grid w-full grid-cols-2 h-10 md:h-11">
-                <TabsTrigger value="login" className="font-data text-xs md:text-sm uppercase">{t('login')}</TabsTrigger>
-                <TabsTrigger value="signup" className="font-data text-xs md:text-sm uppercase">{t('signup')}</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="login" className="mt-6">
-                {renderContent()}
-              </TabsContent>
-              
-              <TabsContent value="signup" className="mt-6">
-                {renderContent()}
-              </TabsContent>
-            </Tabs>
-          ) : (
-            <div className="mt-2">
-              {renderContent()}
-            </div>
-          )}
-        </CardContent>
-        <CardFooter className="flex justify-center">
-          <Button
-            variant="ghost"
-            size="lg"
-            onClick={() => setLanguage(language === 'en' ? 'nl' : 'en')}
-            className="font-data text-sm uppercase tracking-wider"
-          >
-            {language === 'en' ? 'Nederlands' : 'English'}
-          </Button>
-        </CardFooter>
-      </Card>
+            </Button>
+          </CardFooter>
+        </Card>
+        
+        {/* Footer text */}
+        <p className="text-center text-white/30 text-xs mt-6 font-data">
+          © {new Date().getFullYear()} Rhosonics B.V.
+        </p>
+      </div>
+      
+      {/* CSS for floating animation */}
+      <style>{`
+        @keyframes float {
+          0%, 100% { transform: translateY(0) rotate(0deg); }
+          50% { transform: translateY(-20px) rotate(5deg); }
+        }
+        .animate-float {
+          animation: float 8s ease-in-out infinite;
+        }
+        .auth-form-dark label {
+          color: rgba(255, 255, 255, 0.7) !important;
+        }
+        .auth-form-dark input {
+          background: rgba(255, 255, 255, 0.05) !important;
+          border-color: rgba(255, 255, 255, 0.1) !important;
+          color: white !important;
+        }
+        .auth-form-dark input::placeholder {
+          color: rgba(255, 255, 255, 0.3) !important;
+        }
+        .auth-form-dark input:focus {
+          border-color: hsl(var(--primary)) !important;
+          box-shadow: 0 0 0 2px hsl(var(--primary) / 0.2) !important;
+        }
+        .auth-form-dark .text-foreground {
+          color: white !important;
+        }
+        .auth-form-dark .text-muted-foreground {
+          color: rgba(255, 255, 255, 0.5) !important;
+        }
+        .auth-form-dark .text-destructive {
+          color: hsl(0 84% 60%) !important;
+        }
+        .auth-form-dark select,
+        .auth-form-dark [data-radix-select-trigger] {
+          background: rgba(255, 255, 255, 0.05) !important;
+          border-color: rgba(255, 255, 255, 0.1) !important;
+          color: white !important;
+        }
+      `}</style>
     </div>
   );
 };
