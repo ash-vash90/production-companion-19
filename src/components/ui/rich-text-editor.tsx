@@ -58,13 +58,14 @@ import {
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 
-interface RichTextEditorProps {
+export interface RichTextEditorProps {
   content: string;
   onChange: (html: string) => void;
   placeholder?: string;
   disabled?: boolean;
   onImageUpload?: (file: File) => Promise<string>;
   minHeight?: string;
+  onBlur?: () => void;
 }
 
 // Toolbar Button Component
@@ -494,6 +495,7 @@ export function RichTextEditor({
   disabled = false,
   onImageUpload,
   minHeight = '200px',
+  onBlur,
 }: RichTextEditorProps) {
   const editor = useEditor({
     extensions: [
@@ -534,6 +536,9 @@ export function RichTextEditor({
     editable: !disabled,
     onUpdate: ({ editor }) => {
       onChange(editor.getHTML());
+    },
+    onBlur: () => {
+      onBlur?.();
     },
   });
 
