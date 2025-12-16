@@ -124,7 +124,7 @@ const AnimatedRoutes = () => {
   const key = `${location.pathname}${location.search}${location.hash}`;
 
   return (
-    <div key={key} className="animate-fade-in w-full">
+    <div key={key} className="animate-page-enter w-full">
       <Routes location={location}>
         <Route path="/auth" element={<Auth />} />
         <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
