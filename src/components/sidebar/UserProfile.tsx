@@ -13,6 +13,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Settings, LogOut, ChevronUp } from 'lucide-react';
 import { useSidebar } from '@/components/ui/sidebar';
+import { TeamBadgeList } from '@/components/TeamBadge';
+import { useUserTeams } from '@/hooks/useUserTeams';
 
 export function UserProfile() {
   const { user, signOut } = useAuth();
@@ -21,6 +23,8 @@ export function UserProfile() {
   const navigate = useNavigate();
   const { state } = useSidebar();
   const isCollapsed = state === 'collapsed';
+  
+  const { teams } = useUserTeams(user?.id);
 
   const getInitials = (name: string) => {
     return name
@@ -57,7 +61,11 @@ export function UserProfile() {
             <>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium truncate">{displayName}</p>
-                <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                {teams.length > 0 ? (
+                  <TeamBadgeList teams={teams} size="sm" maxDisplay={1} className="mt-0.5" />
+                ) : (
+                  <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                )}
               </div>
               <ChevronUp className="h-4 w-4 text-muted-foreground shrink-0" />
             </>
