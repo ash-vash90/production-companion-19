@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -25,6 +25,15 @@ import {
 } from '@dnd-kit/core';
 import ProductAssignmentSheet from '@/components/workorders/ProductAssignmentSheet';
 import { useIsMobile } from '@/hooks/use-mobile';
+
+// Product type colors for breakdown badges
+const productTypeColors: Record<string, string> = {
+  SDM_ECO: 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border-emerald-500/30',
+  SENSOR: 'bg-sky-500/20 text-sky-700 dark:text-sky-400 border-sky-500/30',
+  MLA: 'bg-amber-500/20 text-amber-700 dark:text-amber-400 border-amber-500/30',
+  HMI: 'bg-purple-500/20 text-purple-700 dark:text-purple-400 border-purple-500/30',
+  TRANSMITTER: 'bg-rose-500/20 text-rose-700 dark:text-rose-400 border-rose-500/30',
+};
 
 interface Operator {
   id: string;
@@ -198,7 +207,7 @@ const DroppableCell: React.FC<DroppableCellProps> = ({ operatorId, date, childre
   );
 };
 
-// Mobile droppable operator card
+// Mobile droppable operator card with product type breakdown
 const DroppableOperatorCard: React.FC<{
   operator: Operator;
   date: Date;
@@ -219,10 +228,16 @@ const DroppableOperatorCard: React.FC<{
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };
 
-  const totalItems = assignments.reduce((sum, a) => {
+  // Calculate product type breakdown
+  const productBreakdown = assignments.reduce((acc, a) => {
     const wo = workOrders.get(a.work_order_id);
-    return sum + (wo?.batch_size || 0);
-  }, 0);
+    if (wo) {
+      acc[wo.product_type] = (acc[wo.product_type] || 0) + wo.batch_size;
+    }
+    return acc;
+  }, {} as Record<string, number>);
+
+  const totalItems = Object.values(productBreakdown).reduce((sum, count) => sum + count, 0);
 
   return (
     <div
@@ -260,6 +275,24 @@ const DroppableOperatorCard: React.FC<{
         </div>
       </div>
 
+      {/* Product type breakdown badges */}
+      {!isUnavailable && Object.keys(productBreakdown).length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mb-3">
+          {Object.entries(productBreakdown).map(([type, count]) => (
+            <Badge 
+              key={type} 
+              variant="outline" 
+              className={cn(
+                "text-[10px] px-2 py-0.5 font-mono",
+                productTypeColors[type] || 'bg-muted'
+              )}
+            >
+              {count}× {formatProductType(type)}
+            </Badge>
+          ))}
+        </div>
+      )}
+
       {!isUnavailable && (
         <div className="space-y-2">
           {assignments.map(assignment => {
@@ -281,6 +314,58 @@ const DroppableOperatorCard: React.FC<{
           )}
         </div>
       )}
+    </div>
+  );
+};
+
+// Swipe gesture container for mobile day navigation
+const SwipeContainer: React.FC<{
+  children: React.ReactNode;
+  onSwipeLeft: () => void;
+  onSwipeRight: () => void;
+}> = ({ children, onSwipeLeft, onSwipeRight }) => {
+  const touchStartX = useRef<number | null>(null);
+  const touchStartY = useRef<number | null>(null);
+  const touchStartTime = useRef<number | null>(null);
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+    touchStartTime.current = Date.now();
+  }, []);
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (touchStartX.current === null || touchStartY.current === null || touchStartTime.current === null) return;
+
+    const touchEndX = e.changedTouches[0].clientX;
+    const touchEndY = e.changedTouches[0].clientY;
+    const deltaX = touchEndX - touchStartX.current;
+    const deltaY = touchEndY - touchStartY.current;
+    const duration = Date.now() - touchStartTime.current;
+
+    // Only trigger if horizontal swipe is dominant, distance > 50px, and duration < 500ms
+    if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 50 && duration < 500) {
+      if (deltaX > 0) {
+        onSwipeRight();
+        navigator.vibrate?.(10);
+      } else {
+        onSwipeLeft();
+        navigator.vibrate?.(10);
+      }
+    }
+
+    touchStartX.current = null;
+    touchStartY.current = null;
+    touchStartTime.current = null;
+  }, [onSwipeLeft, onSwipeRight]);
+
+  return (
+    <div 
+      onTouchStart={handleTouchStart} 
+      onTouchEnd={handleTouchEnd}
+      className="touch-pan-y"
+    >
+      {children}
     </div>
   );
 };
@@ -607,6 +692,15 @@ const WeeklyCapacityPlanner: React.FC = () => {
       a => a.assigned_date === format(currentMobileDate, 'yyyy-MM-dd')
     );
 
+    // Calculate product type breakdown for day summary
+    const dayProductBreakdown = dayAssignments.reduce((acc, a) => {
+      const wo = workOrders.get(a.work_order_id);
+      if (wo) {
+        acc[wo.product_type] = (acc[wo.product_type] || 0) + wo.batch_size;
+      }
+      return acc;
+    }, {} as Record<string, number>);
+
     return (
       <>
         <DndContext
@@ -614,95 +708,111 @@ const WeeklyCapacityPlanner: React.FC = () => {
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
         >
-          <div className="space-y-3">
-            {/* Compact Header */}
-            <div className="flex items-center justify-between gap-2 px-1">
-              <div className="flex items-center gap-1">
-                <Button variant="ghost" size="icon" className="h-10 w-10" onClick={goToPrevDay}>
-                  <ChevronLeft className="h-5 w-5" />
-                </Button>
-                <div className="text-center min-w-[140px]">
-                  <p className={cn(
-                    "text-lg font-semibold",
-                    isToday && "text-primary"
-                  )}>
-                    {format(currentMobileDate, 'EEEE')}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    {format(currentMobileDate, 'MMM d, yyyy')}
-                  </p>
-                </div>
-                <Button variant="ghost" size="icon" className="h-10 w-10" onClick={goToNextDay}>
-                  <ChevronRight className="h-5 w-5" />
-                </Button>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="h-10 px-3 text-xs"
-                  onClick={goToToday}
-                >
-                  {language === 'nl' ? 'Vandaag' : 'Today'}
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-10 px-3 text-xs relative"
-                  onClick={() => setMobileSidebarOpen(true)}
-                >
-                  <Package className="h-4 w-4" />
-                  {unassignedOrders.length > 0 && (
-                    <Badge 
-                      variant="destructive" 
-                      className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center text-[10px]"
-                    >
-                      {unassignedOrders.length}
-                    </Badge>
-                  )}
-                </Button>
-              </div>
-            </div>
-
-            {/* Day summary */}
-            <div className="flex items-center justify-center gap-4 text-sm text-muted-foreground">
-              <span>{dayAssignments.length} {language === 'nl' ? 'orders' : 'orders'}</span>
-              <span>·</span>
-              <span>
-                {dayAssignments.reduce((sum, a) => {
-                  const wo = workOrders.get(a.work_order_id);
-                  return sum + (wo?.batch_size || 0);
-                }, 0)} items
-              </span>
-            </div>
-
-            {/* Operators List */}
+          <SwipeContainer onSwipeLeft={goToNextDay} onSwipeRight={goToPrevDay}>
             <div className="space-y-3">
-              {operators.map(operator => (
-                <DroppableOperatorCard
-                  key={operator.id}
-                  operator={operator}
-                  date={currentMobileDate}
-                  assignments={getAssignmentsForCell(operator.id, currentMobileDate)}
-                  workOrders={workOrders}
-                  availability={getAvailability(operator.id, currentMobileDate)}
-                  onWorkOrderTap={handleWorkOrderTap}
-                  language={language}
-                />
-              ))}
-
-              {operators.length === 0 && (
-                <div className="p-8 text-center text-muted-foreground border rounded-lg">
-                  <p className="text-sm">
-                    {language === 'nl' 
-                      ? 'Geen operators in het productieteam' 
-                      : 'No operators in production team'}
-                  </p>
+              {/* Compact Header */}
+              <div className="flex items-center justify-between gap-2 px-1">
+                <div className="flex items-center gap-1">
+                  <Button variant="ghost" size="icon" className="h-10 w-10" onClick={goToPrevDay}>
+                    <ChevronLeft className="h-5 w-5" />
+                  </Button>
+                  <div className="text-center min-w-[140px]">
+                    <p className={cn(
+                      "text-lg font-semibold",
+                      isToday && "text-primary"
+                    )}>
+                      {format(currentMobileDate, 'EEEE')}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {format(currentMobileDate, 'MMM d, yyyy')}
+                    </p>
+                  </div>
+                  <Button variant="ghost" size="icon" className="h-10 w-10" onClick={goToNextDay}>
+                    <ChevronRight className="h-5 w-5" />
+                  </Button>
                 </div>
-              )}
+
+                <div className="flex items-center gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="h-10 px-3 text-xs"
+                    onClick={goToToday}
+                  >
+                    {language === 'nl' ? 'Vandaag' : 'Today'}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-10 px-3 text-xs relative"
+                    onClick={() => setMobileSidebarOpen(true)}
+                  >
+                    <Package className="h-4 w-4" />
+                    {unassignedOrders.length > 0 && (
+                      <Badge 
+                        variant="destructive" 
+                        className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center text-[10px]"
+                      >
+                        {unassignedOrders.length}
+                      </Badge>
+                    )}
+                  </Button>
+                </div>
+              </div>
+
+              {/* Day summary with product breakdown */}
+              <div className="flex flex-wrap items-center justify-center gap-2 text-sm">
+                <span className="text-muted-foreground">
+                  {dayAssignments.length} {language === 'nl' ? 'orders' : 'orders'}
+                </span>
+                {Object.keys(dayProductBreakdown).length > 0 && (
+                  <>
+                    <span className="text-muted-foreground">·</span>
+                    <div className="flex flex-wrap gap-1">
+                      {Object.entries(dayProductBreakdown).map(([type, count]) => (
+                        <Badge 
+                          key={type} 
+                          variant="outline" 
+                          className={cn(
+                            "text-[10px] px-1.5 py-0 font-mono",
+                            productTypeColors[type] || 'bg-muted'
+                          )}
+                        >
+                          {count}× {formatProductType(type)}
+                        </Badge>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Operators List */}
+              <div className="space-y-3">
+                {operators.map(operator => (
+                  <DroppableOperatorCard
+                    key={operator.id}
+                    operator={operator}
+                    date={currentMobileDate}
+                    assignments={getAssignmentsForCell(operator.id, currentMobileDate)}
+                    workOrders={workOrders}
+                    availability={getAvailability(operator.id, currentMobileDate)}
+                    onWorkOrderTap={handleWorkOrderTap}
+                    language={language}
+                  />
+                ))}
+
+                {operators.length === 0 && (
+                  <div className="p-8 text-center text-muted-foreground border rounded-lg">
+                    <p className="text-sm">
+                      {language === 'nl' 
+                        ? 'Geen operators in het productieteam' 
+                        : 'No operators in production team'}
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
+          </SwipeContainer>
 
           <DragOverlay>
             {activeWorkOrder && (
