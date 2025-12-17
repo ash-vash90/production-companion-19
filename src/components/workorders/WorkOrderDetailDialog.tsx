@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -9,8 +9,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { formatDate, formatProductType } from '@/lib/utils';
+import { formatDate, formatProductType, cn } from '@/lib/utils';
 import { WorkOrderStatusBadge } from './WorkOrderStatusBadge';
+import ItemLevelAssignmentPanel from './ItemLevelAssignmentPanel';
 import StepAssignmentPanel from './StepAssignmentPanel';
 import CapacityUtilizationChart from './CapacityUtilizationChart';
 import { Package, Calendar, Truck, DollarSign, Play, Loader2, AlertTriangle, Users, FileText, BarChart3, CalendarClock } from 'lucide-react';
@@ -47,7 +48,7 @@ const WorkOrderDetailDialog: React.FC<WorkOrderDetailDialogProps> = ({
   onStatusChange,
 }) => {
   const navigate = useNavigate();
-  const { t, language } = useLanguage();
+  const { language } = useLanguage();
   const [workOrder, setWorkOrder] = useState<WorkOrderDetail | null>(null);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'assignment' | 'capacity'>('overview');
@@ -60,7 +61,7 @@ const WorkOrderDetailDialog: React.FC<WorkOrderDetailDialogProps> = ({
 
   const fetchWorkOrder = async () => {
     if (!workOrderId) return;
-    
+
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -84,7 +85,7 @@ const WorkOrderDetailDialog: React.FC<WorkOrderDetailDialogProps> = ({
   const getProgressData = () => {
     if (!workOrder?.work_order_items) return { percent: 0, completed: 0, total: 0 };
     const items = workOrder.work_order_items;
-    const completed = items.filter(i => i.status === 'completed').length;
+    const completed = items.filter((i) => i.status === 'completed').length;
     const total = items.length;
     const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
     return { percent, completed, total };
@@ -97,13 +98,12 @@ const WorkOrderDetailDialog: React.FC<WorkOrderDetailDialogProps> = ({
     navigate(`/production/${workOrder?.id}`);
   };
 
-  // Check if work order has no assignments
   const isUnassigned = !workOrder?.assigned_to;
   const isActiveWorkOrder = workOrder && workOrder.status !== 'completed' && workOrder.status !== 'cancelled';
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] p-0">
+      <DialogContent className={cn('p-0 max-h-[92vh]', 'w-[calc(100vw-1.5rem)] sm:w-full sm:max-w-2xl')}>
         {loading ? (
           <div className="flex justify-center items-center h-40">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -122,13 +122,12 @@ const WorkOrderDetailDialog: React.FC<WorkOrderDetailDialogProps> = ({
                     </Badge>
                   )}
                 </div>
-                
-                {/* Action Buttons */}
+
                 {isActiveWorkOrder && (
                   <div className="flex items-center gap-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
+                    <Button
+                      variant="outline"
+                      size="sm"
                       className="gap-1.5"
                       onClick={() => {
                         onOpenChange(false);
@@ -150,7 +149,11 @@ const WorkOrderDetailDialog: React.FC<WorkOrderDetailDialogProps> = ({
               </DialogDescription>
             </DialogHeader>
 
-            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'overview' | 'assignment' | 'capacity')} className="px-6">
+            <Tabs
+              value={activeTab}
+              onValueChange={(v) => setActiveTab(v as 'overview' | 'assignment' | 'capacity')}
+              className="px-6"
+            >
               <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="overview" className="gap-2">
                   <FileText className="h-4 w-4" />
@@ -167,27 +170,29 @@ const WorkOrderDetailDialog: React.FC<WorkOrderDetailDialogProps> = ({
               </TabsList>
             </Tabs>
 
-            <ScrollArea className="max-h-[calc(90vh-220px)]">
+            <ScrollArea className="max-h-[calc(92vh-220px)]">
               <div className="px-6 pb-6">
                 {activeTab === 'overview' ? (
                   <div className="space-y-5 pt-4">
-                    {/* Progress */}
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">{language === 'nl' ? 'Voortgang' : 'Progress'}</span>
-                        <span className="font-medium font-mono">{progress.completed}/{progress.total} ({progress.percent}%)</span>
+                        <span className="font-medium font-mono">
+                          {progress.completed}/{progress.total} ({progress.percent}%)
+                        </span>
                       </div>
                       <Progress value={progress.percent} className="h-2" />
                     </div>
 
-                    {/* Quick Info */}
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-1">
                         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                           <Package className="h-3.5 w-3.5" />
                           {language === 'nl' ? 'Producttype' : 'Product Type'}
                         </div>
-                        <Badge variant="outline" className="font-mono">{formatProductType(workOrder.product_type)}</Badge>
+                        <Badge variant="outline" className="font-mono">
+                          {formatProductType(workOrder.product_type)}
+                        </Badge>
                       </div>
                       <div className="space-y-1">
                         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -195,9 +200,7 @@ const WorkOrderDetailDialog: React.FC<WorkOrderDetailDialogProps> = ({
                           {language === 'nl' ? 'Orderwaarde' : 'Order Value'}
                         </div>
                         <p className="font-medium font-mono">
-                          {workOrder.order_value 
-                            ? `€${workOrder.order_value.toLocaleString('nl-NL')}` 
-                            : '-'}
+                          {workOrder.order_value ? `€${workOrder.order_value.toLocaleString('nl-NL')}` : '-'}
                         </p>
                       </div>
                       {workOrder.start_date && (
@@ -223,7 +226,9 @@ const WorkOrderDetailDialog: React.FC<WorkOrderDetailDialogProps> = ({
                     {workOrder.batch_size && (
                       <div className="text-sm">
                         <span className="text-muted-foreground">{language === 'nl' ? 'Batchgrootte' : 'Batch Size'}: </span>
-                        <span className="font-medium font-mono">{workOrder.batch_size} {language === 'nl' ? 'items' : 'items'}</span>
+                        <span className="font-medium font-mono">
+                          {workOrder.batch_size} {language === 'nl' ? 'items' : 'items'}
+                        </span>
                       </div>
                     )}
 
@@ -241,7 +246,6 @@ const WorkOrderDetailDialog: React.FC<WorkOrderDetailDialogProps> = ({
                       </div>
                     )}
 
-                    {/* Quick link to assignments if unassigned */}
                     {isUnassigned && isActiveWorkOrder && (
                       <>
                         <Separator />
@@ -253,15 +257,11 @@ const WorkOrderDetailDialog: React.FC<WorkOrderDetailDialogProps> = ({
                                 {language === 'nl' ? 'Werkorder is nog niet toegewezen' : 'Work order is not yet assigned'}
                               </p>
                               <p className="text-sm text-muted-foreground mt-1">
-                                {language === 'nl' 
-                                  ? 'Wijs operators toe aan productiestappen voor deze werkorder.'
-                                  : 'Assign operators to production steps for this work order.'}
+                                {language === 'nl'
+                                  ? 'Wijs operators toe aan items of stappen voor deze werkorder.'
+                                  : 'Assign operators to items or steps for this work order.'}
                               </p>
-                              <Button 
-                                size="sm" 
-                                className="mt-3 gap-1.5"
-                                onClick={() => setActiveTab('assignment')}
-                              >
+                              <Button size="sm" className="mt-3 gap-1.5" onClick={() => setActiveTab('assignment')}>
                                 <Users className="h-4 w-4" />
                                 {language === 'nl' ? 'Ga naar toewijzingen' : 'Go to Assignments'}
                               </Button>
@@ -272,7 +272,16 @@ const WorkOrderDetailDialog: React.FC<WorkOrderDetailDialogProps> = ({
                     )}
                   </div>
                 ) : activeTab === 'assignment' ? (
-                  <div className="pt-4">
+                  <div className="pt-4 space-y-4">
+                    <ItemLevelAssignmentPanel
+                      workOrderId={workOrder.id}
+                      scheduledDate={workOrder.scheduled_date || workOrder.start_date}
+                      onAssignmentChange={() => {
+                        fetchWorkOrder();
+                        onStatusChange?.();
+                      }}
+                    />
+
                     <StepAssignmentPanel
                       workOrderId={workOrder.id}
                       productType={workOrder.product_type}
@@ -286,9 +295,11 @@ const WorkOrderDetailDialog: React.FC<WorkOrderDetailDialogProps> = ({
                 ) : (
                   <div className="pt-4">
                     <CapacityUtilizationChart
-                      selectedDate={workOrder.scheduled_date || workOrder.start_date 
-                        ? new Date(workOrder.scheduled_date || workOrder.start_date!) 
-                        : new Date()}
+                      selectedDate={
+                        workOrder.scheduled_date || workOrder.start_date
+                          ? new Date(workOrder.scheduled_date || workOrder.start_date!)
+                          : new Date()
+                      }
                       workOrderId={workOrder.id}
                     />
                   </div>
@@ -307,3 +318,4 @@ const WorkOrderDetailDialog: React.FC<WorkOrderDetailDialogProps> = ({
 };
 
 export default WorkOrderDetailDialog;
+
