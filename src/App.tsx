@@ -4,11 +4,12 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation, useNavigate } from "react-router-dom";
-import { AuthProvider } from "./contexts/AuthContext";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import { UserProfileProvider } from "./contexts/UserProfileContext";
 import { initializePrefetch, cleanupPrefetch } from "./services/prefetchService";
 import ProtectedRoute from "./components/ProtectedRoute";
+import LoadingScreen from "./components/LoadingScreen";
 
 // Lazy load all pages - store imports for prefetching
 const pageImports = {
@@ -119,6 +120,17 @@ export const clearRouteRestoredFlag = () => {
   sessionStorage.removeItem(ROUTE_RESTORED_KEY);
 };
 
+// Auth gate that shows loading screen during auth initialization
+const AuthGate = ({ children }: { children: React.ReactNode }) => {
+  const { loading } = useAuth();
+  
+  if (loading) {
+    return <LoadingScreen />;
+  }
+  
+  return <>{children}</>;
+};
+
 const AnimatedRoutes = () => {
   const location = useLocation();
   const key = `${location.pathname}${location.search}${location.hash}`;
@@ -168,13 +180,15 @@ const App = () => {
           {/* Ensure we restore last route on hard refresh */}
           <RoutePersistence />
           <AuthProvider>
-            <LanguageProvider>
-              <UserProfileProvider>
-                <Suspense fallback={<PageLoader />}>
-                  <AnimatedRoutes />
-                </Suspense>
-              </UserProfileProvider>
-            </LanguageProvider>
+            <AuthGate>
+              <LanguageProvider>
+                <UserProfileProvider>
+                  <Suspense fallback={<PageLoader />}>
+                    <AnimatedRoutes />
+                  </Suspense>
+                </UserProfileProvider>
+              </LanguageProvider>
+            </AuthGate>
           </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>
