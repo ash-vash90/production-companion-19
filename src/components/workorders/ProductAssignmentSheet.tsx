@@ -160,6 +160,12 @@ const ProductAssignmentSheet: React.FC<ProductAssignmentSheetProps> = ({
         })
         .eq('id', workOrder.id);
 
+      // Apply to the whole batch (all items in the work order)
+      await supabase
+        .from('work_order_items')
+        .update({ assigned_to: selectedOperator })
+        .eq('work_order_id', workOrder.id);
+
       toast.success(language === 'nl' ? 'Werkorder toegewezen' : 'Work order assigned');
       onComplete?.();
     } catch (error: any) {

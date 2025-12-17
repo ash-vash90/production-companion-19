@@ -424,6 +424,12 @@ const WeeklyCapacityPlanner: React.FC = () => {
           .update({ start_date: newDate, assigned_to: newOperatorId })
           .eq('id', workOrder.id);
 
+        // Apply to the whole batch (all items in the work order)
+        await supabase
+          .from('work_order_items')
+          .update({ assigned_to: newOperatorId })
+          .eq('work_order_id', workOrder.id);
+
         // Update local state
         setAssignments(prev => [...prev, newAssignment]);
         setWorkOrders(prev => new Map(prev).set(workOrder.id, workOrder));
