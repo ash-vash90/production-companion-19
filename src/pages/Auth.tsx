@@ -143,9 +143,9 @@ const Auth = () => {
       const errorMessage = error.message === 'Invalid login credentials'
         ? 'Invalid email or password. Please try again.'
         : error.message;
-      toast.error(t('error'), { description: errorMessage });
+      toast.error('Login failed', { description: errorMessage });
     } else {
-      toast.success(t('success'), { description: 'Successfully logged in' });
+      toast.success('Welcome back', { description: 'Successfully logged in' });
       navigate(from, { replace: true });
     }
   };
@@ -164,7 +164,7 @@ const Auth = () => {
         }
       });
       setValidationErrors(errors);
-      toast.error(t('error'), { description: Object.values(errors)[0] });
+      toast.error('Validation error', { description: Object.values(errors)[0] });
       return;
     }
 
@@ -179,7 +179,7 @@ const Auth = () => {
       
       const data = response.data;
       if (!data.success) {
-        toast.error(t('error'), { description: data.error || 'Failed to send verification code' });
+        toast.error('Verification failed', { description: data.error || 'Failed to send verification code' });
         setLoading(false);
         return;
       }
@@ -187,10 +187,10 @@ const Auth = () => {
       setCodeExpiresAt(new Date(Date.now() + 10 * 60 * 1000));
       setVerificationCode('');
       setView('signup-verify');
-      toast.success(t('success'), { description: 'Verification code sent to your email' });
+      toast.success('Code sent', { description: 'Check your email for the verification code' });
     } catch (error: any) {
       console.error('Error sending verification code:', error);
-      toast.error(t('error'), { description: 'Failed to send verification code. Please try again.' });
+      toast.error('Verification failed', { description: 'Failed to send code. Please try again.' });
     }
     setLoading(false);
   };

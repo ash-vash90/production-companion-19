@@ -24,7 +24,7 @@ export function InviteUserDialog({ onInviteCreated }: InviteUserDialogProps) {
 
   const handleInvite = async () => {
     if (!email.trim()) {
-      toast.error(t('error'), { description: 'Email is required' });
+      toast.warning('Email required', { description: 'Please enter a valid email address' });
       return;
     }
 
@@ -38,11 +38,11 @@ export function InviteUserDialog({ onInviteCreated }: InviteUserDialogProps) {
       if (data.error) throw new Error(data.error);
 
       setInviteLink(data.invite.invite_link);
-      toast.success(t('success'), { description: `Invite created for ${email}` });
+      toast.success('Invite created', { description: `Invitation sent to ${email}` });
       onInviteCreated?.();
     } catch (error: any) {
       console.error('Invite error:', error);
-      toast.error(t('error'), { description: error.message || 'Failed to create invite' });
+      toast.error('Failed to create invite', { description: error.message || 'Please try again' });
     } finally {
       setLoading(false);
     }
@@ -54,10 +54,10 @@ export function InviteUserDialog({ onInviteCreated }: InviteUserDialogProps) {
     try {
       await navigator.clipboard.writeText(inviteLink);
       setCopied(true);
-      toast.success('Link copied to clipboard');
+      toast.success('Link copied', { description: 'Invite link copied to clipboard' });
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      toast.error('Failed to copy link');
+      toast.error('Copy failed', { description: 'Failed to copy link to clipboard' });
     }
   };
 

@@ -74,7 +74,7 @@ const ChecklistDialog: React.FC<ChecklistDialogProps> = ({
       }
     } catch (error) {
       console.error('Error fetching checklist items:', error);
-      toast.error('Error', { description: 'Failed to load checklist' });
+      toast.error('Failed to load checklist', { description: 'Please try again' });
     } finally {
       setLoading(false);
     }
@@ -91,7 +91,7 @@ const ChecklistDialog: React.FC<ChecklistDialogProps> = ({
       .every(item => responses[item.id] === true);
 
     if (!allRequiredChecked) {
-      toast.error('Error', { description: 'Please complete all required checklist items' });
+      toast.warning('Incomplete checklist', { description: 'Please check all required items before saving' });
       return;
     }
 
@@ -128,12 +128,13 @@ const ChecklistDialog: React.FC<ChecklistDialogProps> = ({
         details: { operator: userProfile?.full_name, items_checked: Object.values(responses).filter(Boolean).length },
       });
 
-      toast.success('Success', { description: 'Checklist saved successfully' });
+      const checkedCount = Object.values(responses).filter(Boolean).length;
+      toast.success('Checklist completed', { description: `${checkedCount} of ${checklistItems.length} items checked` });
       onComplete();
       onOpenChange(false);
     } catch (error: any) {
       console.error('Error saving checklist:', error);
-      toast.error('Error', { description: error.message });
+      toast.error('Failed to save checklist', { description: error.message });
     } finally {
       setSaving(false);
     }

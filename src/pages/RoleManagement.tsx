@@ -123,10 +123,11 @@ const RoleManagement = () => {
 
       // Re-fetch users to confirm the change persisted
       await fetchUsers();
-      toast.success(t('success'), { description: t('roleUpdated') });
+      const userName = users.find(u => u.id === userId)?.full_name || 'User';
+      toast.success('Role updated', { description: `${userName} is now ${newRole}` });
     } catch (error: any) {
       console.error('Error changing role:', error);
-      toast.error(t('error'), { description: error.message });
+      toast.error('Failed to update role', { description: error.message });
       await fetchUsers();
     }
   };
@@ -177,10 +178,10 @@ const RoleManagement = () => {
       });
       
       setUsers(prev => prev.filter(u => u.id !== userId));
-      toast.success(t('success'), { description: t('userDeleted') || 'User deleted' });
+      toast.success('User removed', { description: `${userName} has been deleted` });
     } catch (error: any) {
       console.error('Error deleting user:', error);
-      toast.error(t('error'), { description: error.message });
+      toast.error('Failed to delete user', { description: error.message });
     }
   };
 
