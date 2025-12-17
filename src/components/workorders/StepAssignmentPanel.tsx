@@ -124,14 +124,39 @@ const StepAssignmentPanel: React.FC<StepAssignmentPanelProps> = ({
         setWorkloads(workloadMap);
       }
 
-      // Load step assignments from localStorage
-      const storedAssignments = localStorage.getItem(getStorageKey(workOrderId));
-      if (storedAssignments) {
-        try {
-          const parsed = JSON.parse(storedAssignments);
-          setAssignments(new Map(Object.entries(parsed)));
-        } catch (e) {
-          console.error('Error parsing stored assignments:', e);
+      // Try to load step assignments from database first (if table exists)
+      // Note: step_assignments table may not exist yet - handle gracefully
+      let dbAssignmentsLoaded = false;
+      try {
+        const { data: dbAssignments, error: dbError } = await supabase
+          .from('step_assignments' as any)
+          .select('production_step_id, operator_id')
+          .eq('work_order_id', workOrderId);
+
+        if (!dbError && dbAssignments && dbAssignments.length > 0) {
+          // Use database assignments
+          const assignMap = new Map<string, string>();
+          dbAssignments.forEach((a: any) => {
+            assignMap.set(a.production_step_id, a.operator_id);
+          });
+          setAssignments(assignMap);
+          dbAssignmentsLoaded = true;
+        }
+      } catch (e) {
+        // Table doesn't exist yet, fall back to localStorage
+        console.log('step_assignments table not available, using localStorage');
+      }
+
+      if (!dbAssignmentsLoaded) {
+        // Fall back to localStorage for backward compatibility
+        const storedAssignments = localStorage.getItem(getStorageKey(workOrderId));
+        if (storedAssignments) {
+          try {
+            const parsed = JSON.parse(storedAssignments);
+            setAssignments(new Map(Object.entries(parsed)));
+          } catch (e) {
+            console.error('Error parsing stored assignments:', e);
+          }
         }
       }
 
@@ -143,12 +168,38 @@ const StepAssignmentPanel: React.FC<StepAssignmentPanelProps> = ({
   };
 
   const saveAssignments = async (newAssignments: Map<string, string>) => {
-    // Save to localStorage for step-level tracking
+    // Save to localStorage for backward compatibility
     const obj: Record<string, string> = {};
     newAssignments.forEach((value, key) => {
       obj[key] = value;
     });
     localStorage.setItem(getStorageKey(workOrderId), JSON.stringify(obj));
+    
+    // Try to save to database (if table exists)
+    try {
+      // Delete existing assignments
+      await supabase
+        .from('step_assignments' as any)
+        .delete()
+        .eq('work_order_id', workOrderId);
+
+      // Insert new assignments
+      if (newAssignments.size > 0) {
+        const records = Array.from(newAssignments.entries()).map(([stepId, operatorId]) => ({
+          work_order_id: workOrderId,
+          production_step_id: stepId,
+          operator_id: operatorId,
+          assigned_by: user?.id,
+        }));
+
+        await supabase
+          .from('step_assignments' as any)
+          .insert(records);
+      }
+    } catch (e) {
+      // Table doesn't exist yet, localStorage already saved
+      console.log('step_assignments table not available for persistence');
+    }
     
     // Sync unique operators to operator_assignments table
     await updateOperatorAssignmentsTable(newAssignments);
