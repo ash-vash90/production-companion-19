@@ -9,6 +9,8 @@ interface ResilientQueryOptions<T> {
   enabled?: boolean;
   refetchInterval?: number;
   onError?: (error: Error) => void;
+  // Key that triggers refetch when changed (similar to React Query's queryKey)
+  queryKey?: string;
 }
 
 interface ResilientQueryResult<T> {
@@ -36,6 +38,7 @@ export function useResilientQuery<T>({
   enabled = true,
   refetchInterval,
   onError,
+  queryKey,
 }: ResilientQueryOptions<T>): ResilientQueryResult<T> {
   const [data, setData] = useState<T | undefined>(fallbackData);
   const [loading, setLoading] = useState(enabled);
@@ -156,6 +159,9 @@ export function useResilientQuery<T>({
     }
   }, [executeQuery]);
 
+  // Track previous queryKey to detect changes
+  const prevQueryKeyRef = useRef(queryKey);
+
   useEffect(() => {
     isMountedRef.current = true;
     
@@ -184,6 +190,15 @@ export function useResilientQuery<T>({
       }
     };
   }, [enabled, refetchInterval, refetch]);
+
+  // Refetch when queryKey changes (but not on initial mount)
+  useEffect(() => {
+    if (prevQueryKeyRef.current !== queryKey && prevQueryKeyRef.current !== undefined) {
+      // Invalidate cache and refetch
+      refetch();
+    }
+    prevQueryKeyRef.current = queryKey;
+  }, [queryKey, refetch]);
 
   return { data, loading, error, refetch, isStale };
 }

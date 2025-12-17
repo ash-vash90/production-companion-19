@@ -2,6 +2,7 @@ import { useRef, useCallback, useMemo, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useResilientQuery } from './useResilientQuery';
 import { getProductBreakdown, ProductBreakdown } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
 
 // Global cache with size limit to prevent memory leaks
 const MAX_CACHE_SIZE = 10;
@@ -58,7 +59,10 @@ export function useWorkOrders(options: UseWorkOrdersOptions = {}) {
     enableRealtime = true 
   } = options;
   
-  const cacheKey = `workorders_${excludeCancelled}_${limit}_${statusFilter?.join(',')}`;
+  // Include user ID in cache key so data refetches on auth state change
+  const { user } = useAuth();
+  const userId = user?.id || 'anonymous';
+  const cacheKey = `workorders_${userId}_${excludeCancelled}_${limit}_${statusFilter?.join(',')}`;
   const realtimeChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -154,6 +158,7 @@ export function useWorkOrders(options: UseWorkOrdersOptions = {}) {
     fallbackData: [],
     timeout: 15000,
     retryCount: 3,
+    queryKey: cacheKey, // Refetch when user or filters change
   });
 
   // Auto-setup and cleanup realtime subscription
