@@ -1,6 +1,7 @@
 import { useCallback, useRef, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useResilientQuery } from './useResilientQuery';
+import { useAuth } from '@/contexts/AuthContext';
 
 // Global cache with size limit to prevent memory leaks
 const MAX_CACHE_SIZE = 20;
@@ -54,7 +55,10 @@ interface ProductionData {
  * Optimized hook for fetching production data with caching and resilience
  */
 export function useProduction(workOrderId: string | undefined) {
-  const cacheKey = `production_${workOrderId}`;
+  // Include user ID in cache key so data refetches on auth state change
+  const { user } = useAuth();
+  const userId = user?.id || 'anonymous';
+  const cacheKey = `production_${userId}_${workOrderId}`;
   const realtimeChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -102,6 +106,7 @@ export function useProduction(workOrderId: string | undefined) {
     timeout: 12000,
     retryCount: 3,
     enabled: !!workOrderId,
+    queryKey: cacheKey, // Refetch when user or workOrderId changes
   });
 
   // Auto-setup and cleanup realtime subscription
