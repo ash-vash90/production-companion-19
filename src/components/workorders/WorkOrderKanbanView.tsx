@@ -184,10 +184,21 @@ function KanbanCard({ workOrder }: KanbanCardProps) {
           )}
         </div>
 
-        {/* Progress */}
-        <div className="flex items-center gap-2">
-          <Progress value={workOrder.progressPercent || 0} className="h-1.5 flex-1" />
-          <span className="text-xs text-muted-foreground font-medium">{workOrder.progressPercent || 0}%</span>
+        {/* Price + Progress */}
+        <div className="flex items-center justify-between gap-4">
+          <div className="shrink-0">
+            {workOrder.order_value ? (
+              <span className="text-sm font-semibold text-foreground">
+                €{workOrder.order_value.toLocaleString('nl-NL')}
+              </span>
+            ) : (
+              <span className="text-sm text-muted-foreground">-</span>
+            )}
+          </div>
+          <div className="flex-1 flex items-center gap-2">
+            <Progress value={workOrder.progressPercent || 0} className="h-1.5 flex-1" />
+            <span className="text-xs text-muted-foreground font-medium">{workOrder.progressPercent || 0}%</span>
+          </div>
         </div>
       </div>
     </div>

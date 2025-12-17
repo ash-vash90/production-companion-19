@@ -25,11 +25,12 @@ import { PullToRefresh } from '@/components/PullToRefresh';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Plus, Package, RotateCcw, LayoutGrid, List, ChevronDown, ChevronRight, Columns } from 'lucide-react';
+import { Plus, Package, RotateCcw, LayoutGrid, List, ChevronDown, ChevronRight, Columns, CheckSquare, Square } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format, differenceInDays, parseISO } from 'date-fns';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { useDebounce } from '@/hooks/useDebounce';
 
 // Type alias for backwards compatibility
 type WorkOrderWithItems = WorkOrderListItem;
@@ -53,6 +54,14 @@ const VIEWMODE_STORAGE_KEY = 'workorders_viewmode';
 
 type ViewMode = 'cards' | 'table' | 'kanban';
 
+interface ViewPreferences {
+  work_orders?: {
+    viewMode?: ViewMode;
+    groupBy?: GroupByOption;
+    filters?: FilterState;
+  };
+}
+
 const WorkOrders = () => {
   const { user } = useAuth();
   const { t, language } = useLanguage();
@@ -64,6 +73,7 @@ const WorkOrders = () => {
   const [cancellingWorkOrders, setCancellingWorkOrders] = useState<Array<{ id: string; wo_number: string }>>([]);
   const [isCancelling, setIsCancelling] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [prefsLoaded, setPrefsLoaded] = useState(false);
   
   // Use the resilient work orders hook - disable realtime to reduce memory/subscriptions
   const { workOrders, loading, error, refetch } = useWorkOrders({
@@ -78,7 +88,7 @@ const WorkOrders = () => {
     return () => { isMountedRef.current = false; };
   }, []);
   
-  // Load persisted filters from sessionStorage
+  // Load persisted filters from sessionStorage (fallback)
   const [filters, setFilters] = useState<FilterState>(() => {
     try {
       const saved = sessionStorage.getItem(FILTERS_STORAGE_KEY);
@@ -88,7 +98,7 @@ const WorkOrders = () => {
     }
   });
   
-  // Load persisted groupBy from sessionStorage
+  // Load persisted groupBy from sessionStorage (fallback)
   const [groupBy, setGroupBy] = useState<GroupByOption>(() => {
     try {
       const saved = sessionStorage.getItem(GROUPBY_STORAGE_KEY);
@@ -98,7 +108,7 @@ const WorkOrders = () => {
     }
   });
   
-  // Load persisted viewMode from localStorage (perpetual)
+  // Load persisted viewMode from localStorage (fallback)
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     try {
       const saved = localStorage.getItem(VIEWMODE_STORAGE_KEY);
@@ -110,17 +120,86 @@ const WorkOrders = () => {
   
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
-  // Persist filters to sessionStorage
+  // Load view preferences from database on mount
+  useEffect(() => {
+    const loadPrefsFromDB = async () => {
+      if (!user?.id) return;
+      try {
+        // Use raw query to bypass type checking for new column
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+        
+        if (error || !data) return;
+        
+        // Cast to access the view_preferences column
+        const prefs = (data as any).view_preferences as ViewPreferences | null;
+        if (prefs?.work_orders) {
+          if (prefs.work_orders.viewMode) setViewMode(prefs.work_orders.viewMode);
+          if (prefs.work_orders.groupBy) setGroupBy(prefs.work_orders.groupBy);
+          if (prefs.work_orders.filters) setFilters(prefs.work_orders.filters);
+        }
+      } catch (e) {
+        console.warn('Failed to load view preferences:', e);
+      } finally {
+        setPrefsLoaded(true);
+      }
+    };
+    
+    loadPrefsFromDB();
+  }, [user?.id]);
+
+  // Debounce preferences for saving
+  const debouncedPrefs = useDebounce({ viewMode, groupBy, filters }, 1000);
+
+  // Save view preferences to database
+  useEffect(() => {
+    if (!user?.id || !prefsLoaded) return;
+    
+    const savePrefsToDb = async () => {
+      try {
+        // First get existing preferences
+        const { data: existingData } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+        
+        const existing = ((existingData as any)?.view_preferences as ViewPreferences) || {};
+        
+        const updated: ViewPreferences = {
+          ...existing,
+          work_orders: {
+            viewMode: debouncedPrefs.viewMode,
+            groupBy: debouncedPrefs.groupBy,
+            filters: debouncedPrefs.filters,
+          }
+        };
+        
+        // Use update with type assertion
+        await supabase
+          .from('profiles')
+          .update({ view_preferences: updated } as any)
+          .eq('id', user.id);
+      } catch (e) {
+        console.warn('Failed to save view preferences:', e);
+      }
+    };
+    
+    savePrefsToDb();
+  }, [debouncedPrefs, user?.id, prefsLoaded]);
+
+  // Also persist to local storage as fallback
   useEffect(() => {
     sessionStorage.setItem(FILTERS_STORAGE_KEY, JSON.stringify(filters));
   }, [filters]);
 
-  // Persist groupBy to sessionStorage
   useEffect(() => {
     sessionStorage.setItem(GROUPBY_STORAGE_KEY, groupBy);
   }, [groupBy]);
 
-  // Persist viewMode to localStorage (perpetual)
   useEffect(() => {
     localStorage.setItem(VIEWMODE_STORAGE_KEY, viewMode);
   }, [viewMode]);
@@ -475,7 +554,7 @@ const WorkOrders = () => {
 
   // Render card view with shared component
   const renderCardView = useCallback((orders: WorkOrderWithItems[]) => (
-    <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+    <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
       {orders.map((wo) => (
         <WorkOrderCard
           key={wo.id}
@@ -583,12 +662,49 @@ const WorkOrders = () => {
             </div>
           </div>
 
+          {/* Select All Bar */}
+          {!loading && filteredOrders.length > 0 && viewMode !== 'kanban' && (
+            <div className="flex items-center justify-between py-2 px-1">
+              <div className="flex items-center gap-3">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 gap-2 text-muted-foreground hover:text-foreground"
+                  onClick={() => {
+                    if (selectedIds.size === filteredOrders.length) {
+                      setSelectedIds(new Set());
+                    } else {
+                      setSelectedIds(new Set(filteredOrders.map(wo => wo.id)));
+                    }
+                  }}
+                >
+                  {selectedIds.size === filteredOrders.length ? (
+                    <>
+                      <CheckSquare className="h-4 w-4" />
+                      {t('deselectAll') || 'Deselect All'}
+                    </>
+                  ) : (
+                    <>
+                      <Square className="h-4 w-4" />
+                      {t('selectAll') || 'Select All'}
+                    </>
+                  )}
+                </Button>
+                {selectedIds.size > 0 && (
+                  <span className="text-sm text-muted-foreground">
+                    {selectedIds.size} of {filteredOrders.length} {t('selected') || 'selected'}
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Work Orders List */}
           <div className="w-full">
             {loading ? (
               viewMode === 'cards' ? (
-                <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-                  {[...Array(8)].map((_, i) => (
+                <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                  {[...Array(6)].map((_, i) => (
                     <Card key={i} className="overflow-hidden">
                       <CardContent className="p-4 space-y-3">
                         <div className="flex items-center justify-between">
