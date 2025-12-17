@@ -6,7 +6,8 @@ import { ProductBreakdownBadges } from './ProductBreakdownBadges';
 import { formatDate, ProductBreakdown } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
 import { Checkbox } from '@/components/ui/checkbox';
-import { AlertTriangle, Clock, ChevronRight, Calendar, Truck } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { AlertTriangle, Clock, ChevronRight, Calendar, Truck, UserX } from 'lucide-react';
 import { parseISO, isBefore, differenceInDays } from 'date-fns';
 
 export interface WorkOrderCardData {
@@ -24,6 +25,7 @@ export interface WorkOrderCardData {
   progressPercent?: number;
   completedItems?: number;
   totalItems?: number;
+  assigned_to?: string | null;
 }
 
 interface WorkOrderCardProps {
@@ -136,10 +138,16 @@ export function WorkOrderCard({
 
       {/* Header: WO Number + Status */}
       <div className={`flex items-start justify-between gap-3 mb-3 ${selectable ? 'pl-8' : ''}`}>
-        <div className="flex items-center gap-2 min-w-0">
+        <div className="flex items-center gap-2 min-w-0 flex-wrap">
           <span className="font-mono font-bold text-base md:text-lg truncate">{workOrder.wo_number}</span>
           {shippingOverdue && <AlertTriangle className="h-4 w-4 text-destructive shrink-0" />}
           {startOverdue && !shippingOverdue && <Clock className="h-4 w-4 text-warning shrink-0" />}
+          {!workOrder.assigned_to && workOrder.status !== 'completed' && workOrder.status !== 'cancelled' && (
+            <Badge variant="outline" className="text-[10px] px-1.5 py-0 gap-1 text-warning border-warning/50 shrink-0">
+              <UserX className="h-3 w-3" />
+              Unassigned
+            </Badge>
+          )}
         </div>
         <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
           {showStatusEdit ? (

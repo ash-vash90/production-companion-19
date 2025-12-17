@@ -17,7 +17,7 @@ import { WorkOrderCard } from '@/components/workorders/WorkOrderCard';
 import { WorkOrderTableRow, WorkOrderRowData } from '@/components/workorders/WorkOrderTableRow';
 import { WorkOrderKanbanView } from '@/components/workorders/WorkOrderKanbanView';
 import { CancelWorkOrderDialog } from '@/components/workorders/CancelWorkOrderDialog';
-import WorkOrderDetailSheet from '@/components/workorders/WorkOrderDetailSheet';
+import WorkOrderDetailDialog from '@/components/workorders/WorkOrderDetailDialog';
 import { BulkActionsToolbar } from '@/components/workorders/BulkActionsToolbar';
 import { useWorkOrders, invalidateWorkOrdersCache, WorkOrderListItem } from '@/hooks/useWorkOrders';
 import { prefetchProductionOnHover } from '@/services/prefetchService';
@@ -47,6 +47,8 @@ const DEFAULT_FILTERS: FilterState = {
   deliveryMonthFilter: 'all',
   createdMonthFilter: 'all',
   batchSizeFilter: 'all',
+  assigneeFilter: 'all',
+  unassignedOnly: false,
 };
 
 const FILTERS_STORAGE_KEY = 'workorders_filters';
@@ -901,7 +903,7 @@ const WorkOrders = () => {
           isLoading={isCancelling}
         />
 
-        <WorkOrderDetailSheet
+        <WorkOrderDetailDialog
           workOrderId={detailWorkOrderId}
           open={detailSheetOpen}
           onOpenChange={setDetailSheetOpen}

@@ -123,8 +123,8 @@ export function WorkOrderStatusSelect({
     >
       <SelectTrigger
         className={cn(
-          "border-0 font-medium transition-colors",
-          compact ? "h-6 text-xs px-2 py-0 w-auto min-w-[90px]" : "h-7 text-xs px-2.5 py-0 w-auto min-w-[100px]",
+          "border-0 font-mono font-semibold transition-colors",
+          compact ? "h-7 text-xs px-2.5 py-0 w-auto min-w-[110px]" : "h-8 text-xs px-3 py-0 w-auto min-w-[120px]",
           "rounded-full",
           currentOption?.bgClass,
           currentOption?.textClass,
@@ -136,9 +136,9 @@ export function WorkOrderStatusSelect({
         {updating ? (
           <Loader2 className="h-3 w-3 animate-spin" />
         ) : (
-          <span className="flex items-center gap-1">
+          <span className="flex items-center gap-1.5 whitespace-nowrap">
             <SelectValue />
-            <ChevronDown className="h-3 w-3 opacity-60" />
+            <ChevronDown className="h-3.5 w-3.5 opacity-70 shrink-0" />
           </span>
         )}
       </SelectTrigger>
@@ -147,7 +147,7 @@ export function WorkOrderStatusSelect({
           <SelectItem 
             key={option.value} 
             value={option.value}
-            className={cn("text-xs", option.textClass)}
+            className={cn("text-xs font-mono", option.textClass)}
           >
             {t(option.labelKey)}
           </SelectItem>

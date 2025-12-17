@@ -19,9 +19,16 @@ export interface FilterState {
   deliveryMonthFilter: string;
   createdMonthFilter: string;
   batchSizeFilter: string;
+  assigneeFilter: string;
+  unassignedOnly: boolean;
 }
 
 export type GroupByOption = 'none' | 'status' | 'deliveryMonth' | 'createdMonth' | 'batchSize' | 'customer';
+
+interface Operator {
+  id: string;
+  full_name: string;
+}
 
 interface WorkOrderFiltersProps {
   filters: FilterState;
@@ -29,6 +36,7 @@ interface WorkOrderFiltersProps {
   customers: (string | null)[];
   deliveryMonths: string[];
   createdMonths: string[];
+  operators?: Operator[];
   groupBy: GroupByOption;
   onGroupByChange: (value: GroupByOption) => void;
   hideGroupBy?: boolean;
@@ -40,6 +48,7 @@ export function WorkOrderFilters({
   customers,
   deliveryMonths,
   createdMonths,
+  operators = [],
   groupBy,
   onGroupByChange,
   hideGroupBy = false,
@@ -62,6 +71,8 @@ export function WorkOrderFilters({
       deliveryMonthFilter: 'all',
       createdMonthFilter: 'all',
       batchSizeFilter: 'all',
+      assigneeFilter: 'all',
+      unassignedOnly: false,
     });
   };
 
@@ -73,7 +84,8 @@ export function WorkOrderFilters({
     filters.deliveryMonthFilter,
     filters.createdMonthFilter,
     filters.batchSizeFilter,
-  ].filter(f => f !== 'all').length;
+    filters.assigneeFilter,
+  ].filter(f => f !== 'all').length + (filters.unassignedOnly ? 1 : 0);
 
   const groupByOptions = [
     { value: 'none', label: t('noGrouping') || 'No Grouping' },
@@ -258,6 +270,25 @@ export function WorkOrderFilters({
                 </SelectContent>
               </Select>
             </div>
+
+            {/* Assignee Filter */}
+            {operators.length > 0 && (
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground">{t('assignedTo') || 'Assigned To'}</Label>
+                <Select value={filters.assigneeFilter} onValueChange={(v) => updateFilter('assigneeFilter', v)}>
+                  <SelectTrigger className="h-8 text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{t('allAssignees') || 'All Assignees'}</SelectItem>
+                    <SelectItem value="unassigned">{t('unassigned') || 'Unassigned'}</SelectItem>
+                    {operators.map(op => (
+                      <SelectItem key={op.id} value={op.id}>{op.full_name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
         </PopoverContent>
       </Popover>

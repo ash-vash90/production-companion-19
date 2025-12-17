@@ -26,7 +26,7 @@ import {
   SortableContext, 
   useSortable, 
   verticalListSortingStrategy,
-  arrayMove 
+  arrayMove,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { GripVertical, Calendar, Truck } from 'lucide-react';
@@ -120,18 +120,20 @@ function KanbanCard({ workOrder }: KanbanCardProps) {
     disabled: !hasPermission('change_work_order_status'),
   });
 
+  // Use translate only (not scale) and handle position better
   const style = {
-    transform: CSS.Transform.toString(transform),
-    transition: transition || 'transform 200ms cubic-bezier(0.25, 1, 0.5, 1), opacity 200ms ease',
-    opacity: isDragging ? 0.5 : 1,
+    transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
+    transition: transition || 'transform 200ms cubic-bezier(0.25, 1, 0.5, 1)',
+    opacity: isDragging ? 0.4 : 1,
+    zIndex: isDragging ? 100 : undefined,
   };
 
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className={`relative group bg-card border rounded-lg p-4 cursor-pointer hover:shadow-md transition-all duration-200 ${
-        isDragging ? 'shadow-lg scale-[1.02] z-50' : ''
+      className={`relative group bg-card border rounded-lg p-4 cursor-pointer hover:shadow-md transition-shadow duration-200 ${
+        isDragging ? 'shadow-lg ring-2 ring-primary/50' : ''
       }`}
       onClick={() => navigate(`/production/${workOrder.id}`)}
     >
@@ -140,7 +142,7 @@ function KanbanCard({ workOrder }: KanbanCardProps) {
         <div
           {...attributes}
           {...listeners}
-          className="absolute left-1.5 top-1/2 -translate-y-1/2 p-1 cursor-grab opacity-0 group-hover:opacity-100 transition-opacity touch:opacity-100"
+          className="absolute left-1.5 top-1/2 -translate-y-1/2 p-1 cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity touch:opacity-100"
           onClick={(e) => e.stopPropagation()}
         >
           <GripVertical className="h-4 w-4 text-muted-foreground" />
@@ -188,7 +190,7 @@ function KanbanCard({ workOrder }: KanbanCardProps) {
         <div className="flex items-center justify-between gap-4">
           <div className="shrink-0">
             {workOrder.order_value ? (
-              <span className="text-sm font-semibold text-foreground">
+              <span className="text-sm font-semibold text-foreground font-mono">
                 €{workOrder.order_value.toLocaleString('nl-NL')}
               </span>
             ) : (
@@ -197,7 +199,7 @@ function KanbanCard({ workOrder }: KanbanCardProps) {
           </div>
           <div className="flex-1 flex items-center gap-2">
             <Progress value={workOrder.progressPercent || 0} className="h-1.5 flex-1" />
-            <span className="text-xs text-muted-foreground font-medium">{workOrder.progressPercent || 0}%</span>
+            <span className="text-xs text-muted-foreground font-medium font-mono">{workOrder.progressPercent || 0}%</span>
           </div>
         </div>
       </div>
@@ -537,9 +539,12 @@ export function WorkOrderKanbanView({ workOrders, onStatusChange, onCancel }: Wo
           </div>
         </div>
 
-        <DragOverlay>
+        <DragOverlay dropAnimation={{
+          duration: 200,
+          easing: 'cubic-bezier(0.25, 1, 0.5, 1)',
+        }}>
           {activeWorkOrder && (
-            <div className="bg-card border rounded-lg p-4 shadow-lg opacity-90 w-[220px]">
+            <div className="bg-card border rounded-lg p-4 shadow-xl opacity-95 w-[260px] rotate-[2deg]">
               <div className="font-mono font-semibold text-sm mb-2">{activeWorkOrder.wo_number}</div>
               <ProductBreakdownBadges
                 breakdown={activeWorkOrder.productBreakdown}
@@ -547,6 +552,11 @@ export function WorkOrderKanbanView({ workOrders, onStatusChange, onCancel }: Wo
                 compact
                 maxVisible={2}
               />
+              {activeWorkOrder.customer_name && (
+                <div className="text-sm text-muted-foreground mt-2 truncate">
+                  {activeWorkOrder.customer_name}
+                </div>
+              )}
             </div>
           )}
         </DragOverlay>
