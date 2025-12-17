@@ -194,7 +194,7 @@ const WorkOrderDetailSheet: React.FC<WorkOrderDetailSheetProps> = ({
                   className="flex-1"
                   onClick={() => {
                     onOpenChange(false);
-                    navigate(`/production?workOrder=${workOrder.id}`);
+                    navigate(`/production/${workOrder.id}`);
                   }}
                 >
                   <Play className="h-4 w-4 mr-2" />
