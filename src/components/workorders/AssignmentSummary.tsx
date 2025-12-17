@@ -11,7 +11,6 @@ interface AssignedOperator {
   id: string;
   full_name: string;
   avatar_url: string | null;
-  planned_hours: number;
 }
 
 interface AssignmentSummaryProps {
@@ -54,7 +53,6 @@ const AssignmentSummary: React.FC<AssignmentSummaryProps> = ({ workOrderId }) =>
         .from('operator_assignments')
         .select(`
           operator_id,
-          planned_hours,
           profiles!operator_assignments_operator_id_fkey(id, full_name, avatar_url)
         `)
         .eq('work_order_id', workOrderId);
@@ -70,7 +68,6 @@ const AssignmentSummary: React.FC<AssignmentSummaryProps> = ({ workOrderId }) =>
           id: a.profiles.id,
           full_name: a.profiles.full_name,
           avatar_url: a.profiles.avatar_url,
-          planned_hours: a.planned_hours,
         }));
 
       setAssignedOperators(operators);
@@ -135,9 +132,6 @@ const AssignmentSummary: React.FC<AssignmentSummaryProps> = ({ workOrderId }) =>
             </Avatar>
             <div className="flex-1 min-w-0">
               <p className="font-medium text-sm truncate">{operator.full_name}</p>
-              <p className="text-xs text-muted-foreground">
-                {operator.planned_hours}h {language === 'nl' ? 'gepland' : 'planned'}
-              </p>
             </div>
             <Badge variant="secondary" className="shrink-0">
               {language === 'nl' ? 'Toegewezen' : 'Assigned'}
