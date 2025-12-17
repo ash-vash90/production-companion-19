@@ -14,6 +14,7 @@ export const translations = {
     logout: 'Logout',
     navigation: 'Navigation',
     productionCalendar: 'Production Calendar',
+    capacityPlanning: 'Capacity Planning',
     traceability: 'Traceability',
     
     // Greetings
@@ -613,6 +614,7 @@ export const translations = {
     logout: 'Uitloggen',
     navigation: 'Navigatie',
     productionCalendar: 'Productiekalender',
+    capacityPlanning: 'Capaciteitsplanning',
     traceability: 'Traceerbaarheid',
     
     // Greetings
