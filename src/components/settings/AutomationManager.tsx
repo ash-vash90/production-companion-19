@@ -153,10 +153,12 @@ const AutomationManager = () => {
 
   const fetchWebhooks = async () => {
     try {
+      // Use the safe view that masks secret_key (returns ********xxxx format)
+      // Cast to 'any' since the view isn't in generated types but has same structure
       const { data, error } = await supabase
-        .from('incoming_webhooks')
+        .from('incoming_webhooks_safe' as any)
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false }) as { data: IncomingWebhook[] | null; error: any };
       
       if (error) throw error;
       setWebhooks(data || []);
@@ -206,29 +208,28 @@ const AutomationManager = () => {
     if (!user || !newWebhook.name) return;
     
     try {
-      const { data, error } = await supabase
-        .from('incoming_webhooks')
-        .insert({
+      // Use edge function to create webhook - secret is returned only once
+      const { data, error } = await supabase.functions.invoke('create-webhook', {
+        body: {
           name: newWebhook.name,
           description: newWebhook.description || null,
-          created_by: user.id,
-        })
-        .select()
-        .single();
+        }
+      });
       
       if (error) throw error;
+      if (data.error) throw new Error(data.error);
       
-      // Store the secret temporarily so user can copy it once
-      setNewlyCreatedSecrets(prev => ({ ...prev, [data.id]: data.secret_key }));
+      // Store the full secret temporarily so user can copy it once
+      setNewlyCreatedSecrets(prev => ({ ...prev, [data.webhook.id]: data.secret }));
       
-      setWebhooks(prev => [data, ...prev]);
-      setSelectedWebhook(data);
+      setWebhooks(prev => [data.webhook, ...prev]);
+      setSelectedWebhook(data.webhook);
       setNewWebhook({ name: '', description: '' });
       setWebhookDialogOpen(false);
       toast.success('Webhook created! Copy the secret now - it will be hidden after you leave this page.');
     } catch (error: any) {
       console.error('Error creating webhook:', error);
-      toast.error(error.message);
+      toast.error(error.message || 'Failed to create webhook');
     }
   };
 
