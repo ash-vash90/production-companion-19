@@ -33,6 +33,7 @@ interface WorkOrderCardProps {
   onStatusChange?: () => void;
   showActions?: boolean;
   showUrgency?: boolean;
+  showStatusEdit?: boolean;
   linkTo?: string;
 }
 
@@ -44,6 +45,7 @@ export function WorkOrderCard({
   onStatusChange,
   showActions = true,
   showUrgency = true,
+  showStatusEdit = true,
   linkTo,
 }: WorkOrderCardProps) {
   const navigate = useNavigate();
@@ -106,7 +108,7 @@ export function WorkOrderCard({
 
   return (
     <div
-      className={`group relative rounded-xl border border-l-4 bg-card p-4 md:p-5 transition-all cursor-pointer hover:shadow-lg hover:border-primary/30 ${urgencyClass}`}
+      className={`group relative rounded-xl border border-l-4 bg-card p-4 md:p-5 transition-all cursor-pointer hover:shadow-lg hover:border-muted-foreground/30 ${urgencyClass}`}
       onClick={handleClick}
       onMouseEnter={onHover}
     >
@@ -129,12 +131,16 @@ export function WorkOrderCard({
           {startOverdue && !shippingOverdue && <Clock className="h-4 w-4 text-warning shrink-0" />}
         </div>
         <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
-          <WorkOrderStatusSelect
-            workOrderId={workOrder.id}
-            currentStatus={workOrder.status}
-            onStatusChange={onStatusChange}
-            compact
-          />
+          {showStatusEdit ? (
+            <WorkOrderStatusSelect
+              workOrderId={workOrder.id}
+              currentStatus={workOrder.status}
+              onStatusChange={onStatusChange}
+              compact
+            />
+          ) : (
+            <WorkOrderStatusBadge status={workOrder.status} />
+          )}
         </div>
       </div>
 
