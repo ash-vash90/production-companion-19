@@ -15,6 +15,7 @@ import { CreateWorkOrderDialog } from '@/components/CreateWorkOrderDialog';
 import { WorkOrderFilters, FilterState, GroupByOption } from '@/components/workorders/WorkOrderFilters';
 import { WorkOrderCard } from '@/components/workorders/WorkOrderCard';
 import { WorkOrderTableRow, WorkOrderRowData } from '@/components/workorders/WorkOrderTableRow';
+import { WorkOrderKanbanView } from '@/components/workorders/WorkOrderKanbanView';
 import { CancelWorkOrderDialog } from '@/components/workorders/CancelWorkOrderDialog';
 import { useWorkOrders, invalidateWorkOrdersCache, WorkOrderListItem } from '@/hooks/useWorkOrders';
 import { prefetchProductionOnHover } from '@/services/prefetchService';
@@ -23,7 +24,7 @@ import { PullToRefresh } from '@/components/PullToRefresh';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Plus, Package, RotateCcw, LayoutGrid, List, ChevronDown, ChevronRight } from 'lucide-react';
+import { Plus, Package, RotateCcw, LayoutGrid, List, ChevronDown, ChevronRight, Columns } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format, differenceInDays, parseISO } from 'date-fns';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -48,7 +49,7 @@ const FILTERS_STORAGE_KEY = 'workorders_filters';
 const GROUPBY_STORAGE_KEY = 'workorders_groupby';
 const VIEWMODE_STORAGE_KEY = 'workorders_viewmode';
 
-type ViewMode = 'cards' | 'table';
+type ViewMode = 'cards' | 'table' | 'kanban';
 
 const WorkOrders = () => {
   const { user } = useAuth();
@@ -349,6 +350,13 @@ const WorkOrders = () => {
     progressPercent: wo.progressPercent,
   }), []);
 
+  // Handle status change with optimistic update
+  const handleStatusChange = useCallback((workOrderId: string, newStatus: string) => {
+    // Invalidate cache and refetch
+    invalidateWorkOrdersCache();
+    refetch();
+  }, [refetch]);
+
   // Render table view with shared component
   const renderTableView = (orders: WorkOrderWithItems[]) => (
     <div className="rounded-lg border overflow-hidden overflow-x-auto">
@@ -372,7 +380,7 @@ const WorkOrders = () => {
               workOrder={toRowData(wo)}
               linkTo={`/production/${wo.id}`}
               onCancel={isAdmin ? () => openCancelDialog({ id: wo.id, wo_number: wo.wo_number }) : undefined}
-              onStatusChange={refetch}
+              onStatusChange={() => handleStatusChange(wo.id, wo.status)}
               editableStatus={isAdmin}
               showProgress
               showPrice
@@ -393,10 +401,11 @@ const WorkOrders = () => {
           onClick={() => navigate(`/production/${wo.id}`)}
           onCancel={isAdmin ? () => openCancelDialog({ id: wo.id, wo_number: wo.wo_number }) : undefined}
           onHover={() => prefetchProductionOnHover(wo.id)}
+          onStatusChange={() => handleStatusChange(wo.id, wo.status)}
         />
       ))}
     </div>
-  ), [toRowData, navigate, isAdmin, openCancelDialog]);
+  ), [toRowData, navigate, isAdmin, openCancelDialog, handleStatusChange]);
 
   const isMobile = useIsMobile();
 
@@ -463,16 +472,27 @@ const WorkOrders = () => {
                 size="sm"
                 className="h-8 px-2 rounded-r-none"
                 onClick={() => setViewMode('cards')}
+                title={t('cardView') || 'Card View'}
               >
                 <LayoutGrid className="h-4 w-4" />
               </Button>
               <Button
                 variant={viewMode === 'table' ? 'secondary' : 'ghost'}
                 size="sm"
-                className="h-8 px-2 rounded-l-none"
+                className="h-8 px-2 rounded-none border-x"
                 onClick={() => setViewMode('table')}
+                title={t('tableView') || 'Table View'}
               >
                 <List className="h-4 w-4" />
+              </Button>
+              <Button
+                variant={viewMode === 'kanban' ? 'secondary' : 'ghost'}
+                size="sm"
+                className="h-8 px-2 rounded-l-none"
+                onClick={() => setViewMode('kanban')}
+                title={t('kanbanView') || 'Kanban View'}
+              >
+                <Columns className="h-4 w-4" />
               </Button>
             </div>
           </div>
@@ -562,7 +582,16 @@ const WorkOrders = () => {
                 </Card>
               )
             ) : groupBy === 'none' ? (
-              viewMode === 'cards' ? (
+              viewMode === 'kanban' ? (
+                <WorkOrderKanbanView
+                  workOrders={filteredOrders.map(toRowData)}
+                  onStatusChange={() => {
+                    invalidateWorkOrdersCache();
+                    refetch();
+                  }}
+                  onCancel={isAdmin ? openCancelDialog : undefined}
+                />
+              ) : viewMode === 'cards' ? (
                 filteredOrders.length > 50 ? (
                   <ResponsiveVirtualizedGrid
                     items={filteredOrders}
@@ -572,6 +601,7 @@ const WorkOrders = () => {
                         onClick={() => navigate(`/production/${wo.id}`)}
                         onCancel={isAdmin ? () => openCancelDialog({ id: wo.id, wo_number: wo.wo_number }) : undefined}
                         onHover={() => prefetchProductionOnHover(wo.id)}
+                        onStatusChange={() => handleStatusChange(wo.id, wo.status)}
                       />
                     )}
                     itemHeight={280}

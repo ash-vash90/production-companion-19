@@ -10,7 +10,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ChevronDown } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 type WorkOrderStatus = 'planned' | 'in_progress' | 'on_hold' | 'completed' | 'cancelled';
 
@@ -21,12 +22,12 @@ interface WorkOrderStatusSelectProps {
   compact?: boolean;
 }
 
-const STATUS_OPTIONS: { value: WorkOrderStatus; labelKey: string; color: string }[] = [
-  { value: 'planned', labelKey: 'planned', color: 'text-muted-foreground' },
-  { value: 'in_progress', labelKey: 'inProgress', color: 'text-blue-600' },
-  { value: 'on_hold', labelKey: 'onHold', color: 'text-amber-600' },
-  { value: 'completed', labelKey: 'completed', color: 'text-emerald-600' },
-  { value: 'cancelled', labelKey: 'cancelled', color: 'text-destructive' },
+const STATUS_OPTIONS: { value: WorkOrderStatus; labelKey: string; bgClass: string; textClass: string }[] = [
+  { value: 'planned', labelKey: 'planned', bgClass: 'bg-sky-500/15 dark:bg-sky-500/20', textClass: 'text-sky-700 dark:text-sky-300' },
+  { value: 'in_progress', labelKey: 'inProgress', bgClass: 'bg-amber-500/15 dark:bg-amber-500/20', textClass: 'text-amber-700 dark:text-amber-300' },
+  { value: 'on_hold', labelKey: 'onHold', bgClass: 'bg-secondary', textClass: 'text-secondary-foreground' },
+  { value: 'completed', labelKey: 'completed', bgClass: 'bg-emerald-500/15 dark:bg-emerald-500/20', textClass: 'text-emerald-700 dark:text-emerald-300' },
+  { value: 'cancelled', labelKey: 'cancelled', bgClass: 'bg-destructive/15 dark:bg-destructive/20', textClass: 'text-destructive dark:text-red-300' },
 ];
 
 export function WorkOrderStatusSelect({
@@ -85,13 +86,24 @@ export function WorkOrderStatusSelect({
       disabled={updating}
     >
       <SelectTrigger
-        className={`${compact ? 'h-7 text-xs px-2 w-auto min-w-[100px]' : 'h-8 text-sm w-[140px]'} ${currentOption?.color || ''}`}
+        className={cn(
+          "border-0 font-medium transition-colors",
+          compact ? "h-6 text-xs px-2 py-0 w-auto min-w-[90px]" : "h-7 text-xs px-2.5 py-0 w-auto min-w-[100px]",
+          "rounded-full",
+          currentOption?.bgClass,
+          currentOption?.textClass,
+          "hover:opacity-80",
+          "[&>svg]:hidden" // Hide default chevron
+        )}
         onClick={(e) => e.stopPropagation()}
       >
         {updating ? (
           <Loader2 className="h-3 w-3 animate-spin" />
         ) : (
-          <SelectValue />
+          <span className="flex items-center gap-1">
+            <SelectValue />
+            <ChevronDown className="h-3 w-3 opacity-60" />
+          </span>
         )}
       </SelectTrigger>
       <SelectContent onClick={(e) => e.stopPropagation()}>
@@ -99,7 +111,7 @@ export function WorkOrderStatusSelect({
           <SelectItem 
             key={option.value} 
             value={option.value}
-            className={option.color}
+            className={cn("text-xs", option.textClass)}
           >
             {t(option.labelKey)}
           </SelectItem>

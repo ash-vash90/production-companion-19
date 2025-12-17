@@ -317,10 +317,11 @@ const ProductionReports = () => {
                               className="cursor-pointer"
                               onClick={() => handleSelectReport(wo)}
                             >
-                              <WorkOrderCard
+                            <WorkOrderCard
                                 workOrder={wo}
                                 showUrgency={false}
                                 showActions={false}
+                                showStatusEdit={false}
                               />
                             </div>
                           ))}
