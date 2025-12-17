@@ -60,6 +60,7 @@ export type Database = {
           id: string
           incoming_webhook_id: string
           name: string
+          payload_config: Json | null
           sort_order: number
           updated_at: string
         }
@@ -72,6 +73,7 @@ export type Database = {
           id?: string
           incoming_webhook_id: string
           name: string
+          payload_config?: Json | null
           sort_order?: number
           updated_at?: string
         }
@@ -84,6 +86,7 @@ export type Database = {
           id?: string
           incoming_webhook_id?: string
           name?: string
+          payload_config?: Json | null
           sort_order?: number
           updated_at?: string
         }
@@ -730,6 +733,56 @@ export type Database = {
           },
         ]
       }
+      outgoing_webhook_logs: {
+        Row: {
+          attempts: number | null
+          created_at: string | null
+          delivery_id: string | null
+          error_message: string | null
+          event_type: string
+          id: string
+          payload: Json
+          response_body: Json | null
+          response_status: number | null
+          response_time_ms: number | null
+          webhook_id: string | null
+        }
+        Insert: {
+          attempts?: number | null
+          created_at?: string | null
+          delivery_id?: string | null
+          error_message?: string | null
+          event_type: string
+          id?: string
+          payload?: Json
+          response_body?: Json | null
+          response_status?: number | null
+          response_time_ms?: number | null
+          webhook_id?: string | null
+        }
+        Update: {
+          attempts?: number | null
+          created_at?: string | null
+          delivery_id?: string | null
+          error_message?: string | null
+          event_type?: string
+          id?: string
+          payload?: Json
+          response_body?: Json | null
+          response_status?: number | null
+          response_time_ms?: number | null
+          webhook_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "outgoing_webhook_logs_webhook_id_fkey"
+            columns: ["webhook_id"]
+            isOneToOne: false
+            referencedRelation: "zapier_webhooks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       permissions: {
         Row: {
           category: string
@@ -1299,10 +1352,12 @@ export type Database = {
           executed_rules: Json | null
           id: string
           incoming_webhook_id: string
+          is_test: boolean | null
           request_body: Json | null
           request_headers: Json | null
           response_body: Json | null
           response_status: number | null
+          response_time_ms: number | null
         }
         Insert: {
           created_at?: string
@@ -1310,10 +1365,12 @@ export type Database = {
           executed_rules?: Json | null
           id?: string
           incoming_webhook_id: string
+          is_test?: boolean | null
           request_body?: Json | null
           request_headers?: Json | null
           response_body?: Json | null
           response_status?: number | null
+          response_time_ms?: number | null
         }
         Update: {
           created_at?: string
@@ -1321,10 +1378,12 @@ export type Database = {
           executed_rules?: Json | null
           id?: string
           incoming_webhook_id?: string
+          is_test?: boolean | null
           request_body?: Json | null
           request_headers?: Json | null
           response_body?: Json | null
           response_status?: number | null
+          response_time_ms?: number | null
         }
         Relationships: [
           {
