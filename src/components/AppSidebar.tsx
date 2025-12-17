@@ -1,4 +1,4 @@
-import { LayoutDashboard, Package, Settings, CalendarDays, BarChart3, Users, FileText, ClipboardList, PanelLeft, Globe, Moon, Sun, Monitor, Warehouse } from 'lucide-react';
+import { LayoutDashboard, Package, Settings, CalendarDays, BarChart3, Users, FileText, ClipboardList, PanelLeft, Globe, Moon, Sun, Monitor, Warehouse, UserCog } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -43,6 +43,7 @@ export function AppSidebar() {
     { title: t('dashboard'), url: '/', icon: LayoutDashboard },
     { title: t('workOrders'), url: '/work-orders', icon: Package },
     { title: t('productionCalendar'), url: '/calendar', icon: CalendarDays },
+    { title: t('capacityPlanning'), url: '/capacity-planning', icon: UserCog },
   ];
 
   const qualityItems = [
