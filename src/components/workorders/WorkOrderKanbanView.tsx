@@ -7,6 +7,8 @@ import { toast } from 'sonner';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import { ProductBreakdownBadges } from './ProductBreakdownBadges';
 import { formatDate, ProductBreakdown } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
@@ -29,7 +31,7 @@ import {
   arrayMove,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, Calendar, Truck } from 'lucide-react';
+import { GripVertical, Calendar, Truck, UserX } from 'lucide-react';
 
 // Haptic feedback utility
 const triggerHaptic = (type: 'light' | 'medium' | 'heavy' = 'medium') => {
@@ -38,6 +40,12 @@ const triggerHaptic = (type: 'light' | 'medium' | 'heavy' = 'medium') => {
     navigator.vibrate(patterns[type]);
   }
 };
+
+interface AssignedOperator {
+  id: string;
+  full_name: string;
+  avatar_url: string | null;
+}
 
 interface WorkOrderData {
   id: string;
@@ -51,6 +59,7 @@ interface WorkOrderData {
   order_value?: number | null;
   productBreakdown: ProductBreakdown[];
   progressPercent?: number;
+  assignedOperators?: AssignedOperator[];
 }
 
 type KanbanStatus = 'planned' | 'in_progress' | 'on_hold' | 'completed' | 'cancelled';
@@ -128,82 +137,131 @@ function KanbanCard({ workOrder }: KanbanCardProps) {
     zIndex: isDragging ? 100 : undefined,
   };
 
+  const assignedOperators = workOrder.assignedOperators || [];
+  const hasAssignedOperators = assignedOperators.length > 0;
+  const isActiveWorkOrder = workOrder.status !== 'completed' && workOrder.status !== 'cancelled';
+
+  const getInitials = (name: string) => {
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  };
+
   return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className={`relative group bg-card border rounded-lg p-4 cursor-pointer hover:shadow-md transition-shadow duration-200 ${
-        isDragging ? 'shadow-lg ring-2 ring-primary/50' : ''
-      }`}
-      onClick={() => navigate(`/production/${workOrder.id}`)}
-    >
-      {/* Drag handle */}
-      {hasPermission('change_work_order_status') && (
-        <div
-          {...attributes}
-          {...listeners}
-          className="absolute left-1.5 top-1/2 -translate-y-1/2 p-1 cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity touch:opacity-100"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <GripVertical className="h-4 w-4 text-muted-foreground" />
-        </div>
-      )}
-
-      <div className="pl-5">
-        {/* WO Number */}
-        <div className="font-mono font-semibold text-sm mb-3">{workOrder.wo_number}</div>
-
-        {/* Product badges */}
-        <div className="mb-3">
-          <ProductBreakdownBadges
-            breakdown={workOrder.productBreakdown}
-            batchSize={workOrder.batch_size}
-            compact
-            maxVisible={2}
-          />
-        </div>
-
-        {/* Customer */}
-        {workOrder.customer_name && (
-          <div className="text-sm text-foreground font-medium mb-3 truncate">
-            {workOrder.customer_name}
+    <TooltipProvider>
+      <div
+        ref={setNodeRef}
+        style={style}
+        className={`relative group bg-card border rounded-lg p-4 cursor-pointer hover:shadow-md transition-shadow duration-200 ${
+          isDragging ? 'shadow-lg ring-2 ring-primary/50' : ''
+        }`}
+        onClick={() => navigate(`/production/${workOrder.id}`)}
+      >
+        {/* Drag handle */}
+        {hasPermission('change_work_order_status') && (
+          <div
+            {...attributes}
+            {...listeners}
+            className="absolute left-1.5 top-1/2 -translate-y-1/2 p-1 cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity touch:opacity-100"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <GripVertical className="h-4 w-4 text-muted-foreground" />
           </div>
         )}
 
-        {/* Dates */}
-        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground mb-3">
-          {workOrder.start_date && (
-            <div className="flex items-center gap-1.5">
-              <Calendar className="h-3 w-3" />
-              <span>{formatDate(workOrder.start_date)}</span>
-            </div>
-          )}
-          {workOrder.shipping_date && (
-            <div className="flex items-center gap-1.5">
-              <Truck className="h-3 w-3" />
-              <span>{formatDate(workOrder.shipping_date)}</span>
-            </div>
-          )}
-        </div>
+        <div className="pl-5">
+          {/* WO Number + Operators */}
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <span className="font-mono font-semibold text-sm">{workOrder.wo_number}</span>
+            
+            {/* Assigned operators or unassigned badge */}
+            {hasAssignedOperators ? (
+              <div className="flex items-center -space-x-1.5 shrink-0">
+                {assignedOperators.slice(0, 2).map((operator) => (
+                  <Tooltip key={operator.id}>
+                    <TooltipTrigger asChild>
+                      <Avatar className="h-5 w-5 border border-card">
+                        <AvatarImage src={operator.avatar_url || undefined} alt={operator.full_name} />
+                        <AvatarFallback className="text-[8px] bg-primary/10 text-primary">
+                          {getInitials(operator.full_name)}
+                        </AvatarFallback>
+                      </Avatar>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="text-xs">
+                      {operator.full_name}
+                    </TooltipContent>
+                  </Tooltip>
+                ))}
+                {assignedOperators.length > 2 && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="h-5 w-5 rounded-full border border-card bg-muted flex items-center justify-center">
+                        <span className="text-[8px] font-medium text-muted-foreground">
+                          +{assignedOperators.length - 2}
+                        </span>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="text-xs">
+                      {assignedOperators.slice(2).map(op => op.full_name).join(', ')}
+                    </TooltipContent>
+                  </Tooltip>
+                )}
+              </div>
+            ) : isActiveWorkOrder ? (
+              <UserX className="h-4 w-4 text-warning shrink-0" />
+            ) : null}
+          </div>
 
-        {/* Price + Progress */}
-        <div className="flex items-center justify-between gap-4">
-          <div className="shrink-0">
-            {workOrder.order_value ? (
-              <span className="text-sm font-semibold text-foreground font-mono">
-                €{workOrder.order_value.toLocaleString('nl-NL')}
-              </span>
-            ) : (
-              <span className="text-sm text-muted-foreground">-</span>
+          {/* Product badges */}
+          <div className="mb-3">
+            <ProductBreakdownBadges
+              breakdown={workOrder.productBreakdown}
+              batchSize={workOrder.batch_size}
+              compact
+              maxVisible={2}
+            />
+          </div>
+
+          {/* Customer */}
+          {workOrder.customer_name && (
+            <div className="text-sm text-foreground font-medium mb-3 truncate">
+              {workOrder.customer_name}
+            </div>
+          )}
+
+          {/* Dates */}
+          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground mb-3">
+            {workOrder.start_date && (
+              <div className="flex items-center gap-1.5">
+                <Calendar className="h-3 w-3" />
+                <span>{formatDate(workOrder.start_date)}</span>
+              </div>
+            )}
+            {workOrder.shipping_date && (
+              <div className="flex items-center gap-1.5">
+                <Truck className="h-3 w-3" />
+                <span>{formatDate(workOrder.shipping_date)}</span>
+              </div>
             )}
           </div>
-          <div className="flex-1 flex items-center gap-2">
-            <Progress value={workOrder.progressPercent || 0} className="h-1.5 flex-1" />
-            <span className="text-xs text-muted-foreground font-medium font-mono">{workOrder.progressPercent || 0}%</span>
+
+          {/* Price + Progress */}
+          <div className="flex items-center justify-between gap-4">
+            <div className="shrink-0">
+              {workOrder.order_value ? (
+                <span className="text-sm font-semibold text-foreground font-mono">
+                  €{workOrder.order_value.toLocaleString('nl-NL')}
+                </span>
+              ) : (
+                <span className="text-sm text-muted-foreground">-</span>
+              )}
+            </div>
+            <div className="flex-1 flex items-center gap-2">
+              <Progress value={workOrder.progressPercent || 0} className="h-1.5 flex-1" />
+              <span className="text-xs text-muted-foreground font-medium font-mono">{workOrder.progressPercent || 0}%</span>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </TooltipProvider>
   );
 }
 

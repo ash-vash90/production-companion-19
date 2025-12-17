@@ -8,8 +8,16 @@ import { Progress } from '@/components/ui/progress';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import { AlertTriangle, Clock, ChevronRight, Calendar, Truck, UserX, Play, Users } from 'lucide-react';
 import { parseISO, isBefore, differenceInDays } from 'date-fns';
+
+interface AssignedOperator {
+  id: string;
+  full_name: string;
+  avatar_url: string | null;
+}
 
 export interface WorkOrderCardData {
   id: string;
@@ -27,6 +35,7 @@ export interface WorkOrderCardData {
   completedItems?: number;
   totalItems?: number;
   assigned_to?: string | null;
+  assignedOperators?: AssignedOperator[];
 }
 
 interface WorkOrderCardProps {
@@ -130,13 +139,21 @@ export function WorkOrderCard({
   };
 
   const isActiveWorkOrder = workOrder.status !== 'completed' && workOrder.status !== 'cancelled';
+  const assignedOperators = workOrder.assignedOperators || [];
+  const hasAssignedOperators = assignedOperators.length > 0;
+
+  // Get initials from full name
+  const getInitials = (name: string) => {
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  };
 
   return (
-    <div
-      className={`group relative rounded-xl border border-l-4 bg-card p-4 md:p-5 transition-all cursor-pointer hover:shadow-lg hover:border-muted-foreground/30 ${urgencyClass} ${selected ? 'ring-2 ring-primary bg-primary/5' : ''}`}
-      onClick={handleClick}
-      onMouseEnter={onHover}
-    >
+    <TooltipProvider>
+      <div
+        className={`group relative rounded-xl border border-l-4 bg-card p-4 md:p-5 transition-all cursor-pointer hover:shadow-lg hover:border-muted-foreground/30 ${urgencyClass} ${selected ? 'ring-2 ring-primary bg-primary/5' : ''}`}
+        onClick={handleClick}
+        onMouseEnter={onHover}
+      >
       {/* Selection checkbox */}
       {selectable && (
         <div 
@@ -157,12 +174,46 @@ export function WorkOrderCard({
           <span className="font-mono font-bold text-base md:text-lg truncate">{workOrder.wo_number}</span>
           {shippingOverdue && <AlertTriangle className="h-4 w-4 text-destructive shrink-0" />}
           {startOverdue && !shippingOverdue && <Clock className="h-4 w-4 text-warning shrink-0" />}
-          {!workOrder.assigned_to && isActiveWorkOrder && (
+          
+          {/* Assigned operators avatars */}
+          {hasAssignedOperators ? (
+            <div className="flex items-center -space-x-1.5 shrink-0">
+              {assignedOperators.slice(0, 3).map((operator) => (
+                <Tooltip key={operator.id}>
+                  <TooltipTrigger asChild>
+                    <Avatar className="h-6 w-6 border-2 border-card">
+                      <AvatarImage src={operator.avatar_url || undefined} alt={operator.full_name} />
+                      <AvatarFallback className="text-[10px] bg-primary/10 text-primary">
+                        {getInitials(operator.full_name)}
+                      </AvatarFallback>
+                    </Avatar>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="text-xs">
+                    {operator.full_name}
+                  </TooltipContent>
+                </Tooltip>
+              ))}
+              {assignedOperators.length > 3 && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="h-6 w-6 rounded-full border-2 border-card bg-muted flex items-center justify-center">
+                      <span className="text-[10px] font-medium text-muted-foreground">
+                        +{assignedOperators.length - 3}
+                      </span>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="text-xs">
+                    {assignedOperators.slice(3).map(op => op.full_name).join(', ')}
+                  </TooltipContent>
+                </Tooltip>
+              )}
+            </div>
+          ) : isActiveWorkOrder ? (
             <Badge variant="outline" className="text-[10px] px-1.5 py-0 gap-1 text-warning border-warning/50 shrink-0">
               <UserX className="h-3 w-3" />
               Unassigned
             </Badge>
-          )}
+          ) : null}
         </div>
         <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
           {showStatusEdit ? (
@@ -275,6 +326,7 @@ export function WorkOrderCard({
         {/* Arrow indicator */}
         <ChevronRight className="h-5 w-5 text-muted-foreground/40 group-hover:text-primary transition-colors shrink-0" />
       </div>
-    </div>
+      </div>
+    </TooltipProvider>
   );
 }
