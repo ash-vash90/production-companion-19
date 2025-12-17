@@ -22,6 +22,8 @@ import TestOutgoingWebhookDialog from './TestOutgoingWebhookDialog';
 import PayloadPreviewDialog from './PayloadPreviewDialog';
 import WebhookLogsViewer from './WebhookLogsViewer';
 import OutgoingWebhookLogs from './OutgoingWebhookLogs';
+import IncomingWebhookLogs from './IncomingWebhookLogs';
+import DeleteWebhookDialog from './DeleteWebhookDialog';
 
 interface IncomingWebhook {
   id: string;
@@ -153,6 +155,10 @@ const AutomationManager = () => {
   const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
   const [selectedRuleForPreview, setSelectedRuleForPreview] = useState<AutomationRule | null>(null);
   const [activeTab, setActiveTab] = useState('incoming');
+  const [creatingIncoming, setCreatingIncoming] = useState(false);
+  const [creatingOutgoing, setCreatingOutgoing] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [webhookToDelete, setWebhookToDelete] = useState<{ id: string; name: string; type: 'incoming' | 'outgoing' } | null>(null);
   const [outgoingSecrets, setOutgoingSecrets] = useState<Record<string, string>>({});
   const [showOutgoingSecrets, setShowOutgoingSecrets] = useState<Record<string, boolean>>({});
   const [regeneratingOutgoingSecret, setRegeneratingOutgoingSecret] = useState<string | null>(null);
@@ -234,6 +240,7 @@ const AutomationManager = () => {
   const createWebhook = async () => {
     if (!user || !newWebhook.name) return;
     
+    setCreatingIncoming(true);
     try {
       const { data, error } = await supabase.functions.invoke('create-webhook', {
         body: {
@@ -254,12 +261,15 @@ const AutomationManager = () => {
     } catch (error: any) {
       console.error('Error creating webhook:', error);
       toast.error(error.message || 'Failed to create webhook');
+    } finally {
+      setCreatingIncoming(false);
     }
   };
 
   const createOutgoingWebhook = async () => {
     if (!user || !newOutgoingWebhook.name || !newOutgoingWebhook.webhookUrl) return;
     
+    setCreatingOutgoing(true);
     try {
       const { data, error } = await supabase.functions.invoke('create-outgoing-webhook', {
         body: {
@@ -282,6 +292,8 @@ const AutomationManager = () => {
     } catch (error: any) {
       console.error('Error creating outgoing webhook:', error);
       toast.error(error.message || 'Failed to create webhook');
+    } finally {
+      setCreatingOutgoing(false);
     }
   };
 
@@ -558,10 +570,11 @@ const AutomationManager = () => {
                   </div>
                 </div>
                 <DialogFooter className="flex-col gap-2 sm:flex-row">
-                  <Button variant="outline" onClick={() => setWebhookDialogOpen(false)} className="w-full sm:w-auto">
+                  <Button variant="outline" onClick={() => setWebhookDialogOpen(false)} className="w-full sm:w-auto" disabled={creatingIncoming}>
                     {t('cancel')}
                   </Button>
-                  <Button onClick={createWebhook} disabled={!newWebhook.name} className="w-full sm:w-auto">
+                  <Button onClick={createWebhook} disabled={!newWebhook.name || creatingIncoming} className="w-full sm:w-auto">
+                    {creatingIncoming && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     {t('create')}
                   </Button>
                 </DialogFooter>
@@ -636,7 +649,10 @@ const AutomationManager = () => {
                   checked={selectedWebhook.enabled}
                   onCheckedChange={(checked) => toggleWebhook(selectedWebhook.id, checked)}
                 />
-                <Button variant="ghost" size="icon" onClick={() => deleteWebhook(selectedWebhook.id)}>
+                <Button variant="ghost" size="icon" onClick={() => {
+                  setWebhookToDelete({ id: selectedWebhook.id, name: selectedWebhook.name, type: 'incoming' });
+                  setDeleteDialogOpen(true);
+                }}>
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
@@ -1018,10 +1034,11 @@ const AutomationManager = () => {
                     </div>
                   </div>
                   <DialogFooter className="flex-col gap-2 sm:flex-row">
-                    <Button variant="outline" onClick={() => setOutgoingDialogOpen(false)} className="w-full sm:w-auto">
+                    <Button variant="outline" onClick={() => setOutgoingDialogOpen(false)} className="w-full sm:w-auto" disabled={creatingOutgoing}>
                       Cancel
                     </Button>
-                    <Button onClick={createOutgoingWebhook} disabled={!newOutgoingWebhook.name || !newOutgoingWebhook.webhookUrl} className="w-full sm:w-auto">
+                    <Button onClick={createOutgoingWebhook} disabled={!newOutgoingWebhook.name || !newOutgoingWebhook.webhookUrl || creatingOutgoing} className="w-full sm:w-auto">
+                      {creatingOutgoing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                       Create
                     </Button>
                   </DialogFooter>
@@ -1078,7 +1095,10 @@ const AutomationManager = () => {
                             checked={webhook.enabled}
                             onCheckedChange={(checked) => toggleOutgoingWebhook(webhook.id, checked)}
                           />
-                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => deleteOutgoingWebhook(webhook.id)}>
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => {
+                            setWebhookToDelete({ id: webhook.id, name: webhook.name, type: 'outgoing' });
+                            setDeleteDialogOpen(true);
+                          }}>
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
@@ -1155,10 +1175,14 @@ const AutomationManager = () => {
 
       {/* Logs Tab */}
       <TabsContent value="logs" className="space-y-4 sm:space-y-6">
-        <Tabs defaultValue="outgoing-logs" className="space-y-4">
+        <Tabs defaultValue="incoming-logs" className="space-y-4">
           <TabsList>
-            <TabsTrigger value="outgoing-logs">Outgoing Logs</TabsTrigger>
+            <TabsTrigger value="incoming-logs">Incoming</TabsTrigger>
+            <TabsTrigger value="outgoing-logs">Outgoing</TabsTrigger>
           </TabsList>
+          <TabsContent value="incoming-logs">
+            <IncomingWebhookLogs />
+          </TabsContent>
           <TabsContent value="outgoing-logs">
             <OutgoingWebhookLogs />
           </TabsContent>
@@ -1206,6 +1230,25 @@ const AutomationManager = () => {
           webhookName={selectedOutgoingWebhook.name}
           webhookUrl={selectedOutgoingWebhook.webhook_url}
           eventType={selectedOutgoingWebhook.event_type}
+        />
+      )}
+
+      {/* Delete Webhook Confirmation Dialog */}
+      {webhookToDelete && (
+        <DeleteWebhookDialog
+          open={deleteDialogOpen}
+          onOpenChange={setDeleteDialogOpen}
+          webhookId={webhookToDelete.id}
+          webhookName={webhookToDelete.name}
+          webhookType={webhookToDelete.type}
+          onConfirmDelete={async () => {
+            if (webhookToDelete.type === 'incoming') {
+              await deleteWebhook(webhookToDelete.id);
+            } else {
+              await deleteOutgoingWebhook(webhookToDelete.id);
+            }
+            setWebhookToDelete(null);
+          }}
         />
       )}
     </Tabs>

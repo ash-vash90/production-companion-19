@@ -894,6 +894,7 @@ export type Database = {
           notification_prefs: Json | null
           role: Database["public"]["Enums"]["app_role"]
           updated_at: string
+          view_preferences: Json | null
         }
         Insert: {
           avatar_url?: string | null
@@ -906,6 +907,7 @@ export type Database = {
           notification_prefs?: Json | null
           role?: Database["public"]["Enums"]["app_role"]
           updated_at?: string
+          view_preferences?: Json | null
         }
         Update: {
           avatar_url?: string | null
@@ -918,6 +920,7 @@ export type Database = {
           notification_prefs?: Json | null
           role?: Database["public"]["Enums"]["app_role"]
           updated_at?: string
+          view_preferences?: Json | null
         }
         Relationships: []
       }
