@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useResilientQuery } from './useResilientQuery';
 import { getProductBreakdown, ProductBreakdown } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
 
 // Global cache with size limit to prevent memory leaks
 const MAX_CACHE_SIZE = 5;
@@ -45,7 +46,10 @@ interface UseProductionReportsOptions {
  */
 export function useProductionReports(options: UseProductionReportsOptions = {}) {
   const { limit } = options;
-  const cacheKey = `reports_${limit}`;
+  // Include user ID in cache key so data refetches on auth state change
+  const { user } = useAuth();
+  const userId = user?.id || 'anonymous';
+  const cacheKey = `reports_${userId}_${limit}`;
 
   const fetchReports = useCallback(async (): Promise<ProductionReportItem[]> => {
     // Check cache first
@@ -109,6 +113,7 @@ export function useProductionReports(options: UseProductionReportsOptions = {}) 
     fallbackData: [],
     timeout: 15000,
     retryCount: 3,
+    queryKey: cacheKey, // Refetch when user or filters change
   });
 
   return {
