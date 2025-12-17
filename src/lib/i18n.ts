@@ -372,6 +372,7 @@ export const translations = {
     viewDetails: 'View Details',
     
     // Personal Settings & Theme
+    myProfile: 'My Profile',
     personalSettings: 'Personal Settings',
     personalSettingsDescription: 'Customize your preferences',
     appearance: 'Appearance',
@@ -970,6 +971,7 @@ export const translations = {
     viewDetails: 'Details Bekijken',
     
     // Personal Settings & Theme
+    myProfile: 'Mijn Profiel',
     personalSettings: 'Persoonlijke Instellingen',
     personalSettingsDescription: 'Pas uw voorkeuren aan',
     appearance: 'Uiterlijk',

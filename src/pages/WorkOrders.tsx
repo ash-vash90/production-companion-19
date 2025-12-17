@@ -17,6 +17,7 @@ import { WorkOrderCard } from '@/components/workorders/WorkOrderCard';
 import { WorkOrderTableRow, WorkOrderRowData } from '@/components/workorders/WorkOrderTableRow';
 import { WorkOrderKanbanView } from '@/components/workorders/WorkOrderKanbanView';
 import { CancelWorkOrderDialog } from '@/components/workorders/CancelWorkOrderDialog';
+import WorkOrderDetailSheet from '@/components/workorders/WorkOrderDetailSheet';
 import { BulkActionsToolbar } from '@/components/workorders/BulkActionsToolbar';
 import { useWorkOrders, invalidateWorkOrdersCache, WorkOrderListItem } from '@/hooks/useWorkOrders';
 import { prefetchProductionOnHover } from '@/services/prefetchService';
@@ -74,6 +75,8 @@ const WorkOrders = () => {
   const [isCancelling, setIsCancelling] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [prefsLoaded, setPrefsLoaded] = useState(false);
+  const [detailSheetOpen, setDetailSheetOpen] = useState(false);
+  const [detailWorkOrderId, setDetailWorkOrderId] = useState<string | null>(null);
   
   // Use the resilient work orders hook - disable realtime to reduce memory/subscriptions
   const { workOrders, loading, error, refetch } = useWorkOrders({
@@ -535,7 +538,7 @@ const WorkOrders = () => {
               <WorkOrderTableRow
                 key={wo.id}
                 workOrder={toRowData(wo)}
-                linkTo={`/production/${wo.id}`}
+                onClick={() => openDetailSheet(wo.id)}
                 onCancel={isAdmin ? () => openCancelDialog({ id: wo.id, wo_number: wo.wo_number }) : undefined}
                 onStatusChange={() => handleStatusChange(wo.id, wo.status)}
                 editableStatus={isAdmin}
@@ -552,6 +555,12 @@ const WorkOrders = () => {
     );
   };
 
+  // Open work order detail sheet
+  const openDetailSheet = useCallback((workOrderId: string) => {
+    setDetailWorkOrderId(workOrderId);
+    setDetailSheetOpen(true);
+  }, []);
+
   // Render card view with shared component
   const renderCardView = useCallback((orders: WorkOrderWithItems[]) => (
     <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
@@ -559,7 +568,7 @@ const WorkOrders = () => {
         <WorkOrderCard
           key={wo.id}
           workOrder={toRowData(wo)}
-          onClick={() => navigate(`/production/${wo.id}`)}
+          onClick={() => openDetailSheet(wo.id)}
           onCancel={isAdmin ? () => openCancelDialog({ id: wo.id, wo_number: wo.wo_number }) : undefined}
           onHover={() => prefetchProductionOnHover(wo.id)}
           onStatusChange={() => handleStatusChange(wo.id, wo.status)}
@@ -569,7 +578,7 @@ const WorkOrders = () => {
         />
       ))}
     </div>
-  ), [toRowData, navigate, isAdmin, openCancelDialog, handleStatusChange, selectedIds, toggleSelection]);
+  ), [toRowData, isAdmin, openCancelDialog, handleStatusChange, selectedIds, toggleSelection, openDetailSheet]);
 
   const isMobile = useIsMobile();
 
@@ -890,6 +899,13 @@ const WorkOrders = () => {
           }
           onConfirm={handleCancelWorkOrder}
           isLoading={isCancelling}
+        />
+
+        <WorkOrderDetailSheet
+          workOrderId={detailWorkOrderId}
+          open={detailSheetOpen}
+          onOpenChange={setDetailSheetOpen}
+          onStatusChange={refetch}
         />
 
         <BulkActionsToolbar
