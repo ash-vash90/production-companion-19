@@ -16,7 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { formatDateTime } from '@/lib/utils';
-import { Plus, Trash2, Copy, Eye, Loader2, Webhook, Zap, History, ChevronRight, Code, Settings2, AlertCircle, Play, Send } from 'lucide-react';
+import { Plus, Trash2, Copy, Eye, Loader2, Webhook, Zap, History, ChevronRight, Code, Settings2, AlertCircle, Play, Send, TestTube, ExternalLink } from 'lucide-react';
 import TestWebhookDialog from './TestWebhookDialog';
 import PayloadPreviewDialog from './PayloadPreviewDialog';
 import WebhookLogsViewer from './WebhookLogsViewer';
@@ -27,14 +27,23 @@ interface IncomingWebhook {
   name: string;
   description: string | null;
   endpoint_key: string;
-  secret_key: string; // Only shown masked (last 4 chars) from DB, full secret only on create/regenerate
+  secret_key: string;
   enabled: boolean;
   trigger_count: number;
   last_triggered_at: string | null;
   created_at: string;
 }
 
-// Mask a secret key to show only last 4 characters
+interface OutgoingWebhook {
+  id: string;
+  name: string;
+  webhook_url: string;
+  event_type: string;
+  enabled: boolean;
+  created_at: string;
+  created_by: string;
+}
+
 const maskSecret = (secret: string): string => {
   if (!secret || secret.length <= 4) return '••••••••••••';
   return '••••••••' + secret.slice(-4);
@@ -51,17 +60,6 @@ interface AutomationRule {
   sort_order: number;
 }
 
-interface WebhookLog {
-  id: string;
-  incoming_webhook_id: string;
-  request_body: any;
-  response_status: number | null;
-  executed_rules: any;
-  error_message: string | null;
-  created_at: string;
-}
-
-// Natural field name mappings - use readable names that map to database columns
 const ACTION_TYPES = [
   { 
     value: 'create_work_order', 
@@ -118,17 +116,33 @@ const ACTION_TYPES = [
   },
 ];
 
+const EVENT_TYPES = [
+  { value: 'work_order_created', label: 'Work Order Created', description: 'Triggered when a new work order is created' },
+  { value: 'work_order_completed', label: 'Work Order Completed', description: 'Triggered when all items in a work order are completed' },
+  { value: 'work_order_cancelled', label: 'Work Order Cancelled', description: 'Triggered when a work order is cancelled' },
+  { value: 'production_step_completed', label: 'Production Step Completed', description: 'Triggered when a production step is completed' },
+  { value: 'quality_check_passed', label: 'Quality Check Passed', description: 'Triggered when quality check passes' },
+  { value: 'quality_check_failed', label: 'Quality Check Failed', description: 'Triggered when quality check fails' },
+  { value: 'item_completed', label: 'Item Completed', description: 'Triggered when an individual item is completed' },
+  { value: 'batch_completed', label: 'Batch Completed', description: 'Triggered when all items in a batch are completed' },
+  { value: 'material_scanned', label: 'Material Scanned', description: 'Triggered when a material batch is scanned' },
+  { value: 'subassembly_linked', label: 'Subassembly Linked', description: 'Triggered when a subassembly is linked' },
+  { value: 'certificate_generated', label: 'Certificate Generated', description: 'Triggered when a quality certificate is generated' },
+];
+
 const AutomationManager = () => {
   const { user } = useAuth();
   const { t } = useLanguage();
   const [loading, setLoading] = useState(true);
   const [webhooks, setWebhooks] = useState<IncomingWebhook[]>([]);
+  const [outgoingWebhooks, setOutgoingWebhooks] = useState<OutgoingWebhook[]>([]);
   const [rules, setRules] = useState<AutomationRule[]>([]);
   const [selectedWebhook, setSelectedWebhook] = useState<IncomingWebhook | null>(null);
   const [showSecrets, setShowSecrets] = useState<Record<string, boolean>>({});
   const [newlyCreatedSecrets, setNewlyCreatedSecrets] = useState<Record<string, string>>({});
   const [regeneratingSecret, setRegeneratingSecret] = useState(false);
   const [webhookDialogOpen, setWebhookDialogOpen] = useState(false);
+  const [outgoingDialogOpen, setOutgoingDialogOpen] = useState(false);
   const [ruleDialogOpen, setRuleDialogOpen] = useState(false);
   const [logsDialogOpen, setLogsDialogOpen] = useState(false);
   const [testDialogOpen, setTestDialogOpen] = useState(false);
@@ -137,6 +151,7 @@ const AutomationManager = () => {
   const [activeTab, setActiveTab] = useState('incoming');
   
   const [newWebhook, setNewWebhook] = useState({ name: '', description: '' });
+  const [newOutgoingWebhook, setNewOutgoingWebhook] = useState({ name: '', webhookUrl: '', eventType: 'work_order_created' });
   const [newRule, setNewRule] = useState({
     name: '',
     action_type: 'create_work_order',
@@ -151,6 +166,7 @@ const AutomationManager = () => {
 
   useEffect(() => {
     fetchWebhooks();
+    fetchOutgoingWebhooks();
   }, []);
 
   useEffect(() => {
@@ -161,8 +177,6 @@ const AutomationManager = () => {
 
   const fetchWebhooks = async () => {
     try {
-      // Use the safe view that masks secret_key (returns ********xxxx format)
-      // Cast to 'any' since the view isn't in generated types but has same structure
       const { data, error } = await supabase
         .from('incoming_webhooks_safe' as any)
         .select('*')
@@ -178,6 +192,20 @@ const AutomationManager = () => {
       toast.error('Failed to load webhooks');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchOutgoingWebhooks = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('zapier_webhooks')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      setOutgoingWebhooks(data || []);
+    } catch (error: any) {
+      console.error('Error fetching outgoing webhooks:', error);
     }
   };
 
@@ -200,7 +228,6 @@ const AutomationManager = () => {
     if (!user || !newWebhook.name) return;
     
     try {
-      // Use edge function to create webhook - secret is returned only once
       const { data, error } = await supabase.functions.invoke('create-webhook', {
         body: {
           name: newWebhook.name,
@@ -211,9 +238,7 @@ const AutomationManager = () => {
       if (error) throw error;
       if (data.error) throw new Error(data.error);
       
-      // Store the full secret temporarily so user can copy it once
       setNewlyCreatedSecrets(prev => ({ ...prev, [data.webhook.id]: data.secret }));
-      
       setWebhooks(prev => [data.webhook, ...prev]);
       setSelectedWebhook(data.webhook);
       setNewWebhook({ name: '', description: '' });
@@ -221,6 +246,32 @@ const AutomationManager = () => {
       toast.success('Webhook created! Copy the secret now - it will be hidden after you leave this page.');
     } catch (error: any) {
       console.error('Error creating webhook:', error);
+      toast.error(error.message || 'Failed to create webhook');
+    }
+  };
+
+  const createOutgoingWebhook = async () => {
+    if (!user || !newOutgoingWebhook.name || !newOutgoingWebhook.webhookUrl) return;
+    
+    try {
+      const { error } = await supabase
+        .from('zapier_webhooks')
+        .insert({
+          name: newOutgoingWebhook.name,
+          webhook_url: newOutgoingWebhook.webhookUrl,
+          event_type: newOutgoingWebhook.eventType,
+          enabled: true,
+          created_by: user.id,
+        });
+      
+      if (error) throw error;
+      
+      fetchOutgoingWebhooks();
+      setNewOutgoingWebhook({ name: '', webhookUrl: '', eventType: 'work_order_created' });
+      setOutgoingDialogOpen(false);
+      toast.success('Outgoing webhook created');
+    } catch (error: any) {
+      console.error('Error creating outgoing webhook:', error);
       toast.error(error.message || 'Failed to create webhook');
     }
   };
@@ -234,7 +285,6 @@ const AutomationManager = () => {
       
       if (error) throw error;
       
-      // Store the new secret temporarily
       setNewlyCreatedSecrets(prev => ({ ...prev, [webhookId]: data.secret }));
       toast.success('Secret regenerated! Copy it now - it will be hidden after you leave this page.');
     } catch (error: any) {
@@ -265,6 +315,23 @@ const AutomationManager = () => {
     }
   };
 
+  const deleteOutgoingWebhook = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('zapier_webhooks')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+      
+      setOutgoingWebhooks(prev => prev.filter(w => w.id !== id));
+      toast.success('Webhook deleted');
+    } catch (error: any) {
+      console.error('Error deleting webhook:', error);
+      toast.error(error.message);
+    }
+  };
+
   const toggleWebhook = async (id: string, enabled: boolean) => {
     try {
       const { error } = await supabase
@@ -281,6 +348,45 @@ const AutomationManager = () => {
     } catch (error: any) {
       console.error('Error toggling webhook:', error);
       toast.error(error.message);
+    }
+  };
+
+  const toggleOutgoingWebhook = async (id: string, enabled: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('zapier_webhooks')
+        .update({ enabled })
+        .eq('id', id);
+      
+      if (error) throw error;
+      
+      setOutgoingWebhooks(prev => prev.map(w => w.id === id ? { ...w, enabled } : w));
+    } catch (error: any) {
+      console.error('Error toggling webhook:', error);
+      toast.error(error.message);
+    }
+  };
+
+  const testOutgoingWebhook = async (webhook: OutgoingWebhook) => {
+    try {
+      const response = await fetch(webhook.webhook_url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          event: webhook.event_type,
+          test: true,
+          timestamp: new Date().toISOString(),
+          data: { message: 'This is a test webhook from Rhosonics PMS' }
+        }),
+      });
+      
+      if (response.ok) {
+        toast.success('Test successful', { description: 'Webhook endpoint responded successfully' });
+      } else {
+        toast.error('Test failed', { description: `Endpoint returned status ${response.status}` });
+      }
+    } catch (error: any) {
+      toast.error('Test failed', { description: error.message });
     }
   };
 
@@ -363,8 +469,13 @@ const AutomationManager = () => {
   };
 
   const getWebhookUrl = (endpointKey: string) => {
-    const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID || 'eftwvgyjmeajakiafrgn';
+    const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID || 'ybmtjbnrslczpgjdaxry';
     return `https://${projectId}.supabase.co/functions/v1/webhook-receiver/${endpointKey}`;
+  };
+
+  const openPreviewDialog = (rule: AutomationRule) => {
+    setSelectedRuleForPreview(rule);
+    setPreviewDialogOpen(true);
   };
 
   const selectedActionType = ACTION_TYPES.find(a => a.value === newRule.action_type);
@@ -379,17 +490,22 @@ const AutomationManager = () => {
 
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 sm:space-y-6">
-      <TabsList className="grid w-full grid-cols-2">
+      <TabsList className="grid w-full grid-cols-3">
         <TabsTrigger value="incoming" className="flex items-center gap-2">
           <Webhook className="h-4 w-4" />
-          Incoming
+          <span className="hidden sm:inline">Incoming</span>
         </TabsTrigger>
         <TabsTrigger value="outgoing" className="flex items-center gap-2">
           <Send className="h-4 w-4" />
-          Outgoing Logs
+          <span className="hidden sm:inline">Outgoing</span>
+        </TabsTrigger>
+        <TabsTrigger value="logs" className="flex items-center gap-2">
+          <History className="h-4 w-4" />
+          <span className="hidden sm:inline">Logs</span>
         </TabsTrigger>
       </TabsList>
 
+      {/* Incoming Webhooks Tab */}
       <TabsContent value="incoming" className="space-y-4 sm:space-y-6">
         <Card>
           <CardHeader className="pb-4">
@@ -400,7 +516,7 @@ const AutomationManager = () => {
                   {t('incomingWebhooks') || 'Incoming Webhooks'}
                 </CardTitle>
                 <CardDescription className="text-sm">
-                  {t('incomingWebhooksDesc') || 'Receive data from external systems'}
+                  {t('incomingWebhooksDesc') || 'Receive data from external systems and trigger automations'}
                 </CardDescription>
               </div>
             <Dialog open={webhookDialogOpen} onOpenChange={setWebhookDialogOpen}>
@@ -507,6 +623,10 @@ const AutomationManager = () => {
                 )}
               </div>
               <div className="flex items-center gap-2 self-end sm:self-auto">
+                <Button variant="outline" size="sm" onClick={() => setTestDialogOpen(true)}>
+                  <TestTube className="mr-1.5 h-3.5 w-3.5" />
+                  Test
+                </Button>
                 <Switch
                   checked={selectedWebhook.enabled}
                   onCheckedChange={(checked) => toggleWebhook(selectedWebhook.id, checked)}
@@ -535,7 +655,6 @@ const AutomationManager = () => {
             <div className="space-y-2">
               <Label className="text-sm text-muted-foreground">Secret Key (X-Webhook-Secret)</Label>
               {newlyCreatedSecrets[selectedWebhook.id] ? (
-                // Show full secret only when newly created/regenerated
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
                     <code className="flex-1 text-[10px] sm:text-xs bg-green-500/10 border-green-500/30 p-2 rounded border font-mono truncate text-green-700 dark:text-green-400">
@@ -551,7 +670,6 @@ const AutomationManager = () => {
                   </div>
                 </div>
               ) : (
-                // Show masked secret with regenerate option
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
                     <code className="flex-1 text-[10px] sm:text-xs bg-muted p-2 rounded border font-mono truncate">
@@ -799,7 +917,16 @@ const AutomationManager = () => {
                             .join(' | ') || 'No mappings'}
                         </p>
                       </div>
-                      <div className="flex items-center gap-2 ml-2">
+                      <div className="flex items-center gap-1 ml-2">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8" 
+                          onClick={() => openPreviewDialog(rule)}
+                          title="Preview payload extraction"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
                         <Switch
                           checked={rule.enabled}
                           onCheckedChange={(checked) => toggleRule(rule.id, checked)}
@@ -818,8 +945,151 @@ const AutomationManager = () => {
       )}
       </TabsContent>
 
-      <TabsContent value="outgoing">
-        <OutgoingWebhookLogs />
+      {/* Outgoing Webhooks Tab */}
+      <TabsContent value="outgoing" className="space-y-4 sm:space-y-6">
+        <Card>
+          <CardHeader className="pb-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="space-y-1">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Send className="h-5 w-5 shrink-0" />
+                  Outgoing Webhooks
+                </CardTitle>
+                <CardDescription className="text-sm">
+                  Send data to external systems when events occur
+                </CardDescription>
+              </div>
+              <Dialog open={outgoingDialogOpen} onOpenChange={setOutgoingDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button size="sm" className="w-full sm:w-auto">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add Webhook
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="w-[calc(100%-2rem)] max-w-lg max-h-[80vh]">
+                  <DialogHeader>
+                    <DialogTitle>Add Outgoing Webhook</DialogTitle>
+                    <DialogDescription>
+                      Configure a URL to receive events from this system
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4 py-4">
+                    <div className="space-y-2">
+                      <Label>Name *</Label>
+                      <Input
+                        value={newOutgoingWebhook.name}
+                        onChange={(e) => setNewOutgoingWebhook(prev => ({ ...prev, name: e.target.value }))}
+                        placeholder="e.g., Zapier Integration"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Webhook URL *</Label>
+                      <Input
+                        value={newOutgoingWebhook.webhookUrl}
+                        onChange={(e) => setNewOutgoingWebhook(prev => ({ ...prev, webhookUrl: e.target.value }))}
+                        placeholder="https://hooks.zapier.com/..."
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Trigger Event *</Label>
+                      <Select
+                        value={newOutgoingWebhook.eventType}
+                        onValueChange={(value) => setNewOutgoingWebhook(prev => ({ ...prev, eventType: value }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {EVENT_TYPES.map(type => (
+                            <SelectItem key={type.value} value={type.value}>
+                              {type.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">
+                        {EVENT_TYPES.find(e => e.value === newOutgoingWebhook.eventType)?.description}
+                      </p>
+                    </div>
+                  </div>
+                  <DialogFooter className="flex-col gap-2 sm:flex-row">
+                    <Button variant="outline" onClick={() => setOutgoingDialogOpen(false)} className="w-full sm:w-auto">
+                      Cancel
+                    </Button>
+                    <Button onClick={createOutgoingWebhook} disabled={!newOutgoingWebhook.name || !newOutgoingWebhook.webhookUrl} className="w-full sm:w-auto">
+                      Create
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {outgoingWebhooks.length === 0 ? (
+              <div className="text-center py-8 border rounded-lg border-dashed">
+                <Send className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
+                <h3 className="font-medium mb-1">No outgoing webhooks yet</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Create a webhook to send events to external systems
+                </p>
+                <Button size="sm" onClick={() => setOutgoingDialogOpen(true)}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Webhook
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {outgoingWebhooks.map((webhook) => (
+                  <div key={webhook.id} className="p-4 border rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">{webhook.name}</span>
+                        <Badge variant="outline" className="text-xs">
+                          {EVENT_TYPES.find(e => e.value === webhook.event_type)?.label || webhook.event_type}
+                        </Badge>
+                        {!webhook.enabled && (
+                          <Badge variant="secondary" className="text-xs">Disabled</Badge>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => testOutgoingWebhook(webhook)} title="Test webhook">
+                          <TestTube className="h-4 w-4" />
+                        </Button>
+                        <Switch
+                          checked={webhook.enabled}
+                          onCheckedChange={(checked) => toggleOutgoingWebhook(webhook.id, checked)}
+                        />
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => deleteOutgoingWebhook(webhook.id)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <code className="flex-1 text-xs bg-muted p-2 rounded border truncate font-mono">
+                        {webhook.webhook_url}
+                      </code>
+                      <Button variant="outline" size="icon" className="shrink-0 h-8 w-8" onClick={() => copyToClipboard(webhook.webhook_url)}>
+                        <Copy className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </TabsContent>
+
+      {/* Logs Tab */}
+      <TabsContent value="logs" className="space-y-4 sm:space-y-6">
+        <Tabs defaultValue="outgoing-logs" className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="outgoing-logs">Outgoing Logs</TabsTrigger>
+          </TabsList>
+          <TabsContent value="outgoing-logs">
+            <OutgoingWebhookLogs />
+          </TabsContent>
+        </Tabs>
       </TabsContent>
 
       {/* Test Webhook Dialog */}

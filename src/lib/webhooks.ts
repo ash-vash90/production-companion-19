@@ -132,6 +132,41 @@ export async function retryDeadLetterEntry(entryId: string): Promise<WebhookResu
 }
 
 /**
+ * Log outgoing webhook to database
+ */
+async function logOutgoingWebhook(
+  webhookId: string,
+  eventType: string,
+  payload: WebhookPayload,
+  responseStatus: number | null,
+  responseBody: unknown | null,
+  responseTimeMs: number,
+  errorMessage: string | null,
+  deliveryId: string,
+  attempts: number
+): Promise<void> {
+  try {
+    // Use any type since the table might not be in generated types yet
+    await supabase
+      .from('outgoing_webhook_logs' as any)
+      .insert({
+        webhook_id: webhookId,
+        event_type: eventType,
+        payload,
+        response_status: responseStatus,
+        response_body: responseBody,
+        response_time_ms: responseTimeMs,
+        error_message: errorMessage,
+        delivery_id: deliveryId,
+        attempts,
+      });
+  } catch (error) {
+    // Log silently - don't fail webhook because of logging failure
+    console.error('Failed to log outgoing webhook:', error);
+  }
+}
+
+/**
  * Send a single webhook with retry logic, signature, and health tracking
  */
 async function sendWebhookWithRetry(
@@ -158,9 +193,10 @@ async function sendWebhookWithRetry(
   }
 
   // Add delivery ID for tracking
+  const deliveryId = generateDeliveryId();
   const deliveryPayload: WebhookPayload = {
     ...payload,
-    delivery_id: generateDeliveryId(),
+    delivery_id: deliveryId,
   };
 
   const payloadString = JSON.stringify(deliveryPayload);
@@ -175,7 +211,7 @@ async function sendWebhookWithRetry(
         'Content-Type': 'application/json',
         'X-Webhook-Event': payload.event,
         'X-Webhook-Timestamp': payload.timestamp,
-        'X-Webhook-Delivery': deliveryPayload.delivery_id!,
+        'X-Webhook-Delivery': deliveryId,
         'User-Agent': 'Rhosonics-PMS-Webhook/1.0',
         ...(webhook.headers || {}),
       };
@@ -194,6 +230,13 @@ async function sendWebhookWithRetry(
       });
 
       const responseTimeMs = Date.now() - startTime;
+      let responseBody = null;
+      
+      try {
+        responseBody = await response.json();
+      } catch {
+        // Response might not be JSON
+      }
 
       // Check if response is successful
       if (!response.ok) {
@@ -202,6 +245,19 @@ async function sendWebhookWithRetry(
 
       // Record successful call
       await recordWebhookCall(webhook.id, true, responseTimeMs);
+
+      // Log to database
+      await logOutgoingWebhook(
+        webhook.id,
+        payload.event,
+        deliveryPayload,
+        response.status,
+        responseBody,
+        responseTimeMs,
+        null,
+        deliveryId,
+        attempt
+      );
 
       console.log(`Webhook ${webhook.name} sent successfully in ${responseTimeMs}ms`);
       return {
@@ -222,9 +278,23 @@ async function sendWebhookWithRetry(
       // Record failed call
       await recordWebhookCall(webhook.id, false, responseTimeMs);
 
-      // If this was the last attempt, add to dead letter queue
+      // If this was the last attempt, add to dead letter queue and log
       if (attempt === maxAttempts) {
         addToDeadLetterQueue(webhook, payload, errorMessage, attempt);
+        
+        // Log failed webhook to database
+        await logOutgoingWebhook(
+          webhook.id,
+          payload.event,
+          deliveryPayload,
+          null,
+          null,
+          responseTimeMs,
+          errorMessage,
+          deliveryId,
+          attempt
+        );
+
         return {
           success: false,
           error: errorMessage,
