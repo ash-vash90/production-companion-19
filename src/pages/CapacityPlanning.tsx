@@ -7,14 +7,16 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { format, startOfWeek, endOfWeek, addWeeks, subWeeks } from 'date-fns';
-import { ChevronLeft, ChevronRight, Users, Calendar as CalendarIcon, BarChart3 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Users, Calendar as CalendarIcon, BarChart3, UserMinus } from 'lucide-react';
 import WeeklyCapacityPlanner from '@/components/calendar/WeeklyCapacityPlanner';
 import CapacityUtilizationChart from '@/components/workorders/CapacityUtilizationChart';
+import QuickAvailabilityForm from '@/components/calendar/QuickAvailabilityForm';
 
 const CapacityPlanning = () => {
   const { t, language } = useLanguage();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [activeTab, setActiveTab] = useState<'planner' | 'overview'>('planner');
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
   const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 });
@@ -29,6 +31,11 @@ const CapacityPlanning = () => {
 
   const goToToday = () => {
     setCurrentDate(new Date());
+  };
+
+  const handleAvailabilityAdded = () => {
+    // Trigger refresh of the planner
+    setRefreshKey(prev => prev + 1);
   };
 
   return (
@@ -81,7 +88,15 @@ const CapacityPlanning = () => {
 
         {/* Main content */}
         {activeTab === 'planner' ? (
-          <WeeklyCapacityPlanner />
+          <div className="flex gap-4">
+            <div className="flex-1 min-w-0">
+              <WeeklyCapacityPlanner key={refreshKey} />
+            </div>
+            {/* Quick availability form sidebar */}
+            <div className="w-72 flex-shrink-0 hidden xl:block">
+              <QuickAvailabilityForm onAvailabilityAdded={handleAvailabilityAdded} />
+            </div>
+          </div>
         ) : (
           <div className="grid gap-4 md:gap-6">
             {/* Capacity utilization charts for each day of the week */}

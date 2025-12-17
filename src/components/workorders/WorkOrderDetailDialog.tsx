@@ -13,7 +13,7 @@ import { formatDate, formatProductType } from '@/lib/utils';
 import { WorkOrderStatusBadge } from './WorkOrderStatusBadge';
 import StepAssignmentPanel from './StepAssignmentPanel';
 import CapacityUtilizationChart from './CapacityUtilizationChart';
-import { Package, Calendar, Truck, DollarSign, Play, Loader2, AlertTriangle, Users, FileText, BarChart3 } from 'lucide-react';
+import { Package, Calendar, Truck, DollarSign, Play, Loader2, AlertTriangle, Users, FileText, BarChart3, CalendarClock } from 'lucide-react';
 
 interface WorkOrderDetail {
   id: string;
@@ -126,6 +126,18 @@ const WorkOrderDetailDialog: React.FC<WorkOrderDetailDialogProps> = ({
                 {/* Action Buttons */}
                 {isActiveWorkOrder && (
                   <div className="flex items-center gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="gap-1.5"
+                      onClick={() => {
+                        onOpenChange(false);
+                        navigate('/capacity-planning');
+                      }}
+                    >
+                      <CalendarClock className="h-4 w-4" />
+                      <span className="hidden sm:inline">{language === 'nl' ? 'Capaciteit' : 'Capacity'}</span>
+                    </Button>
                     <Button onClick={handleOpenProduction} size="sm" className="gap-1.5">
                       <Play className="h-4 w-4" />
                       {language === 'nl' ? 'Start Productie' : 'Start Production'}
