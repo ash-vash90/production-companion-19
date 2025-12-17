@@ -5,7 +5,7 @@ import { WorkOrderStatusSelect } from './WorkOrderStatusSelect';
 import { ProductBreakdownBadges } from './ProductBreakdownBadges';
 import { formatDate, ProductBreakdown } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
-import { AlertTriangle, Clock, ChevronRight, X, Calendar, Truck } from 'lucide-react';
+import { AlertTriangle, Clock, ChevronRight, Calendar, Truck } from 'lucide-react';
 import { parseISO, isBefore, differenceInDays } from 'date-fns';
 
 export interface WorkOrderCardData {
@@ -95,11 +95,6 @@ export function WorkOrderCard({
     }
   };
 
-  const handleCancelClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    onCancel?.();
-  };
-
   // Progress color based on percentage
   const getProgressColor = () => {
     const percent = workOrder.progressPercent || 0;
@@ -114,16 +109,6 @@ export function WorkOrderCard({
       onClick={handleClick}
       onMouseEnter={onHover}
     >
-      {/* Cancel button */}
-      {showActions && onCancel && workOrder.status !== 'completed' && workOrder.status !== 'cancelled' && (
-        <button
-          onClick={handleCancelClick}
-          className="absolute top-3 right-3 p-1.5 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors z-10"
-          title={t('cancel')}
-        >
-          <X className="h-4 w-4" />
-        </button>
-      )}
 
       {/* Header: WO Number + Status */}
       <div className="flex items-start justify-between gap-3 mb-3 pr-8">

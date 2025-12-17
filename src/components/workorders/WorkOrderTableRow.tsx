@@ -7,7 +7,7 @@ import { WorkOrderStatusBadge } from './WorkOrderStatusBadge';
 import { WorkOrderStatusSelect } from './WorkOrderStatusSelect';
 import { ProductBreakdownBadges } from './ProductBreakdownBadges';
 import { formatDate, ProductBreakdown } from '@/lib/utils';
-import { AlertTriangle, Clock, Calendar, Truck, Eye, X } from 'lucide-react';
+import { AlertTriangle, Clock, Calendar, Truck, Eye } from 'lucide-react';
 import { parseISO, isBefore } from 'date-fns';
 
 export interface WorkOrderRowData {
@@ -188,34 +188,18 @@ export function WorkOrderTableRow({
 
       {/* Actions */}
       <TableCell className="text-right whitespace-nowrap">
-        <div className="flex justify-end gap-1">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 w-8 p-0"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleClick();
-            }}
-            title={actionLabel || t('view')}
-          >
-            <Eye className="h-4 w-4" />
-          </Button>
-          {onCancel && workOrder.status !== 'completed' && workOrder.status !== 'cancelled' && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-              onClick={(e) => {
-                e.stopPropagation();
-                onCancel();
-              }}
-              title={t('cancel')}
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          )}
-        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-8 w-8 p-0"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleClick();
+          }}
+          title={actionLabel || t('view')}
+        >
+          <Eye className="h-4 w-4" />
+        </Button>
       </TableCell>
     </TableRow>
   );
