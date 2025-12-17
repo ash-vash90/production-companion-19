@@ -3,6 +3,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { TableRow, TableCell } from '@/components/ui/table';
 import { Progress } from '@/components/ui/progress';
+import { Checkbox } from '@/components/ui/checkbox';
 import { WorkOrderStatusBadge } from './WorkOrderStatusBadge';
 import { WorkOrderStatusSelect } from './WorkOrderStatusSelect';
 import { ProductBreakdownBadges } from './ProductBreakdownBadges';
@@ -43,6 +44,12 @@ interface WorkOrderTableRowProps {
   showProgress?: boolean;
   /** Show price column */
   showPrice?: boolean;
+  /** Enable selection checkbox */
+  selectable?: boolean;
+  /** Whether this row is selected */
+  selected?: boolean;
+  /** Callback when selection changes */
+  onSelectionChange?: (selected: boolean) => void;
 }
 
 export function WorkOrderTableRow({
@@ -58,6 +65,9 @@ export function WorkOrderTableRow({
   editableStatus = false,
   showProgress = false,
   showPrice = false,
+  selectable = false,
+  selected = false,
+  onSelectionChange,
 }: WorkOrderTableRowProps) {
   const navigate = useNavigate();
   const { t, language } = useLanguage();
@@ -86,9 +96,20 @@ export function WorkOrderTableRow({
 
   return (
     <TableRow 
-      className="cursor-pointer hover:bg-muted/50" 
+      className={`cursor-pointer hover:bg-muted/50 ${selected ? 'bg-primary/5' : ''}`}
       onClick={handleClick}
     >
+      {/* Selection checkbox */}
+      {selectable && (
+        <TableCell className="w-10" onClick={(e) => e.stopPropagation()}>
+          <Checkbox
+            checked={selected}
+            onCheckedChange={(checked) => onSelectionChange?.(!!checked)}
+            className="h-4 w-4"
+          />
+        </TableCell>
+      )}
+
       {/* WO Number + Urgency icons */}
       <TableCell className="font-mono font-semibold whitespace-nowrap">
         <div className="flex items-center gap-2">

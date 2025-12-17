@@ -5,6 +5,7 @@ import { WorkOrderStatusSelect } from './WorkOrderStatusSelect';
 import { ProductBreakdownBadges } from './ProductBreakdownBadges';
 import { formatDate, ProductBreakdown } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
+import { Checkbox } from '@/components/ui/checkbox';
 import { AlertTriangle, Clock, ChevronRight, Calendar, Truck } from 'lucide-react';
 import { parseISO, isBefore, differenceInDays } from 'date-fns';
 
@@ -36,6 +37,9 @@ interface WorkOrderCardProps {
   showUrgency?: boolean;
   showStatusEdit?: boolean;
   linkTo?: string;
+  selectable?: boolean;
+  selected?: boolean;
+  onSelectionChange?: (selected: boolean) => void;
 }
 
 export function WorkOrderCard({
@@ -49,6 +53,9 @@ export function WorkOrderCard({
   showUrgency = true,
   showStatusEdit = true,
   linkTo,
+  selectable = false,
+  selected = false,
+  onSelectionChange,
 }: WorkOrderCardProps) {
   const navigate = useNavigate();
   const { t, language } = useLanguage();
@@ -103,15 +110,32 @@ export function WorkOrderCard({
     return 'bg-muted-foreground/30';
   };
 
+  const handleCheckboxChange = (e: React.MouseEvent) => {
+    e.stopPropagation();
+  };
+
   return (
     <div
-      className={`group relative rounded-xl border border-l-4 bg-card p-4 md:p-5 transition-all cursor-pointer hover:shadow-lg hover:border-muted-foreground/30 ${urgencyClass}`}
+      className={`group relative rounded-xl border border-l-4 bg-card p-4 md:p-5 transition-all cursor-pointer hover:shadow-lg hover:border-muted-foreground/30 ${urgencyClass} ${selected ? 'ring-2 ring-primary bg-primary/5' : ''}`}
       onClick={handleClick}
       onMouseEnter={onHover}
     >
+      {/* Selection checkbox */}
+      {selectable && (
+        <div 
+          className="absolute top-3 left-3 z-10"
+          onClick={handleCheckboxChange}
+        >
+          <Checkbox
+            checked={selected}
+            onCheckedChange={(checked) => onSelectionChange?.(!!checked)}
+            className="h-5 w-5 border-2"
+          />
+        </div>
+      )}
 
       {/* Header: WO Number + Status */}
-      <div className="flex items-start justify-between gap-3 mb-3 pr-8">
+      <div className={`flex items-start justify-between gap-3 mb-3 ${selectable ? 'pl-8' : ''}`}>
         <div className="flex items-center gap-2 min-w-0">
           <span className="font-mono font-bold text-base md:text-lg truncate">{workOrder.wo_number}</span>
           {shippingOverdue && <AlertTriangle className="h-4 w-4 text-destructive shrink-0" />}
