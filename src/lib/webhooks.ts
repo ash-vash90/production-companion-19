@@ -1,7 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { isValidWebhookUrl } from '@/lib/validation';
 import {
-  generateWebhookSignature,
   recordWebhookCall,
   checkIdempotency,
   storeIdempotencyResult,
@@ -49,8 +48,6 @@ interface DeadLetterEntry {
 
 const deadLetterQueue: DeadLetterEntry[] = [];
 const MAX_DEAD_LETTER_SIZE = 1000;
-const DEFAULT_TIMEOUT_MS = 10000;
-const DEFAULT_RETRY_COUNT = 3;
 
 /**
  * Generate a unique delivery ID for tracking
@@ -132,49 +129,14 @@ export async function retryDeadLetterEntry(entryId: string): Promise<WebhookResu
 }
 
 /**
- * Log outgoing webhook to database
- */
-async function logOutgoingWebhook(
-  webhookId: string,
-  eventType: string,
-  payload: WebhookPayload,
-  responseStatus: number | null,
-  responseBody: unknown | null,
-  responseTimeMs: number,
-  errorMessage: string | null,
-  deliveryId: string,
-  attempts: number
-): Promise<void> {
-  try {
-    // Use any type since the table might not be in generated types yet
-    await supabase
-      .from('outgoing_webhook_logs' as any)
-      .insert({
-        webhook_id: webhookId,
-        event_type: eventType,
-        payload,
-        response_status: responseStatus,
-        response_body: responseBody,
-        response_time_ms: responseTimeMs,
-        error_message: errorMessage,
-        delivery_id: deliveryId,
-        attempts,
-      });
-  } catch (error) {
-    // Log silently - don't fail webhook because of logging failure
-    console.error('Failed to log outgoing webhook:', error);
-  }
-}
-
-/**
- * Send a single webhook with retry logic, signature, and health tracking
+ * Send a single webhook via the edge function (server-side to avoid CORS)
  */
 async function sendWebhookWithRetry(
   webhook: WebhookConfig,
   payload: WebhookPayload,
-  maxAttempts: number = DEFAULT_RETRY_COUNT
+  maxAttempts: number = 3
 ): Promise<WebhookResult> {
-  // Validate webhook URL to prevent SSRF attacks
+  // Validate webhook URL client-side first
   const urlValidation = isValidWebhookUrl(webhook.webhook_url);
   if (!urlValidation.valid) {
     console.error(`Webhook ${webhook.name} blocked: ${urlValidation.error}`);
@@ -192,124 +154,72 @@ async function sendWebhookWithRetry(
     };
   }
 
-  // Add delivery ID for tracking
-  const deliveryId = generateDeliveryId();
-  const deliveryPayload: WebhookPayload = {
-    ...payload,
-    delivery_id: deliveryId,
-  };
+  const startTime = Date.now();
 
-  const payloadString = JSON.stringify(deliveryPayload);
-  const timeoutMs = webhook.timeout_ms || DEFAULT_TIMEOUT_MS;
+  try {
+    // Call the edge function to send the webhook server-side
+    const { data, error } = await supabase.functions.invoke('send-outgoing-webhook', {
+      body: {
+        webhook_id: webhook.id,
+        webhook_name: webhook.name,
+        webhook_url: webhook.webhook_url,
+        secret_key: webhook.secret_key,
+        payload,
+        timeout_ms: webhook.timeout_ms || 10000,
+        max_attempts: maxAttempts,
+        headers: webhook.headers,
+      },
+    });
 
-  // Retry with exponential backoff: 2s, 4s, 8s
-  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    const startTime = Date.now();
+    const responseTimeMs = Date.now() - startTime;
 
-    try {
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-        'X-Webhook-Event': payload.event,
-        'X-Webhook-Timestamp': payload.timestamp,
-        'X-Webhook-Delivery': deliveryId,
-        'User-Agent': 'Rhosonics-PMS-Webhook/1.0',
-        ...(webhook.headers || {}),
-      };
-
-      // Add HMAC signature if secret key is available
-      if (webhook.secret_key) {
-        const signature = await generateWebhookSignature(payloadString, webhook.secret_key);
-        headers['X-Webhook-Signature'] = signature;
-      }
-
-      const response = await fetch(webhook.webhook_url, {
-        method: 'POST',
-        headers,
-        body: payloadString,
-        signal: AbortSignal.timeout(timeoutMs),
-      });
-
-      const responseTimeMs = Date.now() - startTime;
-      let responseBody = null;
-      
-      try {
-        responseBody = await response.json();
-      } catch {
-        // Response might not be JSON
-      }
-
-      // Check if response is successful
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      // Record successful call
-      await recordWebhookCall(webhook.id, true, responseTimeMs);
-
-      // Log to database
-      await logOutgoingWebhook(
-        webhook.id,
-        payload.event,
-        deliveryPayload,
-        response.status,
-        responseBody,
-        responseTimeMs,
-        null,
-        deliveryId,
-        attempt
-      );
-
-      console.log(`Webhook ${webhook.name} sent successfully in ${responseTimeMs}ms`);
+    if (error) {
+      console.error(`Webhook ${webhook.name} edge function error:`, error);
+      await recordWebhookCall(webhook.id, false, responseTimeMs);
+      addToDeadLetterQueue(webhook, payload, error.message || 'Edge function error', maxAttempts);
       return {
-        success: true,
-        statusCode: response.status,
+        success: false,
+        error: error.message || 'Edge function error',
         responseTimeMs,
         webhookId: webhook.id,
       };
-    } catch (err) {
-      const responseTimeMs = Date.now() - startTime;
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-
-      console.error(
-        `Webhook ${webhook.name} attempt ${attempt}/${maxAttempts} failed:`,
-        errorMessage
-      );
-
-      // Record failed call
-      await recordWebhookCall(webhook.id, false, responseTimeMs);
-
-      // If this was the last attempt, add to dead letter queue and log
-      if (attempt === maxAttempts) {
-        addToDeadLetterQueue(webhook, payload, errorMessage, attempt);
-        
-        // Log failed webhook to database
-        await logOutgoingWebhook(
-          webhook.id,
-          payload.event,
-          deliveryPayload,
-          null,
-          null,
-          responseTimeMs,
-          errorMessage,
-          deliveryId,
-          attempt
-        );
-
-        return {
-          success: false,
-          error: errorMessage,
-          responseTimeMs,
-          webhookId: webhook.id,
-        };
-      }
-
-      // Wait before retrying (exponential backoff: 2s, 4s, 8s)
-      const delayMs = Math.pow(2, attempt) * 1000;
-      await new Promise((resolve) => setTimeout(resolve, delayMs));
     }
-  }
 
-  return { success: false, error: 'Max retries exceeded', webhookId: webhook.id };
+    if (data?.success) {
+      await recordWebhookCall(webhook.id, true, data.response_time_ms || responseTimeMs);
+      console.log(`Webhook ${webhook.name} sent successfully in ${data.response_time_ms || responseTimeMs}ms`);
+      return {
+        success: true,
+        statusCode: data.status_code,
+        responseTimeMs: data.response_time_ms || responseTimeMs,
+        webhookId: webhook.id,
+      };
+    } else {
+      const errorMsg = data?.error || 'Unknown error';
+      await recordWebhookCall(webhook.id, false, responseTimeMs);
+      addToDeadLetterQueue(webhook, payload, errorMsg, maxAttempts);
+      return {
+        success: false,
+        error: errorMsg,
+        responseTimeMs,
+        webhookId: webhook.id,
+      };
+    }
+  } catch (err) {
+    const responseTimeMs = Date.now() - startTime;
+    const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+    
+    console.error(`Webhook ${webhook.name} failed:`, errorMessage);
+    await recordWebhookCall(webhook.id, false, responseTimeMs);
+    addToDeadLetterQueue(webhook, payload, errorMessage, maxAttempts);
+    
+    return {
+      success: false,
+      error: errorMessage,
+      responseTimeMs,
+      webhookId: webhook.id,
+    };
+  }
 }
 
 /**
