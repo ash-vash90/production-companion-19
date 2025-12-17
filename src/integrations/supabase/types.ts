@@ -1681,6 +1681,7 @@ export type Database = {
           event_type: string
           id: string
           name: string
+          secret_key: string | null
           updated_at: string
           webhook_url: string
         }
@@ -1691,6 +1692,7 @@ export type Database = {
           event_type: string
           id?: string
           name: string
+          secret_key?: string | null
           updated_at?: string
           webhook_url: string
         }
@@ -1701,6 +1703,7 @@ export type Database = {
           event_type?: string
           id?: string
           name?: string
+          secret_key?: string | null
           updated_at?: string
           webhook_url?: string
         }

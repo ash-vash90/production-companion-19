@@ -116,7 +116,7 @@ async function logWebhookAttempt(
     const { error } = await supabase
       .from('outgoing_webhook_logs')
       .insert({
-        webhook_id: webhookId === 'test' ? null : webhookId,
+        webhook_id: webhookId,
         event_type: eventType,
         payload,
         response_status: responseStatus,
@@ -145,6 +145,25 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Manual auth (so CORS preflight can succeed even if platform JWT checks are disabled)
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Authorization required' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+
+    if (authError || !user) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Invalid token' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     const request: WebhookRequest = await req.json();
     const { 

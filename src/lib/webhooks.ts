@@ -312,7 +312,7 @@ export async function triggerWebhook(
 }
 
 /**
- * Send a test webhook to verify endpoint
+ * Send a test webhook to verify endpoint (generic URL-only test)
  */
 export async function sendTestWebhook(
   webhookUrl: string,
@@ -335,6 +335,40 @@ export async function sendTestWebhook(
   };
 
   return sendWebhookWithRetry(webhook, testPayload, 1);
+}
+
+export interface OutgoingWebhookTestConfig {
+  id: string;
+  name: string;
+  webhook_url: string;
+  secret_key?: string;
+}
+
+/**
+ * Send a test webhook and attribute it to a specific saved webhook (so logs + UI match).
+ */
+export async function sendTestWebhookForConfig(
+  webhook: OutgoingWebhookTestConfig
+): Promise<WebhookResult> {
+  const testPayload: WebhookPayload = {
+    event: 'test',
+    timestamp: new Date().toISOString(),
+    data: {
+      message: 'This is a test webhook from Rhosonics PMS',
+      test_id: generateDeliveryId(),
+    },
+  };
+
+  return sendWebhookWithRetry(
+    {
+      id: webhook.id,
+      name: webhook.name,
+      webhook_url: webhook.webhook_url,
+      secret_key: webhook.secret_key,
+    },
+    testPayload,
+    1
+  );
 }
 
 /**

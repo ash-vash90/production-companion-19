@@ -34,7 +34,7 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.send-outgoing-webhook]
-verify_jwt = true
+verify_jwt = false
 
 [functions.create-outgoing-webhook]
 verify_jwt = true
