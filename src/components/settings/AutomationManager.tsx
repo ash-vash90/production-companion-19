@@ -16,8 +16,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { formatDateTime } from '@/lib/utils';
-import { Plus, Trash2, Copy, Eye, Loader2, Webhook, Zap, History, ChevronRight, Code, Settings2, AlertCircle, Play, Send, TestTube, ExternalLink } from 'lucide-react';
+import { Plus, Trash2, Copy, Eye, EyeOff, Loader2, Webhook, Zap, History, ChevronRight, Code, Settings2, AlertCircle, Play, Send, TestTube, ExternalLink, RefreshCw, Key } from 'lucide-react';
 import TestWebhookDialog from './TestWebhookDialog';
+import TestOutgoingWebhookDialog from './TestOutgoingWebhookDialog';
 import PayloadPreviewDialog from './PayloadPreviewDialog';
 import WebhookLogsViewer from './WebhookLogsViewer';
 import OutgoingWebhookLogs from './OutgoingWebhookLogs';
@@ -42,6 +43,7 @@ interface OutgoingWebhook {
   enabled: boolean;
   created_at: string;
   created_by: string;
+  secret_key?: string;
 }
 
 const maskSecret = (secret: string): string => {
@@ -146,9 +148,14 @@ const AutomationManager = () => {
   const [ruleDialogOpen, setRuleDialogOpen] = useState(false);
   const [logsDialogOpen, setLogsDialogOpen] = useState(false);
   const [testDialogOpen, setTestDialogOpen] = useState(false);
+  const [outgoingTestDialogOpen, setOutgoingTestDialogOpen] = useState(false);
+  const [selectedOutgoingWebhook, setSelectedOutgoingWebhook] = useState<OutgoingWebhook | null>(null);
   const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
   const [selectedRuleForPreview, setSelectedRuleForPreview] = useState<AutomationRule | null>(null);
   const [activeTab, setActiveTab] = useState('incoming');
+  const [outgoingSecrets, setOutgoingSecrets] = useState<Record<string, string>>({});
+  const [showOutgoingSecrets, setShowOutgoingSecrets] = useState<Record<string, boolean>>({});
+  const [regeneratingOutgoingSecret, setRegeneratingOutgoingSecret] = useState<string | null>(null);
   
   const [newWebhook, setNewWebhook] = useState({ name: '', description: '' });
   const [newOutgoingWebhook, setNewOutgoingWebhook] = useState({ name: '', webhookUrl: '', eventType: 'work_order_created' });
@@ -254,25 +261,46 @@ const AutomationManager = () => {
     if (!user || !newOutgoingWebhook.name || !newOutgoingWebhook.webhookUrl) return;
     
     try {
-      const { error } = await supabase
-        .from('zapier_webhooks')
-        .insert({
+      const { data, error } = await supabase.functions.invoke('create-outgoing-webhook', {
+        body: {
           name: newOutgoingWebhook.name,
           webhook_url: newOutgoingWebhook.webhookUrl,
           event_type: newOutgoingWebhook.eventType,
-          enabled: true,
-          created_by: user.id,
-        });
+        }
+      });
       
       if (error) throw error;
+      if (data.error) throw new Error(data.error);
+      
+      // Store the secret for one-time reveal
+      setOutgoingSecrets(prev => ({ ...prev, [data.webhook.id]: data.secret }));
       
       fetchOutgoingWebhooks();
       setNewOutgoingWebhook({ name: '', webhookUrl: '', eventType: 'work_order_created' });
       setOutgoingDialogOpen(false);
-      toast.success('Outgoing webhook created');
+      toast.success('Webhook created! Copy the secret now - it will be hidden after you leave this page.');
     } catch (error: any) {
       console.error('Error creating outgoing webhook:', error);
       toast.error(error.message || 'Failed to create webhook');
+    }
+  };
+
+  const regenerateOutgoingSecret = async (webhookId: string) => {
+    setRegeneratingOutgoingSecret(webhookId);
+    try {
+      const { data, error } = await supabase.functions.invoke('regenerate-outgoing-webhook-secret', {
+        body: { webhook_id: webhookId }
+      });
+      
+      if (error) throw error;
+      
+      setOutgoingSecrets(prev => ({ ...prev, [webhookId]: data.secret }));
+      toast.success('Secret regenerated! Copy it now - it will be hidden after you leave this page.');
+    } catch (error: any) {
+      console.error('Error regenerating secret:', error);
+      toast.error(error.message || 'Failed to regenerate secret');
+    } finally {
+      setRegeneratingOutgoingSecret(null);
     }
   };
 
@@ -364,21 +392,6 @@ const AutomationManager = () => {
     } catch (error: any) {
       console.error('Error toggling webhook:', error);
       toast.error(error.message);
-    }
-  };
-
-  const testOutgoingWebhook = async (webhook: OutgoingWebhook) => {
-    try {
-      const { sendTestWebhook } = await import('@/lib/webhooks');
-      const result = await sendTestWebhook(webhook.webhook_url);
-
-      if (result.success) {
-        toast.success('Test successful', { description: 'Webhook request was sent successfully.' });
-      } else {
-        toast.error('Test failed', { description: result.error || 'Unknown error' });
-      }
-    } catch (error: any) {
-      toast.error('Test failed', { description: error?.message || 'Unknown error' });
     }
   };
 
@@ -1031,41 +1044,109 @@ const AutomationManager = () => {
               </div>
             ) : (
               <div className="space-y-3">
-                {outgoingWebhooks.map((webhook) => (
-                  <div key={webhook.id} className="p-4 border rounded-lg">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">{webhook.name}</span>
-                        <Badge variant="outline" className="text-xs">
-                          {EVENT_TYPES.find(e => e.value === webhook.event_type)?.label || webhook.event_type}
-                        </Badge>
-                        {!webhook.enabled && (
-                          <Badge variant="secondary" className="text-xs">Disabled</Badge>
-                        )}
+                {outgoingWebhooks.map((webhook) => {
+                  const hasNewSecret = outgoingSecrets[webhook.id];
+                  const showSecret = showOutgoingSecrets[webhook.id];
+                  const displaySecret = hasNewSecret ? outgoingSecrets[webhook.id] : (webhook.secret_key || '');
+                  
+                  return (
+                    <div key={webhook.id} className="p-4 border rounded-lg space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-medium">{webhook.name}</span>
+                          <Badge variant="outline" className="text-xs">
+                            {EVENT_TYPES.find(e => e.value === webhook.event_type)?.label || webhook.event_type}
+                          </Badge>
+                          {!webhook.enabled && (
+                            <Badge variant="secondary" className="text-xs">Disabled</Badge>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8" 
+                            onClick={() => {
+                              setSelectedOutgoingWebhook(webhook);
+                              setOutgoingTestDialogOpen(true);
+                            }} 
+                            title="Test webhook"
+                          >
+                            <TestTube className="h-4 w-4" />
+                          </Button>
+                          <Switch
+                            checked={webhook.enabled}
+                            onCheckedChange={(checked) => toggleOutgoingWebhook(webhook.id, checked)}
+                          />
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => deleteOutgoingWebhook(webhook.id)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
+                      
+                      {/* URL Row */}
                       <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => testOutgoingWebhook(webhook)} title="Test webhook">
-                          <TestTube className="h-4 w-4" />
-                        </Button>
-                        <Switch
-                          checked={webhook.enabled}
-                          onCheckedChange={(checked) => toggleOutgoingWebhook(webhook.id, checked)}
-                        />
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => deleteOutgoingWebhook(webhook.id)}>
-                          <Trash2 className="h-4 w-4" />
+                        <code className="flex-1 text-xs bg-muted p-2 rounded border truncate font-mono">
+                          {webhook.webhook_url}
+                        </code>
+                        <Button variant="outline" size="icon" className="shrink-0 h-8 w-8" onClick={() => copyToClipboard(webhook.webhook_url)}>
+                          <Copy className="h-3.5 w-3.5" />
                         </Button>
                       </div>
+                      
+                      {/* Secret Row */}
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          <Key className="h-4 w-4 text-muted-foreground shrink-0" />
+                          <code className="text-xs bg-muted p-2 rounded border font-mono flex-1 truncate">
+                            {showSecret || hasNewSecret ? displaySecret : maskSecret(displaySecret)}
+                          </code>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="shrink-0 h-8 w-8"
+                          onClick={() => setShowOutgoingSecrets(prev => ({ ...prev, [webhook.id]: !prev[webhook.id] }))}
+                          title={showSecret ? 'Hide secret' : 'Show secret'}
+                        >
+                          {showSecret || hasNewSecret ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="shrink-0 h-8 w-8"
+                          onClick={() => copyToClipboard(displaySecret)}
+                          title="Copy secret"
+                        >
+                          <Copy className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="shrink-0 h-8 w-8"
+                          onClick={() => regenerateOutgoingSecret(webhook.id)}
+                          disabled={regeneratingOutgoingSecret === webhook.id}
+                          title="Regenerate secret"
+                        >
+                          {regeneratingOutgoingSecret === webhook.id ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <RefreshCw className="h-3.5 w-3.5" />
+                          )}
+                        </Button>
+                      </div>
+                      
+                      {hasNewSecret && (
+                        <div className="flex items-start gap-2 p-2 bg-amber-500/10 border border-amber-500/20 rounded text-amber-600 dark:text-amber-400">
+                          <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                          <p className="text-xs">
+                            Copy this secret now! It will be hidden after you leave this page.
+                          </p>
+                        </div>
+                      )}
                     </div>
-                    <div className="flex items-center gap-2">
-                      <code className="flex-1 text-xs bg-muted p-2 rounded border truncate font-mono">
-                        {webhook.webhook_url}
-                      </code>
-                      <Button variant="outline" size="icon" className="shrink-0 h-8 w-8" onClick={() => copyToClipboard(webhook.webhook_url)}>
-                        <Copy className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </CardContent>
@@ -1113,6 +1194,18 @@ const AutomationManager = () => {
           onOpenChange={setLogsDialogOpen}
           webhookId={selectedWebhook.id}
           webhookName={selectedWebhook.name}
+        />
+      )}
+
+      {/* Test Outgoing Webhook Dialog */}
+      {selectedOutgoingWebhook && (
+        <TestOutgoingWebhookDialog
+          open={outgoingTestDialogOpen}
+          onOpenChange={setOutgoingTestDialogOpen}
+          webhookId={selectedOutgoingWebhook.id}
+          webhookName={selectedOutgoingWebhook.name}
+          webhookUrl={selectedOutgoingWebhook.webhook_url}
+          eventType={selectedOutgoingWebhook.event_type}
         />
       )}
     </Tabs>

@@ -35,3 +35,9 @@ verify_jwt = true
 
 [functions.send-outgoing-webhook]
 verify_jwt = true
+
+[functions.create-outgoing-webhook]
+verify_jwt = true
+
+[functions.regenerate-outgoing-webhook-secret]
+verify_jwt = true
