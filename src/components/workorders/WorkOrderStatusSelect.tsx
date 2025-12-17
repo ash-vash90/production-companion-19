@@ -57,6 +57,8 @@ export function WorkOrderStatusSelect({
       return;
     }
 
+    const previousStatus = currentStatus;
+
     setUpdating(true);
     try {
       const updates: Record<string, any> = { status: newStatus };
@@ -75,8 +77,32 @@ export function WorkOrderStatusSelect({
 
       if (error) throw error;
 
+      // Create undo function
+      const undoStatusChange = async () => {
+        try {
+          const { error: undoError } = await supabase
+            .from('work_orders')
+            .update({ status: previousStatus as WorkOrderStatus })
+            .eq('id', workOrderId);
+
+          if (undoError) throw undoError;
+          
+          toast.success('Status reverted', { 
+            description: `Changed back to ${previousStatus.replace('_', ' ')}` 
+          });
+          onStatusChange?.(previousStatus);
+        } catch (err) {
+          toast.error('Failed to undo', { description: 'Could not revert status change' });
+        }
+      };
+
       toast.success('Status updated', { 
-        description: `Changed to ${newStatus.replace('_', ' ')}` 
+        description: `Changed to ${newStatus.replace('_', ' ')}`,
+        action: {
+          label: 'Undo',
+          onClick: undoStatusChange,
+        },
+        duration: 5000,
       });
       onStatusChange?.(newStatus);
     } catch (error: any) {

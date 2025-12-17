@@ -422,6 +422,8 @@ export function WorkOrderKanbanView({ workOrders, onStatusChange, onCancel }: Wo
       return;
     }
 
+    const previousStatus = activeWO.status;
+
     setIsUpdating(true);
     try {
       const updates: Record<string, any> = { status: newStatus };
@@ -439,8 +441,32 @@ export function WorkOrderKanbanView({ workOrders, onStatusChange, onCancel }: Wo
 
       if (error) throw error;
 
+      // Create undo function
+      const undoStatusChange = async () => {
+        try {
+          const { error: undoError } = await supabase
+            .from('work_orders')
+            .update({ status: previousStatus as 'planned' | 'in_progress' | 'on_hold' | 'completed' | 'cancelled' })
+            .eq('id', activeWO.id);
+
+          if (undoError) throw undoError;
+          
+          toast.success('Status reverted', { 
+            description: `${activeWO.wo_number} back to ${previousStatus.replace('_', ' ')}` 
+          });
+          onStatusChange?.();
+        } catch (err) {
+          toast.error('Failed to undo', { description: 'Could not revert status change' });
+        }
+      };
+
       toast.success(`${activeWO.wo_number} updated`, { 
-        description: `Status changed to ${newStatus.replace('_', ' ')}` 
+        description: `Status changed to ${newStatus.replace('_', ' ')}`,
+        action: {
+          label: 'Undo',
+          onClick: undoStatusChange,
+        },
+        duration: 5000,
       });
       onStatusChange?.();
     } catch (error: any) {

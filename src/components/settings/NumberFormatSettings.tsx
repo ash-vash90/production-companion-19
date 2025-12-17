@@ -55,7 +55,7 @@ const NumberFormatSettings = () => {
       setSerialFormat(serialFmt);
     } catch (error) {
       console.error('Error loading settings:', error);
-      toast.error(t('error'), { description: 'Failed to load settings' });
+      toast.error('Failed to load settings', { description: 'Please refresh the page' });
     } finally {
       setLoading(false);
     }
@@ -86,14 +86,14 @@ const NumberFormatSettings = () => {
       ]);
 
       if (results.every(r => r)) {
-        toast.success(t('success'), { description: 'Settings saved successfully' });
+        toast.success('Settings saved', { description: 'Number format settings updated' });
         SettingsService.clearCache();
       } else {
         throw new Error('Failed to save some settings');
       }
     } catch (error) {
       console.error('Error saving settings:', error);
-      toast.error(t('error'), { description: 'Failed to save settings' });
+      toast.error('Failed to save settings', { description: 'Please try again' });
     } finally {
       setSaving(false);
     }

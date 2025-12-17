@@ -164,7 +164,7 @@ export function WorkInstructionsManager() {
       setInstructions((data as unknown as InstructionWithSteps[]) || []);
     } catch (error) {
       console.error('Failed to load instructions:', error);
-      toast.error(t('error'), { description: 'Failed to load work instructions' });
+      toast.error('Failed to load instructions', { description: 'Please refresh and try again' });
     } finally {
       setLoading(false);
     }
@@ -213,13 +213,13 @@ export function WorkInstructionsManager() {
 
       if (error) throw error;
 
-      toast.success(t('success'), { description: 'Work instruction created' });
+      toast.success('Instruction created', { description: formData.title });
       setCreateDialogOpen(false);
       resetForm();
       loadInstructions();
     } catch (error: any) {
       console.error('Failed to create instruction:', error);
-      toast.error(t('error'), { description: error.message });
+      toast.error('Failed to create instruction', { description: error.message });
     }
   };
 
@@ -242,14 +242,14 @@ export function WorkInstructionsManager() {
 
       if (error) throw error;
 
-      toast.success(t('success'), { description: 'Work instruction updated' });
+      toast.success('Instruction updated', { description: formData.title });
       setEditDialogOpen(false);
       setSelectedInstruction(null);
       resetForm();
       loadInstructions();
     } catch (error: any) {
       console.error('Failed to update instruction:', error);
-      toast.error(t('error'), { description: error.message });
+      toast.error('Failed to update instruction', { description: error.message });
     }
   };
 
@@ -264,11 +264,12 @@ export function WorkInstructionsManager() {
 
       if (error) throw error;
 
-      toast.success(t('success'), { description: 'Work instruction deleted' });
+      const deletedInstruction = instructions.find(i => i.id === id);
+      toast.success('Instruction deleted', { description: deletedInstruction?.title_en });
       loadInstructions();
     } catch (error: any) {
       console.error('Failed to delete instruction:', error);
-      toast.error(t('error'), { description: error.message });
+      toast.error('Failed to delete instruction', { description: error.message });
     }
   };
 
@@ -286,7 +287,7 @@ export function WorkInstructionsManager() {
       ));
     } catch (error: any) {
       console.error('Failed to toggle instruction:', error);
-      toast.error(t('error'), { description: error.message });
+      toast.error('Failed to toggle status', { description: error.message });
     }
   };
 
@@ -321,14 +322,14 @@ export function WorkInstructionsManager() {
 
       if (error) throw error;
 
-      toast.success(t('success'), { description: 'Instruction step added' });
+      toast.success('Step added', { description: `Step ${stepFormData.step_number}: ${stepFormData.title}` });
       setStepDialogOpen(false);
       setSelectedStep(null);
       resetStepForm();
       loadInstructions();
     } catch (error: any) {
       console.error('Failed to create step:', error);
-      toast.error(t('error'), { description: error.message });
+      toast.error('Failed to create step', { description: error.message });
     }
   };
 
@@ -362,14 +363,14 @@ export function WorkInstructionsManager() {
 
       if (error) throw error;
 
-      toast.success(t('success'), { description: 'Instruction step updated' });
+      toast.success('Step updated', { description: stepFormData.title });
       setStepDialogOpen(false);
       setSelectedStep(null);
       resetStepForm();
       loadInstructions();
     } catch (error: any) {
       console.error('Failed to update step:', error);
-      toast.error(t('error'), { description: error.message });
+      toast.error('Failed to update step', { description: error.message });
     }
   };
 
@@ -384,11 +385,11 @@ export function WorkInstructionsManager() {
 
       if (error) throw error;
 
-      toast.success(t('success'), { description: 'Instruction step deleted' });
+      toast.success('Step deleted');
       loadInstructions();
     } catch (error: any) {
       console.error('Failed to delete step:', error);
-      toast.error(t('error'), { description: error.message });
+      toast.error('Failed to delete step', { description: error.message });
     }
   };
 
