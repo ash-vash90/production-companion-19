@@ -10,7 +10,7 @@ import { Separator } from '@/components/ui/separator';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { toast } from 'sonner';
-import { Users, Loader2, AlertTriangle, Clock, Calendar, CheckCircle2 } from 'lucide-react';
+import { Users, Loader2, AlertTriangle, Clock, CheckCircle2 } from 'lucide-react';
 
 interface ProductionStep {
   id: string;
@@ -35,11 +35,6 @@ interface OperatorAvailability {
   reason: string | null;
 }
 
-interface OperatorWorkload {
-  operator_id: string;
-  assigned_hours: number;
-}
-
 interface StepAssignmentPanelProps {
   workOrderId: string;
   productType: string;
@@ -47,7 +42,7 @@ interface StepAssignmentPanelProps {
   onAssignmentChange?: () => void;
 }
 
-// Local storage key for step assignments (until we have a proper table)
+// Local storage key for step assignments
 const getStorageKey = (workOrderId: string) => `step_assignments_${workOrderId}`;
 
 const StepAssignmentPanel: React.FC<StepAssignmentPanelProps> = ({
@@ -127,7 +122,7 @@ const StepAssignmentPanel: React.FC<StepAssignmentPanelProps> = ({
         setWorkloads(workloadMap);
       }
 
-      // Load step assignments from localStorage (step-specific tracking)
+      // Load step assignments from localStorage
       const storedAssignments = localStorage.getItem(getStorageKey(workOrderId));
       if (storedAssignments) {
         try {
@@ -146,18 +141,18 @@ const StepAssignmentPanel: React.FC<StepAssignmentPanelProps> = ({
   };
 
   const saveAssignments = (newAssignments: Map<string, string>) => {
-    // Save to localStorage for step-specific tracking
+    // Save to localStorage
     const obj: Record<string, string> = {};
     newAssignments.forEach((value, key) => {
       obj[key] = value;
     });
     localStorage.setItem(getStorageKey(workOrderId), JSON.stringify(obj));
     
-    // Also update operator_assignments for the work order (for filtering)
-    updateOperatorAssignments(newAssignments);
+    // Also update operator_assignments for filtering
+    updateOperatorAssignmentsTable(newAssignments);
   };
 
-  const updateOperatorAssignments = async (newAssignments: Map<string, string>) => {
+  const updateOperatorAssignmentsTable = async (newAssignments: Map<string, string>) => {
     // Get unique operators assigned
     const uniqueOperators = new Set(newAssignments.values());
     const assignedDate = scheduledDate || new Date().toISOString().split('T')[0];
@@ -174,7 +169,7 @@ const StepAssignmentPanel: React.FC<StepAssignmentPanelProps> = ({
         work_order_id: workOrderId,
         operator_id: operatorId,
         assigned_date: assignedDate,
-        planned_hours: 4, // Default hours per operator
+        planned_hours: 4,
       }));
 
       await supabase
