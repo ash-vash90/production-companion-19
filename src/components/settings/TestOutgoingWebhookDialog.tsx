@@ -44,8 +44,8 @@ const TestOutgoingWebhookDialog: React.FC<TestOutgoingWebhookDialogProps> = ({
     setResult(null);
 
     try {
-      const { sendTestWebhook } = await import('@/lib/webhooks');
-      
+      const { sendTestWebhookForConfig } = await import('@/lib/webhooks');
+
       // Get the secret for this webhook to use in signing
       const { data: webhookData } = await supabase
         .from('zapier_webhooks')
@@ -53,7 +53,12 @@ const TestOutgoingWebhookDialog: React.FC<TestOutgoingWebhookDialogProps> = ({
         .eq('id', webhookId)
         .single() as { data: { secret_key: string | null } | null; error: any };
 
-      const testResult = await sendTestWebhook(webhookUrl, webhookData?.secret_key || undefined);
+      const testResult = await sendTestWebhookForConfig({
+        id: webhookId,
+        name: webhookName,
+        webhook_url: webhookUrl,
+        secret_key: webhookData?.secret_key || undefined,
+      });
 
       // Fetch the latest log entry for more details
       const { data: logEntry } = await supabase
