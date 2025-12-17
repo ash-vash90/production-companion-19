@@ -9,7 +9,124 @@ import { TodaysSchedule } from '@/components/dashboard/TodaysSchedule';
 import { WeatherWidget } from '@/components/dashboard/WeatherWidget';
 import { LowStockAlerts } from '@/components/dashboard/LowStockAlerts';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2 } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+
+const DashboardSkeleton = () => (
+  <div className="space-y-6 w-full max-w-full">
+    {/* Header skeleton */}
+    <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+      <div className="space-y-2">
+        <div className="flex items-center gap-4">
+          <Skeleton className="h-8 w-64" />
+          <Skeleton className="h-6 w-24 rounded-full" />
+        </div>
+        <Skeleton className="h-4 w-48" />
+      </div>
+    </header>
+
+    {/* Schedule skeleton */}
+    <Card>
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-6 w-40" />
+          <Skeleton className="h-5 w-16 rounded-full" />
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="p-4 rounded-lg border space-y-3">
+              <div className="flex items-center justify-between">
+                <Skeleton className="h-5 w-24" />
+                <Skeleton className="h-5 w-16 rounded-full" />
+              </div>
+              <Skeleton className="h-4 w-32" />
+              <div className="flex gap-2">
+                <Skeleton className="h-5 w-14 rounded-full" />
+                <Skeleton className="h-5 w-10 rounded-full" />
+              </div>
+              <Skeleton className="h-2 w-full rounded-full" />
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+
+    {/* Two column skeleton */}
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <Card>
+        <CardHeader className="pb-3">
+          <Skeleton className="h-6 w-32" />
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="flex items-center gap-3">
+              <Skeleton className="h-10 w-10 rounded-full" />
+              <div className="flex-1 space-y-1.5">
+                <Skeleton className="h-4 w-28" />
+                <Skeleton className="h-3 w-20" />
+              </div>
+              <Skeleton className="h-5 w-12 rounded-full" />
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader className="pb-3">
+          <Skeleton className="h-6 w-28" />
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="flex items-center gap-3 p-3 rounded-lg border">
+              <Skeleton className="h-8 w-8 rounded" />
+              <div className="flex-1 space-y-1.5">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-3 w-24" />
+              </div>
+              <Skeleton className="h-6 w-16 rounded-full" />
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+    </div>
+
+    {/* Production overview skeleton */}
+    <Card>
+      <CardHeader className="pb-3">
+        <Skeleton className="h-6 w-44" />
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="p-4 rounded-lg border text-center space-y-2">
+              <Skeleton className="h-8 w-12 mx-auto" />
+              <Skeleton className="h-4 w-20 mx-auto" />
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+
+    {/* Activity skeleton */}
+    <Card>
+      <CardHeader className="pb-3">
+        <Skeleton className="h-6 w-36" />
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="flex items-start gap-3">
+            <Skeleton className="h-8 w-8 rounded-full" />
+            <div className="flex-1 space-y-1.5">
+              <Skeleton className="h-4 w-3/4" />
+              <Skeleton className="h-3 w-24" />
+            </div>
+          </div>
+        ))}
+      </CardContent>
+    </Card>
+  </div>
+);
 
 const Index = () => {
   const { user, loading: authLoading } = useAuth();
@@ -70,12 +187,7 @@ const Index = () => {
   if (authLoading || profileLoading) {
     return (
       <Layout>
-        <div className="flex items-center justify-center min-h-[50vh]">
-          <div className="flex flex-col items-center gap-3">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="text-sm text-muted-foreground animate-pulse">Loading...</p>
-          </div>
-        </div>
+        <DashboardSkeleton />
       </Layout>
     );
   }
