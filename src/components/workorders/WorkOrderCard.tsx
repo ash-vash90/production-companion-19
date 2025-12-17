@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
-import { AlertTriangle, Clock, ChevronRight, Calendar, Truck, UserX, Play, Users } from 'lucide-react';
+import { AlertTriangle, Clock, ChevronRight, Calendar, Truck, UserX, Play, UserPlus } from 'lucide-react';
 import { parseISO, isBefore, differenceInDays } from 'date-fns';
 
 interface AssignedOperator {
@@ -46,6 +46,7 @@ interface WorkOrderCardProps {
   onStatusChange?: () => void;
   onRequestCancel?: () => void;
   onOpenAssignment?: () => void;
+  onQuickAssign?: () => void;
   showActions?: boolean;
   showUrgency?: boolean;
   showStatusEdit?: boolean;
@@ -63,6 +64,7 @@ export function WorkOrderCard({
   onStatusChange,
   onRequestCancel,
   onOpenAssignment,
+  onQuickAssign,
   showActions = true,
   showUrgency = true,
   showStatusEdit = true,
@@ -124,6 +126,11 @@ export function WorkOrderCard({
   const handleOpenAssignment = (e: React.MouseEvent) => {
     e.stopPropagation();
     onOpenAssignment?.();
+  };
+
+  const handleQuickAssign = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onQuickAssign?.();
   };
 
   // Progress color based on percentage
@@ -275,25 +282,37 @@ export function WorkOrderCard({
 
       {/* Quick Action Buttons - Only for active work orders */}
       {isActiveWorkOrder && (
-        <div className="flex items-center gap-2 mb-3">
+        <div className="flex items-center gap-2 mb-3 flex-wrap">
           <Button
             variant="outline"
             size="sm"
-            className="h-7 text-xs gap-1.5"
+            className="h-9 text-xs gap-1.5 min-w-[90px]"
             onClick={handleOpenProduction}
           >
-            <Play className="h-3 w-3" />
+            <Play className="h-3.5 w-3.5" />
             {language === 'nl' ? 'Productie' : 'Production'}
           </Button>
-          {onOpenAssignment && (
+          {/* Quick Assign - mobile-friendly large touch target */}
+          {onQuickAssign && !hasAssignedOperators && (
+            <Button
+              variant="default"
+              size="sm"
+              className="h-9 text-xs gap-1.5 min-w-[90px]"
+              onClick={handleQuickAssign}
+            >
+              <UserPlus className="h-3.5 w-3.5" />
+              {language === 'nl' ? 'Toewijzen' : 'Assign'}
+            </Button>
+          )}
+          {onOpenAssignment && hasAssignedOperators && (
             <Button
               variant="outline"
               size="sm"
-              className="h-7 text-xs gap-1.5"
+              className="h-9 text-xs gap-1.5"
               onClick={handleOpenAssignment}
             >
-              <Users className="h-3 w-3" />
-              {language === 'nl' ? 'Toewijzen' : 'Assign'}
+              <UserPlus className="h-3.5 w-3.5" />
+              {language === 'nl' ? 'Bewerken' : 'Edit'}
             </Button>
           )}
         </div>

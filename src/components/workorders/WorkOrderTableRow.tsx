@@ -8,7 +8,7 @@ import { WorkOrderStatusBadge } from './WorkOrderStatusBadge';
 import { WorkOrderStatusSelect } from './WorkOrderStatusSelect';
 import { ProductBreakdownBadges } from './ProductBreakdownBadges';
 import { formatDate, ProductBreakdown } from '@/lib/utils';
-import { AlertTriangle, Clock, Calendar, Truck, Eye } from 'lucide-react';
+import { AlertTriangle, Clock, Calendar, Truck, Eye, UserPlus } from 'lucide-react';
 import { parseISO, isBefore } from 'date-fns';
 
 export interface WorkOrderRowData {
@@ -50,6 +50,8 @@ interface WorkOrderTableRowProps {
   selected?: boolean;
   /** Callback when selection changes */
   onSelectionChange?: (selected: boolean) => void;
+  /** Quick assign callback */
+  onQuickAssign?: () => void;
 }
 
 export function WorkOrderTableRow({
@@ -68,6 +70,7 @@ export function WorkOrderTableRow({
   selectable = false,
   selected = false,
   onSelectionChange,
+  onQuickAssign,
 }: WorkOrderTableRowProps) {
   const navigate = useNavigate();
   const { t, language } = useLanguage();
@@ -209,18 +212,34 @@ export function WorkOrderTableRow({
 
       {/* Actions */}
       <TableCell className="text-right whitespace-nowrap">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-8 w-8 p-0"
-          onClick={(e) => {
-            e.stopPropagation();
-            handleClick();
-          }}
-          title={actionLabel || t('view')}
-        >
-          <Eye className="h-4 w-4" />
-        </Button>
+        <div className="flex items-center justify-end gap-1">
+          {onQuickAssign && workOrder.status !== 'completed' && workOrder.status !== 'cancelled' && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 p-0"
+              onClick={(e) => {
+                e.stopPropagation();
+                onQuickAssign();
+              }}
+              title={language === 'nl' ? 'Toewijzen' : 'Assign'}
+            >
+              <UserPlus className="h-4 w-4" />
+            </Button>
+          )}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 w-8 p-0"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleClick();
+            }}
+            title={actionLabel || t('view')}
+          >
+            <Eye className="h-4 w-4" />
+          </Button>
+        </div>
       </TableCell>
     </TableRow>
   );

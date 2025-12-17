@@ -12,13 +12,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
-import { Users, Plus, Trash2, Loader2, Calendar, Clock, UserPlus, ChevronDown, UsersRound } from 'lucide-react';
+import { Users, Plus, Trash2, Loader2, Calendar, UserPlus, ChevronDown, UsersRound, Package } from 'lucide-react';
 
 interface Operator {
   id: string;
   full_name: string;
   avatar_url: string | null;
-  daily_capacity_hours: number;
   is_available: boolean;
 }
 
@@ -27,7 +26,6 @@ interface Assignment {
   operator_id: string;
   work_order_id: string;
   assigned_date: string;
-  planned_hours: number;
   operator?: Operator;
 }
 
@@ -58,13 +56,11 @@ const OperatorAssignmentPanel: React.FC<OperatorAssignmentPanelProps> = ({
   
   // Single assignment form
   const [selectedOperator, setSelectedOperator] = useState<string>('');
-  const [plannedHours, setPlannedHours] = useState('4');
   const [assignDate, setAssignDate] = useState(scheduledDate || format(new Date(), 'yyyy-MM-dd'));
 
   // Bulk assignment state
   const [bulkOpen, setBulkOpen] = useState(false);
   const [bulkSelectedOperators, setBulkSelectedOperators] = useState<Set<string>>(new Set());
-  const [bulkHours, setBulkHours] = useState('4');
   const [bulkSaving, setBulkSaving] = useState(false);
 
   useEffect(() => {
@@ -96,7 +92,7 @@ const OperatorAssignmentPanel: React.FC<OperatorAssignmentPanelProps> = ({
       
       const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
-        .select('id, full_name, avatar_url, daily_capacity_hours, is_available')
+        .select('id, full_name, avatar_url, is_available')
         .in('id', userIds.length > 0 ? userIds : ['00000000-0000-0000-0000-000000000000']);
 
       if (profilesError) throw profilesError;
@@ -138,7 +134,6 @@ const OperatorAssignmentPanel: React.FC<OperatorAssignmentPanelProps> = ({
   useEffect(() => {
     if (assignDate) {
       fetchUnavailability(assignDate);
-      // Clear bulk selection when date changes
       setBulkSelectedOperators(new Set());
     }
   }, [assignDate]);
@@ -172,7 +167,6 @@ const OperatorAssignmentPanel: React.FC<OperatorAssignmentPanelProps> = ({
           work_order_id: workOrderId,
           operator_id: selectedOperator,
           assigned_date: assignDate,
-          planned_hours: parseFloat(plannedHours) || 4,
         });
 
       if (error) throw error;
@@ -180,7 +174,6 @@ const OperatorAssignmentPanel: React.FC<OperatorAssignmentPanelProps> = ({
       toast.success('Operator assigned');
       fetchData();
       setSelectedOperator('');
-      setPlannedHours('4');
       onAssignmentChange?.();
     } catch (error: any) {
       console.error('Error adding assignment:', error);
@@ -212,7 +205,6 @@ const OperatorAssignmentPanel: React.FC<OperatorAssignmentPanelProps> = ({
         work_order_id: workOrderId,
         operator_id: operatorId,
         assigned_date: assignDate,
-        planned_hours: parseFloat(bulkHours) || 4,
       }));
 
       const { error } = await supabase
@@ -304,6 +296,11 @@ const OperatorAssignmentPanel: React.FC<OperatorAssignmentPanelProps> = ({
     setBulkSelectedOperators(new Set());
   };
 
+  // Get daily assignment count for an operator
+  const getOperatorDailyCount = (operatorId: string) => {
+    return assignments.filter(a => a.operator_id === operatorId && a.assigned_date === assignDate).length;
+  };
+
   if (loading) {
     return (
       <Card>
@@ -337,7 +334,7 @@ const OperatorAssignmentPanel: React.FC<OperatorAssignmentPanelProps> = ({
                 className="flex items-center justify-between p-3 border rounded-lg"
               >
                 <div className="flex items-center gap-3">
-                  <Avatar className="h-8 w-8">
+                  <Avatar className="h-9 w-9">
                     {assignment.operator?.avatar_url && (
                       <AvatarImage src={assignment.operator.avatar_url} />
                     )}
@@ -352,15 +349,13 @@ const OperatorAssignmentPanel: React.FC<OperatorAssignmentPanelProps> = ({
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <Calendar className="h-3 w-3" />
                       <span>{format(new Date(assignment.assigned_date), 'MMM d, yyyy')}</span>
-                      <Clock className="h-3 w-3 ml-1" />
-                      <span>{assignment.planned_hours}h</span>
                     </div>
                   </div>
                 </div>
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                  className="h-9 w-9 text-muted-foreground hover:text-destructive"
                   onClick={() => removeAssignment(assignment.id)}
                 >
                   <Trash2 className="h-4 w-4" />
@@ -378,7 +373,7 @@ const OperatorAssignmentPanel: React.FC<OperatorAssignmentPanelProps> = ({
         {/* Bulk Assignment Section */}
         <Collapsible open={bulkOpen} onOpenChange={setBulkOpen}>
           <CollapsibleTrigger asChild>
-            <Button variant="outline" className="w-full justify-between">
+            <Button variant="outline" className="w-full justify-between h-11">
               <span className="flex items-center gap-2">
                 <UsersRound className="h-4 w-4" />
                 Bulk Assign Operators
@@ -393,25 +388,26 @@ const OperatorAssignmentPanel: React.FC<OperatorAssignmentPanelProps> = ({
             <div className="flex items-center justify-between">
               <Label className="text-xs text-muted-foreground">Select operators for {format(new Date(assignDate), 'MMM d')}</Label>
               <div className="flex gap-2">
-                <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={selectAllAvailable}>
+                <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={selectAllAvailable}>
                   Select All
                 </Button>
-                <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={clearBulkSelection}>
+                <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={clearBulkSelection}>
                   Clear
                 </Button>
               </div>
             </div>
             
-            <div className="grid gap-2 max-h-[200px] overflow-y-auto pr-1">
+            <div className="grid gap-2 max-h-[240px] overflow-y-auto pr-1">
               {availableOperators.map(op => {
                 const unavailable = isOperatorUnavailable(op.id);
                 const reason = getUnavailabilityReason(op.id);
                 const isSelected = bulkSelectedOperators.has(op.id);
+                const dailyCount = getOperatorDailyCount(op.id);
                 
                 return (
                   <label
                     key={op.id}
-                    className={`flex items-center gap-3 p-2 border rounded-lg cursor-pointer transition-colors ${
+                    className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors min-h-[52px] ${
                       unavailable ? 'opacity-50 cursor-not-allowed bg-muted/30' :
                       isSelected ? 'border-primary bg-primary/5' : 'hover:bg-muted/50'
                     }`}
@@ -420,14 +416,22 @@ const OperatorAssignmentPanel: React.FC<OperatorAssignmentPanelProps> = ({
                       checked={isSelected}
                       onCheckedChange={() => !unavailable && toggleBulkOperator(op.id)}
                       disabled={unavailable}
+                      className="h-5 w-5"
                     />
-                    <Avatar className="h-6 w-6">
+                    <Avatar className="h-8 w-8">
                       {op.avatar_url && <AvatarImage src={op.avatar_url} />}
-                      <AvatarFallback className="text-[10px]">{getInitials(op.full_name)}</AvatarFallback>
+                      <AvatarFallback className="text-xs">{getInitials(op.full_name)}</AvatarFallback>
                     </Avatar>
-                    <span className="text-sm flex-1">{op.full_name}</span>
+                    <div className="flex-1 min-w-0">
+                      <span className="text-sm font-medium">{op.full_name}</span>
+                      {dailyCount > 0 && (
+                        <span className="text-[10px] text-muted-foreground ml-2">
+                          ({dailyCount} assignment{dailyCount > 1 ? 's' : ''} today)
+                        </span>
+                      )}
+                    </div>
                     {unavailable && reason && (
-                      <Badge variant="destructive" className="text-xs">{reason}</Badge>
+                      <Badge variant="destructive" className="text-xs shrink-0">{reason}</Badge>
                     )}
                   </label>
                 );
@@ -437,29 +441,17 @@ const OperatorAssignmentPanel: React.FC<OperatorAssignmentPanelProps> = ({
               )}
             </div>
 
-            <div className="flex items-end gap-3 pt-2 border-t">
-              <div className="space-y-1.5 flex-1 max-w-[120px]">
-                <Label className="text-xs">Hours each</Label>
-                <Input
-                  type="number"
-                  min="0.5"
-                  max="24"
-                  step="0.5"
-                  value={bulkHours}
-                  onChange={(e) => setBulkHours(e.target.value)}
-                  className="h-9"
-                />
-              </div>
+            <div className="flex items-center gap-3 pt-2 border-t">
               <Button
                 onClick={bulkAssign}
                 disabled={bulkSelectedOperators.size === 0 || bulkSaving}
-                className="h-9"
+                className="h-11 flex-1"
               >
                 {bulkSaving ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
                   <>
-                    <UsersRound className="h-4 w-4 mr-1" />
+                    <UsersRound className="h-4 w-4 mr-2" />
                     Assign {bulkSelectedOperators.size > 0 ? `(${bulkSelectedOperators.size})` : ''}
                   </>
                 )}
@@ -479,7 +471,7 @@ const OperatorAssignmentPanel: React.FC<OperatorAssignmentPanelProps> = ({
             <div className="space-y-1.5">
               <Label className="text-xs">Operator</Label>
               <Select value={selectedOperator} onValueChange={setSelectedOperator}>
-                <SelectTrigger className="h-9">
+                <SelectTrigger className="h-11">
                   <SelectValue placeholder="Select operator" />
                 </SelectTrigger>
                 <SelectContent>
@@ -516,39 +508,25 @@ const OperatorAssignmentPanel: React.FC<OperatorAssignmentPanelProps> = ({
                 type="date"
                 value={assignDate}
                 onChange={(e) => setAssignDate(e.target.value)}
-                className="h-9"
+                className="h-11"
               />
             </div>
           </div>
 
-          <div className="flex items-end gap-3">
-            <div className="space-y-1.5 flex-1 max-w-[120px]">
-              <Label className="text-xs">Hours</Label>
-              <Input
-                type="number"
-                min="0.5"
-                max="24"
-                step="0.5"
-                value={plannedHours}
-                onChange={(e) => setPlannedHours(e.target.value)}
-                className="h-9"
-              />
-            </div>
-            <Button
-              onClick={addAssignment}
-              disabled={!selectedOperator || saving}
-              className="h-9"
-            >
-              {saving ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <>
-                  <Plus className="h-4 w-4 mr-1" />
-                  Assign
-                </>
-              )}
-            </Button>
-          </div>
+          <Button
+            onClick={addAssignment}
+            disabled={!selectedOperator || saving}
+            className="h-11 w-full sm:w-auto"
+          >
+            {saving ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <>
+                <Plus className="h-4 w-4 mr-2" />
+                Assign Operator
+              </>
+            )}
+          </Button>
         </div>
       </CardContent>
     </Card>
