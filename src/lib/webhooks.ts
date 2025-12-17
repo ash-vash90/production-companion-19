@@ -249,12 +249,12 @@ export async function triggerWebhook(
       }
     }
 
-    // Fetch active webhooks for this event type
+    // Fetch active webhooks for this event type (including secret for signing)
     const { data: webhooks, error } = await supabase
       .from('zapier_webhooks')
-      .select('id, name, webhook_url')
+      .select('id, name, webhook_url, secret_key')
       .eq('event_type', eventType)
-      .eq('enabled', true);
+      .eq('enabled', true) as { data: Array<{ id: string; name: string; webhook_url: string; secret_key: string | null }> | null; error: any };
 
     if (error) {
       console.error('Failed to fetch webhooks:', error);
@@ -276,7 +276,7 @@ export async function triggerWebhook(
     // Send all webhooks in parallel
     const sendResults = await Promise.allSettled(
       webhooks.map((webhook) =>
-        sendWebhookWithRetry(webhook, webhookPayload)
+        sendWebhookWithRetry({ ...webhook, secret_key: webhook.secret_key || undefined }, webhookPayload)
       )
     );
 
