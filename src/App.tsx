@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -120,12 +120,30 @@ export const clearRouteRestoredFlag = () => {
   sessionStorage.removeItem(ROUTE_RESTORED_KEY);
 };
 
-// Auth gate that shows loading screen during auth initialization
+// Auth gate that shows loading screen during auth initialization with fade transition
 const AuthGate = ({ children }: { children: React.ReactNode }) => {
   const { loading } = useAuth();
+  const [showLoader, setShowLoader] = useState(true);
+  const [isFading, setIsFading] = useState(false);
   
-  if (loading) {
-    return <LoadingScreen />;
+  useEffect(() => {
+    if (!loading && showLoader) {
+      // Start fade out animation
+      setIsFading(true);
+      // Remove loader after animation completes
+      const timer = setTimeout(() => {
+        setShowLoader(false);
+      }, 300); // Match animation duration
+      return () => clearTimeout(timer);
+    }
+  }, [loading, showLoader]);
+  
+  if (showLoader) {
+    return (
+      <div className={isFading ? 'animate-fade-out' : ''}>
+        <LoadingScreen />
+      </div>
+    );
   }
   
   return <>{children}</>;
