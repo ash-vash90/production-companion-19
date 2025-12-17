@@ -11,7 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Settings, LogOut, ChevronUp } from 'lucide-react';
+import { Settings, LogOut, ChevronUp, User } from 'lucide-react';
 import { useSidebar } from '@/components/ui/sidebar';
 import { TeamBadgeList } from '@/components/TeamBadge';
 import { useUserTeams } from '@/hooks/useUserTeams';
@@ -73,6 +73,10 @@ export function UserProfile() {
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent side="top" align="start" className="w-56">
+        <DropdownMenuItem onClick={() => navigate('/profile')}>
+          <User className="mr-2 h-4 w-4" />
+          {t('myProfile') || 'My Profile'}
+        </DropdownMenuItem>
         <DropdownMenuItem onClick={() => navigate('/personal-settings')}>
           <Settings className="mr-2 h-4 w-4" />
           {t('personalSettings')}
