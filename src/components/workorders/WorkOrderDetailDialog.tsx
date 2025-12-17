@@ -12,7 +12,8 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { formatDate, formatProductType } from '@/lib/utils';
 import { WorkOrderStatusBadge } from './WorkOrderStatusBadge';
 import StepAssignmentPanel from './StepAssignmentPanel';
-import { Package, Calendar, Truck, DollarSign, Play, Loader2, AlertTriangle, Users, FileText } from 'lucide-react';
+import CapacityUtilizationChart from './CapacityUtilizationChart';
+import { Package, Calendar, Truck, DollarSign, Play, Loader2, AlertTriangle, Users, FileText, BarChart3 } from 'lucide-react';
 
 interface WorkOrderDetail {
   id: string;
@@ -49,7 +50,7 @@ const WorkOrderDetailDialog: React.FC<WorkOrderDetailDialogProps> = ({
   const { t, language } = useLanguage();
   const [workOrder, setWorkOrder] = useState<WorkOrderDetail | null>(null);
   const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<'overview' | 'assignment'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'assignment' | 'capacity'>('overview');
 
   useEffect(() => {
     if (open && workOrderId) {
@@ -137,15 +138,19 @@ const WorkOrderDetailDialog: React.FC<WorkOrderDetailDialogProps> = ({
               </DialogDescription>
             </DialogHeader>
 
-            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'overview' | 'assignment')} className="px-6">
-              <TabsList className="grid w-full grid-cols-2">
+            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'overview' | 'assignment' | 'capacity')} className="px-6">
+              <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="overview" className="gap-2">
                   <FileText className="h-4 w-4" />
-                  {language === 'nl' ? 'Overzicht' : 'Overview'}
+                  <span className="hidden sm:inline">{language === 'nl' ? 'Overzicht' : 'Overview'}</span>
                 </TabsTrigger>
                 <TabsTrigger value="assignment" className="gap-2">
                   <Users className="h-4 w-4" />
-                  {language === 'nl' ? 'Toewijzingen' : 'Assignments'}
+                  <span className="hidden sm:inline">{language === 'nl' ? 'Toewijzingen' : 'Assignments'}</span>
+                </TabsTrigger>
+                <TabsTrigger value="capacity" className="gap-2">
+                  <BarChart3 className="h-4 w-4" />
+                  <span className="hidden sm:inline">{language === 'nl' ? 'Capaciteit' : 'Capacity'}</span>
                 </TabsTrigger>
               </TabsList>
             </Tabs>
@@ -254,9 +259,8 @@ const WorkOrderDetailDialog: React.FC<WorkOrderDetailDialogProps> = ({
                       </>
                     )}
                   </div>
-                ) : (
+                ) : activeTab === 'assignment' ? (
                   <div className="pt-4">
-                    {/* Step-Based Assignment Panel */}
                     <StepAssignmentPanel
                       workOrderId={workOrder.id}
                       productType={workOrder.product_type}
@@ -265,6 +269,15 @@ const WorkOrderDetailDialog: React.FC<WorkOrderDetailDialogProps> = ({
                         fetchWorkOrder();
                         onStatusChange?.();
                       }}
+                    />
+                  </div>
+                ) : (
+                  <div className="pt-4">
+                    <CapacityUtilizationChart
+                      selectedDate={workOrder.scheduled_date || workOrder.start_date 
+                        ? new Date(workOrder.scheduled_date || workOrder.start_date!) 
+                        : new Date()}
+                      workOrderId={workOrder.id}
                     />
                   </div>
                 )}

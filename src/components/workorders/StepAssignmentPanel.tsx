@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { Users, Loader2, AlertTriangle, Clock, CheckCircle2 } from 'lucide-react';
 
@@ -42,7 +43,7 @@ interface StepAssignmentPanelProps {
   onAssignmentChange?: () => void;
 }
 
-// Local storage key for step assignments
+// Storage key for step-level assignments (in localStorage until DB migration is applied)
 const getStorageKey = (workOrderId: string) => `step_assignments_${workOrderId}`;
 
 const StepAssignmentPanel: React.FC<StepAssignmentPanelProps> = ({
@@ -52,6 +53,7 @@ const StepAssignmentPanel: React.FC<StepAssignmentPanelProps> = ({
   onAssignmentChange,
 }) => {
   const { language } = useLanguage();
+  const { user } = useAuth();
   const [steps, setSteps] = useState<ProductionStep[]>([]);
   const [operators, setOperators] = useState<Operator[]>([]);
   const [assignments, setAssignments] = useState<Map<string, string>>(new Map());
@@ -140,16 +142,16 @@ const StepAssignmentPanel: React.FC<StepAssignmentPanelProps> = ({
     }
   };
 
-  const saveAssignments = (newAssignments: Map<string, string>) => {
-    // Save to localStorage
+  const saveAssignments = async (newAssignments: Map<string, string>) => {
+    // Save to localStorage for step-level tracking
     const obj: Record<string, string> = {};
     newAssignments.forEach((value, key) => {
       obj[key] = value;
     });
     localStorage.setItem(getStorageKey(workOrderId), JSON.stringify(obj));
     
-    // Also update operator_assignments for filtering
-    updateOperatorAssignmentsTable(newAssignments);
+    // Sync unique operators to operator_assignments table
+    await updateOperatorAssignmentsTable(newAssignments);
   };
 
   const updateOperatorAssignmentsTable = async (newAssignments: Map<string, string>) => {
@@ -187,12 +189,19 @@ const StepAssignmentPanel: React.FC<StepAssignmentPanelProps> = ({
 
   const handleStepAssignment = async (stepId: string, operatorId: string) => {
     if (operatorId === 'unassigned') {
-      // Remove assignment for this step only
-      const newAssignments = new Map(assignments);
-      newAssignments.delete(stepId);
-      setAssignments(newAssignments);
-      saveAssignments(newAssignments);
-      onAssignmentChange?.();
+      setSaving(stepId);
+      try {
+        const newAssignments = new Map(assignments);
+        newAssignments.delete(stepId);
+        setAssignments(newAssignments);
+        await saveAssignments(newAssignments);
+        onAssignmentChange?.();
+      } catch (error: any) {
+        console.error('Error removing assignment:', error);
+        toast.error(error.message || 'Failed to remove assignment');
+      } finally {
+        setSaving(null);
+      }
       return;
     }
 
@@ -207,11 +216,10 @@ const StepAssignmentPanel: React.FC<StepAssignmentPanelProps> = ({
 
     setSaving(stepId);
     try {
-      // Update this specific step assignment only
       const newAssignments = new Map(assignments);
       newAssignments.set(stepId, operatorId);
       setAssignments(newAssignments);
-      saveAssignments(newAssignments);
+      await saveAssignments(newAssignments);
 
       toast.success(language === 'nl' ? 'Stap toegewezen' : 'Step assigned');
       onAssignmentChange?.();
@@ -229,7 +237,6 @@ const StepAssignmentPanel: React.FC<StepAssignmentPanelProps> = ({
       return;
     }
 
-    // Check availability
     const avail = availability.get(selectedOperatorForAll);
     if (avail && avail.available_hours === 0) {
       toast.error(language === 'nl' 
@@ -240,13 +247,12 @@ const StepAssignmentPanel: React.FC<StepAssignmentPanelProps> = ({
 
     setSaving('all');
     try {
-      // Assign all steps to the selected operator
       const newAssignments = new Map<string, string>();
       steps.forEach(step => {
         newAssignments.set(step.id, selectedOperatorForAll);
       });
       setAssignments(newAssignments);
-      saveAssignments(newAssignments);
+      await saveAssignments(newAssignments);
 
       toast.success(language === 'nl' ? 'Alle stappen toegewezen' : 'All steps assigned');
       onAssignmentChange?.();
@@ -264,7 +270,6 @@ const StepAssignmentPanel: React.FC<StepAssignmentPanelProps> = ({
       setAssignments(new Map());
       localStorage.removeItem(getStorageKey(workOrderId));
       
-      // Clear database assignments
       await supabase
         .from('operator_assignments')
         .delete()
@@ -311,6 +316,30 @@ const StepAssignmentPanel: React.FC<StepAssignmentPanelProps> = ({
   const assignedCount = assignments.size;
   const totalSteps = steps.length;
 
+  // Get assignment summary grouped by operator
+  const getAssignmentSummary = () => {
+    const summary = new Map<string, { operator: Operator; stepNumbers: number[] }>();
+    
+    assignments.forEach((operatorId, stepId) => {
+      const operator = operators.find(op => op.id === operatorId);
+      const step = steps.find(s => s.id === stepId);
+      
+      if (operator && step) {
+        if (!summary.has(operatorId)) {
+          summary.set(operatorId, { operator, stepNumbers: [] });
+        }
+        summary.get(operatorId)!.stepNumbers.push(step.step_number);
+      }
+    });
+
+    // Sort step numbers within each operator
+    summary.forEach(value => {
+      value.stepNumbers.sort((a, b) => a - b);
+    });
+
+    return Array.from(summary.values());
+  };
+
   if (loading) {
     return (
       <Card>
@@ -327,258 +356,303 @@ const StepAssignmentPanel: React.FC<StepAssignmentPanelProps> = ({
     return null;
   }
 
-  return (
-    <Card>
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Users className="h-4 w-4" />
-            {language === 'nl' ? 'Staptoewijzingen' : 'Step Assignments'}
-          </CardTitle>
-          <div className="flex items-center gap-2">
-            <Badge variant={assignedCount === totalSteps ? 'default' : 'secondary'} className="font-mono">
-              {assignedCount}/{totalSteps}
-            </Badge>
-            {assignedCount > 0 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-6 px-2 text-xs text-muted-foreground hover:text-destructive"
-                onClick={handleClearAllAssignments}
-                disabled={saving === 'clear'}
-              >
-                {language === 'nl' ? 'Wis' : 'Clear'}
-              </Button>
-            )}
-          </div>
-        </div>
-        <CardDescription className="text-xs">
-          {language === 'nl' 
-            ? 'Wijs operators toe aan specifieke productiestappen' 
-            : 'Assign operators to specific production steps'}
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Assign All Toggle */}
-        <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-          <div className="flex items-center gap-2">
-            <Switch
-              id="assign-all"
-              checked={assignAllMode}
-              onCheckedChange={setAssignAllMode}
-            />
-            <Label htmlFor="assign-all" className="text-sm cursor-pointer">
-              {language === 'nl' ? 'Alle stappen aan één operator' : 'Assign all steps to one operator'}
-            </Label>
-          </div>
-        </div>
+  const assignmentSummary = getAssignmentSummary();
 
-        {assignAllMode ? (
-          <div className="space-y-3">
-            <Select
-              value={selectedOperatorForAll}
-              onValueChange={setSelectedOperatorForAll}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder={language === 'nl' ? 'Selecteer operator...' : 'Select operator...'} />
-              </SelectTrigger>
-              <SelectContent>
-                {operators.map((op) => {
-                  const status = getOperatorStatus(op);
-                  return (
-                    <SelectItem 
-                      key={op.id} 
-                      value={op.id} 
-                      disabled={status.isUnavailable}
-                    >
-                      <div className="flex items-center justify-between w-full gap-3">
-                        <div className="flex items-center gap-2">
-                          <Avatar className="h-6 w-6">
-                            {op.avatar_url && <AvatarImage src={op.avatar_url} />}
-                            <AvatarFallback className="text-[10px]">
-                              {getInitials(op.full_name)}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span>{op.full_name}</span>
-                        </div>
-                        {status.isUnavailable ? (
-                          <Badge variant="destructive" className="text-[9px] px-1 py-0">
-                            {status.reason || (language === 'nl' ? 'Afwezig' : 'Away')}
-                          </Badge>
-                        ) : (
-                          <span className={`text-xs ${status.isOverloaded ? 'text-warning' : 'text-muted-foreground'}`}>
-                            {status.remaining}h {language === 'nl' ? 'vrij' : 'free'}
-                          </span>
-                        )}
-                      </div>
-                    </SelectItem>
-                  );
-                })}
-              </SelectContent>
-            </Select>
-            <Button 
-              onClick={handleAssignAllSteps} 
-              disabled={!selectedOperatorForAll || saving === 'all'}
-              className="w-full"
-            >
-              {saving === 'all' ? (
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              ) : (
-                <CheckCircle2 className="h-4 w-4 mr-2" />
+  return (
+    <div className="space-y-4">
+      {/* Assignment Summary Card */}
+      {assignmentSummary.length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+              {language === 'nl' ? 'Toewijzingsoverzicht' : 'Assignment Summary'}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {assignmentSummary.map(({ operator, stepNumbers }) => (
+              <div 
+                key={operator.id}
+                className="p-3 rounded-lg bg-muted/30 border border-border/50"
+              >
+                <div className="flex items-center gap-3 mb-2">
+                  <Avatar className="h-8 w-8">
+                    {operator.avatar_url && <AvatarImage src={operator.avatar_url} />}
+                    <AvatarFallback className="text-xs">
+                      {getInitials(operator.full_name)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm truncate">{operator.full_name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {stepNumbers.length} {language === 'nl' ? 'stappen' : 'steps'}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {stepNumbers.map((stepNum) => {
+                    const step = steps.find(s => s.step_number === stepNum);
+                    return (
+                      <Badge 
+                        key={stepNum}
+                        variant="outline" 
+                        className="text-[10px] px-1.5 py-0.5 font-normal"
+                        title={step ? getStepTitle(step) : `Step ${stepNum}`}
+                      >
+                        <span className="font-mono mr-1">{stepNum}.</span>
+                        <span className="truncate max-w-[100px]">
+                          {step ? getStepTitle(step) : `Step ${stepNum}`}
+                        </span>
+                      </Badge>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Main Assignment Panel */}
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Users className="h-4 w-4" />
+              {language === 'nl' ? 'Staptoewijzingen' : 'Step Assignments'}
+            </CardTitle>
+            <div className="flex items-center gap-2">
+              <Badge variant={assignedCount === totalSteps ? 'default' : 'secondary'} className="font-mono">
+                {assignedCount}/{totalSteps}
+              </Badge>
+              {assignedCount > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 px-2 text-xs text-muted-foreground hover:text-destructive"
+                  onClick={handleClearAllAssignments}
+                  disabled={saving === 'clear'}
+                >
+                  {language === 'nl' ? 'Wis' : 'Clear'}
+                </Button>
               )}
-              {language === 'nl' ? `Wijs alle ${totalSteps} stappen toe` : `Assign all ${totalSteps} steps`}
-            </Button>
+            </div>
           </div>
-        ) : (
-          <>
-            {/* Operators Overview - Capacity & Availability */}
-            <div className="space-y-2">
-              <p className="text-xs font-medium text-muted-foreground">
-                {language === 'nl' ? 'Beschikbare operators' : 'Available Operators'}
-                {scheduledDate && (
-                  <span className="ml-1 opacity-70">
-                    ({new Date(scheduledDate).toLocaleDateString(language === 'nl' ? 'nl-NL' : 'en-US', { month: 'short', day: 'numeric' })})
-                  </span>
-                )}
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {operators.map((op) => {
-                  const status = getOperatorStatus(op);
-                  const assignedStepsCount = Array.from(assignments.values()).filter(id => id === op.id).length;
-                  
-                  return (
-                    <div
-                      key={op.id}
-                      className={`flex items-center gap-2 px-2 py-1.5 rounded-lg border text-xs ${
-                        status.isUnavailable 
-                          ? 'bg-destructive/5 border-destructive/20 opacity-60' 
-                          : status.isOverloaded
-                            ? 'bg-warning/5 border-warning/20'
-                            : 'bg-muted/30 border-border/50'
-                      }`}
-                    >
-                      <Avatar className="h-5 w-5">
-                        {op.avatar_url && <AvatarImage src={op.avatar_url} />}
-                        <AvatarFallback className="text-[9px]">
-                          {getInitials(op.full_name)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <span className="font-medium">{op.full_name.split(' ')[0]}</span>
-                      {status.isUnavailable ? (
-                        <Badge variant="destructive" className="text-[9px] px-1 py-0">
-                          {status.reason || (language === 'nl' ? 'Afwezig' : 'Off')}
-                        </Badge>
-                      ) : (
-                        <div className="flex items-center gap-1.5 text-muted-foreground">
-                          <Clock className="h-3 w-3" />
-                          <span className={status.isOverloaded ? 'text-warning' : ''}>
-                            {status.remaining}/{status.capacity}h
-                          </span>
-                          {assignedStepsCount > 0 && (
-                            <Badge variant="outline" className="text-[9px] px-1 py-0 ml-1">
-                              {assignedStepsCount} {language === 'nl' ? 'stappen' : 'steps'}
+          <CardDescription className="text-xs">
+            {language === 'nl' 
+              ? 'Wijs operators toe aan specifieke productiestappen' 
+              : 'Assign operators to specific production steps'}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Assign All Toggle */}
+          <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+            <div className="flex items-center gap-2">
+              <Switch
+                id="assign-all"
+                checked={assignAllMode}
+                onCheckedChange={setAssignAllMode}
+              />
+              <Label htmlFor="assign-all" className="text-sm cursor-pointer">
+                {language === 'nl' ? 'Alle stappen aan één operator' : 'Assign all steps to one operator'}
+              </Label>
+            </div>
+          </div>
+
+          {assignAllMode ? (
+            <div className="space-y-3">
+              <Select
+                value={selectedOperatorForAll}
+                onValueChange={setSelectedOperatorForAll}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder={language === 'nl' ? 'Selecteer operator...' : 'Select operator...'} />
+                </SelectTrigger>
+                <SelectContent>
+                  {operators.map((op) => {
+                    const status = getOperatorStatus(op);
+                    return (
+                      <SelectItem 
+                        key={op.id} 
+                        value={op.id} 
+                        disabled={status.isUnavailable}
+                      >
+                        <div className="flex items-center justify-between w-full gap-3">
+                          <div className="flex items-center gap-2">
+                            <Avatar className="h-6 w-6">
+                              {op.avatar_url && <AvatarImage src={op.avatar_url} />}
+                              <AvatarFallback className="text-[10px]">
+                                {getInitials(op.full_name)}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span>{op.full_name}</span>
+                          </div>
+                          {status.isUnavailable ? (
+                            <Badge variant="destructive" className="text-[9px] px-1 py-0">
+                              {status.reason || (language === 'nl' ? 'Afwezig' : 'Away')}
                             </Badge>
+                          ) : (
+                            <span className={`text-xs ${status.isOverloaded ? 'text-warning' : 'text-muted-foreground'}`}>
+                              {status.remaining}h {language === 'nl' ? 'vrij' : 'free'}
+                            </span>
                           )}
                         </div>
-                      )}
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+              <Button 
+                onClick={handleAssignAllSteps} 
+                disabled={!selectedOperatorForAll || saving === 'all'}
+                className="w-full"
+              >
+                {saving === 'all' ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : (
+                  <CheckCircle2 className="h-4 w-4 mr-2" />
+                )}
+                {language === 'nl' ? `Wijs alle ${totalSteps} stappen toe` : `Assign all ${totalSteps} steps`}
+              </Button>
+            </div>
+          ) : (
+            <>
+              {/* Operators Overview */}
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-muted-foreground">
+                  {language === 'nl' ? 'Beschikbare operators' : 'Available Operators'}
+                  {scheduledDate && (
+                    <span className="ml-1 opacity-70">
+                      ({new Date(scheduledDate).toLocaleDateString(language === 'nl' ? 'nl-NL' : 'en-US', { month: 'short', day: 'numeric' })})
+                    </span>
+                  )}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {operators.map((op) => {
+                    const status = getOperatorStatus(op);
+                    const assignedStepsCount = Array.from(assignments.values()).filter(id => id === op.id).length;
+                    
+                    return (
+                      <div
+                        key={op.id}
+                        className={`flex items-center gap-2 px-2 py-1.5 rounded-lg border text-xs ${
+                          status.isUnavailable 
+                            ? 'bg-destructive/5 border-destructive/20 opacity-60' 
+                            : status.isOverloaded
+                              ? 'bg-warning/5 border-warning/20'
+                              : 'bg-muted/30 border-border/50'
+                        }`}
+                      >
+                        <Avatar className="h-5 w-5">
+                          {op.avatar_url && <AvatarImage src={op.avatar_url} />}
+                          <AvatarFallback className="text-[9px]">
+                            {getInitials(op.full_name)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="font-medium">{op.full_name.split(' ')[0]}</span>
+                        {status.isUnavailable ? (
+                          <Badge variant="destructive" className="text-[9px] px-1 py-0">
+                            {status.reason || (language === 'nl' ? 'Afwezig' : 'Off')}
+                          </Badge>
+                        ) : (
+                          <div className="flex items-center gap-1.5 text-muted-foreground">
+                            <Clock className="h-3 w-3" />
+                            <span>{status.remaining}h</span>
+                            {assignedStepsCount > 0 && (
+                              <Badge variant="secondary" className="text-[9px] px-1 py-0 ml-1">
+                                {assignedStepsCount}
+                              </Badge>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Steps List */}
+              <div className="space-y-2">
+                {steps.map((step) => {
+                  const assignedOperatorId = assignments.get(step.id);
+                  const assignedOperator = operators.find(op => op.id === assignedOperatorId);
+                  
+                  return (
+                    <div 
+                      key={step.id} 
+                      className="flex items-center justify-between gap-3 py-2 px-3 rounded-lg bg-muted/30 border border-border/50"
+                    >
+                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                        <Badge variant="outline" className="shrink-0 font-mono text-[10px] h-5 w-5 flex items-center justify-center p-0">
+                          {step.step_number}
+                        </Badge>
+                        <span className="text-sm truncate">{getStepTitle(step)}</span>
+                      </div>
+                      
+                      <Select
+                        value={assignedOperatorId || 'unassigned'}
+                        onValueChange={(value) => handleStepAssignment(step.id, value)}
+                        disabled={saving === step.id}
+                      >
+                        <SelectTrigger className="w-[180px] h-8 text-sm">
+                          {saving === step.id ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : assignedOperator ? (
+                            <div className="flex items-center gap-2">
+                              <Avatar className="h-5 w-5">
+                                {assignedOperator.avatar_url && <AvatarImage src={assignedOperator.avatar_url} />}
+                                <AvatarFallback className="text-[9px]">
+                                  {getInitials(assignedOperator.full_name)}
+                                </AvatarFallback>
+                              </Avatar>
+                              <span className="truncate">{assignedOperator.full_name.split(' ')[0]}</span>
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">{language === 'nl' ? 'Niet toegewezen' : 'Unassigned'}</span>
+                          )}
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="unassigned">
+                            <span className="text-muted-foreground">
+                              {language === 'nl' ? 'Niet toegewezen' : 'Unassigned'}
+                            </span>
+                          </SelectItem>
+                          {operators.map((op) => {
+                            const status = getOperatorStatus(op);
+                            return (
+                              <SelectItem 
+                                key={op.id} 
+                                value={op.id}
+                                disabled={status.isUnavailable}
+                              >
+                                <div className="flex items-center gap-2">
+                                  <Avatar className="h-5 w-5">
+                                    {op.avatar_url && <AvatarImage src={op.avatar_url} />}
+                                    <AvatarFallback className="text-[9px]">
+                                      {getInitials(op.full_name)}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  <span>{op.full_name}</span>
+                                  {status.isUnavailable && (
+                                    <AlertTriangle className="h-3 w-3 text-destructive ml-auto" />
+                                  )}
+                                </div>
+                              </SelectItem>
+                            );
+                          })}
+                        </SelectContent>
+                      </Select>
                     </div>
                   );
                 })}
               </div>
-            </div>
-
-            <Separator />
-
-            {/* Individual Step Assignments */}
-            <div className="space-y-2">
-              {steps.map((step) => {
-                const assignedOperatorId = assignments.get(step.id);
-                const assignedOperator = operators.find(op => op.id === assignedOperatorId);
-                const isSaving = saving === step.id;
-
-                return (
-                  <div
-                    key={step.id}
-                    className="flex items-center justify-between gap-3 p-2.5 border rounded-lg bg-muted/30"
-                  >
-                    <div className="flex items-center gap-2 min-w-0 flex-1">
-                      <Badge variant="outline" className="shrink-0 font-mono text-xs">
-                        {step.step_number}
-                      </Badge>
-                      <span className="text-sm truncate">{getStepTitle(step)}</span>
-                    </div>
-                    
-                    <Select
-                      value={assignedOperatorId || 'unassigned'}
-                      onValueChange={(value) => handleStepAssignment(step.id, value)}
-                      disabled={isSaving}
-                    >
-                      <SelectTrigger className="w-[160px] h-8 text-xs">
-                        {isSaving ? (
-                          <Loader2 className="h-3 w-3 animate-spin" />
-                        ) : assignedOperator ? (
-                          <div className="flex items-center gap-2">
-                            <Avatar className="h-5 w-5">
-                              {assignedOperator.avatar_url && <AvatarImage src={assignedOperator.avatar_url} />}
-                              <AvatarFallback className="text-[9px]">
-                                {getInitials(assignedOperator.full_name)}
-                              </AvatarFallback>
-                            </Avatar>
-                            <span className="truncate">{assignedOperator.full_name}</span>
-                          </div>
-                        ) : (
-                          <span className="text-muted-foreground flex items-center gap-1">
-                            <AlertTriangle className="h-3 w-3 text-warning" />
-                            {language === 'nl' ? 'Niet toegewezen' : 'Unassigned'}
-                          </span>
-                        )}
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="unassigned" className="text-xs">
-                          <span className="text-muted-foreground">
-                            {language === 'nl' ? 'Niet toegewezen' : 'Unassigned'}
-                          </span>
-                        </SelectItem>
-                        {operators.map((op) => {
-                          const status = getOperatorStatus(op);
-                          return (
-                            <SelectItem 
-                              key={op.id} 
-                              value={op.id} 
-                              disabled={status.isUnavailable}
-                              className="text-xs"
-                            >
-                              <div className="flex items-center gap-2">
-                                <Avatar className="h-5 w-5">
-                                  {op.avatar_url && <AvatarImage src={op.avatar_url} />}
-                                  <AvatarFallback className="text-[9px]">
-                                    {getInitials(op.full_name)}
-                                  </AvatarFallback>
-                                </Avatar>
-                                <span>{op.full_name}</span>
-                                {status.isUnavailable ? (
-                                  <Badge variant="destructive" className="text-[9px] px-1 py-0">
-                                    {language === 'nl' ? 'Afwezig' : 'Away'}
-                                  </Badge>
-                                ) : (
-                                  <span className={`text-[10px] ml-1 ${status.isOverloaded ? 'text-warning' : 'text-muted-foreground'}`}>
-                                    ({status.remaining}h)
-                                  </span>
-                                )}
-                              </div>
-                            </SelectItem>
-                          );
-                        })}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                );
-              })}
-            </div>
-          </>
-        )}
-      </CardContent>
-    </Card>
+            </>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 
