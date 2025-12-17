@@ -76,6 +76,7 @@ const WorkOrders = () => {
   const [cancellingWorkOrders, setCancellingWorkOrders] = useState<Array<{ id: string; wo_number: string }>>([]);
   const [isCancelling, setIsCancelling] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [prefsLoaded, setPrefsLoaded] = useState(false);
   const [detailSheetOpen, setDetailSheetOpen] = useState(false);
   const [detailWorkOrderId, setDetailWorkOrderId] = useState<string | null>(null);
@@ -220,6 +221,7 @@ const WorkOrders = () => {
     setFilters(DEFAULT_FILTERS);
     setGroupBy('none');
     setSelectedIds(new Set());
+    setIsSelectionMode(false);
   }, []);
 
   // Check if any filters are active
@@ -456,6 +458,7 @@ const WorkOrders = () => {
 
   const clearSelection = useCallback(() => {
     setSelectedIds(new Set());
+    setIsSelectionMode(false);
   }, []);
 
   const selectedWorkOrders = useMemo(() => {
@@ -494,14 +497,12 @@ const WorkOrders = () => {
 
     const toggleAllInView = () => {
       if (allSelected) {
-        // Deselect all in current view
         setSelectedIds(prev => {
           const next = new Set(prev);
           orders.forEach(wo => next.delete(wo.id));
           return next;
         });
       } else {
-        // Select all in current view
         setSelectedIds(prev => {
           const next = new Set(prev);
           orders.forEach(wo => next.add(wo.id));
@@ -515,16 +516,18 @@ const WorkOrders = () => {
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/30">
-              <TableHead className="w-10">
-                <Checkbox
-                  checked={allSelected}
-                  ref={(el) => {
-                    if (el) (el as any).indeterminate = someSelected && !allSelected;
-                  }}
-                  onCheckedChange={toggleAllInView}
-                  className="h-4 w-4"
-                />
-              </TableHead>
+              {isSelectionMode && (
+                <TableHead className="w-10">
+                  <Checkbox
+                    checked={allSelected}
+                    ref={(el) => {
+                      if (el) (el as any).indeterminate = someSelected && !allSelected;
+                    }}
+                    onCheckedChange={toggleAllInView}
+                    className="h-4 w-4"
+                  />
+                </TableHead>
+              )}
               <TableHead className="text-xs">{t('workOrderNumber')}</TableHead>
               <TableHead className="text-xs">{t('products')}</TableHead>
               <TableHead className="text-xs hidden md:table-cell">{t('customer')}</TableHead>
@@ -546,7 +549,7 @@ const WorkOrders = () => {
                 editableStatus={isAdmin}
                 showProgress
                 showPrice
-                selectable
+                selectable={isSelectionMode}
                 selected={selectedIds.has(wo.id)}
                 onSelectionChange={() => toggleSelection(wo.id)}
               />
@@ -575,13 +578,13 @@ const WorkOrders = () => {
           onHover={() => prefetchProductionOnHover(wo.id)}
           onStatusChange={() => handleStatusChange(wo.id, wo.status)}
           onOpenAssignment={() => openDetailSheet(wo.id)}
-          selectable
+          selectable={isSelectionMode}
           selected={selectedIds.has(wo.id)}
           onSelectionChange={() => toggleSelection(wo.id)}
         />
       ))}
     </div>
-  ), [toRowData, isAdmin, openCancelDialog, handleStatusChange, selectedIds, toggleSelection, openDetailSheet]);
+  ), [toRowData, isAdmin, openCancelDialog, handleStatusChange, selectedIds, toggleSelection, openDetailSheet, isSelectionMode]);
 
   const isMobile = useIsMobile();
 
@@ -626,9 +629,9 @@ const WorkOrders = () => {
             }
           />
 
-          {/* Filters and Grouping Bar */}
+          {/* Filters, Selection, and View Toggle Bar */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <WorkOrderFilters
                 filters={filters}
                 onFiltersChange={setFilters}
@@ -649,6 +652,65 @@ const WorkOrders = () => {
                   <RotateCcw className="h-3 w-3 mr-1" />
                   {t('reset')}
                 </Button>
+              )}
+              
+              {/* Separator before selection controls */}
+              {viewMode !== 'kanban' && (
+                <>
+                  <div className="h-6 w-px bg-border hidden sm:block" />
+                  
+                  {/* Selection Mode Toggle */}
+                  <Button
+                    variant={isSelectionMode ? 'secondary' : 'ghost'}
+                    size="sm"
+                    className="h-8 text-xs gap-1.5"
+                    onClick={() => {
+                      if (isSelectionMode) {
+                        setIsSelectionMode(false);
+                        setSelectedIds(new Set());
+                      } else {
+                        setIsSelectionMode(true);
+                      }
+                    }}
+                  >
+                    {isSelectionMode ? (
+                      <CheckSquare className="h-3.5 w-3.5" />
+                    ) : (
+                      <Square className="h-3.5 w-3.5" />
+                    )}
+                    <span className="hidden sm:inline">{t('select') || 'Select'}</span>
+                  </Button>
+                  
+                  {/* Select All toggle when in selection mode */}
+                  {isSelectionMode && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 text-xs text-muted-foreground"
+                      onClick={() => {
+                        if (selectedIds.size === filteredOrders.length) {
+                          setSelectedIds(new Set());
+                        } else {
+                          setSelectedIds(new Set(filteredOrders.map(wo => wo.id)));
+                        }
+                      }}
+                    >
+                      {selectedIds.size === filteredOrders.length 
+                        ? (t('deselectAll') || 'Deselect All')
+                        : (t('selectAll') || 'Select All')
+                      }
+                    </Button>
+                  )}
+                  
+                  {/* Inline Bulk Actions */}
+                  <BulkActionsToolbar
+                    selectedIds={Array.from(selectedIds)}
+                    selectedWorkOrders={selectedWorkOrders}
+                    onClearSelection={clearSelection}
+                    onRefresh={refetch}
+                    onRequestCancel={openBulkCancelDialog}
+                  />
+                </>
               )}
             </div>
             
@@ -683,43 +745,6 @@ const WorkOrders = () => {
               </Button>
             </div>
           </div>
-
-          {/* Select All Bar */}
-          {!loading && filteredOrders.length > 0 && viewMode !== 'kanban' && (
-            <div className="flex items-center justify-between py-2 px-1">
-              <div className="flex items-center gap-3">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 gap-2 text-muted-foreground hover:text-foreground"
-                  onClick={() => {
-                    if (selectedIds.size === filteredOrders.length) {
-                      setSelectedIds(new Set());
-                    } else {
-                      setSelectedIds(new Set(filteredOrders.map(wo => wo.id)));
-                    }
-                  }}
-                >
-                  {selectedIds.size === filteredOrders.length ? (
-                    <>
-                      <CheckSquare className="h-4 w-4" />
-                      {t('deselectAll') || 'Deselect All'}
-                    </>
-                  ) : (
-                    <>
-                      <Square className="h-4 w-4" />
-                      {t('selectAll') || 'Select All'}
-                    </>
-                  )}
-                </Button>
-                {selectedIds.size > 0 && (
-                  <span className="text-sm text-muted-foreground">
-                    {selectedIds.size} of {filteredOrders.length} {t('selected') || 'selected'}
-                  </span>
-                )}
-              </div>
-            </div>
-          )}
 
           {/* Work Orders List */}
           <div className="w-full">
@@ -824,11 +849,11 @@ const WorkOrders = () => {
                     renderItem={(wo) => (
                       <WorkOrderCard
                         workOrder={toRowData(wo)}
-                        onClick={() => navigate(`/production/${wo.id}`)}
+                        onClick={() => openDetailSheet(wo.id)}
                         onCancel={isAdmin ? () => openCancelDialog({ id: wo.id, wo_number: wo.wo_number }) : undefined}
                         onHover={() => prefetchProductionOnHover(wo.id)}
                         onStatusChange={() => handleStatusChange(wo.id, wo.status)}
-                        selectable
+                        selectable={isSelectionMode}
                         selected={selectedIds.has(wo.id)}
                         onSelectionChange={() => toggleSelection(wo.id)}
                       />
