@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { toast } from 'sonner';
@@ -695,128 +695,125 @@ const WeeklyCapacityPlanner: React.FC = () => {
       a => a.assigned_date === format(currentMobileDate, 'yyyy-MM-dd')
     );
 
-    // Calculate product type breakdown for day summary
-    const dayProductBreakdown = dayAssignments.reduce((acc, a) => {
-      const wo = workOrders.get(a.work_order_id);
-      if (wo) {
-        acc[wo.product_type] = (acc[wo.product_type] || 0) + wo.batch_size;
-      }
-      return acc;
-    }, {} as Record<string, number>);
-
     return (
-      <>
-        <DndContext
-          sensors={sensors}
-          onDragStart={handleDragStart}
-          onDragEnd={handleDragEnd}
-        >
+      <DndContext
+        sensors={sensors}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+      >
+        <div className="space-y-3">
+          {/* Single-line Compact Header */}
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1">
+              <Button variant="ghost" size="icon" className="h-9 w-9" onClick={goToPrevDay}>
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <span className={cn(
+                "text-sm font-medium min-w-[100px] text-center",
+                isToday && "text-primary"
+              )}>
+                {format(currentMobileDate, 'EEE, MMM d')}
+              </span>
+              <Button variant="ghost" size="icon" className="h-9 w-9" onClick={goToNextDay}>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+
+            {!isToday && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="h-8 px-2 text-xs"
+                onClick={goToToday}
+              >
+                {language === 'nl' ? 'Vandaag' : 'Today'}
+              </Button>
+            )}
+          </div>
+
+          {/* Operators List */}
           <SwipeContainer onSwipeLeft={goToNextDay} onSwipeRight={goToPrevDay}>
-            <div className="space-y-3">
-              {/* Single-line Compact Header */}
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-1">
-                  <Button variant="ghost" size="icon" className="h-9 w-9" onClick={goToPrevDay}>
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  <span className={cn(
-                    "text-sm font-medium min-w-[100px] text-center",
-                    isToday && "text-primary"
-                  )}>
-                    {format(currentMobileDate, 'EEE, MMM d')}
-                  </span>
-                  <Button variant="ghost" size="icon" className="h-9 w-9" onClick={goToNextDay}>
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
+            <div className="space-y-2">
+              {operators.map(operator => (
+                <DroppableOperatorCard
+                  key={operator.id}
+                  operator={operator}
+                  date={currentMobileDate}
+                  assignments={getAssignmentsForCell(operator.id, currentMobileDate)}
+                  workOrders={workOrders}
+                  availability={getAvailability(operator.id, currentMobileDate)}
+                  onWorkOrderTap={handleWorkOrderTap}
+                  language={language}
+                />
+              ))}
+
+              {operators.length === 0 && (
+                <div className="p-6 text-center text-muted-foreground border rounded-lg">
+                  <p className="text-sm">
+                    {language === 'nl' 
+                      ? 'Geen operators in het productieteam' 
+                      : 'No operators in production team'}
+                  </p>
                 </div>
-
-                <div className="flex items-center gap-1.5">
-                  {!isToday && (
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="h-8 px-2 text-xs"
-                      onClick={goToToday}
-                    >
-                      {language === 'nl' ? 'Vandaag' : 'Today'}
-                    </Button>
-                  )}
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 relative"
-                    onClick={() => setMobileSidebarOpen(true)}
-                  >
-                    <Package className="h-4 w-4" />
-                    {unassignedOrders.length > 0 && (
-                      <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive text-destructive-foreground text-[9px] flex items-center justify-center font-medium">
-                        {unassignedOrders.length > 9 ? '9+' : unassignedOrders.length}
-                      </span>
-                    )}
-                  </Button>
-                </div>
-              </div>
-
-              {/* Operators List */}
-              <div className="space-y-3">
-                {operators.map(operator => (
-                  <DroppableOperatorCard
-                    key={operator.id}
-                    operator={operator}
-                    date={currentMobileDate}
-                    assignments={getAssignmentsForCell(operator.id, currentMobileDate)}
-                    workOrders={workOrders}
-                    availability={getAvailability(operator.id, currentMobileDate)}
-                    onWorkOrderTap={handleWorkOrderTap}
-                    language={language}
-                  />
-                ))}
-
-                {operators.length === 0 && (
-                  <div className="p-8 text-center text-muted-foreground border rounded-lg">
-                    <p className="text-sm">
-                      {language === 'nl' 
-                        ? 'Geen operators in het productieteam' 
-                        : 'No operators in production team'}
-                    </p>
-                  </div>
-                )}
-              </div>
+              )}
             </div>
           </SwipeContainer>
 
-          <DragOverlay>
-            {activeWorkOrder && (
-              <div className="p-3 rounded-lg bg-primary text-primary-foreground shadow-lg text-xs max-w-[180px]">
-                <div className="font-mono font-medium">{activeWorkOrder.wo_number}</div>
-                <div className="text-[10px] opacity-80 truncate mt-0.5">
-                  {formatProductType(activeWorkOrder.product_type)}
+          {/* Inline Unassigned Section - inside DndContext so drag works */}
+          {unassignedOrders.length > 0 && (
+            <div className="border-t pt-3 mt-4">
+              <button
+                onClick={() => setMobileSidebarOpen(!mobileSidebarOpen)}
+                className="flex items-center justify-between w-full text-left p-2 -mx-2 rounded-lg hover:bg-muted/50 transition-colors"
+              >
+                <div className="flex items-center gap-2">
+                  <Package className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">
+                    {language === 'nl' ? 'Ongeplande orders' : 'Unassigned orders'}
+                  </span>
+                  <Badge variant="secondary" className="text-xs">
+                    {unassignedOrders.length}
+                  </Badge>
                 </div>
-                <Badge variant="secondary" className="mt-1 text-[9px] bg-primary-foreground/20">
-                  {activeWorkOrder.batch_size} items
-                </Badge>
-              </div>
-            )}
-          </DragOverlay>
-        </DndContext>
+                <ChevronRight className={cn(
+                  "h-4 w-4 text-muted-foreground transition-transform",
+                  mobileSidebarOpen && "rotate-90"
+                )} />
+              </button>
+              
+              {mobileSidebarOpen && (
+                <div className="mt-2 space-y-2 max-h-[40vh] overflow-y-auto">
+                  {unassignedOrders.slice(0, 10).map(wo => (
+                    <DraggableUnassignedOrder
+                      key={wo.id}
+                      workOrder={wo}
+                      onTap={() => handleWorkOrderTap(wo, format(currentMobileDate, 'yyyy-MM-dd'))}
+                    />
+                  ))}
+                  {unassignedOrders.length > 10 && (
+                    <p className="text-xs text-muted-foreground text-center py-2">
+                      +{unassignedOrders.length - 10} {language === 'nl' ? 'meer' : 'more'}
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
 
-        {/* Mobile Unassigned Sheet */}
-        <Sheet open={mobileSidebarOpen} onOpenChange={setMobileSidebarOpen}>
-          <SheetContent side="bottom" className="h-[70vh]">
-            <SheetHeader className="pb-2">
-              <SheetTitle className="flex items-center gap-2">
-                <Package className="h-4 w-4" />
-                {language === 'nl' ? 'Ongeplande Werkorders' : 'Unassigned Work Orders'}
-                <Badge variant="secondary">{unassignedOrders.length}</Badge>
-              </SheetTitle>
-            </SheetHeader>
-            <ScrollArea className="h-full pb-8">
-              <div className="space-y-2 pr-4">
-                <UnassignedContent />
+        <DragOverlay>
+          {activeWorkOrder && (
+            <div className="p-3 rounded-lg bg-primary text-primary-foreground shadow-lg text-xs max-w-[180px]">
+              <div className="font-mono font-medium">{activeWorkOrder.wo_number}</div>
+              <div className="text-[10px] opacity-80 truncate mt-0.5">
+                {formatProductType(activeWorkOrder.product_type)}
               </div>
-            </ScrollArea>
-          </SheetContent>
-        </Sheet>
+              <Badge variant="secondary" className="mt-1 text-[9px] bg-primary-foreground/20">
+                {activeWorkOrder.batch_size} items
+              </Badge>
+            </div>
+          )}
+        </DragOverlay>
 
         {/* Mobile-friendly assignment sheet */}
         <ProductAssignmentSheet
@@ -826,7 +823,7 @@ const WeeklyCapacityPlanner: React.FC = () => {
           initialDate={selectedDate}
           onComplete={handleAssignmentComplete}
         />
-      </>
+      </DndContext>
     );
   }
 
