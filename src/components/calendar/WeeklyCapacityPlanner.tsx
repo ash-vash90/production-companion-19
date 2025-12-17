@@ -1,17 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { toast } from 'sonner';
-import { format, startOfWeek, endOfWeek, addDays, addWeeks, subWeeks, isSameDay } from 'date-fns';
-import { ChevronLeft, ChevronRight, Users, GripVertical, Package, X, Layers } from 'lucide-react';
+import { format, startOfWeek, endOfWeek, addDays, addWeeks, subWeeks, subDays, isSameDay } from 'date-fns';
+import { ChevronLeft, ChevronRight, GripVertical, Package, X, Layers } from 'lucide-react';
 import { cn, formatProductType } from '@/lib/utils';
 import {
   DndContext,
@@ -25,6 +24,7 @@ import {
   useDraggable,
 } from '@dnd-kit/core';
 import ProductAssignmentSheet from '@/components/workorders/ProductAssignmentSheet';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface Operator {
   id: string;
@@ -102,20 +102,20 @@ const DraggableWorkOrder: React.FC<DraggableWorkOrderProps> = ({ assignment, wor
         }
       }}
       className={cn(
-        "p-2 rounded-md text-xs bg-primary/10 border border-primary/20 cursor-grab active:cursor-grabbing",
-        "hover:bg-primary/20 transition-colors touch-manipulation min-h-[44px]",
+        "p-3 rounded-lg text-xs bg-primary/10 border border-primary/20 cursor-grab active:cursor-grabbing",
+        "hover:bg-primary/20 transition-colors touch-manipulation min-h-[56px]",
         isDragging && "ring-2 ring-primary"
       )}
     >
-      <div className="flex items-center gap-1.5">
-        <GripVertical className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+      <div className="flex items-center gap-2">
+        <GripVertical className="h-4 w-4 text-muted-foreground shrink-0" />
         <div className="min-w-0 flex-1">
-          <p className="font-mono text-[11px] font-medium truncate">{workOrder.wo_number}</p>
-          <div className="flex items-center gap-1 mt-0.5">
-            <Badge variant="secondary" className="text-[9px] px-1 py-0 h-4">
+          <p className="font-mono text-sm font-medium truncate">{workOrder.wo_number}</p>
+          <div className="flex items-center gap-1.5 mt-1">
+            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5 font-mono">
               {workOrder.batch_size}×
             </Badge>
-            <span className="text-[9px] text-muted-foreground truncate">
+            <span className="text-[11px] text-muted-foreground truncate">
               {formatProductType(workOrder.product_type)}
             </span>
           </div>
@@ -125,7 +125,7 @@ const DraggableWorkOrder: React.FC<DraggableWorkOrderProps> = ({ assignment, wor
   );
 };
 
-// Unassigned work order card - shows batch size and product breakdown
+// Unassigned work order card
 const DraggableUnassignedOrder: React.FC<DraggableUnassignedOrderProps> = ({ workOrder, onTap }) => {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `unassigned-${workOrder.id}`,
@@ -150,7 +150,7 @@ const DraggableUnassignedOrder: React.FC<DraggableUnassignedOrderProps> = ({ wor
         }
       }}
       className={cn(
-        "p-3 rounded-lg border bg-card cursor-grab active:cursor-grabbing min-h-[60px]",
+        "p-3 rounded-lg border bg-card cursor-grab active:cursor-grabbing min-h-[64px]",
         "hover:border-primary/50 hover:bg-muted/30 transition-colors touch-manipulation",
         isDragging && "ring-2 ring-primary shadow-lg"
       )}
@@ -169,7 +169,7 @@ const DraggableUnassignedOrder: React.FC<DraggableUnassignedOrderProps> = ({ wor
             {formatProductType(workOrder.product_type)}
           </p>
           {workOrder.customer_name && (
-            <p className="text-[10px] text-muted-foreground truncate mt-1">
+            <p className="text-[11px] text-muted-foreground truncate mt-1">
               {workOrder.customer_name}
             </p>
           )}
@@ -189,7 +189,7 @@ const DroppableCell: React.FC<DroppableCellProps> = ({ operatorId, date, childre
     <div
       ref={setNodeRef}
       className={cn(
-        "min-h-[80px] p-1.5 border-l transition-colors",
+        "min-h-[80px] p-2 border-l transition-colors",
         isOver && "bg-primary/10 ring-2 ring-primary ring-inset"
       )}
     >
@@ -198,11 +198,101 @@ const DroppableCell: React.FC<DroppableCellProps> = ({ operatorId, date, childre
   );
 };
 
+// Mobile droppable operator card
+const DroppableOperatorCard: React.FC<{
+  operator: Operator;
+  date: Date;
+  assignments: Assignment[];
+  workOrders: Map<string, WorkOrder>;
+  availability: Availability | undefined;
+  onWorkOrderTap: (wo: WorkOrder, date: string) => void;
+  language: string;
+}> = ({ operator, date, assignments, workOrders, availability, onWorkOrderTap, language }) => {
+  const dateStr = format(date, 'yyyy-MM-dd');
+  const isUnavailable = availability && availability.available_hours === 0;
+  const { setNodeRef, isOver } = useDroppable({
+    id: `${operator.id}-${dateStr}`,
+    data: { operatorId: operator.id, date },
+  });
+
+  const getInitials = (name: string) => {
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  };
+
+  const totalItems = assignments.reduce((sum, a) => {
+    const wo = workOrders.get(a.work_order_id);
+    return sum + (wo?.batch_size || 0);
+  }, 0);
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={cn(
+        "rounded-lg border bg-card p-4 transition-all min-h-[100px]",
+        isOver && "ring-2 ring-primary bg-primary/5",
+        isUnavailable && "bg-destructive/5 border-destructive/20"
+      )}
+    >
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-3">
+          <Avatar className="h-10 w-10">
+            {operator.avatar_url && <AvatarImage src={operator.avatar_url} />}
+            <AvatarFallback className="text-sm font-medium">
+              {getInitials(operator.full_name)}
+            </AvatarFallback>
+          </Avatar>
+          <div>
+            <p className="font-medium">{operator.full_name}</p>
+            {isUnavailable ? (
+              <Badge variant="outline" className="text-[10px] bg-destructive/10 border-destructive/30 mt-1">
+                {availability?.reason_type || (language === 'nl' ? 'Afwezig' : 'Off')}
+              </Badge>
+            ) : assignments.length > 0 ? (
+              <p className="text-xs text-muted-foreground">
+                {assignments.length} {language === 'nl' ? 'orders' : 'orders'} · {totalItems} items
+              </p>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                {language === 'nl' ? 'Beschikbaar' : 'Available'}
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {!isUnavailable && (
+        <div className="space-y-2">
+          {assignments.map(assignment => {
+            const wo = workOrders.get(assignment.work_order_id);
+            if (!wo) return null;
+            return (
+              <DraggableWorkOrder
+                key={assignment.id}
+                assignment={assignment}
+                workOrder={wo}
+                onTap={() => onWorkOrderTap(wo, dateStr)}
+              />
+            );
+          })}
+          {assignments.length === 0 && (
+            <div className="text-center py-4 text-muted-foreground text-sm border border-dashed rounded-lg">
+              {language === 'nl' ? 'Sleep hier om toe te wijzen' : 'Drop here to assign'}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const WeeklyCapacityPlanner: React.FC = () => {
   const { language } = useLanguage();
+  const isMobile = useIsMobile();
+  
   const [currentWeekStart, setCurrentWeekStart] = useState(() => 
     startOfWeek(new Date(), { weekStartsOn: 1 })
   );
+  const [currentMobileDate, setCurrentMobileDate] = useState(() => new Date());
   const [operators, setOperators] = useState<Operator[]>([]);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [availability, setAvailability] = useState<Availability[]>([]);
@@ -316,38 +406,6 @@ const WeeklyCapacityPlanner: React.FC = () => {
   const getAvailability = (operatorId: string, date: Date) => {
     const dateStr = format(date, 'yyyy-MM-dd');
     return availability.find(a => a.user_id === operatorId && a.date === dateStr);
-  };
-
-  // Get total items count for a cell
-  const getItemsCount = (operatorId: string, date: Date) => {
-    const cellAssignments = getAssignmentsForCell(operatorId, date);
-    return cellAssignments.reduce((sum, a) => {
-      const wo = workOrders.get(a.work_order_id);
-      return sum + (wo?.batch_size || 0);
-    }, 0);
-  };
-
-  // Get daily totals - count of items and orders per day
-  const getDailyTotals = (date: Date) => {
-    let totalItems = 0;
-    let totalOrders = 0;
-    let availableOperators = 0;
-
-    operators.forEach(op => {
-      const avail = getAvailability(op.id, date);
-      const isAvailable = !avail || avail.available_hours > 0;
-      if (isAvailable) {
-        availableOperators++;
-        const cellAssignments = getAssignmentsForCell(op.id, date);
-        totalOrders += cellAssignments.length;
-        cellAssignments.forEach(a => {
-          const wo = workOrders.get(a.work_order_id);
-          totalItems += wo?.batch_size || 0;
-        });
-      }
-    });
-
-    return { totalItems, totalOrders, availableOperators };
   };
 
   const handleDragStart = (event: DragStartEvent) => {
@@ -486,6 +544,16 @@ const WeeklyCapacityPlanner: React.FC = () => {
     fetchData();
   };
 
+  // Mobile navigation
+  const goToPrevDay = () => setCurrentMobileDate(d => subDays(d, 1));
+  const goToNextDay = () => setCurrentMobileDate(d => addDays(d, 1));
+  const goToToday = () => setCurrentMobileDate(new Date());
+
+  // Desktop navigation
+  const goToPrevWeek = () => setCurrentWeekStart(subWeeks(currentWeekStart, 1));
+  const goToNextWeek = () => setCurrentWeekStart(addWeeks(currentWeekStart, 1));
+  const goToThisWeek = () => setCurrentWeekStart(startOfWeek(new Date(), { weekStartsOn: 1 }));
+
   const activeAssignment = activeId && activeType === 'assignment'
     ? assignments.find(a => a.id === activeId) 
     : null;
@@ -520,13 +588,10 @@ const WeeklyCapacityPlanner: React.FC = () => {
     return (
       <div className="space-y-4">
         <Card>
-          <CardHeader>
-            <Skeleton className="h-6 w-48" />
-          </CardHeader>
-          <CardContent>
+          <CardContent className="p-4">
             <div className="space-y-4">
               {[1, 2, 3].map(i => (
-                <Skeleton key={i} className="h-20 w-full" />
+                <Skeleton key={i} className="h-24 w-full" />
               ))}
             </div>
           </CardContent>
@@ -535,6 +600,156 @@ const WeeklyCapacityPlanner: React.FC = () => {
     );
   }
 
+  // MOBILE VIEW: Day-by-day with swipe navigation
+  if (isMobile) {
+    const isToday = isSameDay(currentMobileDate, new Date());
+    const dayAssignments = assignments.filter(
+      a => a.assigned_date === format(currentMobileDate, 'yyyy-MM-dd')
+    );
+
+    return (
+      <>
+        <DndContext
+          sensors={sensors}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+        >
+          <div className="space-y-3">
+            {/* Compact Header */}
+            <div className="flex items-center justify-between gap-2 px-1">
+              <div className="flex items-center gap-1">
+                <Button variant="ghost" size="icon" className="h-10 w-10" onClick={goToPrevDay}>
+                  <ChevronLeft className="h-5 w-5" />
+                </Button>
+                <div className="text-center min-w-[140px]">
+                  <p className={cn(
+                    "text-lg font-semibold",
+                    isToday && "text-primary"
+                  )}>
+                    {format(currentMobileDate, 'EEEE')}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {format(currentMobileDate, 'MMM d, yyyy')}
+                  </p>
+                </div>
+                <Button variant="ghost" size="icon" className="h-10 w-10" onClick={goToNextDay}>
+                  <ChevronRight className="h-5 w-5" />
+                </Button>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="h-10 px-3 text-xs"
+                  onClick={goToToday}
+                >
+                  {language === 'nl' ? 'Vandaag' : 'Today'}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-10 px-3 text-xs relative"
+                  onClick={() => setMobileSidebarOpen(true)}
+                >
+                  <Package className="h-4 w-4" />
+                  {unassignedOrders.length > 0 && (
+                    <Badge 
+                      variant="destructive" 
+                      className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center text-[10px]"
+                    >
+                      {unassignedOrders.length}
+                    </Badge>
+                  )}
+                </Button>
+              </div>
+            </div>
+
+            {/* Day summary */}
+            <div className="flex items-center justify-center gap-4 text-sm text-muted-foreground">
+              <span>{dayAssignments.length} {language === 'nl' ? 'orders' : 'orders'}</span>
+              <span>·</span>
+              <span>
+                {dayAssignments.reduce((sum, a) => {
+                  const wo = workOrders.get(a.work_order_id);
+                  return sum + (wo?.batch_size || 0);
+                }, 0)} items
+              </span>
+            </div>
+
+            {/* Operators List */}
+            <div className="space-y-3">
+              {operators.map(operator => (
+                <DroppableOperatorCard
+                  key={operator.id}
+                  operator={operator}
+                  date={currentMobileDate}
+                  assignments={getAssignmentsForCell(operator.id, currentMobileDate)}
+                  workOrders={workOrders}
+                  availability={getAvailability(operator.id, currentMobileDate)}
+                  onWorkOrderTap={handleWorkOrderTap}
+                  language={language}
+                />
+              ))}
+
+              {operators.length === 0 && (
+                <div className="p-8 text-center text-muted-foreground border rounded-lg">
+                  <p className="text-sm">
+                    {language === 'nl' 
+                      ? 'Geen operators in het productieteam' 
+                      : 'No operators in production team'}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <DragOverlay>
+            {activeWorkOrder && (
+              <div className="p-3 rounded-lg bg-primary text-primary-foreground shadow-lg text-xs max-w-[180px]">
+                <div className="font-mono font-medium">{activeWorkOrder.wo_number}</div>
+                <div className="text-[10px] opacity-80 truncate mt-0.5">
+                  {formatProductType(activeWorkOrder.product_type)}
+                </div>
+                <Badge variant="secondary" className="mt-1 text-[9px] bg-primary-foreground/20">
+                  {activeWorkOrder.batch_size} items
+                </Badge>
+              </div>
+            )}
+          </DragOverlay>
+        </DndContext>
+
+        {/* Mobile Unassigned Sheet */}
+        <Sheet open={mobileSidebarOpen} onOpenChange={setMobileSidebarOpen}>
+          <SheetContent side="bottom" className="h-[70vh]">
+            <SheetHeader className="pb-2">
+              <SheetTitle className="flex items-center gap-2">
+                <Package className="h-4 w-4" />
+                {language === 'nl' ? 'Ongeplande Werkorders' : 'Unassigned Work Orders'}
+                <Badge variant="secondary">{unassignedOrders.length}</Badge>
+              </SheetTitle>
+            </SheetHeader>
+            <ScrollArea className="h-full pb-8">
+              <div className="space-y-2 pr-4">
+                <UnassignedContent />
+              </div>
+            </ScrollArea>
+          </SheetContent>
+        </Sheet>
+
+        {/* Mobile-friendly assignment sheet */}
+        <ProductAssignmentSheet
+          open={assignmentSheetOpen}
+          onOpenChange={setAssignmentSheetOpen}
+          workOrder={selectedWorkOrder}
+          initialDate={selectedDate}
+          onComplete={handleAssignmentComplete}
+        />
+      </>
+    );
+  }
+
+  // DESKTOP VIEW: Weekly grid
   return (
     <>
       <DndContext
@@ -545,105 +760,75 @@ const WeeklyCapacityPlanner: React.FC = () => {
         <div className="flex flex-col xl:flex-row gap-4">
           {/* Main Planner Grid */}
           <Card className="flex-1 overflow-hidden">
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between flex-wrap gap-2">
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <Users className="h-4 w-4" />
-                  {language === 'nl' ? 'Dagplanning' : 'Daily Planning'}
-                </CardTitle>
-                <div className="flex items-center gap-1 sm:gap-2">
-                  <Button variant="outline" size="icon" className="h-10 w-10 sm:h-8 sm:w-8" onClick={() => setCurrentWeekStart(subWeeks(currentWeekStart, 1))}>
+            <div className="flex items-center justify-between p-4 border-b">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1">
+                  <Button variant="outline" size="icon" className="h-9 w-9" onClick={goToPrevWeek}>
                     <ChevronLeft className="h-4 w-4" />
                   </Button>
-                  <Button variant="outline" size="sm" className="h-10 sm:h-8 px-3 text-xs" onClick={() => setCurrentWeekStart(startOfWeek(new Date(), { weekStartsOn: 1 }))}>
-                    {language === 'nl' ? 'Nu' : 'Today'}
-                  </Button>
-                  <Button variant="outline" size="icon" className="h-10 w-10 sm:h-8 sm:w-8" onClick={() => setCurrentWeekStart(addWeeks(currentWeekStart, 1))}>
+                  <Button variant="outline" size="icon" className="h-9 w-9" onClick={goToNextWeek}>
                     <ChevronRight className="h-4 w-4" />
                   </Button>
-                  
-                  {/* Mobile unassigned button */}
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-10 sm:h-8 px-3 text-xs xl:hidden"
-                    onClick={() => setMobileSidebarOpen(true)}
-                  >
-                    <Package className="h-4 w-4 sm:mr-1" />
-                    <span className="hidden sm:inline">{language === 'nl' ? 'Ongepland' : 'Unassigned'}</span>
-                    {unassignedOrders.length > 0 && (
-                      <Badge variant="secondary" className="ml-1 text-[10px] px-1">
-                        {unassignedOrders.length}
-                      </Badge>
-                    )}
-                  </Button>
-                  
-                  {/* Desktop sidebar toggle */}
-                  <Button
-                    variant={showDesktopSidebar ? 'secondary' : 'outline'}
-                    size="sm"
-                    className="h-8 px-3 text-xs hidden xl:flex"
-                    onClick={() => setShowDesktopSidebar(!showDesktopSidebar)}
-                  >
-                    <Package className="h-3.5 w-3.5 mr-1" />
-                    {language === 'nl' ? 'Ongepland' : 'Unassigned'}
-                  </Button>
                 </div>
+                <div>
+                  <p className="font-semibold">
+                    {format(currentWeekStart, 'MMM d')} – {format(weekEnd, 'MMM d, yyyy')}
+                  </p>
+                </div>
+                <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={goToThisWeek}>
+                  {language === 'nl' ? 'Deze week' : 'This Week'}
+                </Button>
               </div>
-              <p className="text-xs text-muted-foreground">
-                {format(currentWeekStart, 'MMM d')} - {format(weekEnd, 'MMM d, yyyy')}
-              </p>
-            </CardHeader>
+
+              <div className="flex items-center gap-2">
+                {/* Desktop sidebar toggle */}
+                <Button
+                  variant={showDesktopSidebar ? 'secondary' : 'outline'}
+                  size="sm"
+                  className="h-9 px-3 text-xs"
+                  onClick={() => setShowDesktopSidebar(!showDesktopSidebar)}
+                >
+                  <Package className="h-4 w-4 mr-1.5" />
+                  {language === 'nl' ? 'Ongepland' : 'Unassigned'}
+                  {unassignedOrders.length > 0 && (
+                    <Badge variant="secondary" className="ml-1.5 text-[10px]">
+                      {unassignedOrders.length}
+                    </Badge>
+                  )}
+                </Button>
+              </div>
+            </div>
+
             <CardContent className="p-0">
               <ScrollArea className="w-full">
-                <div className="min-w-[600px]">
-                  {/* Header row with daily summary */}
+                <div className="min-w-[700px]">
+                  {/* Header row */}
                   <div className="flex border-b bg-muted/30">
-                    <div className="w-28 sm:w-36 flex-shrink-0 p-2 border-r">
+                    <div className="w-36 flex-shrink-0 p-3 border-r">
                       <span className="text-xs font-medium text-muted-foreground">
                         {language === 'nl' ? 'Operator' : 'Operator'}
                       </span>
                     </div>
                     {weekDays.map(day => {
-                      const { totalItems, totalOrders, availableOperators } = getDailyTotals(day);
                       const isToday = isSameDay(day, new Date());
                       
                       return (
                         <div
                           key={day.toISOString()}
                           className={cn(
-                            "flex-1 min-w-[90px] p-2 text-center border-l",
+                            "flex-1 min-w-[90px] p-3 text-center border-l",
                             isToday && "bg-primary/10"
                           )}
                         >
-                          <div className="text-xs font-medium">
+                          <div className="text-xs font-medium text-muted-foreground">
                             {format(day, 'EEE')}
                           </div>
                           <div className={cn(
-                            "text-base font-semibold",
+                            "text-lg font-semibold",
                             isToday && "text-primary"
                           )}>
                             {format(day, 'd')}
                           </div>
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <div className="mt-1 flex flex-col items-center gap-0.5">
-                                  <Badge variant="outline" className="text-[9px] px-1.5 font-mono">
-                                    {totalItems} {language === 'nl' ? 'items' : 'items'}
-                                  </Badge>
-                                  <span className="text-[9px] text-muted-foreground">
-                                    {totalOrders} {language === 'nl' ? 'orders' : 'orders'}
-                                  </span>
-                                </div>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p className="text-xs">
-                                  {availableOperators} {language === 'nl' ? 'beschikbaar' : 'available'}
-                                </p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
                         </div>
                       );
                     })}
@@ -652,16 +837,16 @@ const WeeklyCapacityPlanner: React.FC = () => {
                   {/* Operator rows */}
                   {operators.map(operator => (
                     <div key={operator.id} className="flex border-b hover:bg-muted/10">
-                      <div className="w-28 sm:w-36 flex-shrink-0 p-2 border-r">
+                      <div className="w-36 flex-shrink-0 p-3 border-r">
                         <div className="flex items-center gap-2">
-                          <Avatar className="h-7 w-7">
+                          <Avatar className="h-8 w-8">
                             {operator.avatar_url && <AvatarImage src={operator.avatar_url} />}
-                            <AvatarFallback className="text-[10px]">
+                            <AvatarFallback className="text-xs">
                               {getInitials(operator.full_name)}
                             </AvatarFallback>
                           </Avatar>
                           <div className="min-w-0 flex-1">
-                            <p className="text-xs font-medium truncate">
+                            <p className="text-sm font-medium truncate">
                               {operator.full_name.split(' ')[0]}
                             </p>
                           </div>
@@ -673,7 +858,6 @@ const WeeklyCapacityPlanner: React.FC = () => {
                         const avail = getAvailability(operator.id, day);
                         const isUnavailable = avail && avail.available_hours === 0;
                         const dateStr = format(day, 'yyyy-MM-dd');
-                        const itemsCount = getItemsCount(operator.id, day);
 
                         return (
                           <DroppableCell
@@ -682,17 +866,17 @@ const WeeklyCapacityPlanner: React.FC = () => {
                             date={day}
                           >
                             <div className={cn(
-                              "h-full min-h-[70px]",
+                              "h-full min-h-[80px]",
                               isUnavailable && "bg-destructive/5"
                             )}>
                               {isUnavailable ? (
                                 <div className="flex items-center justify-center h-full">
-                                  <Badge variant="outline" className="text-[9px] bg-destructive/10 border-destructive/30">
+                                  <Badge variant="outline" className="text-[10px] bg-destructive/10 border-destructive/30">
                                     {avail?.reason_type || (language === 'nl' ? 'Afwezig' : 'Off')}
                                   </Badge>
                                 </div>
                               ) : (
-                                <div className="space-y-1">
+                                <div className="space-y-1.5">
                                   {cellAssignments.map(assignment => {
                                     const wo = workOrders.get(assignment.work_order_id);
                                     if (!wo) return null;
@@ -705,14 +889,6 @@ const WeeklyCapacityPlanner: React.FC = () => {
                                       />
                                     );
                                   })}
-                                  {/* Summary badge if multiple assignments */}
-                                  {cellAssignments.length > 0 && (
-                                    <div className="text-center pt-0.5">
-                                      <span className="text-[9px] text-muted-foreground">
-                                        {itemsCount} items
-                                      </span>
-                                    </div>
-                                  )}
                                 </div>
                               )}
                             </div>
@@ -724,7 +900,6 @@ const WeeklyCapacityPlanner: React.FC = () => {
 
                   {operators.length === 0 && (
                     <div className="p-8 text-center text-muted-foreground">
-                      <Users className="h-8 w-8 mx-auto mb-2 opacity-50" />
                       <p className="text-sm">
                         {language === 'nl' 
                           ? 'Geen operators in het productieteam' 
@@ -746,32 +921,30 @@ const WeeklyCapacityPlanner: React.FC = () => {
           {/* Desktop Unassigned Work Orders Sidebar */}
           {showDesktopSidebar && (
             <Card className="hidden xl:block w-72 flex-shrink-0">
-              <CardHeader className="pb-2">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-sm flex items-center gap-2">
-                    <Package className="h-4 w-4" />
-                    {language === 'nl' ? 'Ongepland' : 'Unassigned'}
-                    <Badge variant="secondary" className="text-[10px]">
-                      {unassignedOrders.length}
-                    </Badge>
-                  </CardTitle>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6"
-                    onClick={() => setShowDesktopSidebar(false)}
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </Button>
+              <div className="flex items-center justify-between p-4 border-b">
+                <div className="flex items-center gap-2">
+                  <Package className="h-4 w-4" />
+                  <span className="font-medium text-sm">{language === 'nl' ? 'Ongepland' : 'Unassigned'}</span>
+                  <Badge variant="secondary" className="text-[10px]">
+                    {unassignedOrders.length}
+                  </Badge>
                 </div>
-                <p className="text-[10px] text-muted-foreground">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7"
+                  onClick={() => setShowDesktopSidebar(false)}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+              <CardContent className="p-3">
+                <p className="text-[11px] text-muted-foreground mb-3">
                   {language === 'nl' 
                     ? 'Sleep of tik om toe te wijzen' 
                     : 'Drag or tap to assign'}
                 </p>
-              </CardHeader>
-              <CardContent className="p-2">
-                <ScrollArea className="h-[450px]">
+                <ScrollArea className="h-[500px]">
                   <div className="pr-2">
                     <UnassignedContent />
                   </div>
@@ -795,24 +968,6 @@ const WeeklyCapacityPlanner: React.FC = () => {
           )}
         </DragOverlay>
       </DndContext>
-
-      {/* Mobile Unassigned Sheet */}
-      <Sheet open={mobileSidebarOpen} onOpenChange={setMobileSidebarOpen}>
-        <SheetContent side="bottom" className="h-[70vh]">
-          <SheetHeader className="pb-2">
-            <SheetTitle className="flex items-center gap-2">
-              <Package className="h-4 w-4" />
-              {language === 'nl' ? 'Ongeplande Werkorders' : 'Unassigned Work Orders'}
-              <Badge variant="secondary">{unassignedOrders.length}</Badge>
-            </SheetTitle>
-          </SheetHeader>
-          <ScrollArea className="h-full pb-8">
-            <div className="space-y-2 pr-4">
-              <UnassignedContent />
-            </div>
-          </ScrollArea>
-        </SheetContent>
-      </Sheet>
 
       {/* Mobile-friendly assignment sheet */}
       <ProductAssignmentSheet
