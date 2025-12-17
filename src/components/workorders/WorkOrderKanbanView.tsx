@@ -29,7 +29,15 @@ import {
   arrayMove 
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, Calendar, Truck, X } from 'lucide-react';
+import { GripVertical, Calendar, Truck } from 'lucide-react';
+
+// Haptic feedback utility
+const triggerHaptic = (type: 'light' | 'medium' | 'heavy' = 'medium') => {
+  if ('vibrate' in navigator) {
+    const patterns = { light: 10, medium: 20, heavy: 40 };
+    navigator.vibrate(patterns[type]);
+  }
+};
 
 interface WorkOrderData {
   id: string;
@@ -94,12 +102,10 @@ const VISIBILITY_STORAGE_KEY = 'kanban_column_visibility';
 
 interface KanbanCardProps {
   workOrder: WorkOrderData;
-  onCancel?: () => void;
 }
 
-function KanbanCard({ workOrder, onCancel }: KanbanCardProps) {
+function KanbanCard({ workOrder }: KanbanCardProps) {
   const navigate = useNavigate();
-  const { t } = useLanguage();
   const { hasPermission } = useUserProfile();
   
   const {
@@ -116,7 +122,7 @@ function KanbanCard({ workOrder, onCancel }: KanbanCardProps) {
 
   const style = {
     transform: CSS.Transform.toString(transform),
-    transition,
+    transition: transition || 'transform 200ms cubic-bezier(0.25, 1, 0.5, 1), opacity 200ms ease',
     opacity: isDragging ? 0.5 : 1,
   };
 
@@ -124,7 +130,9 @@ function KanbanCard({ workOrder, onCancel }: KanbanCardProps) {
     <div
       ref={setNodeRef}
       style={style}
-      className="relative group bg-card border rounded-lg p-4 cursor-pointer hover:shadow-md transition-shadow"
+      className={`relative group bg-card border rounded-lg p-4 cursor-pointer hover:shadow-md transition-all duration-200 ${
+        isDragging ? 'shadow-lg scale-[1.02] z-50' : ''
+      }`}
       onClick={() => navigate(`/production/${workOrder.id}`)}
     >
       {/* Drag handle */}
@@ -132,25 +140,11 @@ function KanbanCard({ workOrder, onCancel }: KanbanCardProps) {
         <div
           {...attributes}
           {...listeners}
-          className="absolute left-1.5 top-1/2 -translate-y-1/2 p-1 cursor-grab opacity-0 group-hover:opacity-100 transition-opacity"
+          className="absolute left-1.5 top-1/2 -translate-y-1/2 p-1 cursor-grab opacity-0 group-hover:opacity-100 transition-opacity touch:opacity-100"
           onClick={(e) => e.stopPropagation()}
         >
           <GripVertical className="h-4 w-4 text-muted-foreground" />
         </div>
-      )}
-
-      {/* Cancel button */}
-      {onCancel && workOrder.status !== 'completed' && workOrder.status !== 'cancelled' && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onCancel();
-          }}
-          className="absolute top-2 right-2 p-1 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors opacity-0 group-hover:opacity-100 z-10"
-          title={t('cancel')}
-        >
-          <X className="h-3.5 w-3.5" />
-        </button>
       )}
 
       <div className="pl-5">
@@ -203,7 +197,6 @@ function KanbanCard({ workOrder, onCancel }: KanbanCardProps) {
 function KanbanColumn({ 
   status, 
   workOrders, 
-  onCancel,
   columnOrders,
   onReorder,
   isOver,
@@ -211,7 +204,6 @@ function KanbanColumn({
 }: { 
   status: KanbanStatus; 
   workOrders: WorkOrderData[];
-  onCancel?: (workOrder: { id: string; wo_number: string }) => void;
   columnOrders: Record<string, string[]>;
   onReorder: (status: string, newOrder: string[]) => void;
   isOver?: boolean;
@@ -269,7 +261,6 @@ function KanbanColumn({
               <KanbanCard 
                 key={wo.id} 
                 workOrder={wo} 
-                onCancel={onCancel ? () => onCancel({ id: wo.id, wo_number: wo.wo_number }) : undefined}
               />
             ))}
             {/* Drop indicator when hovering empty area */}
@@ -367,6 +358,7 @@ export function WorkOrderKanbanView({ workOrders, onStatusChange, onCancel }: Wo
 
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id as string);
+    triggerHaptic('light');
   };
 
   const handleDragOver = (event: DragOverEvent) => {
@@ -384,6 +376,7 @@ export function WorkOrderKanbanView({ workOrders, onStatusChange, onCancel }: Wo
     const { active, over } = event;
     setActiveId(null);
     setOverId(null);
+    triggerHaptic('medium');
 
     if (!over || !hasPermission('change_work_order_status')) return;
 
@@ -496,7 +489,6 @@ export function WorkOrderKanbanView({ workOrders, onStatusChange, onCancel }: Wo
                 key={status}
                 status={status}
                 workOrders={ordersByStatus[status] || []}
-                onCancel={onCancel}
                 columnOrders={columnOrders}
                 onReorder={handleReorder}
                 isOver={hoveredColumn === status}
