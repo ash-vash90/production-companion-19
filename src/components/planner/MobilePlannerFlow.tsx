@@ -1,17 +1,19 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { ChevronLeft, Calendar as CalendarIcon } from 'lucide-react';
-import { cn, formatProductType } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
 import { PlannerWorkOrder } from '@/pages/ProductionPlanner';
-import PlannerCalendar from './PlannerCalendar';
-import PlannerWorkOrderDetail from './PlannerWorkOrderDetail';
+import {
+  MobileCalendarPage,
+  MobileWorkOrderDetailPage,
+  MobileItemAssignmentPage,
+  MobileStepAssignmentPage,
+  MobileOperatorCapacityPage,
+} from './mobile';
+
+type MobileStep = 'calendar' | 'detail' | 'items' | 'steps' | 'capacity';
 
 interface MobilePlannerFlowProps {
-  currentStep: 'calendar' | 'list' | 'detail' | 'items' | 'steps';
+  currentStep: string;
   currentDate: Date;
   calendarView: 'month' | 'week';
   workOrders: PlannerWorkOrder[];
@@ -20,7 +22,7 @@ interface MobilePlannerFlowProps {
   selectedWorkOrderId: string | null;
   onSelectWorkOrder: (id: string) => void;
   onBack: () => void;
-  onNavigate: (step: 'calendar' | 'list' | 'detail' | 'items' | 'steps') => void;
+  onNavigate: (step: string) => void;
   onNavigatePrevious: () => void;
   onNavigateNext: () => void;
   onNavigateToday: () => void;
@@ -31,94 +33,144 @@ interface MobilePlannerFlowProps {
 }
 
 const MobilePlannerFlow: React.FC<MobilePlannerFlowProps> = ({
-  currentStep,
-  currentDate,
-  calendarView,
+  currentDate: initialDate,
   workOrders,
   unscheduledOrders,
   loading,
   selectedWorkOrderId,
   onSelectWorkOrder,
-  onBack,
-  onNavigatePrevious,
-  onNavigateNext,
-  onNavigateToday,
-  onViewChange,
   onWorkOrderUpdate,
   onCloseDetail,
-  isAdmin,
 }) => {
-  const { language } = useLanguage();
+  const [step, setStep] = useState<MobileStep>('calendar');
+  const [currentDate, setCurrentDate] = useState(initialDate);
+  const [workOrderDetail, setWorkOrderDetail] = useState<{
+    id: string;
+    productType: string;
+    scheduledDate: string | null;
+  } | null>(null);
 
-  // Calendar view
-  if (currentStep === 'calendar') {
-    return (
-      <Layout>
-        <div className="h-[calc(100vh-4rem)] flex flex-col">
-          <PlannerCalendar
+  // When a work order is selected externally, fetch its details
+  useEffect(() => {
+    if (selectedWorkOrderId && step === 'calendar') {
+      fetchWorkOrderDetail(selectedWorkOrderId);
+    }
+  }, [selectedWorkOrderId]);
+
+  const fetchWorkOrderDetail = async (id: string) => {
+    const { data } = await supabase
+      .from('work_orders')
+      .select('id, product_type, start_date, scheduled_date')
+      .eq('id', id)
+      .single();
+
+    if (data) {
+      setWorkOrderDetail({
+        id: data.id,
+        productType: data.product_type,
+        scheduledDate: data.scheduled_date || data.start_date,
+      });
+      setStep('detail');
+    }
+  };
+
+  const handleSelectWorkOrder = (id: string) => {
+    onSelectWorkOrder(id);
+    fetchWorkOrderDetail(id);
+  };
+
+  const handleBack = () => {
+    switch (step) {
+      case 'detail':
+        setStep('calendar');
+        setWorkOrderDetail(null);
+        onCloseDetail();
+        break;
+      case 'items':
+      case 'steps':
+        setStep('detail');
+        break;
+      case 'capacity':
+        setStep('calendar');
+        break;
+      default:
+        break;
+    }
+  };
+
+  const handleScheduleOrder = (orderId: string) => {
+    handleSelectWorkOrder(orderId);
+  };
+
+  const renderContent = () => {
+    switch (step) {
+      case 'calendar':
+        return (
+          <MobileCalendarPage
             currentDate={currentDate}
-            calendarView={calendarView}
             workOrders={workOrders}
             unscheduledOrders={unscheduledOrders}
             loading={loading}
-            selectedWorkOrderId={selectedWorkOrderId}
-            onSelectWorkOrder={onSelectWorkOrder}
-            onNavigatePrevious={onNavigatePrevious}
-            onNavigateNext={onNavigateNext}
-            onNavigateToday={onNavigateToday}
-            onViewChange={onViewChange}
-            onWorkOrderUpdate={onWorkOrderUpdate}
-            isAdmin={isAdmin}
+            onSelectWorkOrder={handleSelectWorkOrder}
+            onDateChange={setCurrentDate}
+            onViewCapacity={() => setStep('capacity')}
+            onScheduleOrder={handleScheduleOrder}
           />
-        </div>
-      </Layout>
-    );
-  }
+        );
 
-  // Work Order Detail view (full screen on mobile)
-  if (currentStep === 'detail' && selectedWorkOrderId) {
-    return (
-      <Layout>
-        <div className="h-[calc(100vh-4rem)] flex flex-col">
-          {/* Mobile back header */}
-          <div className="flex-none p-3 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-            <Button variant="ghost" size="sm" onClick={onBack} className="gap-1.5 -ml-2">
-              <ChevronLeft className="h-4 w-4" />
-              {language === 'nl' ? 'Terug naar kalender' : 'Back to calendar'}
-            </Button>
-          </div>
-          
-          <div className="flex-1 overflow-hidden">
-            <PlannerWorkOrderDetail
-              workOrderId={selectedWorkOrderId}
-              onClose={onCloseDetail}
-              onUpdate={onWorkOrderUpdate}
-            />
-          </div>
-        </div>
-      </Layout>
-    );
-  }
+      case 'detail':
+        if (!workOrderDetail) return null;
+        return (
+          <MobileWorkOrderDetailPage
+            workOrderId={workOrderDetail.id}
+            onBack={handleBack}
+            onUpdate={onWorkOrderUpdate}
+            onAssignItems={() => setStep('items')}
+            onAssignSteps={() => setStep('steps')}
+          />
+        );
 
-  // Fallback to calendar
+      case 'items':
+        if (!workOrderDetail) return null;
+        return (
+          <MobileItemAssignmentPage
+            workOrderId={workOrderDetail.id}
+            scheduledDate={workOrderDetail.scheduledDate}
+            onBack={handleBack}
+            onUpdate={onWorkOrderUpdate}
+          />
+        );
+
+      case 'steps':
+        if (!workOrderDetail) return null;
+        return (
+          <MobileStepAssignmentPage
+            workOrderId={workOrderDetail.id}
+            productType={workOrderDetail.productType}
+            scheduledDate={workOrderDetail.scheduledDate}
+            onBack={handleBack}
+            onUpdate={onWorkOrderUpdate}
+          />
+        );
+
+      case 'capacity':
+        return (
+          <MobileOperatorCapacityPage
+            currentDate={currentDate}
+            onBack={handleBack}
+            onSelectWorkOrder={handleSelectWorkOrder}
+          />
+        );
+
+      default:
+        return null;
+    }
+  };
+
   return (
     <Layout>
       <div className="h-[calc(100vh-4rem)] flex flex-col">
-        <PlannerCalendar
-          currentDate={currentDate}
-          calendarView={calendarView}
-          workOrders={workOrders}
-          unscheduledOrders={unscheduledOrders}
-          loading={loading}
-          selectedWorkOrderId={selectedWorkOrderId}
-          onSelectWorkOrder={onSelectWorkOrder}
-          onNavigatePrevious={onNavigatePrevious}
-          onNavigateNext={onNavigateNext}
-          onNavigateToday={onNavigateToday}
-          onViewChange={onViewChange}
-          onWorkOrderUpdate={onWorkOrderUpdate}
-          isAdmin={isAdmin}
-        />
+        {renderContent()}
       </div>
     </Layout>
   );
