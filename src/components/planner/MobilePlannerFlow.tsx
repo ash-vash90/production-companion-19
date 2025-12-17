@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import { supabase } from '@/integrations/supabase/client';
 import { PlannerWorkOrder } from '@/pages/ProductionPlanner';
+import QuickScheduleDialog from './QuickScheduleDialog';
 import {
   MobileCalendarPage,
   MobileWorkOrderDetailPage,
@@ -49,6 +50,10 @@ const MobilePlannerFlow: React.FC<MobilePlannerFlowProps> = ({
     productType: string;
     scheduledDate: string | null;
   } | null>(null);
+
+  // Quick schedule dialog state
+  const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
+  const [scheduleTarget, setScheduleTarget] = useState<{ id: string; woNumber: string } | null>(null);
 
   // When a work order is selected externally, fetch its details
   useEffect(() => {
@@ -99,7 +104,17 @@ const MobilePlannerFlow: React.FC<MobilePlannerFlowProps> = ({
   };
 
   const handleScheduleOrder = (orderId: string) => {
-    handleSelectWorkOrder(orderId);
+    // Find the work order to get its WO number
+    const order = unscheduledOrders.find(o => o.id === orderId);
+    if (order) {
+      setScheduleTarget({ id: orderId, woNumber: order.wo_number });
+      setScheduleDialogOpen(true);
+    }
+  };
+
+  const handleScheduled = () => {
+    setScheduleTarget(null);
+    onWorkOrderUpdate();
   };
 
   const renderContent = () => {
@@ -172,6 +187,17 @@ const MobilePlannerFlow: React.FC<MobilePlannerFlowProps> = ({
       <div className="h-[calc(100vh-4rem)] flex flex-col">
         {renderContent()}
       </div>
+
+      {/* Quick Schedule Dialog */}
+      {scheduleTarget && (
+        <QuickScheduleDialog
+          open={scheduleDialogOpen}
+          onOpenChange={setScheduleDialogOpen}
+          workOrderId={scheduleTarget.id}
+          woNumber={scheduleTarget.woNumber}
+          onScheduled={handleScheduled}
+        />
+      )}
     </Layout>
   );
 };

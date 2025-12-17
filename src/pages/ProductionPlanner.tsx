@@ -8,6 +8,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import PlannerCalendar from '@/components/planner/PlannerCalendar';
 import PlannerWorkOrderDetail from '@/components/planner/PlannerWorkOrderDetail';
 import MobilePlannerFlow from '@/components/planner/MobilePlannerFlow';
+import DesktopCapacityBar from '@/components/planner/DesktopCapacityBar';
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, parseISO, addMonths, subMonths, addWeeks, subWeeks } from 'date-fns';
 import { cn } from '@/lib/utils';
 
@@ -222,6 +223,9 @@ const ProductionPlanner = () => {
               </div>
             )}
           </div>
+
+          {/* Desktop Capacity Bar */}
+          <DesktopCapacityBar currentDate={currentDate} />
         </div>
       </Layout>
     );
