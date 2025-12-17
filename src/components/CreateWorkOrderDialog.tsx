@@ -278,7 +278,9 @@ export function CreateWorkOrderDialog({ open, onOpenChange, onSuccess, trigger }
         });
 
         setCreationProgress(100);
-        toast.success(t('success'), { description: `${t('workOrderNumber')} ${currentWoNumber} ${t('workOrderCreated')}` });
+        toast.success('Work order created', { 
+          description: `${currentWoNumber} • ${totalBatchSize} item${totalBatchSize > 1 ? 's' : ''}` 
+        });
         onOpenChange(false);
         onSuccess();
         return;
@@ -290,7 +292,7 @@ export function CreateWorkOrderDialog({ open, onOpenChange, onSuccess, trigger }
         }
         
         console.error('Error creating work order:', error);
-        toast.error(t('error'), { description: error.message });
+        toast.error('Failed to create work order', { description: error.message });
         break;
       }
     }

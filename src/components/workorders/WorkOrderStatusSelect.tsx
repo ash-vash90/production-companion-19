@@ -75,11 +75,13 @@ export function WorkOrderStatusSelect({
 
       if (error) throw error;
 
-      toast.success(t('statusUpdated') || 'Status updated');
+      toast.success('Status updated', { 
+        description: `Changed to ${newStatus.replace('_', ' ')}` 
+      });
       onStatusChange?.(newStatus);
     } catch (error: any) {
       console.error('Error updating status:', error);
-      toast.error(t('error'), { description: error.message });
+      toast.error('Failed to update status', { description: error.message });
     } finally {
       setUpdating(false);
     }

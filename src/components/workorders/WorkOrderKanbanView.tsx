@@ -439,11 +439,13 @@ export function WorkOrderKanbanView({ workOrders, onStatusChange, onCancel }: Wo
 
       if (error) throw error;
 
-      toast.success(t('statusUpdated') || 'Status updated');
+      toast.success(`${activeWO.wo_number} updated`, { 
+        description: `Status changed to ${newStatus.replace('_', ' ')}` 
+      });
       onStatusChange?.();
     } catch (error: any) {
       console.error('Error updating status:', error);
-      toast.error(t('error'), { description: error.message });
+      toast.error('Failed to update status', { description: error.message });
     } finally {
       setIsUpdating(false);
     }

@@ -225,11 +225,12 @@ const Production = () => {
 
       if (error) throw error;
 
-      toast.success(t('success'), { description: t('productionStarted') });
+      const startedItem = items.find(i => i.id === itemId);
+      toast.success('Production started', { description: `${startedItem?.serial_number || 'Item'} is now in progress` });
       fetchProductionData();
     } catch (error: any) {
       console.error('Error starting production:', error);
-      toast.error(t('error'), { description: error.message });
+      toast.error('Failed to start production', { description: error.message });
     }
   };
 
@@ -241,11 +242,11 @@ const Production = () => {
 
       const { certificateId, pdfUrl } = await generateQualityCertificate(itemId);
 
-      toast.success(t('certificateGenerated') || 'Certificate generated!', {
+      toast.success('Certificate generated', {
         id: 'cert-gen',
-        description: t('certificateReady') || 'Certificate is ready for download',
+        description: `Ready for ${serialNumber}`,
         action: {
-          label: t('download') || 'Download',
+          label: 'Download',
           onClick: () => window.open(pdfUrl, '_blank'),
         },
       });
@@ -253,9 +254,9 @@ const Production = () => {
       fetchProductionData();
     } catch (error: any) {
       console.error('Error generating certificate:', error);
-      toast.error(t('error'), {
+      toast.error('Certificate generation failed', {
         id: 'cert-gen',
-        description: error.message || t('failedGenerateCertificate') || 'Failed to generate certificate',
+        description: error.message || 'Please try again',
       });
     }
   };
