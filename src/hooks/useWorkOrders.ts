@@ -18,6 +18,12 @@ function setCache(key: string, data: any[]) {
   workOrdersCache.set(key, { data, timestamp: Date.now() });
 }
 
+export interface AssignedOperator {
+  id: string;
+  full_name: string;
+  avatar_url: string | null;
+}
+
 export interface WorkOrderListItem {
   id: string;
   wo_number: string;
@@ -37,6 +43,8 @@ export interface WorkOrderListItem {
   progressPercent: number;
   completedItems: number;
   totalItems: number;
+  // Assigned operators
+  assignedOperators: AssignedOperator[];
 }
 
 type WorkOrderStatus = 'planned' | 'in_progress' | 'completed' | 'on_hold' | 'cancelled';
@@ -95,8 +103,8 @@ export function useWorkOrders(options: UseWorkOrdersOptions = {}) {
 
     const woIds = workOrdersData?.map(wo => wo.id) || [];
     
-    // Parallel fetch items (with status for progress) and profiles
-    const [itemsResult, profilesResult] = await Promise.all([
+    // Parallel fetch items (with status for progress), profiles, and operator assignments
+    const [itemsResult, profilesResult, assignmentsResult] = await Promise.all([
       woIds.length > 0 
         ? supabase
             .from('work_order_items')
@@ -110,7 +118,13 @@ export function useWorkOrders(options: UseWorkOrdersOptions = {}) {
           .from('profiles')
           .select('id, full_name, avatar_url')
           .in('id', creatorIds);
-      })()
+      })(),
+      woIds.length > 0
+        ? supabase
+            .from('operator_assignments')
+            .select('work_order_id, operator_id, profiles!operator_assignments_operator_id_fkey(id, full_name, avatar_url)')
+            .in('work_order_id', woIds)
+        : { data: [] }
     ]);
 
     // Build lookup maps with progress tracking
@@ -127,7 +141,23 @@ export function useWorkOrders(options: UseWorkOrdersOptions = {}) {
       return acc;
     }, {} as Record<string, { full_name: string; avatar_url: string | null }>);
 
-    // Enrich data with progress
+    // Build assignments map - deduplicate by operator_id
+    const assignmentsMap: Record<string, AssignedOperator[]> = {};
+    for (const assignment of assignmentsResult.data || []) {
+      if (!assignmentsMap[assignment.work_order_id]) {
+        assignmentsMap[assignment.work_order_id] = [];
+      }
+      const profile = assignment.profiles as { id: string; full_name: string; avatar_url: string | null } | null;
+      if (profile && !assignmentsMap[assignment.work_order_id].some(op => op.id === profile.id)) {
+        assignmentsMap[assignment.work_order_id].push({
+          id: profile.id,
+          full_name: profile.full_name,
+          avatar_url: profile.avatar_url,
+        });
+      }
+    }
+
+    // Enrich data with progress and assignments
     const enrichedData = (workOrdersData || []).map(wo => {
       const items = itemsMap[wo.id] || [];
       const breakdown = getProductBreakdown(items);
@@ -144,6 +174,7 @@ export function useWorkOrders(options: UseWorkOrdersOptions = {}) {
         progressPercent,
         completedItems,
         totalItems,
+        assignedOperators: assignmentsMap[wo.id] || [],
       };
     }) as WorkOrderListItem[];
 
@@ -307,13 +338,17 @@ export function usePaginatedWorkOrders(pageSize = 25) {
 
     const woIds = workOrdersData.map(wo => wo.id);
     
-    const [itemsResult, profilesResult] = await Promise.all([
+    const [itemsResult, profilesResult, assignmentsResult] = await Promise.all([
       supabase.from('work_order_items').select('work_order_id, serial_number, status').in('work_order_id', woIds),
       (async () => {
         const creatorIds = [...new Set(workOrdersData.map(wo => wo.created_by).filter(Boolean))];
         if (creatorIds.length === 0) return { data: [] };
         return supabase.from('profiles').select('id, full_name, avatar_url').in('id', creatorIds);
-      })()
+      })(),
+      supabase
+        .from('operator_assignments')
+        .select('work_order_id, operator_id, profiles!operator_assignments_operator_id_fkey(id, full_name, avatar_url)')
+        .in('work_order_id', woIds)
     ]);
 
     const itemsMap: Record<string, Array<{ serial_number: string; status: string }>> = {};
@@ -326,6 +361,21 @@ export function usePaginatedWorkOrders(pageSize = 25) {
       acc[p.id] = { full_name: p.full_name, avatar_url: p.avatar_url };
       return acc;
     }, {} as Record<string, { full_name: string; avatar_url: string | null }>);
+
+    const assignmentsMap: Record<string, AssignedOperator[]> = {};
+    for (const assignment of assignmentsResult.data || []) {
+      if (!assignmentsMap[assignment.work_order_id]) {
+        assignmentsMap[assignment.work_order_id] = [];
+      }
+      const profile = assignment.profiles as { id: string; full_name: string; avatar_url: string | null } | null;
+      if (profile && !assignmentsMap[assignment.work_order_id].some(op => op.id === profile.id)) {
+        assignmentsMap[assignment.work_order_id].push({
+          id: profile.id,
+          full_name: profile.full_name,
+          avatar_url: profile.avatar_url,
+        });
+      }
+    }
 
     return workOrdersData.map(wo => {
       const items = itemsMap[wo.id] || [];
@@ -341,6 +391,7 @@ export function usePaginatedWorkOrders(pageSize = 25) {
         progressPercent,
         completedItems,
         totalItems,
+        assignedOperators: assignmentsMap[wo.id] || [],
       };
     }) as WorkOrderListItem[];
   }, [pageSize]);
