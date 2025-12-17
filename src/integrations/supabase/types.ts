@@ -95,6 +95,13 @@ export type Database = {
             referencedRelation: "incoming_webhooks"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "automation_rules_incoming_webhook_id_fkey"
+            columns: ["incoming_webhook_id"]
+            isOneToOne: false
+            referencedRelation: "incoming_webhooks_safe"
+            referencedColumns: ["id"]
+          },
         ]
       }
       batch_materials: {
@@ -1327,6 +1334,13 @@ export type Database = {
             referencedRelation: "incoming_webhooks"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "webhook_logs_incoming_webhook_id_fkey"
+            columns: ["incoming_webhook_id"]
+            isOneToOne: false
+            referencedRelation: "incoming_webhooks_safe"
+            referencedColumns: ["id"]
+          },
         ]
       }
       work_instructions: {
@@ -1635,7 +1649,48 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      incoming_webhooks_safe: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          enabled: boolean | null
+          endpoint_key: string | null
+          id: string | null
+          last_triggered_at: string | null
+          name: string | null
+          secret_key: string | null
+          trigger_count: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          enabled?: boolean | null
+          endpoint_key?: string | null
+          id?: string | null
+          last_triggered_at?: string | null
+          name?: string | null
+          secret_key?: never
+          trigger_count?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          enabled?: boolean | null
+          endpoint_key?: string | null
+          id?: string | null
+          last_triggered_at?: string | null
+          name?: string | null
+          secret_key?: never
+          trigger_count?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       has_role: {
