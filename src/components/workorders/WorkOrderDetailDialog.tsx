@@ -94,7 +94,7 @@ const WorkOrderDetailDialog: React.FC<WorkOrderDetailDialogProps> = ({
 
   const handleOpenProduction = () => {
     onOpenChange(false);
-    navigate(`/production?workOrder=${workOrder?.id}`);
+    navigate(`/production/${workOrder?.id}`);
   };
 
   // Check if work order has no assignments

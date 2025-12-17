@@ -118,7 +118,7 @@ export function WorkOrderCard({
 
   const handleOpenProduction = (e: React.MouseEvent) => {
     e.stopPropagation();
-    navigate(`/production?workOrder=${workOrder.id}`);
+    navigate(`/production/${workOrder.id}`);
   };
 
   const handleOpenAssignment = (e: React.MouseEvent) => {
