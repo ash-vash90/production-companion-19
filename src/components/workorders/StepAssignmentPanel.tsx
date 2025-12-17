@@ -624,7 +624,7 @@ const StepAssignmentPanel: React.FC<StepAssignmentPanelProps> = ({
 
               <Separator />
 
-              {/* Steps List */}
+              {/* Steps List - Mobile optimized */}
               <div className="space-y-2">
                 {steps.map((step) => {
                   const assignedOperatorId = assignments.get(step.id);
@@ -633,10 +633,10 @@ const StepAssignmentPanel: React.FC<StepAssignmentPanelProps> = ({
                   return (
                     <div 
                       key={step.id} 
-                      className="flex items-center justify-between gap-3 py-2 px-3 rounded-lg bg-muted/30 border border-border/50"
+                      className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3 py-3 px-3 rounded-lg bg-muted/30 border border-border/50"
                     >
                       <div className="flex items-center gap-2 min-w-0 flex-1">
-                        <Badge variant="outline" className="shrink-0 font-mono text-[10px] h-5 w-5 flex items-center justify-center p-0">
+                        <Badge variant="outline" className="shrink-0 font-mono text-[10px] h-6 w-6 flex items-center justify-center p-0">
                           {step.step_number}
                         </Badge>
                         <span className="text-sm truncate">{getStepTitle(step)}</span>
@@ -647,18 +647,18 @@ const StepAssignmentPanel: React.FC<StepAssignmentPanelProps> = ({
                         onValueChange={(value) => handleStepAssignment(step.id, value)}
                         disabled={saving === step.id}
                       >
-                        <SelectTrigger className="w-[180px] h-8 text-sm">
+                        <SelectTrigger className="w-full sm:w-[180px] h-10 sm:h-8 text-sm">
                           {saving === step.id ? (
                             <Loader2 className="h-3 w-3 animate-spin" />
                           ) : assignedOperator ? (
                             <div className="flex items-center gap-2">
-                              <Avatar className="h-5 w-5">
+                              <Avatar className="h-6 w-6 sm:h-5 sm:w-5">
                                 {assignedOperator.avatar_url && <AvatarImage src={assignedOperator.avatar_url} />}
-                                <AvatarFallback className="text-[9px]">
+                                <AvatarFallback className="text-[10px]">
                                   {getInitials(assignedOperator.full_name)}
                                 </AvatarFallback>
                               </Avatar>
-                              <span className="truncate">{assignedOperator.full_name.split(' ')[0]}</span>
+                              <span className="truncate">{assignedOperator.full_name}</span>
                             </div>
                           ) : (
                             <span className="text-muted-foreground">{language === 'nl' ? 'Niet toegewezen' : 'Unassigned'}</span>
@@ -677,11 +677,12 @@ const StepAssignmentPanel: React.FC<StepAssignmentPanelProps> = ({
                                 key={op.id} 
                                 value={op.id}
                                 disabled={status.isUnavailable}
+                                className="py-2"
                               >
                                 <div className="flex items-center gap-2">
-                                  <Avatar className="h-5 w-5">
+                                  <Avatar className="h-6 w-6">
                                     {op.avatar_url && <AvatarImage src={op.avatar_url} />}
-                                    <AvatarFallback className="text-[9px]">
+                                    <AvatarFallback className="text-[10px]">
                                       {getInitials(op.full_name)}
                                     </AvatarFallback>
                                   </Avatar>

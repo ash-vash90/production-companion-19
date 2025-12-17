@@ -3,19 +3,17 @@ import Layout from '@/components/Layout';
 import { PageHeader } from '@/components/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { format, startOfWeek, endOfWeek, addWeeks, subWeeks } from 'date-fns';
-import { ChevronLeft, ChevronRight, Users, Calendar as CalendarIcon, BarChart3, UserMinus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, UserMinus } from 'lucide-react';
 import WeeklyCapacityPlanner from '@/components/calendar/WeeklyCapacityPlanner';
-import CapacityUtilizationChart from '@/components/workorders/CapacityUtilizationChart';
 import QuickAvailabilityForm from '@/components/calendar/QuickAvailabilityForm';
 
 const CapacityPlanning = () => {
-  const { t, language } = useLanguage();
+  const { language } = useLanguage();
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [activeTab, setActiveTab] = useState<'planner' | 'overview'>('planner');
+  const [activeTab, setActiveTab] = useState<'planner' | 'availability'>('planner');
   const [refreshKey, setRefreshKey] = useState(0);
 
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
@@ -34,7 +32,6 @@ const CapacityPlanning = () => {
   };
 
   const handleAvailabilityAdded = () => {
-    // Trigger refresh of the planner
     setRefreshKey(prev => prev + 1);
   };
 
@@ -44,8 +41,8 @@ const CapacityPlanning = () => {
         <PageHeader 
           title={language === 'nl' ? 'Capaciteitsplanning' : 'Capacity Planning'} 
           description={language === 'nl' 
-            ? 'Plan en beheer operator werkbelasting en toewijzingen' 
-            : 'Plan and manage operator workload and assignments'
+            ? 'Plan dagelijkse toewijzingen en beheer beschikbaarheid' 
+            : 'Plan daily assignments and manage availability'
           } 
         />
 
@@ -70,15 +67,15 @@ const CapacityPlanning = () => {
                 </Button>
               </div>
 
-              <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'planner' | 'overview')} className="w-auto">
+              <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'planner' | 'availability')} className="w-auto">
                 <TabsList className="h-8">
                   <TabsTrigger value="planner" className="text-xs gap-1.5 px-3">
                     <CalendarIcon className="h-3.5 w-3.5" />
                     <span className="hidden sm:inline">{language === 'nl' ? 'Planner' : 'Planner'}</span>
                   </TabsTrigger>
-                  <TabsTrigger value="overview" className="text-xs gap-1.5 px-3">
-                    <BarChart3 className="h-3.5 w-3.5" />
-                    <span className="hidden sm:inline">{language === 'nl' ? 'Overzicht' : 'Overview'}</span>
+                  <TabsTrigger value="availability" className="text-xs gap-1.5 px-3">
+                    <UserMinus className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">{language === 'nl' ? 'Afwezigheid' : 'Availability'}</span>
                   </TabsTrigger>
                 </TabsList>
               </Tabs>
@@ -88,78 +85,50 @@ const CapacityPlanning = () => {
 
         {/* Main content */}
         {activeTab === 'planner' ? (
-          <div className="flex gap-4">
-            <div className="flex-1 min-w-0">
-              <WeeklyCapacityPlanner key={refreshKey} />
-            </div>
-            {/* Quick availability form sidebar */}
-            <div className="w-72 flex-shrink-0 hidden xl:block">
-              <QuickAvailabilityForm onAvailabilityAdded={handleAvailabilityAdded} />
-            </div>
-          </div>
+          <WeeklyCapacityPlanner key={refreshKey} />
         ) : (
-          <div className="grid gap-4 md:gap-6">
-            {/* Capacity utilization charts for each day of the week */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {Array.from({ length: 7 }).map((_, i) => {
-                const day = new Date(weekStart);
-                day.setDate(day.getDate() + i);
-                return (
-                  <CapacityUtilizationChart 
-                    key={i} 
-                    selectedDate={day}
-                  />
-                );
-              })}
-            </div>
-
-            {/* Summary statistics */}
-            <Card>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <QuickAvailabilityForm onAvailabilityAdded={handleAvailabilityAdded} />
+            <Card className="md:col-span-1 lg:col-span-2">
               <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Users className="h-4 w-4" />
-                  {language === 'nl' ? 'Wekelijks Overzicht' : 'Weekly Summary'}
+                <CardTitle className="text-base">
+                  {language === 'nl' ? 'Over Afwezigheid' : 'About Availability'}
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                  <div className="p-4 border rounded-lg bg-card">
-                    <div className="text-sm text-muted-foreground">
-                      {language === 'nl' ? 'Totale Capaciteit' : 'Total Capacity'}
-                    </div>
-                    <div className="text-2xl font-bold">40h</div>
-                    <div className="text-xs text-muted-foreground">
-                      {language === 'nl' ? 'per operator/week' : 'per operator/week'}
-                    </div>
-                  </div>
-                  <div className="p-4 border rounded-lg bg-card">
-                    <div className="text-sm text-muted-foreground">
-                      {language === 'nl' ? 'Gepland' : 'Scheduled'}
-                    </div>
-                    <div className="text-2xl font-bold text-warning">--h</div>
-                    <div className="text-xs text-muted-foreground">
-                      {language === 'nl' ? 'deze week' : 'this week'}
-                    </div>
-                  </div>
-                  <div className="p-4 border rounded-lg bg-card">
-                    <div className="text-sm text-muted-foreground">
-                      {language === 'nl' ? 'Beschikbaar' : 'Available'}
-                    </div>
-                    <div className="text-2xl font-bold text-success">--h</div>
-                    <div className="text-xs text-muted-foreground">
-                      {language === 'nl' ? 'resterende capaciteit' : 'remaining capacity'}
-                    </div>
-                  </div>
-                  <div className="p-4 border rounded-lg bg-card">
-                    <div className="text-sm text-muted-foreground">
-                      {language === 'nl' ? 'Benutting' : 'Utilization'}
-                    </div>
-                    <div className="text-2xl font-bold">--%</div>
-                    <div className="text-xs text-muted-foreground">
-                      {language === 'nl' ? 'gemiddeld' : 'average'}
-                    </div>
-                  </div>
-                </div>
+              <CardContent className="space-y-4 text-sm text-muted-foreground">
+                <p>
+                  {language === 'nl' 
+                    ? 'Gebruik dit formulier om afwezigheid van medewerkers te registreren, zoals vakantie, ziekte of training.'
+                    : 'Use this form to record employee absences such as vacation, sick leave, or training.'
+                  }
+                </p>
+                <ul className="list-disc list-inside space-y-1">
+                  <li>
+                    {language === 'nl'
+                      ? 'Vakantie - Geplande vrije dagen'
+                      : 'Holiday - Planned time off'}
+                  </li>
+                  <li>
+                    {language === 'nl'
+                      ? 'Ziek - Ongeplande afwezigheid door ziekte'
+                      : 'Sick - Unplanned absence due to illness'}
+                  </li>
+                  <li>
+                    {language === 'nl'
+                      ? 'Training - Deelname aan opleidingen'
+                      : 'Training - Participation in training sessions'}
+                  </li>
+                  <li>
+                    {language === 'nl'
+                      ? 'Overig - Andere redenen voor afwezigheid'
+                      : 'Other - Other reasons for absence'}
+                  </li>
+                </ul>
+                <p>
+                  {language === 'nl'
+                    ? 'Wanneer een medewerker als afwezig is gemarkeerd, kan deze niet worden ingepland voor werkorders op die datum.'
+                    : 'When an employee is marked as absent, they cannot be scheduled for work orders on that date.'}
+                </p>
               </CardContent>
             </Card>
           </div>
