@@ -12,7 +12,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Loader2, ArrowLeft, Package, Printer, FileText, CalendarIcon, DollarSign, User, FileTextIcon, Link2, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Package, Printer, FileText, CalendarIcon, DollarSign, User, FileTextIcon, Link2, CheckCircle2 } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 import { generateQualityCertificate } from '@/services/certificateService';
 import { format, differenceInDays, parseISO, isBefore } from 'date-fns';
 import QRCodeLib from 'qrcode';
@@ -276,8 +277,55 @@ const Production = () => {
     return (
       <ProtectedRoute>
         <Layout>
-          <div className="flex justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <div className="space-y-4 lg:space-y-6 p-2 md:p-4 max-w-4xl mx-auto">
+            {/* Header skeleton */}
+            <div className="flex items-center gap-4">
+              <Skeleton className="h-10 w-10 md:h-12 md:w-12 rounded-md" />
+              <div className="space-y-2 flex-1">
+                <Skeleton className="h-8 md:h-10 w-48" />
+                <Skeleton className="h-4 md:h-5 w-32" />
+              </div>
+            </div>
+
+            {/* Details card skeleton */}
+            <Card className="shadow-sm">
+              <CardContent className="py-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {[...Array(5)].map((_, i) => (
+                    <div key={i} className="space-y-1">
+                      <Skeleton className="h-3 w-16" />
+                      <Skeleton className="h-8 w-full" />
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Items card skeleton */}
+            <Card className="shadow-sm">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <Skeleton className="h-6 w-32" />
+                  <Skeleton className="h-5 w-16 rounded-full" />
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {[...Array(4)].map((_, i) => (
+                  <div key={i} className="flex items-center gap-3 p-3 border rounded-lg">
+                    <Skeleton className="h-8 w-8 rounded-md" />
+                    <div className="flex-1 space-y-1.5">
+                      <Skeleton className="h-4 w-28" />
+                      <Skeleton className="h-3 w-20" />
+                    </div>
+                    <Skeleton className="h-5 w-16 rounded-full" />
+                    <div className="flex gap-1">
+                      <Skeleton className="h-8 w-8 rounded-md" />
+                      <Skeleton className="h-8 w-8 rounded-md" />
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
           </div>
         </Layout>
       </ProtectedRoute>
