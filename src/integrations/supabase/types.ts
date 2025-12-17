@@ -733,6 +733,54 @@ export type Database = {
           },
         ]
       }
+      operator_availability: {
+        Row: {
+          available_hours: number
+          created_at: string | null
+          created_by: string | null
+          date: string
+          id: string
+          reason: string | null
+          reason_type: string
+          user_id: string
+        }
+        Insert: {
+          available_hours?: number
+          created_at?: string | null
+          created_by?: string | null
+          date: string
+          id?: string
+          reason?: string | null
+          reason_type?: string
+          user_id: string
+        }
+        Update: {
+          available_hours?: number
+          created_at?: string | null
+          created_by?: string | null
+          date?: string
+          id?: string
+          reason?: string | null
+          reason_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "operator_availability_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "operator_availability_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       outgoing_webhook_logs: {
         Row: {
           attempts: number | null

@@ -29,6 +29,13 @@ interface Assignment {
   operator?: Operator;
 }
 
+interface OperatorUnavailability {
+  user_id: string;
+  available_hours: number;
+  reason: string | null;
+  reason_type: string;
+}
+
 interface OperatorAssignmentPanelProps {
   workOrderId: string;
   scheduledDate?: string | null;
@@ -43,6 +50,7 @@ const OperatorAssignmentPanel: React.FC<OperatorAssignmentPanelProps> = ({
   const { user } = useAuth();
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [operators, setOperators] = useState<Operator[]>([]);
+  const [unavailabilityMap, setUnavailabilityMap] = useState<Map<string, OperatorUnavailability>>(new Map());
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   
@@ -91,6 +99,9 @@ const OperatorAssignmentPanel: React.FC<OperatorAssignmentPanelProps> = ({
 
       if (profilesError) throw profilesError;
 
+      // Fetch unavailability for selected date
+      await fetchUnavailability(assignDate);
+
       // Map operator data to assignments
       const profileMap = new Map((profilesData || []).map(p => [p.id, p]));
       const enrichedAssignments = (assignmentData || []).map(a => ({
@@ -107,8 +118,42 @@ const OperatorAssignmentPanel: React.FC<OperatorAssignmentPanelProps> = ({
     }
   };
 
+  const fetchUnavailability = async (date: string) => {
+    try {
+      const { data } = await (supabase
+        .from('operator_availability' as any)
+        .select('user_id, available_hours, reason, reason_type')
+        .eq('date', date) as any);
+
+      const unavailMap = new Map<string, OperatorUnavailability>();
+      (data || []).forEach((entry: OperatorUnavailability) => {
+        unavailMap.set(entry.user_id, entry);
+      });
+      setUnavailabilityMap(unavailMap);
+    } catch (error) {
+      console.error('Error fetching unavailability:', error);
+    }
+  };
+
+  // Re-fetch unavailability when date changes
+  useEffect(() => {
+    if (assignDate) {
+      fetchUnavailability(assignDate);
+    }
+  }, [assignDate]);
+
   const addAssignment = async () => {
     if (!selectedOperator || !assignDate) return;
+
+    // Check if operator is unavailable on this date
+    const unavailability = unavailabilityMap.get(selectedOperator);
+    if (unavailability && unavailability.available_hours === 0) {
+      const reasonLabel = unavailability.reason_type === 'holiday' ? 'on holiday' :
+                         unavailability.reason_type === 'sick' ? 'on sick leave' :
+                         unavailability.reason_type === 'training' ? 'in training' : 'unavailable';
+      toast.error(`This operator is ${reasonLabel} on ${format(new Date(assignDate), 'MMM d')}`);
+      return;
+    }
 
     setSaving(true);
     try {
@@ -172,6 +217,23 @@ const OperatorAssignmentPanel: React.FC<OperatorAssignmentPanelProps> = ({
   const availableOperators = operators.filter(op => 
     !assignments.some(a => a.operator_id === op.id && a.assigned_date === assignDate)
   );
+
+  // Helper to check if operator is unavailable
+  const isOperatorUnavailable = (operatorId: string) => {
+    const unavail = unavailabilityMap.get(operatorId);
+    return unavail && unavail.available_hours === 0;
+  };
+
+  const getUnavailabilityReason = (operatorId: string) => {
+    const unavail = unavailabilityMap.get(operatorId);
+    if (!unavail) return null;
+    switch (unavail.reason_type) {
+      case 'holiday': return 'Holiday';
+      case 'sick': return 'Sick';
+      case 'training': return 'Training';
+      default: return 'Unavailable';
+    }
+  };
 
   if (loading) {
     return (
@@ -264,16 +326,23 @@ const OperatorAssignmentPanel: React.FC<OperatorAssignmentPanelProps> = ({
                       No available operators
                     </div>
                   ) : (
-                    availableOperators.map(op => (
-                      <SelectItem key={op.id} value={op.id}>
-                        <div className="flex items-center gap-2">
-                          <span>{op.full_name}</span>
-                          {!op.is_available && (
-                            <Badge variant="secondary" className="text-xs">Away</Badge>
-                          )}
-                        </div>
-                      </SelectItem>
-                    ))
+                    availableOperators.map(op => {
+                      const unavailable = isOperatorUnavailable(op.id);
+                      const reason = getUnavailabilityReason(op.id);
+                      return (
+                        <SelectItem key={op.id} value={op.id} disabled={unavailable}>
+                          <div className="flex items-center gap-2">
+                            <span className={unavailable ? 'text-muted-foreground' : ''}>{op.full_name}</span>
+                            {unavailable && reason && (
+                              <Badge variant="destructive" className="text-xs">{reason}</Badge>
+                            )}
+                            {!unavailable && !op.is_available && (
+                              <Badge variant="secondary" className="text-xs">Away</Badge>
+                            )}
+                          </div>
+                        </SelectItem>
+                      );
+                    })
                   )}
                 </SelectContent>
               </Select>

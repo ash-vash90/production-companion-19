@@ -9,6 +9,7 @@ import { useNavigate } from 'react-router-dom';
 import { formatDate, formatProductType } from '@/lib/utils';
 import { WorkOrderStatusBadge } from './WorkOrderStatusBadge';
 import OperatorAssignmentPanel from './OperatorAssignmentPanel';
+import ItemLevelAssignmentPanel from './ItemLevelAssignmentPanel';
 import { Package, Calendar, Truck, DollarSign, User, Play, Loader2 } from 'lucide-react';
 
 interface WorkOrderDetail {
@@ -173,6 +174,13 @@ const WorkOrderDetailSheet: React.FC<WorkOrderDetailSheetProps> = ({
 
               {/* Operator Assignment Panel */}
               <OperatorAssignmentPanel
+                workOrderId={workOrder.id}
+                scheduledDate={workOrder.scheduled_date || workOrder.start_date}
+                onAssignmentChange={onStatusChange}
+              />
+
+              {/* Item-Level Assignment for mixed product type orders */}
+              <ItemLevelAssignmentPanel
                 workOrderId={workOrder.id}
                 scheduledDate={workOrder.scheduled_date || workOrder.start_date}
                 onAssignmentChange={onStatusChange}

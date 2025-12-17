@@ -29,6 +29,8 @@ interface OperatorWorkload {
   role: string;
   daily_capacity_hours: number;
   is_available: boolean;
+  unavailabilityReason?: string;
+  unavailabilityType?: string;
   assignments: {
     date: string;
     work_order_id: string;
@@ -95,6 +97,27 @@ export function OperatorCapacityPanel({ selectedDate, onAssignOperator }: Operat
 
       if (assignmentsError) throw assignmentsError;
 
+      // Fetch unavailability for the date range
+      const { data: unavailabilityData } = await (supabase
+        .from('operator_availability' as any)
+        .select('user_id, date, available_hours, reason, reason_type')
+        .gte('date', startDate)
+        .lte('date', endDate) as any);
+
+      // Create unavailability map: user_id -> { dates with 0 hours }
+      const unavailabilityMap = new Map<string, { reason: string; reason_type: string }>();
+      (unavailabilityData || []).forEach((entry: any) => {
+        if (entry.available_hours === 0) {
+          // For day view, mark as unavailable if this date has 0 hours
+          if (viewMode === 'day' && entry.date === startDate) {
+            unavailabilityMap.set(entry.user_id, {
+              reason: entry.reason || '',
+              reason_type: entry.reason_type || 'other',
+            });
+          }
+        }
+      });
+
       // Calculate capacity for each operator
       const operatorsWithCapacity: OperatorWorkload[] = (profilesData || []).map(profile => {
         const operatorAssignments = (assignmentsData || [])
@@ -111,13 +134,18 @@ export function OperatorCapacityPanel({ selectedDate, onAssignOperator }: Operat
         const capacityHours = (profile.daily_capacity_hours || 8) * (viewMode === 'week' ? 5 : 1);
         const utilizationPercent = capacityHours > 0 ? Math.round((totalHours / capacityHours) * 100) : 0;
 
+        // Check unavailability
+        const unavail = unavailabilityMap.get(profile.id);
+
         return {
           id: profile.id,
           full_name: profile.full_name,
           avatar_url: profile.avatar_url,
           role: profile.role,
           daily_capacity_hours: profile.daily_capacity_hours || 8,
-          is_available: profile.is_available !== false,
+          is_available: unavail ? false : (profile.is_available !== false),
+          unavailabilityReason: unavail?.reason,
+          unavailabilityType: unavail?.reason_type,
           assignments: operatorAssignments,
           totalHours,
           utilizationPercent,
@@ -358,20 +386,27 @@ export function OperatorCapacityPanel({ selectedDate, onAssignOperator }: Operat
                     <UserX className="h-3.5 w-3.5" />
                     {language === 'nl' ? 'Niet beschikbaar' : 'Unavailable'}
                   </div>
-                  {unavailableOperators.map(operator => (
-                    <div
-                      key={operator.id}
-                      className="flex items-center gap-3 p-2 rounded-lg bg-muted/30 opacity-60"
-                    >
-                      <Avatar className="h-6 w-6">
-                        <AvatarImage src={operator.avatar_url || undefined} />
-                        <AvatarFallback className="text-[10px]">
-                          {getInitials(operator.full_name)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <span className="text-sm text-muted-foreground">{operator.full_name}</span>
-                    </div>
-                  ))}
+                  {unavailableOperators.map(operator => {
+                    const reasonLabel = operator.unavailabilityType === 'holiday' ? (language === 'nl' ? 'Vakantie' : 'Holiday') :
+                                       operator.unavailabilityType === 'sick' ? (language === 'nl' ? 'Ziek' : 'Sick') :
+                                       operator.unavailabilityType === 'training' ? 'Training' :
+                                       (language === 'nl' ? 'Afwezig' : 'Away');
+                    return (
+                      <div
+                        key={operator.id}
+                        className="flex items-center gap-3 p-2 rounded-lg bg-muted/30 opacity-60 mb-1"
+                      >
+                        <Avatar className="h-6 w-6">
+                          <AvatarImage src={operator.avatar_url || undefined} />
+                          <AvatarFallback className="text-[10px]">
+                            {getInitials(operator.full_name)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="text-sm text-muted-foreground flex-1">{operator.full_name}</span>
+                        <Badge variant="secondary" className="text-[10px]">{reasonLabel}</Badge>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
