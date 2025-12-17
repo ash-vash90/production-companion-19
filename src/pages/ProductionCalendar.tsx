@@ -23,6 +23,7 @@ import { CancelWorkOrderDialog } from '@/components/workorders/CancelWorkOrderDi
 import { OperatorCapacityPanel } from '@/components/calendar/OperatorCapacityPanel';
 import { OperatorAssignmentSelect } from '@/components/calendar/OperatorAssignmentSelect';
 import { CapacityIndicator, useCapacityData } from '@/components/calendar/CapacityIndicator';
+import WeeklyCapacityPlanner from '@/components/calendar/WeeklyCapacityPlanner';
 
 interface WorkOrder {
   id: string;
@@ -36,7 +37,7 @@ interface WorkOrder {
 }
 
 type DateViewMode = 'start' | 'ship' | 'timeline';
-type CalendarViewMode = 'month' | 'week';
+type CalendarViewMode = 'month' | 'week' | 'capacity';
 
 const ProductionCalendar = () => {
   const { user } = useAuth();
@@ -84,7 +85,7 @@ const ProductionCalendar = () => {
     : endOfWeek(currentDate, { weekStartsOn: 1 });
 
   // Capacity data for calendar indicators
-  const { getCapacityForDate } = useCapacityData(viewStartDate, viewEndDate, calendarView);
+  const { getCapacityForDate } = useCapacityData(viewStartDate, viewEndDate, calendarView === 'capacity' ? 'week' : calendarView);
 
   useEffect(() => {
     if (user) {
@@ -717,11 +718,20 @@ const ProductionCalendar = () => {
                     <Button 
                       variant={calendarView === 'month' ? 'secondary' : 'ghost'} 
                       size="sm"
-                      className="rounded-l-none text-xs h-8 px-2 sm:px-3"
+                      className="rounded-none border-x text-xs h-8 px-2 sm:px-3"
                       onClick={() => setCalendarView('month')}
                     >
                       <LayoutGrid className="h-3.5 w-3.5 sm:mr-1" />
                       <span className="hidden sm:inline">{t('month')}</span>
+                    </Button>
+                    <Button 
+                      variant={calendarView === 'capacity' ? 'secondary' : 'ghost'} 
+                      size="sm"
+                      className="rounded-l-none text-xs h-8 px-2 sm:px-3"
+                      onClick={() => setCalendarView('capacity')}
+                    >
+                      <Users className="h-3.5 w-3.5 sm:mr-1" />
+                      <span className="hidden sm:inline">{language === 'nl' ? 'Capaciteit' : 'Capacity'}</span>
                     </Button>
                   </div>
 
@@ -759,16 +769,18 @@ const ProductionCalendar = () => {
                     </Badge>
                   )}
 
-                  {/* Capacity panel toggle */}
-                  <Button
-                    variant={showCapacityPanel ? 'secondary' : 'outline'}
-                    size="sm"
-                    className="h-8 text-xs px-2 sm:px-3 hidden lg:flex"
-                    onClick={() => setShowCapacityPanel(!showCapacityPanel)}
-                  >
-                    <Users className="h-3.5 w-3.5 sm:mr-1" />
-                    <span className="hidden sm:inline">{language === 'nl' ? 'Capaciteit' : 'Capacity'}</span>
-                  </Button>
+                  {/* Capacity panel toggle - only show when not in capacity view */}
+                  {calendarView !== 'capacity' && (
+                    <Button
+                      variant={showCapacityPanel ? 'secondary' : 'outline'}
+                      size="sm"
+                      className="h-8 text-xs px-2 sm:px-3 hidden lg:flex"
+                      onClick={() => setShowCapacityPanel(!showCapacityPanel)}
+                    >
+                      <Users className="h-3.5 w-3.5 sm:mr-1" />
+                      <span className="hidden sm:inline">{language === 'nl' ? 'Capaciteit' : 'Capacity'}</span>
+                    </Button>
+                  )}
                 </div>
               </div>
             </CardHeader>
@@ -777,6 +789,8 @@ const ProductionCalendar = () => {
                 <div className="flex items-center justify-center py-12">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                 </div>
+              ) : calendarView === 'capacity' ? (
+                <WeeklyCapacityPlanner />
               ) : dateView === 'timeline' ? (
                 renderTimelineView()
               ) : calendarView === 'month' ? (
@@ -788,8 +802,8 @@ const ProductionCalendar = () => {
           </Card>
           </div>
 
-          {/* Capacity Panel Sidebar */}
-          {showCapacityPanel && (
+          {/* Capacity Panel Sidebar - hide when in capacity view */}
+          {showCapacityPanel && calendarView !== 'capacity' && (
             <div className="hidden lg:block w-[340px] flex-shrink-0">
               <OperatorCapacityPanel
                 selectedDate={selectedCapacityDate}
