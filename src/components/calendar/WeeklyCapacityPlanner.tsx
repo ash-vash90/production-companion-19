@@ -207,7 +207,7 @@ const DroppableCell: React.FC<DroppableCellProps> = ({ operatorId, date, childre
   );
 };
 
-// Mobile droppable operator card with product type breakdown
+// Mobile droppable operator card with product type breakdown - compact version
 const DroppableOperatorCard: React.FC<{
   operator: Operator;
   date: Date;
@@ -243,58 +243,59 @@ const DroppableOperatorCard: React.FC<{
     <div
       ref={setNodeRef}
       className={cn(
-        "rounded-lg border bg-card p-4 transition-all min-h-[100px]",
+        "rounded-lg border bg-card p-3 transition-all",
         isOver && "ring-2 ring-primary bg-primary/5",
         isUnavailable && "bg-destructive/5 border-destructive/20"
       )}
     >
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-3">
-          <Avatar className="h-10 w-10">
-            {operator.avatar_url && <AvatarImage src={operator.avatar_url} />}
-            <AvatarFallback className="text-sm font-medium">
-              {getInitials(operator.full_name)}
-            </AvatarFallback>
-          </Avatar>
-          <div>
-            <p className="font-medium">{operator.full_name}</p>
+      <div className="flex items-center gap-3">
+        <Avatar className="h-9 w-9 shrink-0">
+          {operator.avatar_url && <AvatarImage src={operator.avatar_url} />}
+          <AvatarFallback className="text-xs font-medium">
+            {getInitials(operator.full_name)}
+          </AvatarFallback>
+        </Avatar>
+        
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between gap-2">
+            <p className="font-medium text-sm truncate">{operator.full_name}</p>
             {isUnavailable ? (
-              <Badge variant="outline" className="text-[10px] bg-destructive/10 border-destructive/30 mt-1">
+              <Badge variant="outline" className="text-[10px] bg-destructive/10 border-destructive/30 shrink-0">
                 {availability?.reason_type || (language === 'nl' ? 'Afwezig' : 'Off')}
               </Badge>
-            ) : assignments.length > 0 ? (
-              <p className="text-xs text-muted-foreground">
-                {assignments.length} {language === 'nl' ? 'orders' : 'orders'} · {totalItems} items
-              </p>
-            ) : (
-              <p className="text-xs text-muted-foreground">
+            ) : assignments.length === 0 ? (
+              <span className="text-xs text-muted-foreground shrink-0">
                 {language === 'nl' ? 'Beschikbaar' : 'Available'}
-              </p>
-            )}
+              </span>
+            ) : null}
           </div>
+          
+          {/* Product type breakdown inline */}
+          {!isUnavailable && assignments.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-1">
+              {Object.entries(productBreakdown).map(([type, count]) => (
+                <Badge 
+                  key={type} 
+                  variant="outline" 
+                  className={cn(
+                    "text-[10px] px-1.5 py-0 font-mono h-5",
+                    productTypeColors[type] || 'bg-muted'
+                  )}
+                >
+                  {count}× {formatProductType(type)}
+                </Badge>
+              ))}
+              <span className="text-[10px] text-muted-foreground self-center ml-1">
+                ({assignments.length} {language === 'nl' ? 'orders' : 'orders'})
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Product type breakdown badges */}
-      {!isUnavailable && Object.keys(productBreakdown).length > 0 && (
-        <div className="flex flex-wrap gap-1.5 mb-3">
-          {Object.entries(productBreakdown).map(([type, count]) => (
-            <Badge 
-              key={type} 
-              variant="outline" 
-              className={cn(
-                "text-[10px] px-2 py-0.5 font-mono",
-                productTypeColors[type] || 'bg-muted'
-              )}
-            >
-              {count}× {formatProductType(type)}
-            </Badge>
-          ))}
-        </div>
-      )}
-
-      {!isUnavailable && (
-        <div className="space-y-2">
+      {/* Assignments - only show if has assignments or being hovered */}
+      {!isUnavailable && assignments.length > 0 && (
+        <div className="space-y-1.5 mt-2 pl-12">
           {assignments.map(assignment => {
             const wo = workOrders.get(assignment.work_order_id);
             if (!wo) return null;
@@ -307,11 +308,13 @@ const DroppableOperatorCard: React.FC<{
               />
             );
           })}
-          {assignments.length === 0 && (
-            <div className="text-center py-4 text-muted-foreground text-sm border border-dashed rounded-lg">
-              {language === 'nl' ? 'Sleep hier om toe te wijzen' : 'Drop here to assign'}
-            </div>
-          )}
+        </div>
+      )}
+      
+      {/* Minimal drop zone hint when being dragged over */}
+      {!isUnavailable && assignments.length === 0 && isOver && (
+        <div className="mt-2 pl-12 text-xs text-primary font-medium">
+          {language === 'nl' ? 'Loslaten om toe te wijzen' : 'Release to assign'}
         </div>
       )}
     </div>
@@ -710,80 +713,48 @@ const WeeklyCapacityPlanner: React.FC = () => {
         >
           <SwipeContainer onSwipeLeft={goToNextDay} onSwipeRight={goToPrevDay}>
             <div className="space-y-3">
-              {/* Compact Header */}
-              <div className="flex items-center justify-between gap-2 px-1">
+              {/* Single-line Compact Header */}
+              <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-1">
-                  <Button variant="ghost" size="icon" className="h-10 w-10" onClick={goToPrevDay}>
-                    <ChevronLeft className="h-5 w-5" />
+                  <Button variant="ghost" size="icon" className="h-9 w-9" onClick={goToPrevDay}>
+                    <ChevronLeft className="h-4 w-4" />
                   </Button>
-                  <div className="text-center min-w-[140px]">
-                    <p className={cn(
-                      "text-lg font-semibold",
-                      isToday && "text-primary"
-                    )}>
-                      {format(currentMobileDate, 'EEEE')}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {format(currentMobileDate, 'MMM d, yyyy')}
-                    </p>
-                  </div>
-                  <Button variant="ghost" size="icon" className="h-10 w-10" onClick={goToNextDay}>
-                    <ChevronRight className="h-5 w-5" />
+                  <span className={cn(
+                    "text-sm font-medium min-w-[100px] text-center",
+                    isToday && "text-primary"
+                  )}>
+                    {format(currentMobileDate, 'EEE, MMM d')}
+                  </span>
+                  <Button variant="ghost" size="icon" className="h-9 w-9" onClick={goToNextDay}>
+                    <ChevronRight className="h-4 w-4" />
                   </Button>
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="h-10 px-3 text-xs"
-                    onClick={goToToday}
-                  >
-                    {language === 'nl' ? 'Vandaag' : 'Today'}
-                  </Button>
+                <div className="flex items-center gap-1.5">
+                  {!isToday && (
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-8 px-2 text-xs"
+                      onClick={goToToday}
+                    >
+                      {language === 'nl' ? 'Vandaag' : 'Today'}
+                    </Button>
+                  )}
                   <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-10 px-3 text-xs relative"
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 relative"
                     onClick={() => setMobileSidebarOpen(true)}
                   >
                     <Package className="h-4 w-4" />
                     {unassignedOrders.length > 0 && (
-                      <Badge 
-                        variant="destructive" 
-                        className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center text-[10px]"
-                      >
-                        {unassignedOrders.length}
-                      </Badge>
+                      <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive text-destructive-foreground text-[9px] flex items-center justify-center font-medium">
+                        {unassignedOrders.length > 9 ? '9+' : unassignedOrders.length}
+                      </span>
                     )}
                   </Button>
                 </div>
-              </div>
-
-              {/* Day summary with product breakdown */}
-              <div className="flex flex-wrap items-center justify-center gap-2 text-sm">
-                <span className="text-muted-foreground">
-                  {dayAssignments.length} {language === 'nl' ? 'orders' : 'orders'}
-                </span>
-                {Object.keys(dayProductBreakdown).length > 0 && (
-                  <>
-                    <span className="text-muted-foreground">·</span>
-                    <div className="flex flex-wrap gap-1">
-                      {Object.entries(dayProductBreakdown).map(([type, count]) => (
-                        <Badge 
-                          key={type} 
-                          variant="outline" 
-                          className={cn(
-                            "text-[10px] px-1.5 py-0 font-mono",
-                            productTypeColors[type] || 'bg-muted'
-                          )}
-                        >
-                          {count}× {formatProductType(type)}
-                        </Badge>
-                      ))}
-                    </div>
-                  </>
-                )}
               </div>
 
               {/* Operators List */}
