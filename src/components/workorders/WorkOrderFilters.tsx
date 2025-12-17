@@ -31,6 +31,7 @@ interface WorkOrderFiltersProps {
   createdMonths: string[];
   groupBy: GroupByOption;
   onGroupByChange: (value: GroupByOption) => void;
+  hideGroupBy?: boolean;
 }
 
 export function WorkOrderFilters({
@@ -41,6 +42,7 @@ export function WorkOrderFilters({
   createdMonths,
   groupBy,
   onGroupByChange,
+  hideGroupBy = false,
 }: WorkOrderFiltersProps) {
   const { t } = useLanguage();
   const [filterOpen, setFilterOpen] = React.useState(false);
@@ -260,38 +262,40 @@ export function WorkOrderFilters({
         </PopoverContent>
       </Popover>
 
-      {/* Group Popover */}
-      <Popover open={groupOpen} onOpenChange={setGroupOpen}>
-        <PopoverTrigger asChild>
-          <Button variant="outline" size="sm" className="h-9 gap-2">
-            <Layers className="h-4 w-4" />
-            <span className="hidden sm:inline">{t('groupBy') || 'Group'}</span>
-            {groupBy !== 'none' && (
-              <Badge variant="secondary" className="h-5 px-1.5 flex items-center justify-center text-xs rounded-full">
-                1
-              </Badge>
-            )}
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-48 p-2 bg-popover" align="start">
-          <div className="space-y-1">
-            {groupByOptions.map(option => (
-              <Button
-                key={option.value}
-                variant={groupBy === option.value ? 'secondary' : 'ghost'}
-                size="sm"
-                className="w-full justify-start text-sm h-8"
-                onClick={() => {
-                  onGroupByChange(option.value as GroupByOption);
-                  setGroupOpen(false);
-                }}
-              >
-                {option.label}
-              </Button>
-            ))}
-          </div>
-        </PopoverContent>
-      </Popover>
+      {/* Group Popover - hidden in Kanban view */}
+      {!hideGroupBy && (
+        <Popover open={groupOpen} onOpenChange={setGroupOpen}>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="sm" className="h-9 gap-2">
+              <Layers className="h-4 w-4" />
+              <span className="hidden sm:inline">{t('groupBy') || 'Group'}</span>
+              {groupBy !== 'none' && (
+                <Badge variant="secondary" className="h-5 px-1.5 flex items-center justify-center text-xs rounded-full">
+                  1
+                </Badge>
+              )}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-48 p-2 bg-popover" align="start">
+            <div className="space-y-1">
+              {groupByOptions.map(option => (
+                <Button
+                  key={option.value}
+                  variant={groupBy === option.value ? 'secondary' : 'ghost'}
+                  size="sm"
+                  className="w-full justify-start text-sm h-8"
+                  onClick={() => {
+                    onGroupByChange(option.value as GroupByOption);
+                    setGroupOpen(false);
+                  }}
+                >
+                  {option.label}
+                </Button>
+              ))}
+            </div>
+          </PopoverContent>
+        </Popover>
+      )}
 
       {/* Active filter badges - shown inline */}
       {activeFilterCount > 0 && (

@@ -31,6 +31,7 @@ interface WorkOrderCardProps {
   onCancel?: () => void;
   onHover?: () => void;
   onStatusChange?: () => void;
+  onRequestCancel?: () => void;
   showActions?: boolean;
   showUrgency?: boolean;
   showStatusEdit?: boolean;
@@ -43,6 +44,7 @@ export function WorkOrderCard({
   onCancel,
   onHover,
   onStatusChange,
+  onRequestCancel,
   showActions = true,
   showUrgency = true,
   showStatusEdit = true,
@@ -136,6 +138,7 @@ export function WorkOrderCard({
               workOrderId={workOrder.id}
               currentStatus={workOrder.status}
               onStatusChange={onStatusChange}
+              onRequestCancel={onRequestCancel || onCancel}
               compact
             />
           ) : (
