@@ -125,7 +125,7 @@ export function TeamsManager() {
       setTeams(teamsWithCounts);
     } catch (error) {
       console.error('Error fetching teams:', error);
-      toast.error(language === 'nl' ? 'Fout bij laden teams' : 'Error loading teams');
+      toast.error('Failed to load teams', { description: 'Please refresh and try again' });
     } finally {
       setLoading(false);
     }
@@ -230,7 +230,7 @@ export function TeamsManager() {
           .eq('id', editingTeam.id);
 
         if (error) throw error;
-        toast.success(language === 'nl' ? 'Team bijgewerkt' : 'Team updated');
+        toast.success('Team updated', { description: formData.name });
       } else {
         const { error } = await supabase
           .from('teams' as any)
@@ -244,14 +244,14 @@ export function TeamsManager() {
           });
 
         if (error) throw error;
-        toast.success(language === 'nl' ? 'Team aangemaakt' : 'Team created');
+        toast.success('Team created', { description: formData.name });
       }
 
       setDialogOpen(false);
       fetchTeams();
     } catch (error: any) {
       console.error('Error saving team:', error);
-      toast.error(language === 'nl' ? 'Fout bij opslaan' : 'Error saving', { description: error.message });
+      toast.error('Failed to save team', { description: error.message });
     }
   };
 
@@ -267,11 +267,12 @@ export function TeamsManager() {
         .eq('id', teamId);
 
       if (error) throw error;
-      toast.success(language === 'nl' ? 'Team verwijderd' : 'Team deleted');
+      const deletedTeam = teams.find(t => t.id === teamId);
+      toast.success('Team deleted', { description: deletedTeam?.name });
       fetchTeams();
     } catch (error: any) {
       console.error('Error deleting team:', error);
-      toast.error(language === 'nl' ? 'Fout bij verwijderen' : 'Error deleting', { description: error.message });
+      toast.error('Failed to delete team', { description: error.message });
     }
   };
 
@@ -288,17 +289,21 @@ export function TeamsManager() {
         });
 
       if (error) throw error;
-      toast.success(language === 'nl' ? 'Lid toegevoegd' : 'Member added');
+      const addedUser = allUsers.find(u => u.id === userId);
+      toast.success('Member added', { description: `${addedUser?.full_name} joined ${selectedTeam.name}` });
       await fetchTeamMembers(selectedTeam.id);
       fetchTeams();
     } catch (error: any) {
       console.error('Error adding member:', error);
-      toast.error(language === 'nl' ? 'Fout bij toevoegen' : 'Error adding', { description: error.message });
+      toast.error('Failed to add member', { description: error.message });
     }
   };
 
   const handleRemoveMember = async (membershipId: string) => {
     if (!selectedTeam) return;
+
+    const removedMember = teamMembers.find(m => m.id === membershipId);
+    if (!removedMember) return;
 
     try {
       const { error } = await supabase
@@ -307,12 +312,40 @@ export function TeamsManager() {
         .eq('id', membershipId);
 
       if (error) throw error;
-      toast.success(language === 'nl' ? 'Lid verwijderd' : 'Member removed');
+      
+      // Create undo function
+      const undoRemove = async () => {
+        try {
+          const { error: undoError } = await supabase
+            .from('user_teams' as any)
+            .insert({
+              team_id: selectedTeam.id,
+              user_id: removedMember.user_id,
+              is_lead: removedMember.is_lead,
+            });
+          
+          if (undoError) throw undoError;
+          toast.success('Member restored', { description: `${removedMember.profile.full_name} re-added` });
+          await fetchTeamMembers(selectedTeam.id);
+          fetchTeams();
+        } catch (err) {
+          toast.error('Failed to undo', { description: 'Could not restore team member' });
+        }
+      };
+
+      toast.success('Member removed', { 
+        description: `${removedMember.profile.full_name} left ${selectedTeam.name}`,
+        action: {
+          label: 'Undo',
+          onClick: undoRemove,
+        },
+        duration: 5000,
+      });
       await fetchTeamMembers(selectedTeam.id);
       fetchTeams();
     } catch (error: any) {
       console.error('Error removing member:', error);
-      toast.error(language === 'nl' ? 'Fout bij verwijderen' : 'Error removing', { description: error.message });
+      toast.error('Failed to remove member', { description: error.message });
     }
   };
 
@@ -329,7 +362,7 @@ export function TeamsManager() {
       ));
     } catch (error: any) {
       console.error('Error toggling lead:', error);
-      toast.error(language === 'nl' ? 'Fout bij bijwerken' : 'Error updating');
+      toast.error('Failed to update lead status');
     }
   };
 

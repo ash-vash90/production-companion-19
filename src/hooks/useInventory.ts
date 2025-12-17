@@ -100,19 +100,19 @@ export function useReceiveStock() {
       if (!user?.id) throw new Error('Not authenticated');
       return receiveStock({ ...params, userId: user.id });
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.stockLevels });
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.lowStock });
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.transactions });
-      toast.success(
-        language === 'nl' ? 'Voorraad ontvangen' : 'Stock received'
-      );
+      toast.success('Stock received', { 
+        description: `Added ${variables.quantity} units${variables.batchNumber ? ` • Batch ${variables.batchNumber}` : ''}` 
+      });
     },
     onError: (error) => {
       console.error('Error receiving stock:', error);
-      toast.error(
-        language === 'nl' ? 'Fout bij ontvangen voorraad' : 'Error receiving stock'
-      );
+      toast.error('Failed to receive stock', { 
+        description: 'Please check the details and try again' 
+      });
     },
   });
 }
@@ -148,11 +148,9 @@ export function useConsumeStock() {
     },
     onError: (error) => {
       console.error('Error consuming stock:', error);
-      toast.error(
-        language === 'nl'
-          ? `Fout bij verbruiken voorraad: ${error.message}`
-          : `Error consuming stock: ${error.message}`
-      );
+      toast.error('Stock consumption failed', { 
+        description: error.message 
+      });
     },
   });
 }
@@ -178,19 +176,19 @@ export function useAdjustStock() {
       }
       return result;
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.stockLevels });
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.lowStock });
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.transactions });
-      toast.success(
-        language === 'nl' ? 'Voorraad aangepast' : 'Stock adjusted'
-      );
+      toast.success('Stock adjusted', { 
+        description: `Updated to ${variables.newQuantity} units` 
+      });
     },
     onError: (error) => {
       console.error('Error adjusting stock:', error);
-      toast.error(
-        language === 'nl' ? 'Fout bij aanpassen voorraad' : 'Error adjusting stock'
-      );
+      toast.error('Stock adjustment failed', { 
+        description: 'Please try again' 
+      });
     },
   });
 }
