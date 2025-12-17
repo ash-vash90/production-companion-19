@@ -6,11 +6,13 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
-import { Users, Plus, Trash2, Loader2, Calendar, Clock, UserPlus } from 'lucide-react';
+import { Users, Plus, Trash2, Loader2, Calendar, Clock, UserPlus, ChevronDown, UsersRound } from 'lucide-react';
 
 interface Operator {
   id: string;
@@ -54,10 +56,16 @@ const OperatorAssignmentPanel: React.FC<OperatorAssignmentPanelProps> = ({
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   
-  // New assignment form
+  // Single assignment form
   const [selectedOperator, setSelectedOperator] = useState<string>('');
   const [plannedHours, setPlannedHours] = useState('4');
   const [assignDate, setAssignDate] = useState(scheduledDate || format(new Date(), 'yyyy-MM-dd'));
+
+  // Bulk assignment state
+  const [bulkOpen, setBulkOpen] = useState(false);
+  const [bulkSelectedOperators, setBulkSelectedOperators] = useState<Set<string>>(new Set());
+  const [bulkHours, setBulkHours] = useState('4');
+  const [bulkSaving, setBulkSaving] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -72,7 +80,6 @@ const OperatorAssignmentPanel: React.FC<OperatorAssignmentPanelProps> = ({
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Fetch assignments for this work order
       const { data: assignmentData, error: assignError } = await supabase
         .from('operator_assignments')
         .select('*')
@@ -80,16 +87,11 @@ const OperatorAssignmentPanel: React.FC<OperatorAssignmentPanelProps> = ({
 
       if (assignError) throw assignError;
 
-      // Fetch all available operators (users in Production team)
-      const { data: teamMembers, error: teamError } = await supabase
+      const { data: teamMembers } = await supabase
         .from('user_teams')
-        .select(`
-          user_id,
-          team:teams(name)
-        `)
+        .select(`user_id, team:teams(name)`)
         .eq('team.name', 'Production');
 
-      // Get profiles for team members
       const userIds = (teamMembers || []).map((tm: any) => tm.user_id);
       
       const { data: profilesData, error: profilesError } = await supabase
@@ -99,10 +101,8 @@ const OperatorAssignmentPanel: React.FC<OperatorAssignmentPanelProps> = ({
 
       if (profilesError) throw profilesError;
 
-      // Fetch unavailability for selected date
       await fetchUnavailability(assignDate);
 
-      // Map operator data to assignments
       const profileMap = new Map((profilesData || []).map(p => [p.id, p]));
       const enrichedAssignments = (assignmentData || []).map(a => ({
         ...a,
@@ -135,17 +135,17 @@ const OperatorAssignmentPanel: React.FC<OperatorAssignmentPanelProps> = ({
     }
   };
 
-  // Re-fetch unavailability when date changes
   useEffect(() => {
     if (assignDate) {
       fetchUnavailability(assignDate);
+      // Clear bulk selection when date changes
+      setBulkSelectedOperators(new Set());
     }
   }, [assignDate]);
 
   const addAssignment = async () => {
     if (!selectedOperator || !assignDate) return;
 
-    // Check if operator is unavailable on this date
     const unavailability = unavailabilityMap.get(selectedOperator);
     if (unavailability && unavailability.available_hours === 0) {
       const reasonLabel = unavailability.reason_type === 'holiday' ? 'on holiday' :
@@ -157,7 +157,6 @@ const OperatorAssignmentPanel: React.FC<OperatorAssignmentPanelProps> = ({
 
     setSaving(true);
     try {
-      // Check for existing assignment
       const existing = assignments.find(
         a => a.operator_id === selectedOperator && a.assigned_date === assignDate
       );
@@ -191,6 +190,55 @@ const OperatorAssignmentPanel: React.FC<OperatorAssignmentPanelProps> = ({
     }
   };
 
+  const bulkAssign = async () => {
+    if (bulkSelectedOperators.size === 0 || !assignDate) return;
+
+    setBulkSaving(true);
+    try {
+      const operatorIds = Array.from(bulkSelectedOperators);
+      const existingOperatorIds = new Set(
+        assignments.filter(a => a.assigned_date === assignDate).map(a => a.operator_id)
+      );
+
+      // Filter out already assigned operators
+      const newOperatorIds = operatorIds.filter(id => !existingOperatorIds.has(id));
+
+      if (newOperatorIds.length === 0) {
+        toast.error('All selected operators are already assigned for this date');
+        return;
+      }
+
+      const insertData = newOperatorIds.map(operatorId => ({
+        work_order_id: workOrderId,
+        operator_id: operatorId,
+        assigned_date: assignDate,
+        planned_hours: parseFloat(bulkHours) || 4,
+      }));
+
+      const { error } = await supabase
+        .from('operator_assignments')
+        .insert(insertData);
+
+      if (error) throw error;
+
+      const skipped = operatorIds.length - newOperatorIds.length;
+      const message = skipped > 0 
+        ? `${newOperatorIds.length} operators assigned (${skipped} already assigned)`
+        : `${newOperatorIds.length} operators assigned`;
+      toast.success(message);
+      
+      fetchData();
+      setBulkSelectedOperators(new Set());
+      setBulkOpen(false);
+      onAssignmentChange?.();
+    } catch (error: any) {
+      console.error('Error bulk assigning:', error);
+      toast.error(error.message || 'Failed to assign operators');
+    } finally {
+      setBulkSaving(false);
+    }
+  };
+
   const removeAssignment = async (assignmentId: string) => {
     try {
       const { error } = await supabase
@@ -213,12 +261,10 @@ const OperatorAssignmentPanel: React.FC<OperatorAssignmentPanelProps> = ({
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };
 
-  // Get operators not yet assigned for the selected date
   const availableOperators = operators.filter(op => 
     !assignments.some(a => a.operator_id === op.id && a.assigned_date === assignDate)
   );
 
-  // Helper to check if operator is unavailable
   const isOperatorUnavailable = (operatorId: string) => {
     const unavail = unavailabilityMap.get(operatorId);
     return unavail && unavail.available_hours === 0;
@@ -233,6 +279,29 @@ const OperatorAssignmentPanel: React.FC<OperatorAssignmentPanelProps> = ({
       case 'training': return 'Training';
       default: return 'Unavailable';
     }
+  };
+
+  const toggleBulkOperator = (operatorId: string) => {
+    setBulkSelectedOperators(prev => {
+      const next = new Set(prev);
+      if (next.has(operatorId)) {
+        next.delete(operatorId);
+      } else {
+        next.add(operatorId);
+      }
+      return next;
+    });
+  };
+
+  const selectAllAvailable = () => {
+    const availableIds = availableOperators
+      .filter(op => !isOperatorUnavailable(op.id))
+      .map(op => op.id);
+    setBulkSelectedOperators(new Set(availableIds));
+  };
+
+  const clearBulkSelection = () => {
+    setBulkSelectedOperators(new Set());
   };
 
   if (loading) {
@@ -306,11 +375,104 @@ const OperatorAssignmentPanel: React.FC<OperatorAssignmentPanelProps> = ({
           </div>
         )}
 
-        {/* Add Assignment Form */}
+        {/* Bulk Assignment Section */}
+        <Collapsible open={bulkOpen} onOpenChange={setBulkOpen}>
+          <CollapsibleTrigger asChild>
+            <Button variant="outline" className="w-full justify-between">
+              <span className="flex items-center gap-2">
+                <UsersRound className="h-4 w-4" />
+                Bulk Assign Operators
+                {bulkSelectedOperators.size > 0 && (
+                  <Badge variant="secondary" className="ml-1">{bulkSelectedOperators.size}</Badge>
+                )}
+              </span>
+              <ChevronDown className={`h-4 w-4 transition-transform ${bulkOpen ? 'rotate-180' : ''}`} />
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="pt-3 space-y-3">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs text-muted-foreground">Select operators for {format(new Date(assignDate), 'MMM d')}</Label>
+              <div className="flex gap-2">
+                <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={selectAllAvailable}>
+                  Select All
+                </Button>
+                <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={clearBulkSelection}>
+                  Clear
+                </Button>
+              </div>
+            </div>
+            
+            <div className="grid gap-2 max-h-[200px] overflow-y-auto pr-1">
+              {availableOperators.map(op => {
+                const unavailable = isOperatorUnavailable(op.id);
+                const reason = getUnavailabilityReason(op.id);
+                const isSelected = bulkSelectedOperators.has(op.id);
+                
+                return (
+                  <label
+                    key={op.id}
+                    className={`flex items-center gap-3 p-2 border rounded-lg cursor-pointer transition-colors ${
+                      unavailable ? 'opacity-50 cursor-not-allowed bg-muted/30' :
+                      isSelected ? 'border-primary bg-primary/5' : 'hover:bg-muted/50'
+                    }`}
+                  >
+                    <Checkbox
+                      checked={isSelected}
+                      onCheckedChange={() => !unavailable && toggleBulkOperator(op.id)}
+                      disabled={unavailable}
+                    />
+                    <Avatar className="h-6 w-6">
+                      {op.avatar_url && <AvatarImage src={op.avatar_url} />}
+                      <AvatarFallback className="text-[10px]">{getInitials(op.full_name)}</AvatarFallback>
+                    </Avatar>
+                    <span className="text-sm flex-1">{op.full_name}</span>
+                    {unavailable && reason && (
+                      <Badge variant="destructive" className="text-xs">{reason}</Badge>
+                    )}
+                  </label>
+                );
+              })}
+              {availableOperators.length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-4">All operators already assigned</p>
+              )}
+            </div>
+
+            <div className="flex items-end gap-3 pt-2 border-t">
+              <div className="space-y-1.5 flex-1 max-w-[120px]">
+                <Label className="text-xs">Hours each</Label>
+                <Input
+                  type="number"
+                  min="0.5"
+                  max="24"
+                  step="0.5"
+                  value={bulkHours}
+                  onChange={(e) => setBulkHours(e.target.value)}
+                  className="h-9"
+                />
+              </div>
+              <Button
+                onClick={bulkAssign}
+                disabled={bulkSelectedOperators.size === 0 || bulkSaving}
+                className="h-9"
+              >
+                {bulkSaving ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <>
+                    <UsersRound className="h-4 w-4 mr-1" />
+                    Assign {bulkSelectedOperators.size > 0 ? `(${bulkSelectedOperators.size})` : ''}
+                  </>
+                )}
+              </Button>
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
+
+        {/* Single Add Assignment Form */}
         <div className="pt-4 border-t space-y-3">
           <h4 className="text-sm font-medium flex items-center gap-2">
             <Plus className="h-4 w-4" />
-            Add Assignment
+            Add Single Assignment
           </h4>
           
           <div className="grid gap-3 sm:grid-cols-2">
