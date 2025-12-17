@@ -5,6 +5,31 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Simple in-memory rate limiter (resets on function cold start)
+// For production, consider using Redis or database-backed rate limiting
+const rateLimitStore = new Map<string, { count: number; resetTime: number }>()
+const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000 // 1 hour
+const RATE_LIMIT_MAX_REQUESTS = 10 // Max 10 webhook creations per hour per user
+
+function checkRateLimit(userId: string): { allowed: boolean; remaining: number; resetTime: number } {
+  const now = Date.now()
+  const key = `create_webhook:${userId}`
+  const entry = rateLimitStore.get(key)
+  
+  if (!entry || now > entry.resetTime) {
+    // First request or window expired - reset
+    rateLimitStore.set(key, { count: 1, resetTime: now + RATE_LIMIT_WINDOW_MS })
+    return { allowed: true, remaining: RATE_LIMIT_MAX_REQUESTS - 1, resetTime: now + RATE_LIMIT_WINDOW_MS }
+  }
+  
+  if (entry.count >= RATE_LIMIT_MAX_REQUESTS) {
+    return { allowed: false, remaining: 0, resetTime: entry.resetTime }
+  }
+  
+  entry.count++
+  return { allowed: true, remaining: RATE_LIMIT_MAX_REQUESTS - entry.count, resetTime: entry.resetTime }
+}
+
 Deno.serve(async (req) => {
   // Handle CORS
   if (req.method === 'OPTIONS') {
@@ -60,11 +85,41 @@ Deno.serve(async (req) => {
       )
     }
     
+    // Check rate limit
+    const rateLimit = checkRateLimit(user.id)
+    if (!rateLimit.allowed) {
+      console.log('Rate limit exceeded for user:', user.id)
+      return new Response(
+        JSON.stringify({ 
+          error: 'Rate limit exceeded. Maximum 10 webhook creations per hour.',
+          retryAfter: Math.ceil((rateLimit.resetTime - Date.now()) / 1000)
+        }),
+        { 
+          status: 429, 
+          headers: { 
+            ...corsHeaders, 
+            'Content-Type': 'application/json',
+            'Retry-After': Math.ceil((rateLimit.resetTime - Date.now()) / 1000).toString(),
+            'X-RateLimit-Remaining': '0',
+            'X-RateLimit-Reset': new Date(rateLimit.resetTime).toISOString()
+          } 
+        }
+      )
+    }
+    
     // Get webhook data from request
     const { name, description } = await req.json()
     if (!name) {
       return new Response(
         JSON.stringify({ error: 'Missing name' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+    
+    // Validate name length
+    if (name.length > 100) {
+      return new Response(
+        JSON.stringify({ error: 'Name must be 100 characters or less' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
@@ -127,7 +182,14 @@ Deno.serve(async (req) => {
         secret: secretKey, // Full secret returned only on creation
         message: 'Webhook created. This is the only time the full secret will be shown.' 
       }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { 
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json',
+          'X-RateLimit-Remaining': rateLimit.remaining.toString(),
+          'X-RateLimit-Reset': new Date(rateLimit.resetTime).toISOString()
+        } 
+      }
     )
     
   } catch (error) {
