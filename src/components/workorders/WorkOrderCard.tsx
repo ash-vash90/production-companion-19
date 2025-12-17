@@ -7,7 +7,8 @@ import { formatDate, ProductBreakdown } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
-import { AlertTriangle, Clock, ChevronRight, Calendar, Truck, UserX } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { AlertTriangle, Clock, ChevronRight, Calendar, Truck, UserX, Play, Users } from 'lucide-react';
 import { parseISO, isBefore, differenceInDays } from 'date-fns';
 
 export interface WorkOrderCardData {
@@ -35,6 +36,7 @@ interface WorkOrderCardProps {
   onHover?: () => void;
   onStatusChange?: () => void;
   onRequestCancel?: () => void;
+  onOpenAssignment?: () => void;
   showActions?: boolean;
   showUrgency?: boolean;
   showStatusEdit?: boolean;
@@ -51,6 +53,7 @@ export function WorkOrderCard({
   onHover,
   onStatusChange,
   onRequestCancel,
+  onOpenAssignment,
   showActions = true,
   showUrgency = true,
   showStatusEdit = true,
@@ -104,6 +107,16 @@ export function WorkOrderCard({
     }
   };
 
+  const handleOpenProduction = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigate(`/production?workOrder=${workOrder.id}`);
+  };
+
+  const handleOpenAssignment = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onOpenAssignment?.();
+  };
+
   // Progress color based on percentage
   const getProgressColor = () => {
     const percent = workOrder.progressPercent || 0;
@@ -115,6 +128,8 @@ export function WorkOrderCard({
   const handleCheckboxChange = (e: React.MouseEvent) => {
     e.stopPropagation();
   };
+
+  const isActiveWorkOrder = workOrder.status !== 'completed' && workOrder.status !== 'cancelled';
 
   return (
     <div
@@ -142,7 +157,7 @@ export function WorkOrderCard({
           <span className="font-mono font-bold text-base md:text-lg truncate">{workOrder.wo_number}</span>
           {shippingOverdue && <AlertTriangle className="h-4 w-4 text-destructive shrink-0" />}
           {startOverdue && !shippingOverdue && <Clock className="h-4 w-4 text-warning shrink-0" />}
-          {!workOrder.assigned_to && workOrder.status !== 'completed' && workOrder.status !== 'cancelled' && (
+          {!workOrder.assigned_to && isActiveWorkOrder && (
             <Badge variant="outline" className="text-[10px] px-1.5 py-0 gap-1 text-warning border-warning/50 shrink-0">
               <UserX className="h-3 w-3" />
               Unassigned
@@ -207,6 +222,32 @@ export function WorkOrderCard({
         )}
       </div>
 
+      {/* Quick Action Buttons - Only for active work orders */}
+      {isActiveWorkOrder && (
+        <div className="flex items-center gap-2 mb-3">
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 text-xs gap-1.5"
+            onClick={handleOpenProduction}
+          >
+            <Play className="h-3 w-3" />
+            {language === 'nl' ? 'Productie' : 'Production'}
+          </Button>
+          {onOpenAssignment && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 text-xs gap-1.5"
+              onClick={handleOpenAssignment}
+            >
+              <Users className="h-3 w-3" />
+              {language === 'nl' ? 'Toewijzen' : 'Assign'}
+            </Button>
+          )}
+        </div>
+      )}
+
       {/* Bottom row: Price + Progress */}
       <div className="flex items-center justify-between gap-4">
         {/* Order value */}
@@ -233,13 +274,6 @@ export function WorkOrderCard({
 
         {/* Arrow indicator */}
         <ChevronRight className="h-5 w-5 text-muted-foreground/40 group-hover:text-primary transition-colors shrink-0" />
-      </div>
-
-      {/* Fallback status badge when user can't change status */}
-      <div className="absolute top-3 right-10">
-        {workOrder.status !== 'cancelled' && workOrder.status !== 'completed' && (
-          <WorkOrderStatusBadge status={workOrder.status} className="hidden" />
-        )}
       </div>
     </div>
   );
