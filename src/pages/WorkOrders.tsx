@@ -17,6 +17,7 @@ import { WorkOrderCard } from '@/components/workorders/WorkOrderCard';
 import { WorkOrderTableRow, WorkOrderRowData } from '@/components/workorders/WorkOrderTableRow';
 import { WorkOrderKanbanView } from '@/components/workorders/WorkOrderKanbanView';
 import { CancelWorkOrderDialog } from '@/components/workorders/CancelWorkOrderDialog';
+import { BulkActionsToolbar } from '@/components/workorders/BulkActionsToolbar';
 import { useWorkOrders, invalidateWorkOrdersCache, WorkOrderListItem } from '@/hooks/useWorkOrders';
 import { prefetchProductionOnHover } from '@/services/prefetchService';
 import { ResponsiveVirtualizedGrid } from '@/components/VirtualizedList';
@@ -25,6 +26,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Plus, Package, RotateCcw, LayoutGrid, List, ChevronDown, ChevronRight, Columns } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format, differenceInDays, parseISO } from 'date-fns';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -59,7 +61,9 @@ const WorkOrders = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [cancellingWorkOrder, setCancellingWorkOrder] = useState<{ id: string; wo_number: string } | null>(null);
+  const [cancellingWorkOrders, setCancellingWorkOrders] = useState<Array<{ id: string; wo_number: string }>>([]);
   const [isCancelling, setIsCancelling] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   
   // Use the resilient work orders hook - disable realtime to reduce memory/subscriptions
   const { workOrders, loading, error, refetch } = useWorkOrders({
@@ -131,6 +135,7 @@ const WorkOrders = () => {
   const resetFilters = useCallback(() => {
     setFilters(DEFAULT_FILTERS);
     setGroupBy('none');
+    setSelectedIds(new Set());
   }, []);
 
   // Check if any filters are active
@@ -306,12 +311,24 @@ const WorkOrders = () => {
   // Open cancel dialog
   const openCancelDialog = useCallback((workOrder: { id: string; wo_number: string }) => {
     setCancellingWorkOrder(workOrder);
+    setCancellingWorkOrders([]);
+    setCancelDialogOpen(true);
+  }, []);
+
+  // Open bulk cancel dialog
+  const openBulkCancelDialog = useCallback((workOrders: Array<{ id: string; wo_number: string }>) => {
+    setCancellingWorkOrder(null);
+    setCancellingWorkOrders(workOrders);
     setCancelDialogOpen(true);
   }, []);
 
   // Handle cancel work order with reason
   const handleCancelWorkOrder = useCallback(async (reason: string) => {
-    if (!cancellingWorkOrder) return;
+    const idsToCancel = cancellingWorkOrder 
+      ? [cancellingWorkOrder.id] 
+      : cancellingWorkOrders.map(wo => wo.id);
+    
+    if (idsToCancel.length === 0) return;
     
     setIsCancelling(true);
     try {
@@ -321,18 +338,47 @@ const WorkOrders = () => {
           status: 'cancelled',
           cancellation_reason: reason 
         })
-        .eq('id', cancellingWorkOrder.id);
+        .in('id', idsToCancel);
       if (error) throw error;
-      toast.success(t('success'), { description: t('workOrderCancelled') });
+      toast.success(t('success'), { 
+        description: idsToCancel.length > 1 
+          ? `${idsToCancel.length} work orders cancelled`
+          : t('workOrderCancelled') 
+      });
       setCancelDialogOpen(false);
       setCancellingWorkOrder(null);
+      setCancellingWorkOrders([]);
+      setSelectedIds(new Set());
       if (isMountedRef.current) refetch();
     } catch (error: any) {
       toast.error(t('error'), { description: error.message });
     } finally {
       setIsCancelling(false);
     }
-  }, [cancellingWorkOrder, t, refetch]);
+  }, [cancellingWorkOrder, cancellingWorkOrders, t, refetch]);
+
+  // Selection handlers
+  const toggleSelection = useCallback((id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }, []);
+
+  const clearSelection = useCallback(() => {
+    setSelectedIds(new Set());
+  }, []);
+
+  const selectedWorkOrders = useMemo(() => {
+    return filteredOrders
+      .filter(wo => selectedIds.has(wo.id))
+      .map(wo => ({ id: wo.id, wo_number: wo.wo_number, status: wo.status }));
+  }, [filteredOrders, selectedIds]);
 
   // Transform work order to row data format
   const toRowData = useCallback((wo: WorkOrderWithItems): WorkOrderRowData => ({
@@ -358,38 +404,74 @@ const WorkOrders = () => {
   }, [refetch]);
 
   // Render table view with shared component
-  const renderTableView = (orders: WorkOrderWithItems[]) => (
-    <div className="rounded-lg border overflow-hidden overflow-x-auto">
-      <Table>
-        <TableHeader>
-          <TableRow className="bg-muted/30">
-            <TableHead className="text-xs">{t('workOrderNumber')}</TableHead>
-            <TableHead className="text-xs">{t('products')}</TableHead>
-            <TableHead className="text-xs hidden md:table-cell">{t('customer')}</TableHead>
-            <TableHead className="text-xs">{t('status')}</TableHead>
-            <TableHead className="text-xs hidden lg:table-cell">{t('dates')}</TableHead>
-            <TableHead className="text-xs hidden xl:table-cell">{t('price')}</TableHead>
-            <TableHead className="text-xs hidden sm:table-cell">{t('progress')}</TableHead>
-            <TableHead className="text-xs text-right">{t('actions')}</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {orders.map((wo) => (
-            <WorkOrderTableRow
-              key={wo.id}
-              workOrder={toRowData(wo)}
-              linkTo={`/production/${wo.id}`}
-              onCancel={isAdmin ? () => openCancelDialog({ id: wo.id, wo_number: wo.wo_number }) : undefined}
-              onStatusChange={() => handleStatusChange(wo.id, wo.status)}
-              editableStatus={isAdmin}
-              showProgress
-              showPrice
-            />
-          ))}
-        </TableBody>
-      </Table>
-    </div>
-  );
+  const renderTableView = (orders: WorkOrderWithItems[]) => {
+    const allSelected = orders.length > 0 && orders.every(wo => selectedIds.has(wo.id));
+    const someSelected = orders.some(wo => selectedIds.has(wo.id));
+
+    const toggleAllInView = () => {
+      if (allSelected) {
+        // Deselect all in current view
+        setSelectedIds(prev => {
+          const next = new Set(prev);
+          orders.forEach(wo => next.delete(wo.id));
+          return next;
+        });
+      } else {
+        // Select all in current view
+        setSelectedIds(prev => {
+          const next = new Set(prev);
+          orders.forEach(wo => next.add(wo.id));
+          return next;
+        });
+      }
+    };
+
+    return (
+      <div className="rounded-lg border overflow-hidden overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-muted/30">
+              <TableHead className="w-10">
+                <Checkbox
+                  checked={allSelected}
+                  ref={(el) => {
+                    if (el) (el as any).indeterminate = someSelected && !allSelected;
+                  }}
+                  onCheckedChange={toggleAllInView}
+                  className="h-4 w-4"
+                />
+              </TableHead>
+              <TableHead className="text-xs">{t('workOrderNumber')}</TableHead>
+              <TableHead className="text-xs">{t('products')}</TableHead>
+              <TableHead className="text-xs hidden md:table-cell">{t('customer')}</TableHead>
+              <TableHead className="text-xs">{t('status')}</TableHead>
+              <TableHead className="text-xs hidden lg:table-cell">{t('dates')}</TableHead>
+              <TableHead className="text-xs hidden xl:table-cell">{t('price')}</TableHead>
+              <TableHead className="text-xs hidden sm:table-cell">{t('progress')}</TableHead>
+              <TableHead className="text-xs text-right">{t('actions')}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {orders.map((wo) => (
+              <WorkOrderTableRow
+                key={wo.id}
+                workOrder={toRowData(wo)}
+                linkTo={`/production/${wo.id}`}
+                onCancel={isAdmin ? () => openCancelDialog({ id: wo.id, wo_number: wo.wo_number }) : undefined}
+                onStatusChange={() => handleStatusChange(wo.id, wo.status)}
+                editableStatus={isAdmin}
+                showProgress
+                showPrice
+                selectable
+                selected={selectedIds.has(wo.id)}
+                onSelectionChange={() => toggleSelection(wo.id)}
+              />
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    );
+  };
 
   // Render card view with shared component
   const renderCardView = useCallback((orders: WorkOrderWithItems[]) => (
@@ -402,10 +484,13 @@ const WorkOrders = () => {
           onCancel={isAdmin ? () => openCancelDialog({ id: wo.id, wo_number: wo.wo_number }) : undefined}
           onHover={() => prefetchProductionOnHover(wo.id)}
           onStatusChange={() => handleStatusChange(wo.id, wo.status)}
+          selectable
+          selected={selectedIds.has(wo.id)}
+          onSelectionChange={() => toggleSelection(wo.id)}
         />
       ))}
     </div>
-  ), [toRowData, navigate, isAdmin, openCancelDialog, handleStatusChange]);
+  ), [toRowData, navigate, isAdmin, openCancelDialog, handleStatusChange, selectedIds, toggleSelection]);
 
   const isMobile = useIsMobile();
 
@@ -529,6 +614,7 @@ const WorkOrders = () => {
                   <Table>
                     <TableHeader>
                       <TableRow className="bg-muted/30">
+                        <TableHead className="w-10"><Skeleton className="h-4 w-4" /></TableHead>
                         <TableHead className="text-xs">{t('workOrderNumber')}</TableHead>
                         <TableHead className="text-xs">{t('products')}</TableHead>
                         <TableHead className="text-xs hidden md:table-cell">{t('customer')}</TableHead>
@@ -542,6 +628,7 @@ const WorkOrders = () => {
                     <TableBody>
                       {[...Array(6)].map((_, i) => (
                         <TableRow key={i}>
+                          <TableCell><Skeleton className="h-4 w-4" /></TableCell>
                           <TableCell><Skeleton className="h-5 w-24" /></TableCell>
                           <TableCell><div className="flex gap-1"><Skeleton className="h-5 w-16 rounded-full" /><Skeleton className="h-5 w-8 rounded-full" /></div></TableCell>
                           <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-28" /></TableCell>
@@ -603,6 +690,9 @@ const WorkOrders = () => {
                         onCancel={isAdmin ? () => openCancelDialog({ id: wo.id, wo_number: wo.wo_number }) : undefined}
                         onHover={() => prefetchProductionOnHover(wo.id)}
                         onStatusChange={() => handleStatusChange(wo.id, wo.status)}
+                        selectable
+                        selected={selectedIds.has(wo.id)}
+                        onSelectionChange={() => toggleSelection(wo.id)}
                       />
                     )}
                     itemHeight={280}
@@ -671,11 +761,27 @@ const WorkOrders = () => {
           open={cancelDialogOpen}
           onOpenChange={(open) => {
             setCancelDialogOpen(open);
-            if (!open) setCancellingWorkOrder(null);
+            if (!open) {
+              setCancellingWorkOrder(null);
+              setCancellingWorkOrders([]);
+            }
           }}
-          woNumber={cancellingWorkOrder?.wo_number || ''}
+          woNumber={
+            cancellingWorkOrder?.wo_number || 
+            (cancellingWorkOrders.length > 0 
+              ? `${cancellingWorkOrders.length} work orders`
+              : '')
+          }
           onConfirm={handleCancelWorkOrder}
           isLoading={isCancelling}
+        />
+
+        <BulkActionsToolbar
+          selectedIds={Array.from(selectedIds)}
+          selectedWorkOrders={selectedWorkOrders}
+          onClearSelection={clearSelection}
+          onRefresh={refetch}
+          onRequestCancel={isAdmin ? openBulkCancelDialog : undefined}
         />
       </Layout>
     </ProtectedRoute>
