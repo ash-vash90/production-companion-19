@@ -12,10 +12,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { formatDateTime } from '@/lib/utils';
-import { Plus, Trash2, Copy, Eye, EyeOff, Loader2, Webhook, Zap, History, ChevronRight, Code, Settings2, AlertCircle } from 'lucide-react';
+import { Plus, Trash2, Copy, Eye, Loader2, Webhook, Zap, History, ChevronRight, Code, Settings2, AlertCircle, Play, Send } from 'lucide-react';
+import TestWebhookDialog from './TestWebhookDialog';
+import PayloadPreviewDialog from './PayloadPreviewDialog';
+import WebhookLogsViewer from './WebhookLogsViewer';
+import OutgoingWebhookLogs from './OutgoingWebhookLogs';
 
 interface IncomingWebhook {
   id: string;
@@ -119,7 +124,6 @@ const AutomationManager = () => {
   const [loading, setLoading] = useState(true);
   const [webhooks, setWebhooks] = useState<IncomingWebhook[]>([]);
   const [rules, setRules] = useState<AutomationRule[]>([]);
-  const [logs, setLogs] = useState<WebhookLog[]>([]);
   const [selectedWebhook, setSelectedWebhook] = useState<IncomingWebhook | null>(null);
   const [showSecrets, setShowSecrets] = useState<Record<string, boolean>>({});
   const [newlyCreatedSecrets, setNewlyCreatedSecrets] = useState<Record<string, string>>({});
@@ -127,6 +131,10 @@ const AutomationManager = () => {
   const [webhookDialogOpen, setWebhookDialogOpen] = useState(false);
   const [ruleDialogOpen, setRuleDialogOpen] = useState(false);
   const [logsDialogOpen, setLogsDialogOpen] = useState(false);
+  const [testDialogOpen, setTestDialogOpen] = useState(false);
+  const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
+  const [selectedRuleForPreview, setSelectedRuleForPreview] = useState<AutomationRule | null>(null);
+  const [activeTab, setActiveTab] = useState('incoming');
   
   const [newWebhook, setNewWebhook] = useState({ name: '', description: '' });
   const [newRule, setNewRule] = useState({
@@ -185,22 +193,6 @@ const AutomationManager = () => {
       setRules(data || []);
     } catch (error: any) {
       console.error('Error fetching rules:', error);
-    }
-  };
-
-  const fetchLogs = async (webhookId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('webhook_logs')
-        .select('*')
-        .eq('incoming_webhook_id', webhookId)
-        .order('created_at', { ascending: false })
-        .limit(50);
-      
-      if (error) throw error;
-      setLogs(data || []);
-    } catch (error: any) {
-      console.error('Error fetching logs:', error);
     }
   };
 
@@ -386,20 +378,31 @@ const AutomationManager = () => {
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6">
-      {/* Webhooks List */}
-      <Card>
-        <CardHeader className="pb-4">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="space-y-1">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Webhook className="h-5 w-5 shrink-0" />
-                {t('incomingWebhooks') || 'Incoming Webhooks'}
-              </CardTitle>
-              <CardDescription className="text-sm">
-                {t('incomingWebhooksDesc') || 'Receive data from external systems'}
-              </CardDescription>
-            </div>
+    <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 sm:space-y-6">
+      <TabsList className="grid w-full grid-cols-2">
+        <TabsTrigger value="incoming" className="flex items-center gap-2">
+          <Webhook className="h-4 w-4" />
+          Incoming
+        </TabsTrigger>
+        <TabsTrigger value="outgoing" className="flex items-center gap-2">
+          <Send className="h-4 w-4" />
+          Outgoing Logs
+        </TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="incoming" className="space-y-4 sm:space-y-6">
+        <Card>
+          <CardHeader className="pb-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="space-y-1">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Webhook className="h-5 w-5 shrink-0" />
+                  {t('incomingWebhooks') || 'Incoming Webhooks'}
+                </CardTitle>
+                <CardDescription className="text-sm">
+                  {t('incomingWebhooksDesc') || 'Receive data from external systems'}
+                </CardDescription>
+              </div>
             <Dialog open={webhookDialogOpen} onOpenChange={setWebhookDialogOpen}>
               <DialogTrigger asChild>
                 <Button size="sm" className="w-full sm:w-auto">
@@ -813,58 +816,44 @@ const AutomationManager = () => {
           </CardContent>
         </Card>
       )}
+      </TabsContent>
+
+      <TabsContent value="outgoing">
+        <OutgoingWebhookLogs />
+      </TabsContent>
+
+      {/* Test Webhook Dialog */}
+      {selectedWebhook && (
+        <TestWebhookDialog
+          open={testDialogOpen}
+          onOpenChange={setTestDialogOpen}
+          webhookId={selectedWebhook.id}
+          webhookName={selectedWebhook.name}
+        />
+      )}
+
+      {/* Payload Preview Dialog */}
+      {selectedRuleForPreview && (
+        <PayloadPreviewDialog
+          open={previewDialogOpen}
+          onOpenChange={setPreviewDialogOpen}
+          ruleName={selectedRuleForPreview.name}
+          actionType={selectedRuleForPreview.action_type}
+          fieldMappings={selectedRuleForPreview.field_mappings}
+          conditions={selectedRuleForPreview.conditions}
+        />
+      )}
 
       {/* Logs Dialog */}
-      <Dialog open={logsDialogOpen} onOpenChange={setLogsDialogOpen}>
-        <DialogContent className="max-w-2xl w-[calc(100%-2rem)] max-h-[80vh]">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <History className="h-5 w-5 shrink-0" />
-              <span className="truncate">Webhook Logs</span>
-            </DialogTitle>
-            <DialogDescription className="truncate">
-              Recent executions for {selectedWebhook?.name}
-            </DialogDescription>
-          </DialogHeader>
-          <ScrollArea className="max-h-[60vh]">
-            {logs.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                No logs yet
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {logs.map((log) => (
-                  <div key={log.id} className="p-3 border rounded-lg text-sm">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs text-muted-foreground">
-                        {formatDateTime(log.created_at)}
-                      </span>
-                      <Badge 
-                        variant={log.error_message ? 'destructive' : log.response_status === 200 ? 'success' : 'secondary'}
-                        className="text-xs"
-                      >
-                        {log.error_message ? 'Error' : `${log.response_status || 200}`}
-                      </Badge>
-                    </div>
-                    {log.error_message && (
-                      <div className="flex items-start gap-2 p-2 bg-destructive/10 rounded text-destructive text-xs">
-                        <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
-                        <span>{log.error_message}</span>
-                      </div>
-                    )}
-                    {log.executed_rules && Array.isArray(log.executed_rules) && log.executed_rules.length > 0 && (
-                      <div className="mt-2 text-xs text-muted-foreground">
-                        Executed: {log.executed_rules.map((r: any) => r.name || r).join(', ')}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </ScrollArea>
-        </DialogContent>
-      </Dialog>
-    </div>
+      {selectedWebhook && (
+        <WebhookLogsViewer
+          open={logsDialogOpen}
+          onOpenChange={setLogsDialogOpen}
+          webhookId={selectedWebhook.id}
+          webhookName={selectedWebhook.name}
+        />
+      )}
+    </Tabs>
   );
 };
 
