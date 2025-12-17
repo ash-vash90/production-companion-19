@@ -369,24 +369,16 @@ const AutomationManager = () => {
 
   const testOutgoingWebhook = async (webhook: OutgoingWebhook) => {
     try {
-      const response = await fetch(webhook.webhook_url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          event: webhook.event_type,
-          test: true,
-          timestamp: new Date().toISOString(),
-          data: { message: 'This is a test webhook from Rhosonics PMS' }
-        }),
-      });
-      
-      if (response.ok) {
-        toast.success('Test successful', { description: 'Webhook endpoint responded successfully' });
+      const { sendTestWebhook } = await import('@/lib/webhooks');
+      const result = await sendTestWebhook(webhook.webhook_url);
+
+      if (result.success) {
+        toast.success('Test successful', { description: 'Webhook request was sent successfully.' });
       } else {
-        toast.error('Test failed', { description: `Endpoint returned status ${response.status}` });
+        toast.error('Test failed', { description: result.error || 'Unknown error' });
       }
     } catch (error: any) {
-      toast.error('Test failed', { description: error.message });
+      toast.error('Test failed', { description: error?.message || 'Unknown error' });
     }
   };
 
