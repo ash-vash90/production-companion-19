@@ -7,7 +7,7 @@ import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Loader2, CheckCircle2, XCircle, Clock, Send, Copy } from 'lucide-react';
+import { Loader2, CheckCircle2, XCircle, Clock, Send, Copy, AlertTriangle, Info } from 'lucide-react';
 
 interface TestOutgoingWebhookDialogProps {
   open: boolean;
@@ -25,6 +25,7 @@ interface TestResult {
   delivery_id?: string;
   error?: string;
   response_body?: any;
+  hint?: string;
 }
 
 const TestOutgoingWebhookDialog: React.FC<TestOutgoingWebhookDialogProps> = ({
@@ -53,45 +54,129 @@ const TestOutgoingWebhookDialog: React.FC<TestOutgoingWebhookDialogProps> = ({
         .eq('id', webhookId)
         .single() as { data: { secret_key: string | null } | null; error: any };
 
-      const testResult = await sendTestWebhookForConfig({
-        id: webhookId,
-        name: webhookName,
-        webhook_url: webhookUrl,
-        secret_key: webhookData?.secret_key || undefined,
-      });
+      // Record timestamp before sending to help find the log entry
+      const sentAt = new Date();
 
-      // Fetch the latest log entry for more details
+      let clientResult: any = null;
+      let clientError: string | null = null;
+
+      try {
+        clientResult = await sendTestWebhookForConfig({
+          id: webhookId,
+          name: webhookName,
+          webhook_url: webhookUrl,
+          secret_key: webhookData?.secret_key || undefined,
+        });
+      } catch (err: any) {
+        clientError = err.message || 'Unknown error';
+      }
+
+      // Wait a moment for the log to be written
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Fetch the latest log entry - this is the source of truth
       const { data: logEntry } = await supabase
         .from('outgoing_webhook_logs')
         .select('*')
         .eq('webhook_id', webhookId)
+        .gte('created_at', sentAt.toISOString())
         .order('created_at', { ascending: false })
         .limit(1)
         .single();
 
-      setResult({
-        success: testResult.success,
-        status_code: testResult.statusCode || logEntry?.response_status,
-        response_time_ms: testResult.responseTimeMs || logEntry?.response_time_ms,
-        delivery_id: logEntry?.delivery_id,
-        error: testResult.error || logEntry?.error_message,
-        response_body: logEntry?.response_body,
-      });
+      // Determine actual success based on log entry (source of truth)
+      const logSuccess = logEntry && logEntry.response_status && logEntry.response_status >= 200 && logEntry.response_status < 400;
+      const actualSuccess = logSuccess || (clientResult?.success === true);
 
-      if (testResult.success) {
-        toast.success('Test sent successfully');
+      // Build the result based on what we know
+      let finalResult: TestResult;
+
+      if (logEntry) {
+        // We have a log entry - use it as source of truth
+        finalResult = {
+          success: logSuccess,
+          status_code: logEntry.response_status,
+          response_time_ms: logEntry.response_time_ms,
+          delivery_id: logEntry.delivery_id,
+          error: logSuccess ? undefined : logEntry.error_message,
+          response_body: logEntry.response_body,
+        };
+
+        // Add helpful hints based on status
+        if (logSuccess) {
+          finalResult.hint = 'The webhook was delivered successfully. Check your Zapier dashboard to see the received data.';
+        } else if (logEntry.response_status === 404) {
+          finalResult.hint = 'The webhook URL returned 404. Verify the URL is correct and the Zap is turned on.';
+        } else if (logEntry.response_status === 401 || logEntry.response_status === 403) {
+          finalResult.hint = 'Authentication failed. Check if the webhook URL requires authentication.';
+        } else if (logEntry.response_status >= 500) {
+          finalResult.hint = 'The receiving server had an error. Try again later or check the external service status.';
+        } else if (logEntry.error_message?.includes('timeout')) {
+          finalResult.hint = 'The request timed out. The receiving server may be slow or unresponsive.';
+        }
+      } else if (clientResult?.success) {
+        // Client says success but no log yet
+        finalResult = {
+          success: true,
+          status_code: clientResult.statusCode,
+          response_time_ms: clientResult.responseTimeMs,
+          hint: 'The webhook appears to have been sent. Check your Zapier dashboard to confirm receipt.',
+        };
       } else {
-        toast.error('Test failed', { description: testResult.error });
+        // No log and client failed - but could be CORS issue where it actually worked
+        // Give the benefit of the doubt with a helpful message
+        const isCorsLikeError = clientError?.includes('Failed to fetch') || clientError?.includes('NetworkError');
+        
+        if (isCorsLikeError) {
+          finalResult = {
+            success: false,
+            error: 'Could not verify delivery status',
+            hint: 'The webhook may have been delivered successfully. Browser security restrictions prevent us from confirming. Check your Zapier dashboard to verify the webhook was received.',
+          };
+        } else {
+          finalResult = {
+            success: false,
+            error: clientError || clientResult?.error || 'Unknown error',
+            hint: getErrorHint(clientError || clientResult?.error),
+          };
+        }
+      }
+
+      setResult(finalResult);
+
+      if (finalResult.success) {
+        toast.success('Webhook delivered successfully');
+      } else if (finalResult.hint?.includes('may have been delivered')) {
+        toast.info('Check your Zapier dashboard to verify delivery');
+      } else {
+        toast.error('Delivery issue detected');
       }
     } catch (error: any) {
       setResult({
         success: false,
         error: error.message || 'Unknown error',
+        hint: getErrorHint(error.message),
       });
-      toast.error('Test failed', { description: error.message });
+      toast.error('Test failed');
     } finally {
       setTesting(false);
     }
+  };
+
+  const getErrorHint = (error?: string): string => {
+    if (!error) return 'An unexpected error occurred. Please try again.';
+    
+    if (error.includes('Invalid URL') || error.includes('URL')) {
+      return 'The webhook URL appears to be invalid. Check that it starts with https:// and is correctly formatted.';
+    }
+    if (error.includes('health score')) {
+      return 'This webhook has had too many recent failures and is temporarily disabled. Wait a few minutes and try again.';
+    }
+    if (error.includes('timeout')) {
+      return 'The request timed out. The receiving server may be slow or unresponsive.';
+    }
+    
+    return 'Check the webhook URL and try again. If the issue persists, verify the receiving service is working.';
   };
 
   const copyToClipboard = (text: string) => {
@@ -147,7 +232,12 @@ const TestOutgoingWebhookDialog: React.FC<TestOutgoingWebhookDialogProps> = ({
                 {result.success ? (
                   <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
                     <CheckCircle2 className="h-5 w-5" />
-                    <span className="font-medium">Success</span>
+                    <span className="font-medium">Delivered</span>
+                  </div>
+                ) : result.hint?.includes('may have been delivered') ? (
+                  <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
+                    <AlertTriangle className="h-5 w-5" />
+                    <span className="font-medium">Unverified</span>
                   </div>
                 ) : (
                   <div className="flex items-center gap-2 text-red-600 dark:text-red-400">
@@ -170,6 +260,34 @@ const TestOutgoingWebhookDialog: React.FC<TestOutgoingWebhookDialogProps> = ({
                 )}
               </div>
 
+              {/* Hint / Suggestion */}
+              {result.hint && (
+                <div className={`p-3 rounded-lg flex items-start gap-2 ${
+                  result.success 
+                    ? 'bg-green-500/10 border border-green-500/20' 
+                    : result.hint.includes('may have been delivered')
+                    ? 'bg-amber-500/10 border border-amber-500/20'
+                    : 'bg-blue-500/10 border border-blue-500/20'
+                }`}>
+                  <Info className={`h-4 w-4 mt-0.5 flex-shrink-0 ${
+                    result.success 
+                      ? 'text-green-600 dark:text-green-400' 
+                      : result.hint.includes('may have been delivered')
+                      ? 'text-amber-600 dark:text-amber-400'
+                      : 'text-blue-600 dark:text-blue-400'
+                  }`} />
+                  <p className={`text-sm ${
+                    result.success 
+                      ? 'text-green-700 dark:text-green-300' 
+                      : result.hint.includes('may have been delivered')
+                      ? 'text-amber-700 dark:text-amber-300'
+                      : 'text-blue-700 dark:text-blue-300'
+                  }`}>
+                    {result.hint}
+                  </p>
+                </div>
+              )}
+
               {/* Delivery ID */}
               {result.delivery_id && (
                 <div className="flex items-center justify-between p-2 bg-muted/30 rounded">
@@ -188,19 +306,19 @@ const TestOutgoingWebhookDialog: React.FC<TestOutgoingWebhookDialogProps> = ({
                 </div>
               )}
 
-              {/* Error Message */}
-              {result.error && (
+              {/* Error Message (only show if not already explained in hint) */}
+              {result.error && !result.hint?.includes('may have been delivered') && (
                 <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
-                  <p className="text-sm font-medium text-destructive mb-1">Error</p>
+                  <p className="text-sm font-medium text-destructive mb-1">Error Details</p>
                   <p className="text-sm text-destructive/80">{result.error}</p>
                 </div>
               )}
 
               {/* Response Body */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Response Body</span>
-                  {result.response_body && (
+              {result.response_body && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">Response Body</span>
                     <Button
                       variant="ghost"
                       size="sm"
@@ -209,14 +327,14 @@ const TestOutgoingWebhookDialog: React.FC<TestOutgoingWebhookDialogProps> = ({
                       <Copy className="h-3 w-3 mr-1" />
                       Copy
                     </Button>
-                  )}
+                  </div>
+                  <ScrollArea className="h-[200px] w-full rounded-md border bg-muted/30">
+                    <pre className="p-3 text-xs font-mono whitespace-pre-wrap break-all">
+                      {formatResponseBody(result.response_body)}
+                    </pre>
+                  </ScrollArea>
                 </div>
-                <ScrollArea className="h-[200px] w-full rounded-md border bg-muted/30">
-                  <pre className="p-3 text-xs font-mono whitespace-pre-wrap break-all">
-                    {formatResponseBody(result.response_body)}
-                  </pre>
-                </ScrollArea>
-              </div>
+              )}
             </div>
           )}
 
