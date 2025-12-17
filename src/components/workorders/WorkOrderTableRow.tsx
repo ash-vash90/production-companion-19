@@ -32,6 +32,7 @@ interface WorkOrderTableRowProps {
   onClick?: () => void;
   onCancel?: () => void;
   onStatusChange?: () => void;
+  onRequestCancel?: () => void;
   showUrgency?: boolean;
   linkTo?: string;
   showCompletedDate?: boolean;
@@ -49,6 +50,7 @@ export function WorkOrderTableRow({
   onClick,
   onCancel,
   onStatusChange,
+  onRequestCancel,
   showUrgency = true,
   linkTo,
   showCompletedDate = false,
@@ -119,6 +121,7 @@ export function WorkOrderTableRow({
               workOrderId={workOrder.id}
               currentStatus={workOrder.status}
               onStatusChange={onStatusChange}
+              onRequestCancel={onRequestCancel || onCancel}
               compact
             />
           ) : (

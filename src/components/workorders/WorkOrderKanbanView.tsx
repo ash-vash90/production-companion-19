@@ -1,13 +1,12 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
-import { WorkOrderStatusBadge, WorkOrderStatusType } from './WorkOrderStatusBadge';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { ProductBreakdownBadges } from './ProductBreakdownBadges';
 import { formatDate, ProductBreakdown } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
@@ -24,7 +23,8 @@ import {
 import { 
   SortableContext, 
   useSortable, 
-  verticalListSortingStrategy 
+  verticalListSortingStrategy,
+  arrayMove 
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { GripVertical, Calendar, Truck, X } from 'lucide-react';
@@ -43,18 +43,52 @@ interface WorkOrderData {
   progressPercent?: number;
 }
 
+type KanbanStatus = 'planned' | 'in_progress' | 'on_hold' | 'completed' | 'cancelled';
+
 interface WorkOrderKanbanViewProps {
   workOrders: WorkOrderData[];
   onStatusChange?: () => void;
   onCancel?: (workOrder: { id: string; wo_number: string }) => void;
 }
 
-const STATUS_COLUMNS: { status: WorkOrderStatusType; labelKey: string }[] = [
+const ALL_STATUS_COLUMNS: { status: KanbanStatus; labelKey: string }[] = [
   { status: 'planned', labelKey: 'planned' },
   { status: 'in_progress', labelKey: 'inProgress' },
   { status: 'on_hold', labelKey: 'onHold' },
   { status: 'completed', labelKey: 'completed' },
+  { status: 'cancelled', labelKey: 'cancelled' },
 ];
+
+// Full-color header styles for each status (matching badge colors)
+const STATUS_HEADER_STYLES: Record<KanbanStatus, { bg: string; text: string; border: string }> = {
+  planned: { 
+    bg: 'bg-sky-500/20 dark:bg-sky-500/30', 
+    text: 'text-sky-800 dark:text-sky-200',
+    border: 'border-sky-500/30'
+  },
+  in_progress: { 
+    bg: 'bg-amber-500/20 dark:bg-amber-500/30', 
+    text: 'text-amber-800 dark:text-amber-200',
+    border: 'border-amber-500/30'
+  },
+  on_hold: { 
+    bg: 'bg-secondary', 
+    text: 'text-secondary-foreground',
+    border: 'border-secondary'
+  },
+  completed: { 
+    bg: 'bg-emerald-500/20 dark:bg-emerald-500/30', 
+    text: 'text-emerald-800 dark:text-emerald-200',
+    border: 'border-emerald-500/30'
+  },
+  cancelled: { 
+    bg: 'bg-destructive/20 dark:bg-destructive/30', 
+    text: 'text-destructive dark:text-red-300',
+    border: 'border-destructive/30'
+  },
+};
+
+const VISIBILITY_STORAGE_KEY = 'kanban_column_visibility';
 
 interface KanbanCardProps {
   workOrder: WorkOrderData;
@@ -63,7 +97,7 @@ interface KanbanCardProps {
 
 function KanbanCard({ workOrder, onCancel }: KanbanCardProps) {
   const navigate = useNavigate();
-  const { t, language } = useLanguage();
+  const { t } = useLanguage();
   const { hasPermission } = useUserProfile();
   
   const {
@@ -88,7 +122,7 @@ function KanbanCard({ workOrder, onCancel }: KanbanCardProps) {
     <div
       ref={setNodeRef}
       style={style}
-      className="relative group bg-card border rounded-lg p-3 cursor-pointer hover:shadow-md transition-shadow"
+      className="relative group bg-card border rounded-lg p-4 cursor-pointer hover:shadow-md transition-shadow"
       onClick={() => navigate(`/production/${workOrder.id}`)}
     >
       {/* Drag handle */}
@@ -96,7 +130,7 @@ function KanbanCard({ workOrder, onCancel }: KanbanCardProps) {
         <div
           {...attributes}
           {...listeners}
-          className="absolute left-1 top-1/2 -translate-y-1/2 p-1 cursor-grab opacity-0 group-hover:opacity-100 transition-opacity"
+          className="absolute left-1.5 top-1/2 -translate-y-1/2 p-1 cursor-grab opacity-0 group-hover:opacity-100 transition-opacity"
           onClick={(e) => e.stopPropagation()}
         >
           <GripVertical className="h-4 w-4 text-muted-foreground" />
@@ -117,12 +151,12 @@ function KanbanCard({ workOrder, onCancel }: KanbanCardProps) {
         </button>
       )}
 
-      <div className="pl-4">
+      <div className="pl-5">
         {/* WO Number */}
-        <div className="font-mono font-semibold text-sm mb-2">{workOrder.wo_number}</div>
+        <div className="font-mono font-semibold text-sm mb-3">{workOrder.wo_number}</div>
 
         {/* Product badges */}
-        <div className="mb-2">
+        <div className="mb-3">
           <ProductBreakdownBadges
             breakdown={workOrder.productBreakdown}
             batchSize={workOrder.batch_size}
@@ -133,21 +167,21 @@ function KanbanCard({ workOrder, onCancel }: KanbanCardProps) {
 
         {/* Customer */}
         {workOrder.customer_name && (
-          <div className="text-xs text-muted-foreground mb-2 truncate">
+          <div className="text-sm text-foreground font-medium mb-3 truncate">
             {workOrder.customer_name}
           </div>
         )}
 
         {/* Dates */}
-        <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground mb-2">
+        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground mb-3">
           {workOrder.start_date && (
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1.5">
               <Calendar className="h-3 w-3" />
               <span>{formatDate(workOrder.start_date)}</span>
             </div>
           )}
           {workOrder.shipping_date && (
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1.5">
               <Truck className="h-3 w-3" />
               <span>{formatDate(workOrder.shipping_date)}</span>
             </div>
@@ -157,7 +191,7 @@ function KanbanCard({ workOrder, onCancel }: KanbanCardProps) {
         {/* Progress */}
         <div className="flex items-center gap-2">
           <Progress value={workOrder.progressPercent || 0} className="h-1.5 flex-1" />
-          <span className="text-xs text-muted-foreground">{workOrder.progressPercent || 0}%</span>
+          <span className="text-xs text-muted-foreground font-medium">{workOrder.progressPercent || 0}%</span>
         </div>
       </div>
     </div>
@@ -166,27 +200,48 @@ function KanbanCard({ workOrder, onCancel }: KanbanCardProps) {
 
 function KanbanColumn({ 
   status, 
-  label, 
   workOrders, 
-  onCancel 
+  onCancel,
+  columnOrders,
+  onReorder,
 }: { 
-  status: WorkOrderStatusType; 
-  label: string; 
+  status: KanbanStatus; 
   workOrders: WorkOrderData[];
   onCancel?: (workOrder: { id: string; wo_number: string }) => void;
+  columnOrders: Record<string, string[]>;
+  onReorder: (status: string, newOrder: string[]) => void;
 }) {
+  const { t } = useLanguage();
+  const headerStyles = STATUS_HEADER_STYLES[status];
+
+  // Apply custom ordering if exists
+  const orderedWorkOrders = useMemo(() => {
+    const customOrder = columnOrders[status];
+    if (!customOrder || customOrder.length === 0) return workOrders;
+    
+    const orderMap = new Map(customOrder.map((id, index) => [id, index]));
+    return [...workOrders].sort((a, b) => {
+      const aIndex = orderMap.get(a.id) ?? Number.MAX_SAFE_INTEGER;
+      const bIndex = orderMap.get(b.id) ?? Number.MAX_SAFE_INTEGER;
+      return aIndex - bIndex;
+    });
+  }, [workOrders, columnOrders, status]);
+
   return (
-    <div className="flex flex-col min-w-[280px] max-w-[320px] bg-muted/30 rounded-lg">
-      <div className="flex items-center justify-between p-3 border-b">
-        <div className="flex items-center gap-2">
-          <WorkOrderStatusBadge status={status} />
-          <Badge variant="secondary" className="text-xs">{workOrders.length}</Badge>
-        </div>
+    <div className="flex flex-col flex-1 min-w-[200px] bg-muted/30 rounded-lg overflow-hidden">
+      {/* Fully colored header */}
+      <div className={`flex items-center justify-between px-3 py-2.5 ${headerStyles.bg} ${headerStyles.border} border-b`}>
+        <span className={`font-mono font-semibold text-sm ${headerStyles.text}`}>
+          {t(status === 'in_progress' ? 'inProgress' : status)}
+        </span>
+        <span className={`font-mono text-xs px-2 py-0.5 rounded-full ${headerStyles.bg} ${headerStyles.text} border ${headerStyles.border}`}>
+          {workOrders.length}
+        </span>
       </div>
       <ScrollArea className="flex-1 p-2">
-        <SortableContext items={workOrders.map(wo => wo.id)} strategy={verticalListSortingStrategy}>
-          <div className="space-y-2 min-h-[200px]">
-            {workOrders.map((wo) => (
+        <SortableContext items={orderedWorkOrders.map(wo => wo.id)} strategy={verticalListSortingStrategy}>
+          <div className="space-y-3 min-h-[200px]">
+            {orderedWorkOrders.map((wo) => (
               <KanbanCard 
                 key={wo.id} 
                 workOrder={wo} 
@@ -205,6 +260,37 @@ export function WorkOrderKanbanView({ workOrders, onStatusChange, onCancel }: Wo
   const { hasPermission } = useUserProfile();
   const [activeId, setActiveId] = useState<string | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
+  
+  // Column visibility state with localStorage persistence
+  const [showCompleted, setShowCompleted] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem(VISIBILITY_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return parsed.showCompleted ?? true;
+      }
+    } catch {}
+    return true;
+  });
+  
+  const [showCancelled, setShowCancelled] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem(VISIBILITY_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return parsed.showCancelled ?? false;
+      }
+    } catch {}
+    return false;
+  });
+
+  // Column reordering state (session-local)
+  const [columnOrders, setColumnOrders] = useState<Record<string, string[]>>({});
+
+  // Persist visibility preferences
+  useEffect(() => {
+    localStorage.setItem(VISIBILITY_STORAGE_KEY, JSON.stringify({ showCompleted, showCancelled }));
+  }, [showCompleted, showCancelled]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -214,10 +300,19 @@ export function WorkOrderKanbanView({ workOrders, onStatusChange, onCancel }: Wo
     })
   );
 
+  // Filter visible columns based on toggles
+  const visibleColumns = useMemo(() => {
+    return ALL_STATUS_COLUMNS.filter(col => {
+      if (col.status === 'completed' && !showCompleted) return false;
+      if (col.status === 'cancelled' && !showCancelled) return false;
+      return true;
+    });
+  }, [showCompleted, showCancelled]);
+
   // Group work orders by status
   const ordersByStatus = useMemo(() => {
     const groups: Record<string, WorkOrderData[]> = {};
-    STATUS_COLUMNS.forEach(col => {
+    ALL_STATUS_COLUMNS.forEach(col => {
       groups[col.status] = workOrders.filter(wo => wo.status === col.status);
     });
     return groups;
@@ -227,6 +322,13 @@ export function WorkOrderKanbanView({ workOrders, onStatusChange, onCancel }: Wo
 
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id as string);
+  };
+
+  const handleReorder = (status: string, newOrder: string[]) => {
+    setColumnOrders(prev => ({
+      ...prev,
+      [status]: newOrder
+    }));
   };
 
   const handleDragEnd = async (event: DragEndEvent) => {
@@ -240,9 +342,10 @@ export function WorkOrderKanbanView({ workOrders, onStatusChange, onCancel }: Wo
 
     // Find which column we dropped into
     let newStatus: string | null = null;
+    let overWO: WorkOrderData | undefined;
     
     // Check if dropped on another card
-    const overWO = workOrders.find(wo => wo.id === over.id);
+    overWO = workOrders.find(wo => wo.id === over.id);
     if (overWO) {
       newStatus = overWO.status;
     } else {
@@ -250,9 +353,32 @@ export function WorkOrderKanbanView({ workOrders, onStatusChange, onCancel }: Wo
       newStatus = over.id as string;
     }
 
-    if (!newStatus || newStatus === activeWO.status) return;
+    if (!newStatus) return;
 
-    // Update status in database
+    // Same column - reorder
+    if (newStatus === activeWO.status) {
+      const currentOrders = ordersByStatus[activeWO.status] || [];
+      const customOrder = columnOrders[activeWO.status] || currentOrders.map(wo => wo.id);
+      
+      const oldIndex = customOrder.indexOf(active.id as string);
+      const newIndex = overWO ? customOrder.indexOf(overWO.id) : customOrder.length;
+      
+      if (oldIndex !== -1 && oldIndex !== newIndex) {
+        const reordered = arrayMove(customOrder, oldIndex, newIndex);
+        handleReorder(activeWO.status, reordered);
+      }
+      return;
+    }
+
+    // Different column - change status
+    // Intercept cancellation to show dialog
+    if (newStatus === 'cancelled') {
+      if (onCancel) {
+        onCancel({ id: activeWO.id, wo_number: activeWO.wo_number });
+      }
+      return;
+    }
+
     setIsUpdating(true);
     try {
       const updates: Record<string, any> = { status: newStatus };
@@ -281,39 +407,66 @@ export function WorkOrderKanbanView({ workOrders, onStatusChange, onCancel }: Wo
   };
 
   return (
-    <DndContext
-      sensors={sensors}
-      collisionDetection={closestCorners}
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
-    >
-      <div className="overflow-x-auto pb-4">
-        <div className="flex gap-4 min-w-max">
-          {STATUS_COLUMNS.map(({ status, labelKey }) => (
-            <KanbanColumn
-              key={status}
-              status={status}
-              label={t(labelKey as any)}
-              workOrders={ordersByStatus[status] || []}
-              onCancel={onCancel}
-            />
-          ))}
+    <div className="space-y-3">
+      {/* Visibility toggles */}
+      <div className="flex items-center gap-6 text-sm">
+        <div className="flex items-center gap-2">
+          <Switch
+            id="show-completed"
+            checked={showCompleted}
+            onCheckedChange={setShowCompleted}
+          />
+          <Label htmlFor="show-completed" className="text-sm font-normal cursor-pointer">
+            {t('showCompleted') || 'Show Completed'}
+          </Label>
+        </div>
+        <div className="flex items-center gap-2">
+          <Switch
+            id="show-cancelled"
+            checked={showCancelled}
+            onCheckedChange={setShowCancelled}
+          />
+          <Label htmlFor="show-cancelled" className="text-sm font-normal cursor-pointer">
+            {t('showCancelled') || 'Show Cancelled'}
+          </Label>
         </div>
       </div>
 
-      <DragOverlay>
-        {activeWorkOrder && (
-          <div className="bg-card border rounded-lg p-3 shadow-lg opacity-90 w-[280px]">
-            <div className="font-mono font-semibold text-sm mb-2">{activeWorkOrder.wo_number}</div>
-            <ProductBreakdownBadges
-              breakdown={activeWorkOrder.productBreakdown}
-              batchSize={activeWorkOrder.batch_size}
-              compact
-              maxVisible={2}
-            />
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCorners}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+      >
+        <div className="overflow-x-auto pb-4">
+          <div className="flex gap-3 w-full">
+            {visibleColumns.map(({ status }) => (
+              <KanbanColumn
+                key={status}
+                status={status}
+                workOrders={ordersByStatus[status] || []}
+                onCancel={onCancel}
+                columnOrders={columnOrders}
+                onReorder={handleReorder}
+              />
+            ))}
           </div>
-        )}
-      </DragOverlay>
-    </DndContext>
+        </div>
+
+        <DragOverlay>
+          {activeWorkOrder && (
+            <div className="bg-card border rounded-lg p-4 shadow-lg opacity-90 w-[220px]">
+              <div className="font-mono font-semibold text-sm mb-2">{activeWorkOrder.wo_number}</div>
+              <ProductBreakdownBadges
+                breakdown={activeWorkOrder.productBreakdown}
+                batchSize={activeWorkOrder.batch_size}
+                compact
+                maxVisible={2}
+              />
+            </div>
+          )}
+        </DragOverlay>
+      </DndContext>
+    </div>
   );
 }

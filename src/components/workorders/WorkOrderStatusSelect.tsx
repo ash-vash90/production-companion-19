@@ -19,6 +19,7 @@ interface WorkOrderStatusSelectProps {
   workOrderId: string;
   currentStatus: string;
   onStatusChange?: (newStatus: string) => void;
+  onRequestCancel?: () => void;
   compact?: boolean;
 }
 
@@ -34,6 +35,7 @@ export function WorkOrderStatusSelect({
   workOrderId,
   currentStatus,
   onStatusChange,
+  onRequestCancel,
   compact = false,
 }: WorkOrderStatusSelectProps) {
   const { t } = useLanguage();
@@ -48,6 +50,12 @@ export function WorkOrderStatusSelect({
 
   const handleStatusChange = async (newStatus: string) => {
     if (newStatus === currentStatus) return;
+    
+    // Intercept cancellation to show dialog
+    if (newStatus === 'cancelled' && onRequestCancel) {
+      onRequestCancel();
+      return;
+    }
 
     setUpdating(true);
     try {

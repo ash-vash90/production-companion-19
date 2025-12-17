@@ -451,6 +451,7 @@ const WorkOrders = () => {
                 createdMonths={createdMonths}
                 groupBy={groupBy}
                 onGroupByChange={(v) => setGroupBy(v)}
+                hideGroupBy={viewMode === 'kanban'}
               />
               {hasActiveFilters && (
                 <Button 
