@@ -8,7 +8,7 @@ import { WorkOrderStatusBadge } from './WorkOrderStatusBadge';
 import { WorkOrderStatusSelect } from './WorkOrderStatusSelect';
 import { ProductBreakdownBadges } from './ProductBreakdownBadges';
 import { formatDate, ProductBreakdown } from '@/lib/utils';
-import { AlertTriangle, Clock, Calendar, Truck, Eye, UserPlus } from 'lucide-react';
+import { AlertTriangle, Clock, Calendar, Truck, Eye, CalendarClock } from 'lucide-react';
 import { parseISO, isBefore } from 'date-fns';
 
 export interface WorkOrderRowData {
@@ -50,8 +50,8 @@ interface WorkOrderTableRowProps {
   selected?: boolean;
   /** Callback when selection changes */
   onSelectionChange?: (selected: boolean) => void;
-  /** Quick assign callback */
-  onQuickAssign?: () => void;
+  /** Plan callback - opens planner */
+  onPlan?: () => void;
 }
 
 export function WorkOrderTableRow({
@@ -70,7 +70,7 @@ export function WorkOrderTableRow({
   selectable = false,
   selected = false,
   onSelectionChange,
-  onQuickAssign,
+  onPlan,
 }: WorkOrderTableRowProps) {
   const navigate = useNavigate();
   const { t, language } = useLanguage();
@@ -213,18 +213,18 @@ export function WorkOrderTableRow({
       {/* Actions */}
       <TableCell className="text-right whitespace-nowrap">
         <div className="flex items-center justify-end gap-1">
-          {onQuickAssign && workOrder.status !== 'completed' && workOrder.status !== 'cancelled' && (
+          {onPlan && workOrder.status !== 'completed' && workOrder.status !== 'cancelled' && (
             <Button
               variant="ghost"
               size="sm"
               className="h-8 w-8 p-0"
               onClick={(e) => {
                 e.stopPropagation();
-                onQuickAssign();
+                onPlan();
               }}
-              title={language === 'nl' ? 'Toewijzen' : 'Assign'}
+              title={language === 'nl' ? 'Plannen' : 'Plan'}
             >
-              <UserPlus className="h-4 w-4" />
+              <CalendarClock className="h-4 w-4" />
             </Button>
           )}
           <Button
