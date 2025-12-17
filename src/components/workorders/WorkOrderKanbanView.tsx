@@ -15,10 +15,12 @@ import {
   DragEndEvent, 
   DragOverlay, 
   DragStartEvent,
+  DragOverEvent,
   PointerSensor,
   useSensor,
   useSensors,
   closestCorners,
+  useDroppable,
 } from '@dnd-kit/core';
 import { 
   SortableContext, 
@@ -204,15 +206,24 @@ function KanbanColumn({
   onCancel,
   columnOrders,
   onReorder,
+  isOver,
+  isDragging,
 }: { 
   status: KanbanStatus; 
   workOrders: WorkOrderData[];
   onCancel?: (workOrder: { id: string; wo_number: string }) => void;
   columnOrders: Record<string, string[]>;
   onReorder: (status: string, newOrder: string[]) => void;
+  isOver?: boolean;
+  isDragging?: boolean;
 }) {
   const { t } = useLanguage();
   const headerStyles = STATUS_HEADER_STYLES[status];
+  
+  // Make column a drop target
+  const { setNodeRef } = useDroppable({
+    id: status,
+  });
 
   // Apply custom ordering if exists
   const orderedWorkOrders = useMemo(() => {
@@ -228,9 +239,20 @@ function KanbanColumn({
   }, [workOrders, columnOrders, status]);
 
   return (
-    <div className="flex flex-col flex-1 min-w-[200px] bg-muted/30 rounded-lg overflow-hidden">
+    <div 
+      ref={setNodeRef}
+      className={`flex flex-col flex-1 min-w-[200px] rounded-lg overflow-hidden transition-all duration-200 ${
+        isOver 
+          ? 'bg-primary/10 ring-2 ring-primary ring-offset-2 ring-offset-background scale-[1.02]' 
+          : isDragging 
+            ? 'bg-muted/50' 
+            : 'bg-muted/30'
+      }`}
+    >
       {/* Fully colored header */}
-      <div className={`flex items-center justify-between px-3 py-2.5 ${headerStyles.bg} ${headerStyles.border} border-b`}>
+      <div className={`flex items-center justify-between px-3 py-2.5 ${headerStyles.bg} ${headerStyles.border} border-b transition-all duration-200 ${
+        isOver ? 'opacity-100' : ''
+      }`}>
         <span className={`font-mono font-semibold text-sm ${headerStyles.text}`}>
           {t(status === 'in_progress' ? 'inProgress' : status)}
         </span>
@@ -240,7 +262,9 @@ function KanbanColumn({
       </div>
       <ScrollArea className="flex-1 p-2">
         <SortableContext items={orderedWorkOrders.map(wo => wo.id)} strategy={verticalListSortingStrategy}>
-          <div className="space-y-3 min-h-[200px]">
+          <div className={`space-y-3 min-h-[200px] transition-all duration-200 ${
+            isOver ? 'opacity-90' : ''
+          }`}>
             {orderedWorkOrders.map((wo) => (
               <KanbanCard 
                 key={wo.id} 
@@ -248,6 +272,12 @@ function KanbanColumn({
                 onCancel={onCancel ? () => onCancel({ id: wo.id, wo_number: wo.wo_number }) : undefined}
               />
             ))}
+            {/* Drop indicator when hovering empty area */}
+            {isOver && orderedWorkOrders.length === 0 && (
+              <div className="h-20 border-2 border-dashed border-primary/50 rounded-lg bg-primary/5 flex items-center justify-center">
+                <span className="text-sm text-primary/70 font-medium">{t('dropHere') || 'Drop here'}</span>
+              </div>
+            )}
           </div>
         </SortableContext>
       </ScrollArea>
@@ -259,6 +289,7 @@ export function WorkOrderKanbanView({ workOrders, onStatusChange, onCancel }: Wo
   const { t } = useLanguage();
   const { hasPermission } = useUserProfile();
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [overId, setOverId] = useState<string | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
   
   // Column visibility state with localStorage persistence
@@ -320,8 +351,26 @@ export function WorkOrderKanbanView({ workOrders, onStatusChange, onCancel }: Wo
 
   const activeWorkOrder = activeId ? workOrders.find(wo => wo.id === activeId) : null;
 
+  // Determine which column is being hovered
+  const getHoveredColumn = (overId: string | null): string | null => {
+    if (!overId) return null;
+    // Check if it's a column ID
+    if (ALL_STATUS_COLUMNS.some(col => col.status === overId)) {
+      return overId;
+    }
+    // Check if it's a card ID - find which column it belongs to
+    const overWO = workOrders.find(wo => wo.id === overId);
+    return overWO?.status || null;
+  };
+
+  const hoveredColumn = getHoveredColumn(overId);
+
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id as string);
+  };
+
+  const handleDragOver = (event: DragOverEvent) => {
+    setOverId(event.over?.id as string || null);
   };
 
   const handleReorder = (status: string, newOrder: string[]) => {
@@ -334,6 +383,7 @@ export function WorkOrderKanbanView({ workOrders, onStatusChange, onCancel }: Wo
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
     setActiveId(null);
+    setOverId(null);
 
     if (!over || !hasPermission('change_work_order_status')) return;
 
@@ -436,6 +486,7 @@ export function WorkOrderKanbanView({ workOrders, onStatusChange, onCancel }: Wo
         sensors={sensors}
         collisionDetection={closestCorners}
         onDragStart={handleDragStart}
+        onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
       >
         <div className="overflow-x-auto pb-4">
@@ -448,6 +499,8 @@ export function WorkOrderKanbanView({ workOrders, onStatusChange, onCancel }: Wo
                 onCancel={onCancel}
                 columnOrders={columnOrders}
                 onReorder={handleReorder}
+                isOver={hoveredColumn === status}
+                isDragging={!!activeId}
               />
             ))}
           </div>
