@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
-import { AlertTriangle, Clock, ChevronRight, Calendar, Truck, UserX, Play, UserPlus } from 'lucide-react';
+import { AlertTriangle, Clock, ChevronRight, Calendar, Truck, UserX, Play, CalendarClock } from 'lucide-react';
 import { parseISO, isBefore, differenceInDays } from 'date-fns';
 
 interface AssignedOperator {
@@ -45,8 +45,7 @@ interface WorkOrderCardProps {
   onHover?: () => void;
   onStatusChange?: () => void;
   onRequestCancel?: () => void;
-  onOpenAssignment?: () => void;
-  onQuickAssign?: () => void;
+  onPlan?: () => void;
   showActions?: boolean;
   showUrgency?: boolean;
   showStatusEdit?: boolean;
@@ -63,8 +62,7 @@ export function WorkOrderCard({
   onHover,
   onStatusChange,
   onRequestCancel,
-  onOpenAssignment,
-  onQuickAssign,
+  onPlan,
   showActions = true,
   showUrgency = true,
   showStatusEdit = true,
@@ -123,14 +121,13 @@ export function WorkOrderCard({
     navigate(`/production/${workOrder.id}`);
   };
 
-  const handleOpenAssignment = (e: React.MouseEvent) => {
+  const handlePlan = (e: React.MouseEvent) => {
     e.stopPropagation();
-    onOpenAssignment?.();
-  };
-
-  const handleQuickAssign = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    onQuickAssign?.();
+    if (onPlan) {
+      onPlan();
+    } else {
+      navigate(`/planner?workOrder=${workOrder.id}`);
+    }
   };
 
   // Progress color based on percentage
@@ -292,29 +289,15 @@ export function WorkOrderCard({
             <Play className="h-3.5 w-3.5" />
             {language === 'nl' ? 'Productie' : 'Production'}
           </Button>
-          {/* Quick Assign - mobile-friendly large touch target */}
-          {onQuickAssign && !hasAssignedOperators && (
-            <Button
-              variant="default"
-              size="sm"
-              className="h-9 text-xs gap-1.5 min-w-[90px]"
-              onClick={handleQuickAssign}
-            >
-              <UserPlus className="h-3.5 w-3.5" />
-              {language === 'nl' ? 'Toewijzen' : 'Assign'}
-            </Button>
-          )}
-          {onOpenAssignment && hasAssignedOperators && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-9 text-xs gap-1.5"
-              onClick={handleOpenAssignment}
-            >
-              <UserPlus className="h-3.5 w-3.5" />
-              {language === 'nl' ? 'Bewerken' : 'Edit'}
-            </Button>
-          )}
+          <Button
+            variant={hasAssignedOperators ? "outline" : "default"}
+            size="sm"
+            className="h-9 text-xs gap-1.5 min-w-[90px]"
+            onClick={handlePlan}
+          >
+            <CalendarClock className="h-3.5 w-3.5" />
+            {language === 'nl' ? 'Plannen' : 'Plan'}
+          </Button>
         </div>
       )}
 

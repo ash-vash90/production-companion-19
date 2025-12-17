@@ -577,7 +577,7 @@ const WorkOrders = () => {
           onCancel={isAdmin ? () => openCancelDialog({ id: wo.id, wo_number: wo.wo_number }) : undefined}
           onHover={() => prefetchProductionOnHover(wo.id)}
           onStatusChange={() => handleStatusChange(wo.id, wo.status)}
-          onOpenAssignment={() => openDetailSheet(wo.id)}
+          onPlan={() => navigate(`/planner?workOrder=${wo.id}`)}
           selectable={isSelectionMode}
           selected={selectedIds.has(wo.id)}
           onSelectionChange={() => toggleSelection(wo.id)}
