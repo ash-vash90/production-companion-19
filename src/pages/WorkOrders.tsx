@@ -23,7 +23,8 @@ import { PullToRefresh } from '@/components/PullToRefresh';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Plus, Package, RotateCcw, LayoutGrid, List, Loader2, ChevronDown, ChevronRight } from 'lucide-react';
+import { Plus, Package, RotateCcw, LayoutGrid, List, ChevronDown, ChevronRight } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 import { format, differenceInDays, parseISO } from 'date-fns';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
@@ -479,9 +480,61 @@ const WorkOrders = () => {
           {/* Work Orders List */}
           <div className="w-full">
             {loading ? (
-              <div className="flex justify-center py-8">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
+              viewMode === 'cards' ? (
+                <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+                  {[...Array(8)].map((_, i) => (
+                    <Card key={i} className="overflow-hidden">
+                      <CardContent className="p-4 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <Skeleton className="h-5 w-24" />
+                          <Skeleton className="h-5 w-16 rounded-full" />
+                        </div>
+                        <Skeleton className="h-4 w-32" />
+                        <div className="flex gap-2">
+                          <Skeleton className="h-6 w-16 rounded-full" />
+                          <Skeleton className="h-6 w-12 rounded-full" />
+                        </div>
+                        <div className="flex items-center gap-4 pt-2">
+                          <Skeleton className="h-4 w-20" />
+                          <Skeleton className="h-4 w-20" />
+                        </div>
+                        <Skeleton className="h-2 w-full rounded-full" />
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-lg border overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-muted/30">
+                        <TableHead className="text-xs">{t('workOrderNumber')}</TableHead>
+                        <TableHead className="text-xs">{t('products')}</TableHead>
+                        <TableHead className="text-xs hidden md:table-cell">{t('customer')}</TableHead>
+                        <TableHead className="text-xs">{t('status')}</TableHead>
+                        <TableHead className="text-xs hidden lg:table-cell">{t('dates')}</TableHead>
+                        <TableHead className="text-xs hidden xl:table-cell">{t('price')}</TableHead>
+                        <TableHead className="text-xs hidden sm:table-cell">{t('progress')}</TableHead>
+                        <TableHead className="text-xs text-right">{t('actions')}</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {[...Array(6)].map((_, i) => (
+                        <TableRow key={i}>
+                          <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                          <TableCell><div className="flex gap-1"><Skeleton className="h-5 w-16 rounded-full" /><Skeleton className="h-5 w-8 rounded-full" /></div></TableCell>
+                          <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-28" /></TableCell>
+                          <TableCell><Skeleton className="h-5 w-20 rounded-full" /></TableCell>
+                          <TableCell className="hidden lg:table-cell"><Skeleton className="h-4 w-32" /></TableCell>
+                          <TableCell className="hidden xl:table-cell"><Skeleton className="h-4 w-16" /></TableCell>
+                          <TableCell className="hidden sm:table-cell"><Skeleton className="h-2 w-24 rounded-full" /></TableCell>
+                          <TableCell className="text-right"><Skeleton className="h-8 w-8 rounded-md ml-auto" /></TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )
             ) : filteredOrders.length === 0 ? (
               workOrders.length === 0 ? (
                 <Card className="shadow-sm">
