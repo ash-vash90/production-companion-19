@@ -590,7 +590,7 @@ const AutomationManager = () => {
                   </p>
                 </div>
                 <div className="flex gap-2">
-                  <Button variant="outline" size="sm" className="flex-1 sm:flex-none h-8 text-xs sm:text-sm" onClick={() => { fetchLogs(selectedWebhook.id); setLogsDialogOpen(true); }}>
+                  <Button variant="outline" size="sm" className="flex-1 sm:flex-none h-8 text-xs sm:text-sm" onClick={() => setLogsDialogOpen(true)}>
                     <History className="mr-1.5 h-3.5 w-3.5" />
                     Logs
                   </Button>
