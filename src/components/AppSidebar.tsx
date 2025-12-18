@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { LayoutDashboard, Package, Settings, CalendarClock, BarChart3, Users, FileText, ClipboardList, PanelLeft, Globe, Moon, Sun, Monitor, Warehouse } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -28,6 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useHapticFeedback, useTouchDevice } from '@/hooks/useTouchDevice';
 
 export function AppSidebar() {
   const navigate = useNavigate();
@@ -35,9 +37,47 @@ export function AppSidebar() {
   const { t, language, setLanguage } = useLanguage();
   const { isAdmin, canManageInventory, loading } = useUserProfile();
   const { theme, setTheme } = useTheme();
-  const { state, toggleSidebar } = useSidebar();
+  const { state, toggleSidebar, setOpenMobile, isMobile, setOpen } = useSidebar();
+  const haptic = useHapticFeedback();
+  const isTouch = useTouchDevice();
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
   
   const isCollapsed = state === 'collapsed';
+
+  // Swipe handlers for closing sidebar
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (!isTouch) return;
+    touchStartRef.current = {
+      x: e.touches[0].clientX,
+      y: e.touches[0].clientY,
+    };
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (!isTouch || !touchStartRef.current) return;
+    
+    const deltaX = e.changedTouches[0].clientX - touchStartRef.current.x;
+    const deltaY = e.changedTouches[0].clientY - touchStartRef.current.y;
+    const swipeThreshold = 50;
+    
+    // Only trigger if horizontal swipe is dominant
+    if (Math.abs(deltaX) < Math.abs(deltaY)) {
+      touchStartRef.current = null;
+      return;
+    }
+    
+    // Swipe left to close
+    if (deltaX < -swipeThreshold) {
+      haptic.lightTap();
+      if (isMobile) {
+        setOpenMobile(false);
+      } else {
+        setOpen(false);
+      }
+    }
+    
+    touchStartRef.current = null;
+  };
 
   const productionItems = [
     { title: t('dashboard'), url: '/', icon: LayoutDashboard },
@@ -67,7 +107,11 @@ export function AppSidebar() {
   const isActive = (url: string) => location.pathname === url;
 
   return (
-    <Sidebar collapsible="icon">
+    <Sidebar 
+      collapsible="icon"
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
       <SidebarHeader className="border-b border-sidebar-border bg-sidebar h-12 lg:h-14 flex items-center justify-center">
         <div className={cn(
           "flex items-center w-full gap-2",
