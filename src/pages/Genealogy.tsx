@@ -213,23 +213,24 @@ const Genealogy = () => {
       <Layout>
         <div className="space-y-6">
           {/* Header */}
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="shrink-0">
               <ArrowLeft className="h-5 w-5" />
             </Button>
-            <div className="flex-1">
-              <h1 className="text-4xl font-bold tracking-tight">
+            <div className="flex-1 min-w-0">
+              <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">
                 Genealogy Report
               </h1>
-              <p className="text-lg text-muted-foreground mt-1">
+              <p className="text-xs sm:text-sm text-muted-foreground">
                 Complete traceability for {data.item.serial_number}
               </p>
             </div>
-            <Button onClick={exportToJSON} variant="outline">
-              <Download className="h-4 w-4 mr-2" />
-              Export JSON
-            </Button>
           </div>
+          
+          <Button onClick={exportToJSON} className="w-full sm:w-auto h-11 sm:h-10">
+            <Download className="h-4 w-4 mr-2" />
+            Export JSON
+          </Button>
 
           {/* Product Information */}
           <Card>

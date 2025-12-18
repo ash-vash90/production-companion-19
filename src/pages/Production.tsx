@@ -345,13 +345,13 @@ const Production = () => {
     <ProtectedRoute>
       <Layout>
         <div className="space-y-4 lg:space-y-6 p-2 md:p-4 max-w-4xl mx-auto">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/work-orders')} className="h-10 w-10 md:h-12 md:w-12">
-              <ArrowLeft className="h-5 w-5 md:h-6 md:w-6" />
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" onClick={() => navigate('/work-orders')} className="shrink-0">
+              <ArrowLeft className="h-5 w-5" />
             </Button>
-            <div className="space-y-1 flex-1">
-              <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold tracking-tight">{workOrder.wo_number}</h1>
-              <p className="text-sm md:text-base lg:text-lg text-muted-foreground font-data">
+            <div className="space-y-0.5 sm:space-y-1 flex-1 min-w-0">
+              <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">{workOrder.wo_number}</h1>
+              <p className="text-xs sm:text-sm text-muted-foreground">
                 {workOrder.product_type} • Batch: {workOrder.batch_size}
               </p>
             </div>

@@ -5,7 +5,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import Layout from '@/components/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
-import { PageHeader } from '@/components/PageHeader';
+import { PageIdentity } from '@/components/layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -207,7 +207,7 @@ const RoleManagement = () => {
     <ProtectedRoute>
       <Layout>
         <div className="space-y-4 lg:space-y-6">
-          <PageHeader title={t('roleManagement')} description={t('manageUserRoles')} />
+          <PageIdentity title={t('roleManagement')} description={t('manageUserRoles')} />
 
           <Card>
             <CardHeader className="pb-3">

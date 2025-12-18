@@ -5,7 +5,7 @@ import { useUserProfile } from '@/contexts/UserProfileContext';
 import { useNavigate } from 'react-router-dom';
 import Layout from '@/components/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
-import { PageHeader } from '@/components/PageHeader';
+import { PageIdentity } from '@/components/layout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2, Hash, FileText, BookOpen, Users, Webhook } from 'lucide-react';
 import AutomationManager from '@/components/settings/AutomationManager';
@@ -55,7 +55,7 @@ const Settings = () => {
     <ProtectedRoute>
       <Layout>
         <div className="space-y-4 sm:space-y-6">
-          <PageHeader title={t('settingsPage')} description={t('configureWebhooks')} />
+          <PageIdentity title={t('settingsPage')} description={t('configureWebhooks')} />
 
           <Tabs defaultValue="numbering" className="space-y-4 sm:space-y-6">
             {/* Mobile-optimized tabs - grid on mobile, flex on desktop */}
