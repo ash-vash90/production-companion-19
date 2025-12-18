@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 
 const badgeVariants = cva(
   [
-    "inline-flex items-center rounded-full border px-2.5 py-0.5",
+    "inline-flex items-center rounded-full border px-2.5 py-px",
     "text-[10px] font-mono font-medium uppercase tracking-wide",
     "pointer-events-none select-none whitespace-nowrap flex-shrink-0",
     "transition-colors duration-quick",
