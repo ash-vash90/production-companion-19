@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
+import { PageHeader } from '@/components/PageHeader';
 import { supabase } from '@/integrations/supabase/client';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { PlannerWorkOrder } from '@/pages/ProductionPlanner';
 import QuickScheduleDialog from './QuickScheduleDialog';
 import {
@@ -42,6 +44,7 @@ const MobilePlannerFlow: React.FC<MobilePlannerFlowProps> = ({
   onWorkOrderUpdate,
   onCloseDetail,
 }) => {
+  const { language } = useLanguage();
   const [step, setStep] = useState<MobileStep>('calendar');
   const [currentDate, setCurrentDate] = useState(initialDate);
   const [workOrderDetail, setWorkOrderDetail] = useState<{
@@ -171,6 +174,14 @@ const MobilePlannerFlow: React.FC<MobilePlannerFlowProps> = ({
   return (
     <Layout>
       <div className="h-[calc(100vh-4rem)] flex flex-col">
+        {step === 'calendar' && (
+          <div className="px-4 pt-4">
+            <PageHeader
+              title={language === 'nl' ? 'Productieplanner' : 'Production Planner'}
+              description={language === 'nl' ? 'Plan en beheer productieorders' : 'Plan and manage production orders'}
+            />
+          </div>
+        )}
         {renderContent()}
       </div>
 
