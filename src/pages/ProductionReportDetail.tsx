@@ -5,7 +5,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import Layout from '@/components/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { Button } from '@/components/ui/button';
-import { WorkOrderStatusBadge } from '@/components/workorders/WorkOrderStatusBadge';
+import { StatusIndicator } from '@/components/ui/status-indicator';
 import { ProductBreakdownBadges } from '@/components/workorders/ProductBreakdownBadges';
 import { ReportDetailContentV2 } from '@/components/reports/ReportDetailContentV2';
 import { useProductionReportDetail } from '@/services/reportDataService';
@@ -110,7 +110,7 @@ const ProductionReportDetail = () => {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <WorkOrderStatusBadge status={data.workOrder.status} />
+              <StatusIndicator status={data.workOrder.status as any} size="default" />
             </div>
           </div>
 

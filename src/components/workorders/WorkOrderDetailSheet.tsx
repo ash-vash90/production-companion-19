@@ -7,7 +7,7 @@ import { Separator } from '@/components/ui/separator';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { formatDate, formatProductType } from '@/lib/utils';
-import { WorkOrderStatusBadge } from './WorkOrderStatusBadge';
+import { StatusIndicator } from '@/components/ui/status-indicator';
 import OperatorAssignmentPanel from './OperatorAssignmentPanel';
 import ItemLevelAssignmentPanel from './ItemLevelAssignmentPanel';
 import { Package, Calendar, Truck, DollarSign, User, Play, Loader2 } from 'lucide-react';
@@ -99,7 +99,7 @@ const WorkOrderDetailSheet: React.FC<WorkOrderDetailSheetProps> = ({
             <SheetHeader className="pb-4">
               <div className="flex items-center gap-3">
                 <SheetTitle className="font-mono text-xl">{workOrder.wo_number}</SheetTitle>
-                <WorkOrderStatusBadge status={workOrder.status} />
+                <StatusIndicator status={workOrder.status as any} size="default" />
               </div>
               <SheetDescription>
                 {workOrder.customer_name || 'No customer specified'}

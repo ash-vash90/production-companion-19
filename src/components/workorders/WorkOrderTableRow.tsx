@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { TableRow, TableCell } from '@/components/ui/table';
 import { Progress } from '@/components/ui/progress';
 import { Checkbox } from '@/components/ui/checkbox';
-import { WorkOrderStatusBadge } from './WorkOrderStatusBadge';
+import { StatusIndicator } from '@/components/ui/status-indicator';
 import { WorkOrderStatusSelect } from './WorkOrderStatusSelect';
 import { ProductBreakdownBadges } from './ProductBreakdownBadges';
 import { formatDate, ProductBreakdown } from '@/lib/utils';
@@ -149,7 +149,7 @@ export function WorkOrderTableRow({
               compact
             />
           ) : (
-            <WorkOrderStatusBadge status={workOrder.status} />
+            <StatusIndicator status={workOrder.status as any} size="default" />
           )}
           {workOrder.status === 'cancelled' && workOrder.cancellation_reason && (
             <span className="text-xs text-destructive/80 italic truncate max-w-[150px]" title={workOrder.cancellation_reason}>

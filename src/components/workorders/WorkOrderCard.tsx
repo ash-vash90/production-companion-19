@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { WorkOrderStatusBadge } from './WorkOrderStatusBadge';
+import { StatusIndicator } from '@/components/ui/status-indicator';
 import { WorkOrderStatusSelect } from './WorkOrderStatusSelect';
 import { ProductBreakdownBadges } from './ProductBreakdownBadges';
 import { formatDate, ProductBreakdown } from '@/lib/utils';
@@ -213,7 +213,7 @@ export function WorkOrderCard({
               compact
             />
           ) : (
-            <WorkOrderStatusBadge status={workOrder.status} />
+            <StatusIndicator status={workOrder.status as any} size="default" />
           )}
         </div>
       </div>

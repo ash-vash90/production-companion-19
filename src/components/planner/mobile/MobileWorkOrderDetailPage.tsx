@@ -12,7 +12,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { toast } from 'sonner';
 import { formatDate, formatProductType, cn } from '@/lib/utils';
-import { WorkOrderStatusBadge } from '@/components/workorders/WorkOrderStatusBadge';
+import { StatusIndicator } from '@/components/ui/status-indicator';
 import { 
   ChevronLeft, 
   Package, 
@@ -186,7 +186,7 @@ const MobileWorkOrderDetailPage: React.FC<MobileWorkOrderDetailPageProps> = ({
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
               <h1 className="font-mono text-xl font-semibold truncate">{workOrder.wo_number}</h1>
-              <WorkOrderStatusBadge status={workOrder.status} />
+              <StatusIndicator status={workOrder.status as any} size="default" />
             </div>
             <p className="text-sm text-muted-foreground truncate">
               {workOrder.customer_name || (language === 'nl' ? 'Geen klant' : 'No customer')}
