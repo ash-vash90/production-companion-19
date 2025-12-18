@@ -203,12 +203,22 @@ export function SearchModal({ open, onOpenChange }: SearchModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-xl p-0 gap-0 overflow-hidden">
+      <DialogContent className="fixed inset-0 h-full w-full max-w-full max-h-full rounded-none border-0 p-0 gap-0 overflow-hidden sm:inset-auto sm:top-[10%] sm:left-1/2 sm:-translate-x-1/2 sm:translate-y-0 sm:h-auto sm:max-w-xl sm:max-h-[80vh] sm:rounded-lg sm:border data-[state=open]:slide-in-from-bottom-4 sm:data-[state=open]:slide-in-from-top-4">
         <DialogHeader className="sr-only">
           <DialogTitle>{t('search')}</DialogTitle>
         </DialogHeader>
         
-        <div className="flex items-center border-b border-border bg-muted/30 px-4">
+        {/* Close button for mobile */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="absolute right-2 top-2 z-10 h-10 w-10 sm:hidden"
+          onClick={() => onOpenChange(false)}
+        >
+          <X className="h-5 w-5" />
+        </Button>
+        
+        <div className="flex items-center border-b border-border bg-muted/30 px-4 pt-2 sm:pt-0">
           <Search className="h-5 w-5 text-primary shrink-0" />
           <Input
             value={query}
@@ -229,7 +239,7 @@ export function SearchModal({ open, onOpenChange }: SearchModalProps) {
           </kbd>
         </div>
 
-        <div className="max-h-[60vh] overflow-auto">
+        <div className="flex-1 overflow-auto sm:max-h-[60vh]">
           {results.length > 0 ? (
             <div className="py-2">
               <div className="px-3 py-1.5">
