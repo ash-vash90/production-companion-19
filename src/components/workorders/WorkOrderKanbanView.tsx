@@ -78,32 +78,32 @@ const ALL_STATUS_COLUMNS: { status: KanbanStatus; labelKey: string }[] = [
   { status: 'cancelled', labelKey: 'cancelled' },
 ];
 
-// Full-color header styles for each status (matching badge colors)
+// Full-color header styles for each status (using design system tokens)
 const STATUS_HEADER_STYLES: Record<KanbanStatus, { bg: string; text: string; border: string }> = {
   planned: { 
-    bg: 'bg-sky-500/20 dark:bg-sky-500/30', 
-    text: 'text-sky-800 dark:text-sky-200',
-    border: 'border-sky-500/30'
+    bg: 'bg-status-planned', 
+    text: 'text-status-planned-foreground',
+    border: 'border-status-planned-foreground/30'
   },
   in_progress: { 
-    bg: 'bg-amber-500/20 dark:bg-amber-500/30', 
-    text: 'text-amber-800 dark:text-amber-200',
-    border: 'border-amber-500/30'
+    bg: 'bg-status-in-progress', 
+    text: 'text-status-in-progress-foreground',
+    border: 'border-status-in-progress-foreground/30'
   },
   on_hold: { 
-    bg: 'bg-secondary', 
-    text: 'text-secondary-foreground',
-    border: 'border-secondary'
+    bg: 'bg-status-on-hold', 
+    text: 'text-status-on-hold-foreground',
+    border: 'border-status-on-hold-foreground/30'
   },
   completed: { 
-    bg: 'bg-emerald-500/20 dark:bg-emerald-500/30', 
-    text: 'text-emerald-800 dark:text-emerald-200',
-    border: 'border-emerald-500/30'
+    bg: 'bg-status-completed', 
+    text: 'text-status-completed-foreground',
+    border: 'border-status-completed-foreground/30'
   },
   cancelled: { 
-    bg: 'bg-destructive/20 dark:bg-destructive/30', 
-    text: 'text-destructive dark:text-red-300',
-    border: 'border-destructive/30'
+    bg: 'bg-status-cancelled', 
+    text: 'text-status-cancelled-foreground',
+    border: 'border-status-cancelled-foreground/30'
   },
 };
 
