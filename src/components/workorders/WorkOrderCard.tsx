@@ -107,10 +107,10 @@ export function WorkOrderCard({
   const startApproaching = showUrgency && isStartApproaching();
 
   let urgencyClass = '';
-  if (shippingOverdue) urgencyClass = 'border-l-destructive bg-destructive/5';
-  else if (startOverdue) urgencyClass = 'border-l-warning bg-warning/5';
-  else if (shippingApproaching) urgencyClass = 'border-l-warning/50';
-  else if (startApproaching) urgencyClass = 'border-l-info/50';
+  if (shippingOverdue) urgencyClass = 'border-l-destructive';
+  else if (startOverdue) urgencyClass = 'border-l-warning';
+  else if (shippingApproaching) urgencyClass = 'border-l-warning/60';
+  else if (startApproaching) urgencyClass = 'border-l-info/60';
 
   const handleClick = () => {
     // Always navigate directly to production page
