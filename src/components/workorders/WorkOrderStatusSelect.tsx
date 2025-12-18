@@ -8,9 +8,9 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
 } from '@/components/ui/select';
-import { Loader2, ChevronDown } from 'lucide-react';
+import { StatusIndicator, statusIndicatorVariants } from '@/components/ui/status-indicator';
+import { Loader2, ChevronDown, CheckCircle2, Clock, Pause, XCircle, Calendar } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 type WorkOrderStatus = 'planned' | 'in_progress' | 'on_hold' | 'completed' | 'cancelled';
@@ -23,12 +23,12 @@ interface WorkOrderStatusSelectProps {
   compact?: boolean;
 }
 
-const STATUS_OPTIONS: { value: WorkOrderStatus; labelKey: string; bgClass: string; textClass: string; borderClass: string }[] = [
-  { value: 'planned', labelKey: 'planned', bgClass: 'bg-status-planned-bg', textClass: 'text-status-planned-foreground', borderClass: 'border-status-planned-border' },
-  { value: 'in_progress', labelKey: 'inProgress', bgClass: 'bg-status-in-progress-bg', textClass: 'text-status-in-progress-foreground', borderClass: 'border-status-in-progress-border' },
-  { value: 'on_hold', labelKey: 'onHold', bgClass: 'bg-status-on-hold-bg', textClass: 'text-status-on-hold-foreground', borderClass: 'border-status-on-hold-border' },
-  { value: 'completed', labelKey: 'completed', bgClass: 'bg-status-completed-bg', textClass: 'text-status-completed-foreground', borderClass: 'border-status-completed-border' },
-  { value: 'cancelled', labelKey: 'cancelled', bgClass: 'bg-status-cancelled-bg', textClass: 'text-status-cancelled-foreground', borderClass: 'border-status-cancelled-border' },
+const STATUS_OPTIONS: { value: WorkOrderStatus; labelKey: string; icon: React.ElementType }[] = [
+  { value: 'planned', labelKey: 'planned', icon: Calendar },
+  { value: 'in_progress', labelKey: 'inProgress', icon: Clock },
+  { value: 'on_hold', labelKey: 'onHold', icon: Pause },
+  { value: 'completed', labelKey: 'completed', icon: CheckCircle2 },
+  { value: 'cancelled', labelKey: 'cancelled', icon: XCircle },
 ];
 
 export function WorkOrderStatusSelect({
@@ -38,7 +38,7 @@ export function WorkOrderStatusSelect({
   onRequestCancel,
   compact = false,
 }: WorkOrderStatusSelectProps) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { hasPermission } = useUserProfile();
   const [updating, setUpdating] = useState(false);
 
@@ -114,6 +114,7 @@ export function WorkOrderStatusSelect({
   };
 
   const currentOption = STATUS_OPTIONS.find(s => s.value === currentStatus);
+  const CurrentIcon = currentOption?.icon || Calendar;
 
   return (
     <Select
@@ -123,38 +124,47 @@ export function WorkOrderStatusSelect({
     >
       <SelectTrigger
         className={cn(
-          "border-2 shadow-sm hover:shadow-md font-mono font-medium uppercase tracking-wide transition-colors shrink-0",
-          compact ? "h-7 text-[10px] px-2.5 py-0" : "h-8 text-xs px-3 py-0",
-          "w-auto rounded-full",
-          currentOption?.bgClass,
-          currentOption?.textClass,
-          currentOption?.borderClass,
-          "hover:opacity-90",
-          "[&>svg]:hidden"
+          statusIndicatorVariants({ status: currentStatus as any, size: compact ? 'sm' : 'default' }),
+          "w-auto cursor-pointer hover:opacity-90 transition-opacity",
+          "[&>svg]:hidden" // Hide default chevron
         )}
         onClick={(e) => e.stopPropagation()}
       >
         {updating ? (
           <Loader2 className="h-3 w-3 animate-spin" />
         ) : (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
+            <CurrentIcon className={compact ? "h-3 w-3" : "h-3.5 w-3.5"} />
             <span className="whitespace-nowrap leading-none">
               {t((currentOption?.labelKey ?? currentStatus) as any)}
             </span>
-            <ChevronDown className={cn("h-5 w-5 shrink-0 opacity-90", currentOption?.textClass)} />
+            <ChevronDown className={cn(compact ? "h-3 w-3" : "h-3.5 w-3.5", "opacity-70 ml-0.5")} />
           </div>
         )}
       </SelectTrigger>
-      <SelectContent onClick={(e) => e.stopPropagation()}>
-        {STATUS_OPTIONS.map((option) => (
-          <SelectItem 
-            key={option.value} 
-            value={option.value}
-            className={cn("text-xs font-mono font-medium uppercase tracking-wide", option.textClass)}
-          >
-            {t(option.labelKey)}
-          </SelectItem>
-        ))}
+      <SelectContent 
+        onClick={(e) => e.stopPropagation()}
+        className="bg-popover border border-border shadow-lg z-50"
+      >
+        {STATUS_OPTIONS.map((option) => {
+          const Icon = option.icon;
+          return (
+            <SelectItem 
+              key={option.value} 
+              value={option.value}
+              className="cursor-pointer"
+            >
+              <div className="flex items-center gap-2">
+                <StatusIndicator 
+                  status={option.value} 
+                  size="sm" 
+                  showIcon
+                  language={language as 'en' | 'nl'}
+                />
+              </div>
+            </SelectItem>
+          );
+        })}
       </SelectContent>
     </Select>
   );

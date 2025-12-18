@@ -99,7 +99,7 @@ const WorkOrderDetailSheet: React.FC<WorkOrderDetailSheetProps> = ({
             <SheetHeader className="pb-4">
               <div className="flex items-center gap-3">
                 <SheetTitle className="font-mono text-xl">{workOrder.wo_number}</SheetTitle>
-                <StatusIndicator status={workOrder.status as any} size="default" />
+                <StatusIndicator status={workOrder.status as any} showIcon />
               </div>
               <SheetDescription>
                 {workOrder.customer_name || 'No customer specified'}

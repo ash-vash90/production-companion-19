@@ -213,7 +213,7 @@ export function WorkOrderCard({
               compact
             />
           ) : (
-            <StatusIndicator status={workOrder.status as any} size="default" />
+            <StatusIndicator status={workOrder.status as any} showIcon />
           )}
         </div>
       </div>

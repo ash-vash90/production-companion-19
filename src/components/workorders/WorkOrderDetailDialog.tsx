@@ -114,7 +114,7 @@ const WorkOrderDetailDialog: React.FC<WorkOrderDetailDialogProps> = ({
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-3 min-w-0">
                   <DialogTitle className="font-mono text-xl">{workOrder.wo_number}</DialogTitle>
-                  <StatusIndicator status={workOrder.status as any} size="default" />
+                  <StatusIndicator status={workOrder.status as any} showIcon />
                   {isUnassigned && isActiveWorkOrder && (
                     <Badge variant="outline" className="gap-1 text-warning border-warning/50">
                       <AlertTriangle className="h-3 w-3" />

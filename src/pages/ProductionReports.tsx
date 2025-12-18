@@ -297,7 +297,7 @@ const ProductionReports = () => {
                                   <div className="min-w-0 flex-1">
                                     <div className="flex items-center gap-2">
                                       <span className="font-mono font-medium text-sm truncate">{wo.wo_number}</span>
-                                      <StatusIndicator status={wo.status as any} size="sm" />
+                                      <StatusIndicator status={wo.status as any} size="sm" showIcon />
                                     </div>
                                     {wo.customer_name && (
                                       <p className="text-xs text-muted-foreground mt-0.5 truncate">{wo.customer_name}</p>
@@ -373,7 +373,7 @@ const ProductionReports = () => {
                   {selectedReportData && (
                     <>
                       <h2 className="font-bold text-lg">{selectedReportData.workOrder.wo_number}</h2>
-                      <StatusIndicator status={selectedReportData.workOrder.status as any} size="default" />
+                      <StatusIndicator status={selectedReportData.workOrder.status as any} showIcon />
                     </>
                   )}
                 </div>

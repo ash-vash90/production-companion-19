@@ -110,7 +110,7 @@ const ProductionReportDetail = () => {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <StatusIndicator status={data.workOrder.status as any} size="default" />
+              <StatusIndicator status={data.workOrder.status as any} showIcon />
             </div>
           </div>
 
