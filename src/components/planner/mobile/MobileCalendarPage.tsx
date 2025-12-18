@@ -68,7 +68,7 @@ const MobileCalendarPage: React.FC<MobileCalendarPageProps> = ({
 }) => {
   const { language } = useLanguage();
   const [activeTab, setActiveTab] = useState<'scheduled' | 'unscheduled'>('scheduled');
-  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null);
   const locale = language === 'nl' ? nl : undefined;
 
   // Get orders for the current view
@@ -118,16 +118,23 @@ const MobileCalendarPage: React.FC<MobileCalendarPageProps> = ({
   }, [currentDate]);
 
   const handleTouchStart = (e: React.TouchEvent) => {
-    setTouchStart(e.touches[0].clientX);
+    setTouchStart({
+      x: e.touches[0].clientX,
+      y: e.touches[0].clientY
+    });
   };
 
   const handleTouchEnd = (e: React.TouchEvent) => {
     if (!touchStart) return;
-    const touchEnd = e.changedTouches[0].clientX;
-    const diff = touchStart - touchEnd;
+    const touchEndX = e.changedTouches[0].clientX;
+    const touchEndY = e.changedTouches[0].clientY;
+    const diffX = touchStart.x - touchEndX;
+    const diffY = Math.abs(touchStart.y - touchEndY);
     
-    if (Math.abs(diff) > 50) {
-      if (diff > 0) {
+    // Only trigger navigation if horizontal swipe is significantly larger than vertical
+    // This prevents accidental navigation during vertical scrolling
+    if (Math.abs(diffX) > 50 && Math.abs(diffX) > diffY * 1.5) {
+      if (diffX > 0) {
         goToNext();
       } else {
         goToPrev();
