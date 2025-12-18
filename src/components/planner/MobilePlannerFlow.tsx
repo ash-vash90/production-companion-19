@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import { PageHeader } from '@/components/PageHeader';
+import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { PlannerWorkOrder } from '@/pages/ProductionPlanner';
@@ -11,8 +12,10 @@ import {
   MobileAssignmentPage,
   MobileOperatorCapacityPage,
 } from './mobile';
+import { Calendar, List } from 'lucide-react';
 
 type MobileStep = 'calendar' | 'detail' | 'assignment' | 'capacity';
+type CalendarView = 'day' | 'week' | 'month';
 
 interface MobilePlannerFlowProps {
   currentStep: string;
@@ -46,6 +49,7 @@ const MobilePlannerFlow: React.FC<MobilePlannerFlowProps> = ({
 }) => {
   const { language } = useLanguage();
   const [step, setStep] = useState<MobileStep>('calendar');
+  const [calendarView, setCalendarView] = useState<CalendarView>('day');
   const [currentDate, setCurrentDate] = useState(initialDate);
   const [workOrderDetail, setWorkOrderDetail] = useState<{
     id: string;
@@ -124,6 +128,7 @@ const MobilePlannerFlow: React.FC<MobilePlannerFlowProps> = ({
         return (
           <MobileCalendarPage
             currentDate={currentDate}
+            calendarView={calendarView}
             workOrders={workOrders}
             unscheduledOrders={unscheduledOrders}
             loading={loading}
@@ -131,6 +136,7 @@ const MobilePlannerFlow: React.FC<MobilePlannerFlowProps> = ({
             onDateChange={setCurrentDate}
             onViewCapacity={() => setStep('capacity')}
             onScheduleOrder={handleScheduleOrder}
+            onViewChange={setCalendarView}
           />
         );
 
@@ -179,6 +185,34 @@ const MobilePlannerFlow: React.FC<MobilePlannerFlowProps> = ({
             <PageHeader
               title={language === 'nl' ? 'Productieplanner' : 'Production Planner'}
               description={language === 'nl' ? 'Plan en beheer productieorders' : 'Plan and manage production orders'}
+              actions={
+                <div className="flex items-center border rounded-md">
+                  <Button
+                    variant={calendarView === 'day' ? 'secondary' : 'ghost'}
+                    size="sm"
+                    onClick={() => setCalendarView('day')}
+                    className="rounded-r-none px-3"
+                  >
+                    {language === 'nl' ? 'Dag' : 'Day'}
+                  </Button>
+                  <Button
+                    variant={calendarView === 'week' ? 'secondary' : 'ghost'}
+                    size="sm"
+                    onClick={() => setCalendarView('week')}
+                    className="rounded-none border-x px-3"
+                  >
+                    {language === 'nl' ? 'Week' : 'Week'}
+                  </Button>
+                  <Button
+                    variant={calendarView === 'month' ? 'secondary' : 'ghost'}
+                    size="sm"
+                    onClick={() => setCalendarView('month')}
+                    className="rounded-l-none px-3"
+                  >
+                    {language === 'nl' ? 'Maand' : 'Month'}
+                  </Button>
+                </div>
+              }
             />
           </div>
         )}
