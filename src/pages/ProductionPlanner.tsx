@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import Layout from '@/components/Layout';
+import { PageHeader } from '@/components/PageHeader';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useUserProfile } from '@/contexts/UserProfileContext';
@@ -188,6 +189,12 @@ const ProductionPlanner = () => {
     return (
       <Layout>
         <div className="h-[calc(100vh-4rem)] flex flex-col overflow-hidden">
+          <div className="px-4 pt-4">
+            <PageHeader
+              title={language === 'nl' ? 'Productieplanner' : 'Production Planner'}
+              description={language === 'nl' ? 'Plan en beheer productieorders visueel op de kalender' : 'Plan and manage production orders visually on the calendar'}
+            />
+          </div>
           {/* Desktop: Split view - Calendar left, Detail right */}
           <div className="flex-1 flex overflow-hidden">
             {/* Calendar Panel */}
