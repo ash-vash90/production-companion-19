@@ -372,9 +372,17 @@ export function WorkOrderFilters({
               <ScrollArea className="flex-1 -mx-6 px-6">
                 {renderFilterContent(true)}
               </ScrollArea>
-              <SheetFooter className="pt-4 border-t mt-4">
+              <SheetFooter className="pt-4 border-t mt-4 flex-row gap-3">
                 <Button 
-                  className="w-full h-12 capitalize" 
+                  variant="outline"
+                  className="flex-1 h-12" 
+                  onClick={clearLocalFilters}
+                  disabled={localActiveFilterCount === 0}
+                >
+                  {t('reset') || 'Reset'}
+                </Button>
+                <Button 
+                  className="flex-1 h-12" 
                   onClick={applyFilters}
                 >
                   {t('apply') || 'Apply'}
