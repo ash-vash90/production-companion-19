@@ -179,44 +179,44 @@ const MobilePlannerFlow: React.FC<MobilePlannerFlowProps> = ({
 
   return (
     <Layout>
-      <div className="h-[calc(100vh-4rem)] flex flex-col">
+      <div className="flex flex-col h-full">
         {step === 'calendar' && (
-          <div className="px-4 pt-4">
-            <PageHeader
-              title={language === 'nl' ? 'Productieplanner' : 'Production Planner'}
-              description={language === 'nl' ? 'Plan en beheer productieorders' : 'Plan and manage production orders'}
-              actions={
-                <div className="flex items-center border rounded-md">
-                  <Button
-                    variant={calendarView === 'day' ? 'secondary' : 'ghost'}
-                    size="sm"
-                    onClick={() => setCalendarView('day')}
-                    className="rounded-r-none px-3"
-                  >
-                    {language === 'nl' ? 'Dag' : 'Day'}
-                  </Button>
-                  <Button
-                    variant={calendarView === 'week' ? 'secondary' : 'ghost'}
-                    size="sm"
-                    onClick={() => setCalendarView('week')}
-                    className="rounded-none border-x px-3"
-                  >
-                    {language === 'nl' ? 'Week' : 'Week'}
-                  </Button>
-                  <Button
-                    variant={calendarView === 'month' ? 'secondary' : 'ghost'}
-                    size="sm"
-                    onClick={() => setCalendarView('month')}
-                    className="rounded-l-none px-3"
-                  >
-                    {language === 'nl' ? 'Maand' : 'Month'}
-                  </Button>
-                </div>
-              }
-            />
-          </div>
+          <PageHeader
+            title={language === 'nl' ? 'Productieplanner' : 'Production Planner'}
+            description={language === 'nl' ? 'Plan en beheer productieorders' : 'Plan and manage production orders'}
+            actions={
+              <div className="flex items-center border rounded-md">
+                <Button
+                  variant={calendarView === 'day' ? 'secondary' : 'ghost'}
+                  size="sm"
+                  onClick={() => setCalendarView('day')}
+                  className="rounded-r-none px-3"
+                >
+                  {language === 'nl' ? 'Dag' : 'Day'}
+                </Button>
+                <Button
+                  variant={calendarView === 'week' ? 'secondary' : 'ghost'}
+                  size="sm"
+                  onClick={() => setCalendarView('week')}
+                  className="rounded-none border-x px-3"
+                >
+                  {language === 'nl' ? 'Week' : 'Week'}
+                </Button>
+                <Button
+                  variant={calendarView === 'month' ? 'secondary' : 'ghost'}
+                  size="sm"
+                  onClick={() => setCalendarView('month')}
+                  className="rounded-l-none px-3"
+                >
+                  {language === 'nl' ? 'Maand' : 'Month'}
+                </Button>
+              </div>
+            }
+          />
         )}
-        {renderContent()}
+        <div className="flex-1 -mx-3 md:-mx-4 lg:-mx-6">
+          {renderContent()}
+        </div>
       </div>
 
       {/* Quick Schedule Dialog */}
