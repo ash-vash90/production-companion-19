@@ -21,8 +21,7 @@ import {
   DollarSign, 
   Play, 
   AlertTriangle, 
-  Users, 
-  Layers,
+  Users,
   ChevronRight
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
@@ -49,16 +48,14 @@ interface MobileWorkOrderDetailPageProps {
   workOrderId: string;
   onBack: () => void;
   onUpdate: () => void;
-  onAssignItems: () => void;
-  onAssignSteps: () => void;
+  onAssign: () => void;
 }
 
 const MobileWorkOrderDetailPage: React.FC<MobileWorkOrderDetailPageProps> = ({
   workOrderId,
   onBack,
   onUpdate,
-  onAssignItems,
-  onAssignSteps,
+  onAssign,
 }) => {
   const navigate = useNavigate();
   const { language } = useLanguage();
@@ -372,24 +369,14 @@ const MobileWorkOrderDetailPage: React.FC<MobileWorkOrderDetailPageProps> = ({
       {/* Bottom Action Buttons */}
       <div className="flex-none p-4 border-t bg-background/95 backdrop-blur space-y-2">
         {isActiveWorkOrder && (
-          <div className="grid grid-cols-2 gap-2">
-            <Button 
-              variant="outline" 
-              className="h-14 flex-col gap-1"
-              onClick={onAssignItems}
-            >
-              <Layers className="h-5 w-5" />
-              <span className="text-xs">{language === 'nl' ? 'Items toewijzen' : 'Assign Items'}</span>
-            </Button>
-            <Button 
-              variant="outline" 
-              className="h-14 flex-col gap-1"
-              onClick={onAssignSteps}
-            >
-              <Users className="h-5 w-5" />
-              <span className="text-xs">{language === 'nl' ? 'Stappen toewijzen' : 'Assign Steps'}</span>
-            </Button>
-          </div>
+          <Button 
+            variant="outline" 
+            className="w-full h-12 gap-2"
+            onClick={onAssign}
+          >
+            <Users className="h-5 w-5" />
+            {language === 'nl' ? 'Toewijzingen beheren' : 'Manage Assignments'}
+          </Button>
         )}
         
         {isActiveWorkOrder && (
