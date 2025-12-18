@@ -123,13 +123,13 @@ export function WorkOrderStatusSelect({
     >
       <SelectTrigger
         className={cn(
-          "border font-mono font-medium uppercase tracking-wide transition-colors",
+          "border-2 shadow-sm hover:shadow-md font-mono font-medium uppercase tracking-wide transition-colors shrink-0",
           compact ? "h-7 text-[10px] px-2.5 py-0" : "h-8 text-xs px-3 py-0",
           "w-auto rounded-full",
           currentOption?.bgClass,
           currentOption?.textClass,
           currentOption?.borderClass,
-          "hover:opacity-80",
+          "hover:opacity-90",
           "[&>svg]:hidden"
         )}
         onClick={(e) => e.stopPropagation()}
@@ -137,10 +137,12 @@ export function WorkOrderStatusSelect({
         {updating ? (
           <Loader2 className="h-3 w-3 animate-spin" />
         ) : (
-          <span className="flex items-center gap-2">
-            <SelectValue />
-            <ChevronDown className={cn("h-4 w-4 shrink-0", currentOption?.textClass)} />
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="whitespace-nowrap leading-none">
+              {t((currentOption?.labelKey ?? currentStatus) as any)}
+            </span>
+            <ChevronDown className={cn("h-5 w-5 shrink-0 opacity-90", currentOption?.textClass)} />
+          </div>
         )}
       </SelectTrigger>
       <SelectContent onClick={(e) => e.stopPropagation()}>
