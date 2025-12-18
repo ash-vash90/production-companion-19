@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { formatProductType, cn } from '@/lib/utils';
@@ -13,11 +14,14 @@ import { format, addDays, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, 
 import { 
   ChevronLeft, 
   ChevronRight,
+  ChevronDown,
   Calendar as CalendarIcon,
   AlertTriangle,
   CheckCircle2,
-  XCircle
+  XCircle,
+  CalendarOff
 } from 'lucide-react';
+import UpcomingTimeOff from '../UpcomingTimeOff';
 
 interface Operator {
   id: string;
@@ -241,9 +245,26 @@ const MobileOperatorCapacityPage: React.FC<MobileOperatorCapacityPageProps> = ({
         </div>
       </div>
 
-      {/* Operators List */}
+      {/* Content */}
       <ScrollArea className="flex-1">
-        <div className="p-4 space-y-3">
+        <div className="p-4 space-y-4">
+          {/* Upcoming Time Off Section */}
+          <Collapsible defaultOpen>
+            <CollapsibleTrigger asChild>
+              <Button variant="ghost" className="w-full justify-between h-auto py-2 px-3 -mx-1">
+                <div className="flex items-center gap-2 text-sm font-medium">
+                  <CalendarOff className="h-4 w-4 text-muted-foreground" />
+                  {language === 'nl' ? 'Geplande afwezigheid' : 'Upcoming Time Off'}
+                </div>
+                <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform [[data-state=open]>&]:rotate-180" />
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="pt-2">
+              <UpcomingTimeOff daysAhead={14} />
+            </CollapsibleContent>
+          </Collapsible>
+
+          {/* Operators List */}
           {operators.map((operator) => {
             const status = getOperatorStatus(operator.id, selectedDate);
             
