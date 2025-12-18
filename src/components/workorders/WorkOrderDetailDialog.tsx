@@ -181,7 +181,7 @@ const WorkOrderDetailDialog: React.FC<WorkOrderDetailDialogProps> = ({
                           {progress.completed}/{progress.total} ({progress.percent}%)
                         </span>
                       </div>
-                      <Progress value={progress.percent} className="h-2" />
+                      <Progress value={progress.percent} status="auto" className="h-2" />
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">

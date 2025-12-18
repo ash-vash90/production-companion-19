@@ -255,7 +255,7 @@ function KanbanCard({ workOrder }: KanbanCardProps) {
               )}
             </div>
             <div className="flex-1 flex items-center gap-2">
-              <Progress value={workOrder.progressPercent || 0} className="h-1.5 flex-1" />
+              <Progress value={workOrder.progressPercent || 0} status="auto" className="h-1.5 flex-1" />
               <span className="text-xs text-muted-foreground font-medium font-mono">{workOrder.progressPercent || 0}%</span>
             </div>
           </div>

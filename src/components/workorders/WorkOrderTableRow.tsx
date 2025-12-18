@@ -195,7 +195,7 @@ export function WorkOrderTableRow({
       {showProgress && (
         <TableCell className="hidden sm:table-cell">
           <div className="flex items-center gap-2 min-w-[100px]">
-            <Progress value={workOrder.progressPercent || 0} className="h-2 flex-1" />
+            <Progress value={workOrder.progressPercent || 0} status="auto" className="h-2 flex-1" />
             <span className="text-xs font-medium text-muted-foreground w-8 text-right">
               {workOrder.progressPercent || 0}%
             </span>
