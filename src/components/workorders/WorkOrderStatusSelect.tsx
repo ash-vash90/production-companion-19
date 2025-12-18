@@ -23,12 +23,12 @@ interface WorkOrderStatusSelectProps {
   compact?: boolean;
 }
 
-const STATUS_OPTIONS: { value: WorkOrderStatus; labelKey: string; bgClass: string; textClass: string }[] = [
-  { value: 'planned', labelKey: 'planned', bgClass: 'bg-sky-500/15 dark:bg-sky-500/20', textClass: 'text-sky-700 dark:text-sky-300' },
-  { value: 'in_progress', labelKey: 'inProgress', bgClass: 'bg-amber-500/15 dark:bg-amber-500/20', textClass: 'text-amber-700 dark:text-amber-300' },
-  { value: 'on_hold', labelKey: 'onHold', bgClass: 'bg-secondary', textClass: 'text-secondary-foreground' },
-  { value: 'completed', labelKey: 'completed', bgClass: 'bg-emerald-500/15 dark:bg-emerald-500/20', textClass: 'text-emerald-700 dark:text-emerald-300' },
-  { value: 'cancelled', labelKey: 'cancelled', bgClass: 'bg-destructive/15 dark:bg-destructive/20', textClass: 'text-destructive dark:text-red-300' },
+const STATUS_OPTIONS: { value: WorkOrderStatus; labelKey: string; bgClass: string; textClass: string; borderClass: string }[] = [
+  { value: 'planned', labelKey: 'planned', bgClass: 'bg-sky-500/15 dark:bg-sky-500/25', textClass: 'text-sky-700 dark:text-sky-300', borderClass: 'border-sky-500/40 dark:border-sky-400/50' },
+  { value: 'in_progress', labelKey: 'inProgress', bgClass: 'bg-amber-500/15 dark:bg-amber-500/25', textClass: 'text-amber-700 dark:text-amber-300', borderClass: 'border-amber-500/40 dark:border-amber-400/50' },
+  { value: 'on_hold', labelKey: 'onHold', bgClass: 'bg-secondary', textClass: 'text-secondary-foreground', borderClass: 'border-border' },
+  { value: 'completed', labelKey: 'completed', bgClass: 'bg-emerald-500/15 dark:bg-emerald-500/25', textClass: 'text-emerald-700 dark:text-emerald-300', borderClass: 'border-emerald-500/40 dark:border-emerald-400/50' },
+  { value: 'cancelled', labelKey: 'cancelled', bgClass: 'bg-destructive/15 dark:bg-destructive/25', textClass: 'text-destructive dark:text-red-300', borderClass: 'border-destructive/40 dark:border-red-400/50' },
 ];
 
 export function WorkOrderStatusSelect({
@@ -123,22 +123,23 @@ export function WorkOrderStatusSelect({
     >
       <SelectTrigger
         className={cn(
-          "border-0 font-mono font-semibold uppercase tracking-wide transition-colors",
-          compact ? "h-7 text-[10px] px-3 py-0 w-auto min-w-[130px]" : "h-8 text-xs px-3 py-0 w-auto min-w-[140px]",
-          "rounded-full",
+          "border font-mono font-medium uppercase tracking-wide transition-colors",
+          compact ? "h-7 text-[10px] px-2.5 py-0" : "h-8 text-xs px-3 py-0",
+          "w-auto rounded-full",
           currentOption?.bgClass,
           currentOption?.textClass,
+          currentOption?.borderClass,
           "hover:opacity-80",
-          "[&>svg]:hidden" // Hide default chevron
+          "[&>svg]:hidden"
         )}
         onClick={(e) => e.stopPropagation()}
       >
         {updating ? (
           <Loader2 className="h-3 w-3 animate-spin" />
         ) : (
-          <span className="flex items-center justify-between gap-2 w-full">
+          <span className="flex items-center gap-2">
             <SelectValue />
-            <ChevronDown className="h-3.5 w-3.5 opacity-70 shrink-0" />
+            <ChevronDown className={cn("h-4 w-4 shrink-0", currentOption?.textClass)} />
           </span>
         )}
       </SelectTrigger>
@@ -147,7 +148,7 @@ export function WorkOrderStatusSelect({
           <SelectItem 
             key={option.value} 
             value={option.value}
-            className={cn("text-xs font-mono uppercase tracking-wide", option.textClass)}
+            className={cn("text-xs font-mono font-medium uppercase tracking-wide", option.textClass)}
           >
             {t(option.labelKey)}
           </SelectItem>
