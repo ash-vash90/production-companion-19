@@ -61,9 +61,9 @@ export function DataControlsBar({
   const showViewToggle = views && views.length > 1 && onViewChange;
 
   return (
-    <div className={cn("flex items-center justify-between gap-3 py-2", className)}>
+    <div className={cn("flex items-center justify-between gap-4 py-3", className)}>
       {/* Left cluster - Filter/Sort controls */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-4">
         {leftContent || (
           onFilterClick && (
             <Button 
@@ -71,14 +71,14 @@ export function DataControlsBar({
               size="sm" 
               onClick={onFilterClick}
               className={cn(
-                "h-9",
+                "h-10 px-4",
                 hasActiveFilters && "border-primary text-primary"
               )}
             >
               <Filter className="h-4 w-4 sm:mr-2" />
               <span className="hidden sm:inline">Filter</span>
               {activeFilterCount && activeFilterCount > 0 && (
-                <span className="ml-1 sm:ml-2 h-5 min-w-5 px-1 flex items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-medium">
+                <span className="ml-2 h-5 min-w-5 px-1.5 flex items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-medium">
                   {activeFilterCount}
                 </span>
               )}
@@ -88,7 +88,7 @@ export function DataControlsBar({
       </div>
 
       {/* Right cluster - View toggle */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-4">
         {rightContent || (
           showViewToggle && (
             <div className="flex border rounded-lg overflow-hidden">
@@ -100,7 +100,7 @@ export function DataControlsBar({
                     key={view}
                     variant={isActive ? 'secondary' : 'ghost'}
                     size="sm"
-                    className="rounded-none h-9 px-2.5"
+                    className="rounded-none h-10 px-3"
                     onClick={() => onViewChange(view)}
                   >
                     <Icon className="h-4 w-4" />
