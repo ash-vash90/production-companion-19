@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
-import { AlertTriangle, Clock, ChevronRight, Calendar, Truck, UserX, Play, CalendarClock } from 'lucide-react';
+import { AlertTriangle, Clock, ChevronRight, Calendar, Truck, UserX, CalendarClock } from 'lucide-react';
 import { parseISO, isBefore, differenceInDays } from 'date-fns';
 
 interface AssignedOperator {
@@ -109,15 +109,7 @@ export function WorkOrderCard({
   else if (startApproaching) urgencyClass = 'border-l-info/50';
 
   const handleClick = () => {
-    if (onClick) {
-      onClick();
-    } else if (linkTo) {
-      navigate(linkTo);
-    }
-  };
-
-  const handleOpenProduction = (e: React.MouseEvent) => {
-    e.stopPropagation();
+    // Always navigate directly to production page
     navigate(`/production/${workOrder.id}`);
   };
 
@@ -128,14 +120,6 @@ export function WorkOrderCard({
     } else {
       navigate(`/planner?workOrder=${workOrder.id}`);
     }
-  };
-
-  // Progress color based on percentage (uses status tokens)
-  const getProgressColor = () => {
-    const percent = workOrder.progressPercent || 0;
-    if (percent === 100) return 'bg-status-completed-foreground';
-    if (percent >= 50) return 'bg-status-in-progress-foreground';
-    return 'bg-muted-foreground/30';
   };
 
   const handleCheckboxChange = (e: React.MouseEvent) => {
@@ -277,18 +261,9 @@ export function WorkOrderCard({
         )}
       </div>
 
-      {/* Quick Action Buttons - Only for active work orders */}
+      {/* Quick Action Button - Plan (clicking card goes to production) */}
       {isActiveWorkOrder && (
-        <div className="flex items-center gap-2 mb-3 flex-wrap">
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-9 text-xs gap-1.5 min-w-[90px]"
-            onClick={handleOpenProduction}
-          >
-            <Play className="h-3.5 w-3.5" />
-            {language === 'nl' ? 'Productie' : 'Production'}
-          </Button>
+        <div className="flex items-center gap-2 mb-3">
           <Button
             variant={hasAssignedOperators ? "outline" : "default"}
             size="sm"
@@ -318,6 +293,7 @@ export function WorkOrderCard({
         <div className="flex-1 max-w-[180px] flex items-center gap-2">
           <Progress 
             value={workOrder.progressPercent || 0} 
+            status="auto"
             className="h-2 flex-1"
           />
           <span className="text-xs font-medium text-muted-foreground w-10 text-right">
