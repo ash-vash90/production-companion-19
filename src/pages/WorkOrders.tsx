@@ -581,6 +581,7 @@ const WorkOrders = () => {
           selectable={isSelectionMode}
           selected={selectedIds.has(wo.id)}
           onSelectionChange={() => toggleSelection(wo.id)}
+          onEnableSelectionMode={() => setIsSelectionMode(true)}
         />
       ))}
     </div>
@@ -846,6 +847,7 @@ const WorkOrders = () => {
                         selectable={isSelectionMode}
                         selected={selectedIds.has(wo.id)}
                         onSelectionChange={() => toggleSelection(wo.id)}
+                        onEnableSelectionMode={() => setIsSelectionMode(true)}
                       />
                     )}
                     itemHeight={280}
