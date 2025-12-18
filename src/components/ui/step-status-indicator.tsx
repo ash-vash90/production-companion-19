@@ -14,6 +14,7 @@ const stepStatusIndicatorVariants = cva(
     variants: {
       status: {
         pending: "bg-muted/50 text-muted-foreground border-muted-foreground/20",
+        current: "bg-status-in-progress text-status-in-progress-foreground border-status-in-progress-foreground/30",
         in_progress: "bg-status-in-progress text-status-in-progress-foreground border-status-in-progress-foreground/30",
         completed: "bg-status-completed text-status-completed-foreground border-status-completed-foreground/30",
         skipped: "bg-muted/30 text-muted-foreground/70 border-muted-foreground/20",
@@ -33,6 +34,7 @@ const stepStatusIndicatorVariants = cva(
 
 const stepStatusIcons: Record<string, React.ElementType> = {
   pending: Circle,
+  current: Clock,
   in_progress: Clock,
   completed: CheckCircle2,
   skipped: SkipForward,
@@ -40,6 +42,7 @@ const stepStatusIcons: Record<string, React.ElementType> = {
 
 const stepStatusLabels: Record<string, { en: string; nl: string }> = {
   pending: { en: "Pending", nl: "Wachtend" },
+  current: { en: "Current", nl: "Huidig" },
   in_progress: { en: "In Progress", nl: "Bezig" },
   completed: { en: "Completed", nl: "Voltooid" },
   skipped: { en: "Skipped", nl: "Overgeslagen" },
@@ -82,6 +85,11 @@ export const getStepStatusClasses = (status: string) => {
       bg: "bg-muted/50",
       text: "text-muted-foreground",
       border: "border-muted-foreground/20",
+    },
+    current: {
+      bg: "bg-status-in-progress",
+      text: "text-status-in-progress-foreground",
+      border: "border-status-in-progress-foreground/30",
     },
     in_progress: {
       bg: "bg-status-in-progress",
