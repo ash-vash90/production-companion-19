@@ -186,7 +186,7 @@ const MobileWorkOrderDetailPage: React.FC<MobileWorkOrderDetailPageProps> = ({
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
               <h1 className="font-mono text-xl font-semibold truncate">{workOrder.wo_number}</h1>
-              <StatusIndicator status={workOrder.status as any} size="default" />
+              <StatusIndicator status={workOrder.status as any} showIcon />
             </div>
             <p className="text-sm text-muted-foreground truncate">
               {workOrder.customer_name || (language === 'nl' ? 'Geen klant' : 'No customer')}

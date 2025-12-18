@@ -165,7 +165,7 @@ const PlannerWorkOrderDetail: React.FC<PlannerWorkOrderDetailProps> = ({
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
             <h2 className="font-mono text-xl font-semibold truncate">{workOrder.wo_number}</h2>
-            <StatusIndicator status={workOrder.status as any} size="default" />
+            <StatusIndicator status={workOrder.status as any} showIcon />
           </div>
           <div className="flex items-center gap-2">
             {isActiveWorkOrder && (

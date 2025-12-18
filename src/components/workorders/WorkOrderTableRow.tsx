@@ -149,7 +149,7 @@ export function WorkOrderTableRow({
               compact
             />
           ) : (
-            <StatusIndicator status={workOrder.status as any} size="default" />
+            <StatusIndicator status={workOrder.status as any} showIcon />
           )}
           {workOrder.status === 'cancelled' && workOrder.cancellation_reason && (
             <span className="text-xs text-destructive/80 italic truncate max-w-[150px]" title={workOrder.cancellation_reason}>

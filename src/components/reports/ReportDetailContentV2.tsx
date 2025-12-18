@@ -76,7 +76,7 @@ export function ReportDetailContentV2({
         <div>
           <div className="flex items-center gap-2 flex-wrap">
             <h2 className="text-lg font-semibold">{data.workOrder.wo_number}</h2>
-            <StatusIndicator status={data.workOrder.status as any} size="default" />
+            <StatusIndicator status={data.workOrder.status as any} showIcon />
           </div>
           <p className="text-sm text-muted-foreground mt-1">
             {data.workOrder.product_type.replace(/_/g, ' ')} • {data.workOrder.batch_size}{' '}
