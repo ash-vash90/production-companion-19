@@ -28,9 +28,8 @@ const pageImports = {
   '/search': () => import("./pages/Search"),
   '/genealogy': () => import("./pages/Genealogy"),
   '/settings': () => import("./pages/Settings"),
-  '/personal-settings': () => import("./pages/PersonalSettings"),
   '/inventory': () => import("./pages/Inventory"),
-  '/profile': () => import("./pages/UserProfile"),
+  '/profile': () => import("./pages/Profile"),
 };
 
 // Export prefetch function for use in sidebar
@@ -51,14 +50,13 @@ const QualityCertificates = lazy(pageImports['/quality-certificates']);
 const ProductionReports = lazy(pageImports['/production-reports']);
 const ProductionReportDetail = lazy(pageImports['/production-reports-detail']);
 const Settings = lazy(pageImports['/settings']);
-const PersonalSettings = lazy(pageImports['/personal-settings']);
 const Analytics = lazy(pageImports['/analytics']);
 const RoleManagement = lazy(pageImports['/role-management']);
 const ProductionPlanner = lazy(pageImports['/planner']);
 const Genealogy = lazy(pageImports['/genealogy']);
 const Search = lazy(pageImports['/search']);
 const Inventory = lazy(pageImports['/inventory']);
-const UserProfile = lazy(pageImports['/profile']);
+const Profile = lazy(pageImports['/profile']);
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient({
@@ -155,10 +153,9 @@ const AnimatedRoutes = () => {
         <Route path="/search" element={<ProtectedRoute><Search /></ProtectedRoute>} />
         <Route path="/genealogy/:serialNumber" element={<ProtectedRoute><Genealogy /></ProtectedRoute>} />
         <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-        <Route path="/personal-settings" element={<ProtectedRoute><PersonalSettings /></ProtectedRoute>} />
         <Route path="/inventory" element={<ProtectedRoute><Inventory /></ProtectedRoute>} />
-        <Route path="/profile" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
-        <Route path="/profile/:userId" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
+        <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+        <Route path="/profile/:userId" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
       </Routes>
