@@ -888,15 +888,17 @@ const WorkOrders = () => {
           </div>
         </div>
         
+        </PullToRefresh>
+
         {/* Floating Action Button */}
         <Button
           onClick={() => setDialogOpen(true)}
-          className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg z-50"
           size="icon"
+          aria-label={t('createWorkOrder') || 'Create work order'}
+          className="fixed right-4 sm:right-6 bottom-[calc(1.5rem+env(safe-area-inset-bottom))] h-14 w-14 rounded-full shadow-lg z-50"
         >
           <Plus className="h-6 w-6" />
         </Button>
-        </PullToRefresh>
 
         <CreateWorkOrderDialog 
           open={dialogOpen} 

@@ -129,24 +129,26 @@ const LayoutContent: React.FC<LayoutProps> = ({ children }) => {
     <>
       {/* Swipe hint indicator - only visible on touch devices when sidebar is closed */}
       <SwipeHintIndicator visible={isTouch && (isMobile ? !openMobile : !open)} />
-      
+
       <div className="flex min-h-screen w-full bg-background overflow-x-hidden">
         <AppSidebar />
         <SidebarInset className="flex flex-col overflow-x-hidden">
           {/* Mobile Header - visible on mobile/tablet */}
-          <MobileHeader onSearchClick={() => setSearchOpen(true)} />
-          
+          <MobileHeader onSearchClick={location.pathname === '/work-orders' ? undefined : () => setSearchOpen(true)} />
+
           {/* Desktop Header - hidden on mobile only, visible on tablet+ */}
           <header className="sticky top-0 z-40 hidden md:flex h-14 shrink-0 items-center border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
             <div className="flex flex-1 items-center justify-center px-3 max-w-2xl mx-auto">
-              <GlobalSearch onOpenModal={() => setSearchOpen(true)} />
+              {location.pathname !== '/work-orders' && (
+                <GlobalSearch onOpenModal={() => setSearchOpen(true)} />
+              )}
             </div>
             <div className="absolute right-0 flex items-center gap-1 px-3">
               <ThemeToggle />
               <NotificationCenter />
             </div>
           </header>
-          
+
           <main className="flex-1 px-3 md:px-4 lg:px-6 py-3 md:py-4 lg:py-6 w-full overflow-x-hidden">
             <div key={location.pathname} className="mx-auto w-full max-w-7xl animate-page-enter">
               {children}
@@ -154,7 +156,7 @@ const LayoutContent: React.FC<LayoutProps> = ({ children }) => {
           </main>
         </SidebarInset>
       </div>
-      
+
       {/* Search Modal - works on all screen sizes */}
       <SearchModal open={searchOpen} onOpenChange={setSearchOpen} />
     </>
