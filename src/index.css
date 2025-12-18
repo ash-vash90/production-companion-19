@@ -78,6 +78,34 @@
   --info: 200 70% 50%;
   --info-foreground: 0 0% 100%;
   
+  /* ========================================
+     WORK ORDER STATUS COLORS
+     ======================================== */
+  --status-planned: 200 70% 50%;
+  --status-planned-foreground: 200 80% 25%;
+  --status-planned-bg: 200 70% 95%;
+  --status-planned-border: 200 70% 70%;
+  
+  --status-in-progress: 45 93% 47%;
+  --status-in-progress-foreground: 45 90% 25%;
+  --status-in-progress-bg: 45 93% 92%;
+  --status-in-progress-border: 45 93% 60%;
+  
+  --status-on-hold: 215 16% 47%;
+  --status-on-hold-foreground: 215 19% 30%;
+  --status-on-hold-bg: 215 16% 94%;
+  --status-on-hold-border: 215 16% 70%;
+  
+  --status-completed: 138 68% 28%;
+  --status-completed-foreground: 138 68% 18%;
+  --status-completed-bg: 138 68% 92%;
+  --status-completed-border: 138 68% 50%;
+  
+  --status-cancelled: 0 84% 60%;
+  --status-cancelled-foreground: 0 70% 35%;
+  --status-cancelled-bg: 0 84% 95%;
+  --status-cancelled-border: 0 70% 70%;
+  
   /* Borders and inputs */
   --border: 214 32% 91%;
   --input: 214 32% 91%;
@@ -150,6 +178,32 @@
   --warning-foreground: 45 90% 10%;
   --info: 200 80% 65%;
   --info-foreground: 200 80% 10%;
+  
+  /* Dark mode status colors */
+  --status-planned: 200 80% 65%;
+  --status-planned-foreground: 200 80% 85%;
+  --status-planned-bg: 200 70% 15%;
+  --status-planned-border: 200 70% 45%;
+  
+  --status-in-progress: 45 93% 58%;
+  --status-in-progress-foreground: 45 93% 85%;
+  --status-in-progress-bg: 45 80% 12%;
+  --status-in-progress-border: 45 80% 40%;
+  
+  --status-on-hold: 215 20% 65%;
+  --status-on-hold-foreground: 215 20% 80%;
+  --status-on-hold-bg: 215 20% 18%;
+  --status-on-hold-border: 215 20% 45%;
+  
+  --status-completed: 138 68% 50%;
+  --status-completed-foreground: 138 68% 85%;
+  --status-completed-bg: 138 50% 12%;
+  --status-completed-border: 138 60% 40%;
+  
+  --status-cancelled: 0 72% 55%;
+  --status-cancelled-foreground: 0 72% 85%;
+  --status-cancelled-bg: 0 60% 15%;
+  --status-cancelled-border: 0 60% 45%;
   --border: 215 25% 28%;
   --input: 215 25% 28%;
   --ring: 138 68% 50%;

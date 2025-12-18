@@ -52,6 +52,38 @@ export default {
           DEFAULT: "hsl(var(--info))",
           foreground: "hsl(var(--info-foreground))",
         },
+        status: {
+          planned: {
+            DEFAULT: "hsl(var(--status-planned))",
+            foreground: "hsl(var(--status-planned-foreground))",
+            bg: "hsl(var(--status-planned-bg))",
+            border: "hsl(var(--status-planned-border))",
+          },
+          "in-progress": {
+            DEFAULT: "hsl(var(--status-in-progress))",
+            foreground: "hsl(var(--status-in-progress-foreground))",
+            bg: "hsl(var(--status-in-progress-bg))",
+            border: "hsl(var(--status-in-progress-border))",
+          },
+          "on-hold": {
+            DEFAULT: "hsl(var(--status-on-hold))",
+            foreground: "hsl(var(--status-on-hold-foreground))",
+            bg: "hsl(var(--status-on-hold-bg))",
+            border: "hsl(var(--status-on-hold-border))",
+          },
+          completed: {
+            DEFAULT: "hsl(var(--status-completed))",
+            foreground: "hsl(var(--status-completed-foreground))",
+            bg: "hsl(var(--status-completed-bg))",
+            border: "hsl(var(--status-completed-border))",
+          },
+          cancelled: {
+            DEFAULT: "hsl(var(--status-cancelled))",
+            foreground: "hsl(var(--status-cancelled-foreground))",
+            bg: "hsl(var(--status-cancelled-bg))",
+            border: "hsl(var(--status-cancelled-border))",
+          },
+        },
         muted: {
           DEFAULT: "hsl(var(--muted))",
           foreground: "hsl(var(--muted-foreground))",
