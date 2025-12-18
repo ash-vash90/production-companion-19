@@ -24,11 +24,11 @@ interface WorkOrderStatusSelectProps {
 }
 
 const STATUS_OPTIONS: { value: WorkOrderStatus; labelKey: string; bgClass: string; textClass: string; borderClass: string }[] = [
-  { value: 'planned', labelKey: 'planned', bgClass: 'bg-sky-500/15 dark:bg-sky-500/25', textClass: 'text-sky-700 dark:text-sky-300', borderClass: 'border-sky-500/40 dark:border-sky-400/50' },
-  { value: 'in_progress', labelKey: 'inProgress', bgClass: 'bg-amber-500/15 dark:bg-amber-500/25', textClass: 'text-amber-700 dark:text-amber-300', borderClass: 'border-amber-500/40 dark:border-amber-400/50' },
-  { value: 'on_hold', labelKey: 'onHold', bgClass: 'bg-secondary', textClass: 'text-secondary-foreground', borderClass: 'border-border' },
-  { value: 'completed', labelKey: 'completed', bgClass: 'bg-emerald-500/15 dark:bg-emerald-500/25', textClass: 'text-emerald-700 dark:text-emerald-300', borderClass: 'border-emerald-500/40 dark:border-emerald-400/50' },
-  { value: 'cancelled', labelKey: 'cancelled', bgClass: 'bg-destructive/15 dark:bg-destructive/25', textClass: 'text-destructive dark:text-red-300', borderClass: 'border-destructive/40 dark:border-red-400/50' },
+  { value: 'planned', labelKey: 'planned', bgClass: 'bg-status-planned-bg', textClass: 'text-status-planned-foreground', borderClass: 'border-status-planned-border' },
+  { value: 'in_progress', labelKey: 'inProgress', bgClass: 'bg-status-in-progress-bg', textClass: 'text-status-in-progress-foreground', borderClass: 'border-status-in-progress-border' },
+  { value: 'on_hold', labelKey: 'onHold', bgClass: 'bg-status-on-hold-bg', textClass: 'text-status-on-hold-foreground', borderClass: 'border-status-on-hold-border' },
+  { value: 'completed', labelKey: 'completed', bgClass: 'bg-status-completed-bg', textClass: 'text-status-completed-foreground', borderClass: 'border-status-completed-border' },
+  { value: 'cancelled', labelKey: 'cancelled', bgClass: 'bg-status-cancelled-bg', textClass: 'text-status-cancelled-foreground', borderClass: 'border-status-cancelled-border' },
 ];
 
 export function WorkOrderStatusSelect({
