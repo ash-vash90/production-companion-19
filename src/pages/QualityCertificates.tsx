@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import Layout from '@/components/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
-import { PageHeader } from '@/components/PageHeader';
+import { PageIdentity, PrimaryAction } from '@/components/layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -70,17 +70,16 @@ const QualityCertificates = () => {
     <ProtectedRoute>
       <Layout>
         <div className="space-y-6">
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <PageHeader title={t('qualityCertificates')} description={t('viewDownloadCertificates')} />
-            <CertificatePreviewDialog 
-              trigger={
-                <Button variant="outline" size="sm">
-                  <Beaker className="mr-2 h-4 w-4" />
-                  {t('testCertificate') || 'Test Certificate'}
-                </Button>
-              }
-            />
-          </div>
+          <PageIdentity title={t('qualityCertificates')} description={t('viewDownloadCertificates')} />
+          
+          <CertificatePreviewDialog 
+            trigger={
+              <Button className="w-full sm:w-auto h-11 sm:h-10">
+                <Beaker className="mr-2 h-4 w-4" />
+                {t('testCertificate') || 'Test Certificate'}
+              </Button>
+            }
+          />
 
           <Card>
             <CardHeader>

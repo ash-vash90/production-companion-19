@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import Layout from '@/components/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
-import { PageHeader } from '@/components/PageHeader';
+import { PageIdentity } from '@/components/layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -66,7 +66,7 @@ const GenealogySearch = () => {
     <ProtectedRoute>
       <Layout>
         <div className="space-y-6">
-          <PageHeader 
+          <PageIdentity 
             title={t('traceability')} 
             description={t('traceabilityDescription')} 
           />

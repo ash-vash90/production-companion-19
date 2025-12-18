@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import Layout from '@/components/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
-import { PageHeader } from '@/components/PageHeader';
+import { PageIdentity } from '@/components/layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2, TrendingUp, Clock, CheckCircle, AlertTriangle } from 'lucide-react';
@@ -146,7 +146,7 @@ const Analytics = () => {
     <ProtectedRoute>
       <Layout>
         <div className="space-y-6">
-          <PageHeader title={t('analytics')} description={t('analyticsDescription')} />
+          <PageIdentity title={t('analytics')} description={t('analyticsDescription')} />
 
           {loading ? (
             <div className="flex justify-center py-16">
