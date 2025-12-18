@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import Layout from '@/components/Layout';
-import { PageHeader } from '@/components/PageHeader';
+import { PageIdentity, PrimaryAction, DataControlsBar } from '@/components/layout';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -195,40 +195,41 @@ const ProductionPlanner = () => {
     return (
       <Layout>
         <div className="space-y-4">
-          <PageHeader
+          {/* Layer 2: Page Identity */}
+          <PageIdentity
             title={language === 'nl' ? 'Productieplanner' : 'Production Planner'}
             description={language === 'nl' ? 'Plan en beheer productieorders visueel op de kalender' : 'Plan and manage production orders visually on the calendar'}
-            actions={
-              <div className="flex items-center gap-2">
-                <div className="flex items-center border rounded-md">
-                  <Button
-                    variant={calendarView === 'month' ? 'secondary' : 'ghost'}
-                    size="sm"
-                    onClick={() => setCalendarView('month')}
-                    className="rounded-r-none"
-                  >
-                    <Calendar className="h-4 w-4 mr-1" />
-                    {language === 'nl' ? 'Maand' : 'Month'}
-                  </Button>
-                  <Button
-                    variant={calendarView === 'week' ? 'secondary' : 'ghost'}
-                    size="sm"
-                    onClick={() => setCalendarView('week')}
-                    className="rounded-l-none"
-                  >
-                    <List className="h-4 w-4 mr-1" />
-                    {language === 'nl' ? 'Week' : 'Week'}
-                  </Button>
-                </div>
-                {isAdmin && (
-                  <Button onClick={() => setCreateDialogOpen(true)} size="sm">
-                    <Plus className="h-4 w-4 mr-1" />
-                    {language === 'nl' ? 'Nieuwe order' : 'New Order'}
-                  </Button>
-                )}
-              </div>
-            }
           />
+
+          {/* Layer 3: Primary Action + Layer 4: Data Controls */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            {isAdmin && (
+              <Button onClick={() => setCreateDialogOpen(true)} className="w-full sm:w-auto h-11 sm:h-10">
+                <Plus className="h-4 w-4 mr-2" />
+                {language === 'nl' ? 'Nieuwe order' : 'New Order'}
+              </Button>
+            )}
+            <div className="flex items-center border rounded-md ml-auto">
+              <Button
+                variant={calendarView === 'month' ? 'secondary' : 'ghost'}
+                size="sm"
+                onClick={() => setCalendarView('month')}
+                className="rounded-r-none h-9"
+              >
+                <Calendar className="h-4 w-4 mr-1" />
+                {language === 'nl' ? 'Maand' : 'Month'}
+              </Button>
+              <Button
+                variant={calendarView === 'week' ? 'secondary' : 'ghost'}
+                size="sm"
+                onClick={() => setCalendarView('week')}
+                className="rounded-l-none h-9"
+              >
+                <List className="h-4 w-4 mr-1" />
+                {language === 'nl' ? 'Week' : 'Week'}
+              </Button>
+            </div>
+          </div>
 
           {/* Desktop: Split view - Calendar left, Detail right */}
           <div className="flex h-[calc(100vh-14rem)] overflow-hidden border rounded-lg">

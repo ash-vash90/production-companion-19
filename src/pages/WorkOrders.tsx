@@ -5,7 +5,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import Layout from '@/components/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
-import { PageHeader } from '@/components/PageHeader';
+import { PageIdentity, PrimaryAction, DataControlsBar, ViewOption } from '@/components/layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -56,6 +56,20 @@ const GROUPBY_STORAGE_KEY = 'workorders_groupby';
 const VIEWMODE_STORAGE_KEY = 'workorders_viewmode';
 
 type ViewMode = 'cards' | 'table' | 'kanban';
+
+// Map our view mode to DataControlsBar ViewOption
+const VIEW_MODE_TO_OPTION: Record<ViewMode, ViewOption> = {
+  cards: 'cards',
+  table: 'table',
+  kanban: 'kanban',
+};
+
+const OPTION_TO_VIEW_MODE: Record<ViewOption, ViewMode> = {
+  cards: 'cards',
+  table: 'table',
+  kanban: 'kanban',
+  list: 'table', // fallback
+};
 
 interface ViewPreferences {
   work_orders?: {
@@ -607,138 +621,110 @@ const WorkOrders = () => {
           disabled={!isMobile || loading}
           className="h-full"
         >
-        <div className="space-y-3 lg:space-y-4">
-          <PageHeader
+        <div className="space-y-0">
+          {/* Layer 2: Page Identity */}
+          <PageIdentity
             title={t('workOrders')}
             description={t('manageWorkOrders')}
-            actions={
-              <Button 
-                variant="default" 
-                size="sm" 
-                onClick={() => setDialogOpen(true)}
-              >
-                <Plus className="mr-1.5 h-3.5 w-3.5" />
-                {t('createWorkOrder')}
-              </Button>
-            }
           />
 
-          {/* Filters, Selection, and View Toggle Bar */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-            <div className="flex items-center gap-2 flex-wrap">
-              <WorkOrderFilters
-                filters={filters}
-                onFiltersChange={setFilters}
-                customers={customers}
-                deliveryMonths={deliveryMonths}
-                createdMonths={createdMonths}
-                groupBy={groupBy}
-                onGroupByChange={(v) => setGroupBy(v)}
-                hideGroupBy={viewMode === 'kanban'}
-              />
-              {hasActiveFilters && (
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="h-8 text-xs text-muted-foreground"
-                  onClick={resetFilters}
-                >
-                  <RotateCcw className="h-3 w-3 mr-1" />
-                  {t('reset')}
-                </Button>
-              )}
-              
-              {/* Selection controls - hidden on mobile */}
-              {viewMode !== 'kanban' && (
-                <div className="hidden sm:flex items-center gap-2">
-                  <div className="h-6 w-px bg-border" />
-                  
-                  {/* Selection Mode Toggle */}
-                  <Button
-                    variant={isSelectionMode ? 'secondary' : 'ghost'}
-                    size="sm"
-                    className="h-8 text-xs gap-1.5"
-                    onClick={() => {
-                      if (isSelectionMode) {
-                        setIsSelectionMode(false);
-                        setSelectedIds(new Set());
-                      } else {
-                        setIsSelectionMode(true);
-                      }
-                    }}
+          {/* Layer 3: Primary Action */}
+          <PrimaryAction 
+            label={t('createWorkOrder')}
+            icon={Plus}
+            onClick={() => setDialogOpen(true)}
+          />
+
+          {/* Layer 4: Data Controls Bar */}
+          <DataControlsBar
+            views={['cards', 'table', 'kanban']}
+            currentView={VIEW_MODE_TO_OPTION[viewMode]}
+            onViewChange={(v) => setViewMode(OPTION_TO_VIEW_MODE[v])}
+            leftContent={
+              <div className="flex items-center gap-2 flex-wrap">
+                <WorkOrderFilters
+                  filters={filters}
+                  onFiltersChange={setFilters}
+                  customers={customers}
+                  deliveryMonths={deliveryMonths}
+                  createdMonths={createdMonths}
+                  groupBy={groupBy}
+                  onGroupByChange={(v) => setGroupBy(v)}
+                  hideGroupBy={viewMode === 'kanban'}
+                />
+                {hasActiveFilters && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-9 text-xs text-muted-foreground"
+                    onClick={resetFilters}
                   >
-                    {isSelectionMode ? (
-                      <CheckSquare className="h-3.5 w-3.5" />
-                    ) : (
-                      <Square className="h-3.5 w-3.5" />
-                    )}
-                    {t('select') || 'Select'}
+                    <RotateCcw className="h-3 w-3 mr-1" />
+                    {t('reset')}
                   </Button>
-                  
-                  {/* Select All toggle when in selection mode */}
-                  {isSelectionMode && (
+                )}
+                
+                {/* Selection controls - hidden on mobile */}
+                {viewMode !== 'kanban' && (
+                  <div className="hidden sm:flex items-center gap-2">
+                    <div className="h-6 w-px bg-border" />
+                    
+                    {/* Selection Mode Toggle */}
                     <Button
-                      variant="ghost"
+                      variant={isSelectionMode ? 'secondary' : 'ghost'}
                       size="sm"
-                      className="h-8 text-xs text-muted-foreground"
+                      className="h-9 text-xs gap-1.5"
                       onClick={() => {
-                        if (selectedIds.size === filteredOrders.length) {
+                        if (isSelectionMode) {
+                          setIsSelectionMode(false);
                           setSelectedIds(new Set());
                         } else {
-                          setSelectedIds(new Set(filteredOrders.map(wo => wo.id)));
+                          setIsSelectionMode(true);
                         }
                       }}
                     >
-                      {selectedIds.size === filteredOrders.length 
-                        ? (t('deselectAll') || 'Deselect All')
-                        : (t('selectAll') || 'Select All')
-                      }
+                      {isSelectionMode ? (
+                        <CheckSquare className="h-3.5 w-3.5" />
+                      ) : (
+                        <Square className="h-3.5 w-3.5" />
+                      )}
+                      {t('select') || 'Select'}
                     </Button>
-                  )}
-                  
-                  {/* Inline Bulk Actions */}
-                  <BulkActionsToolbar
-                    selectedIds={Array.from(selectedIds)}
-                    selectedWorkOrders={selectedWorkOrders}
-                    onClearSelection={clearSelection}
-                    onRefresh={refetch}
-                    onRequestCancel={openBulkCancelDialog}
-                  />
-                </div>
-              )}
-            </div>
-            
-            {/* View Toggle */}
-            <div className="flex items-center border rounded-md">
-              <Button
-                variant={viewMode === 'cards' ? 'secondary' : 'ghost'}
-                size="sm"
-                className="h-8 px-2 rounded-r-none"
-                onClick={() => setViewMode('cards')}
-                title={t('cardView') || 'Card View'}
-              >
-                <LayoutGrid className="h-4 w-4" />
-              </Button>
-              <Button
-                variant={viewMode === 'table' ? 'secondary' : 'ghost'}
-                size="sm"
-                className="h-8 px-2 rounded-none border-x"
-                onClick={() => setViewMode('table')}
-                title={t('tableView') || 'Table View'}
-              >
-                <List className="h-4 w-4" />
-              </Button>
-              <Button
-                variant={viewMode === 'kanban' ? 'secondary' : 'ghost'}
-                size="sm"
-                className="h-8 px-2 rounded-l-none"
-                onClick={() => setViewMode('kanban')}
-                title={t('kanbanView') || 'Kanban View'}
-              >
-                <Columns className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
+                    
+                    {/* Select All toggle when in selection mode */}
+                    {isSelectionMode && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-9 text-xs text-muted-foreground"
+                        onClick={() => {
+                          if (selectedIds.size === filteredOrders.length) {
+                            setSelectedIds(new Set());
+                          } else {
+                            setSelectedIds(new Set(filteredOrders.map(wo => wo.id)));
+                          }
+                        }}
+                      >
+                        {selectedIds.size === filteredOrders.length 
+                          ? (t('deselectAll') || 'Deselect All')
+                          : (t('selectAll') || 'Select All')
+                        }
+                      </Button>
+                    )}
+                    
+                    {/* Inline Bulk Actions */}
+                    <BulkActionsToolbar
+                      selectedIds={Array.from(selectedIds)}
+                      selectedWorkOrders={selectedWorkOrders}
+                      onClearSelection={clearSelection}
+                      onRefresh={refetch}
+                      onRequestCancel={openBulkCancelDialog}
+                    />
+                  </div>
+                )}
+              </div>
+            }
+          />
 
           {/* Work Orders List */}
           <div className="w-full">
