@@ -481,6 +481,7 @@ const WorkOrders = () => {
     order_value: wo.order_value,
     productBreakdown: wo.productBreakdown,
     progressPercent: wo.progressPercent,
+    assignedOperators: wo.assignedOperators,
   }), []);
 
   // Handle status change with optimistic update
@@ -532,6 +533,7 @@ const WorkOrders = () => {
               <TableHead className="text-xs">{t('products')}</TableHead>
               <TableHead className="text-xs hidden md:table-cell">{t('customer')}</TableHead>
               <TableHead className="text-xs">{t('status')}</TableHead>
+              <TableHead className="text-xs hidden lg:table-cell">{t('assignedTo') || 'Assigned'}</TableHead>
               <TableHead className="text-xs hidden lg:table-cell">{t('dates')}</TableHead>
               <TableHead className="text-xs hidden xl:table-cell">{t('price')}</TableHead>
               <TableHead className="text-xs hidden sm:table-cell">{t('progress')}</TableHead>
@@ -549,6 +551,7 @@ const WorkOrders = () => {
                 editableStatus={isAdmin}
                 showProgress
                 showPrice
+                showAssignees
                 selectable={isSelectionMode}
                 selected={selectedIds.has(wo.id)}
                 onSelectionChange={() => toggleSelection(wo.id)}
