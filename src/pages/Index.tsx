@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import Layout from '@/components/Layout';
+import { PageIdentity } from '@/components/layout';
 import { ProductionOverview } from '@/components/dashboard/ProductionOverview';
 import { RecentActivity } from '@/components/dashboard/RecentActivity';
 import { ActiveOperators } from '@/components/dashboard/ActiveOperators';
@@ -196,21 +197,19 @@ const Index = () => {
 
   return (
     <Layout>
-      <div className="space-y-6 w-full max-w-full overflow-hidden">
-        {/* Header with greeting and weather */}
-        <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-          <div className="space-y-1">
-            <div className="flex items-center gap-4 flex-wrap">
-              <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">
-                {getGreetingMessage()}, <span className="text-primary">{getFirstName()}</span>
-              </h1>
-              <WeatherWidget />
-            </div>
-            <p className="text-sm text-muted-foreground">{getRoleHint()}</p>
+      <div className="space-y-4 w-full max-w-full overflow-hidden">
+        {/* Layer 2: Page Identity (Dashboard greeting) */}
+        <div className="space-y-1 mb-4">
+          <div className="flex items-center gap-4 flex-wrap">
+            <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">
+              {getGreetingMessage()}, <span className="text-primary">{getFirstName()}</span>
+            </h1>
+            <WeatherWidget />
           </div>
-        </header>
+          <p className="text-xs sm:text-sm text-muted-foreground">{getRoleHint()}</p>
+        </div>
 
-        {/* Dashboard Sections */}
+        {/* Dashboard Sections - No primary action on dashboard */}
         <div className="space-y-4">
           <TodaysSchedule />
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

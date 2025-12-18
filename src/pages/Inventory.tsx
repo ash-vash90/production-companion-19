@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import Layout from '@/components/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
-import { PageHeader } from '@/components/PageHeader';
+import { PageIdentity, PrimaryAction, DataControlsBar } from '@/components/layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -161,12 +161,50 @@ export default function Inventory() {
   return (
     <ProtectedRoute>
       <Layout>
-        <PageHeader
+        {/* Layer 2: Page Identity */}
+        <PageIdentity
           title={language === 'nl' ? 'Voorraad' : 'Inventory'}
           description={
             language === 'nl'
               ? 'Beheer materiaalvoorraad en batches'
               : 'Manage material stock and batches'
+          }
+        />
+
+        {/* Layer 3: Primary Action */}
+        <PrimaryAction
+          label={language === 'nl' ? 'Ontvangen' : 'Receive'}
+          icon={Plus}
+          onClick={() => setShowReceiveDialog(true)}
+        />
+
+        {/* Layer 4: Data Controls Bar */}
+        <DataControlsBar
+          leftContent={
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1 max-w-sm">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder={
+                    language === 'nl'
+                      ? 'Zoeken op naam, SKU of batch...'
+                      : 'Search by name, SKU or batch...'
+                  }
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 h-9"
+                />
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-9"
+                onClick={() => setShowScannerDialog(true)}
+              >
+                <Camera className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">{language === 'nl' ? 'Scan' : 'Scan'}</span>
+              </Button>
+            </div>
           }
         />
 
@@ -211,37 +249,6 @@ export default function Inventory() {
 
           {/* Low Stock Alert */}
           <LowStockAlert />
-
-          {/* Actions and Search */}
-          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-            <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder={
-                  language === 'nl'
-                    ? 'Zoeken op naam, SKU of batch...'
-                    : 'Search by name, SKU or batch...'
-                }
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                onClick={() => setShowScannerDialog(true)}
-              >
-                <Camera className="h-4 w-4 mr-2" />
-                {language === 'nl' ? 'Scan' : 'Scan'}
-              </Button>
-              <Button onClick={() => setShowReceiveDialog(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                {language === 'nl' ? 'Ontvangen' : 'Receive'}
-              </Button>
-            </div>
-          </div>
 
           {/* Stock Table */}
           <Card>

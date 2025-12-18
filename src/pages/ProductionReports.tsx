@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import Layout from '@/components/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
-import { PageHeader } from '@/components/PageHeader';
+import { PageIdentity, DataControlsBar, ViewOption } from '@/components/layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -30,6 +30,18 @@ import { cn } from '@/lib/utils';
 import type { ExportSections } from '@/types/reports';
 
 type ViewMode = 'cards' | 'table';
+
+const VIEW_MODE_TO_OPTION: Record<ViewMode, ViewOption> = {
+  cards: 'cards',
+  table: 'table',
+};
+
+const OPTION_TO_VIEW_MODE: Record<ViewOption, ViewMode> = {
+  cards: 'cards',
+  table: 'table',
+  kanban: 'table',
+  list: 'table',
+};
 
 const VIEWMODE_STORAGE_KEY = 'productionreports_viewmode';
 
@@ -176,8 +188,8 @@ const ProductionReports = () => {
     return (
       <ProtectedRoute>
         <Layout>
-          <div className="space-y-6">
-            <PageHeader title={t('productionReports')} description={t('viewAnalyzeProduction')} />
+          <div className="space-y-4">
+            <PageIdentity title={t('productionReports')} description={t('viewAnalyzeProduction')} />
             <div className="space-y-4">
               {[1, 2, 3].map(i => (
                 <Card key={i}>
@@ -207,37 +219,43 @@ const ProductionReports = () => {
             "flex flex-col gap-4",
             selectedReportId ? "lg:w-[400px] xl:w-[450px] flex-shrink-0" : "flex-1"
           )}>
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <PageHeader title={t('productionReports')} description={t('viewAnalyzeProduction')} />
-              <div className="flex items-center gap-2">
-                {/* View toggle - always visible */}
-                <div className="flex border rounded-lg overflow-hidden">
-                  <Button
-                    variant={viewMode === 'cards' ? 'secondary' : 'ghost'}
-                    size="sm"
-                    className="rounded-none"
-                    onClick={() => setViewMode('cards')}
-                  >
-                    <LayoutGrid className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant={viewMode === 'table' ? 'secondary' : 'ghost'}
-                    size="sm"
-                    className="rounded-none"
-                    onClick={() => setViewMode('table')}
-                  >
-                    <List className="h-4 w-4" />
-                  </Button>
+            {/* Layer 2: Page Identity + Layer 4: Data Controls */}
+            <PageIdentity title={t('productionReports')} description={t('viewAnalyzeProduction')} />
+            
+            <DataControlsBar
+              views={['cards', 'table']}
+              currentView={VIEW_MODE_TO_OPTION[viewMode]}
+              onViewChange={(v) => setViewMode(OPTION_TO_VIEW_MODE[v])}
+              rightContent={
+                <div className="flex items-center gap-2">
+                  <div className="flex border rounded-lg overflow-hidden">
+                    <Button
+                      variant={viewMode === 'cards' ? 'secondary' : 'ghost'}
+                      size="sm"
+                      className="rounded-none h-9 px-2.5"
+                      onClick={() => setViewMode('cards')}
+                    >
+                      <LayoutGrid className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant={viewMode === 'table' ? 'secondary' : 'ghost'}
+                      size="sm"
+                      className="rounded-none h-9 px-2.5"
+                      onClick={() => setViewMode('table')}
+                    >
+                      <List className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  {(isStale || error) && (
+                    <Button variant="outline" size="sm" className="h-9" onClick={refetch}>
+                      {error && <AlertCircle className="h-4 w-4 mr-1 text-destructive" />}
+                      <RefreshCw className="h-4 w-4 mr-1" />
+                      {t('refresh')}
+                    </Button>
+                  )}
                 </div>
-                {(isStale || error) && (
-                  <Button variant="outline" size="sm" onClick={refetch}>
-                    {error && <AlertCircle className="h-4 w-4 mr-1 text-destructive" />}
-                    <RefreshCw className="h-4 w-4 mr-1" />
-                    {t('refresh')}
-                  </Button>
-                )}
-              </div>
-            </div>
+              }
+            />
 
             <ReportFilters
               filters={filters}
