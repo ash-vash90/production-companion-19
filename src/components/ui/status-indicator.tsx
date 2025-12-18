@@ -5,7 +5,7 @@ import { CheckCircle2, Clock, Pause, XCircle, Calendar } from "lucide-react";
 
 const statusIndicatorVariants = cva(
   [
-    "inline-flex items-center gap-1.5 rounded-full border px-3 py-0.5",
+    "inline-flex items-center gap-1.5 rounded-full border px-3 py-1",
     "text-[11px] font-mono font-medium uppercase tracking-wide",
     "whitespace-nowrap flex-shrink-0 shadow-sm",
     "transition-colors duration-150",
@@ -20,9 +20,9 @@ const statusIndicatorVariants = cva(
         cancelled: "bg-status-cancelled text-status-cancelled-foreground border-status-cancelled-border",
       },
       size: {
-        sm: "text-[10px] px-2 py-px gap-1",
-        default: "text-[11px] px-3 py-0.5 gap-1.5",
-        lg: "text-xs px-4 py-1 gap-2",
+        sm: "text-[10px] px-2 py-0.5 gap-1",
+        default: "text-[11px] px-3 py-1 gap-1.5",
+        lg: "text-xs px-4 py-1.5 gap-2",
       },
     },
     defaultVariants: {
