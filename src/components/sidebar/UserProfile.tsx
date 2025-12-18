@@ -77,10 +77,6 @@ export function UserProfile() {
           <User className="mr-2 h-4 w-4" />
           {t('myProfile') || 'My Profile'}
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => navigate('/personal-settings')}>
-          <Settings className="mr-2 h-4 w-4" />
-          {t('personalSettings')}
-        </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive">
           <LogOut className="mr-2 h-4 w-4" />
