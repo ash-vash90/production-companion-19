@@ -360,7 +360,7 @@ export function WorkOrderFilters({
           <Sheet open={filterOpen} onOpenChange={setFilterOpen}>
             <SheetContent
               side="bottom"
-              className="h-[100dvh] flex flex-col"
+              className="!inset-0 !w-screen !max-w-none h-svh p-0 flex flex-col"
             >
               <SheetHeader className="px-6 pt-6 pb-4 shrink-0 text-left">
                 <div className="flex items-center justify-between">
