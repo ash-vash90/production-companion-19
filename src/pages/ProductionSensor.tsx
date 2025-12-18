@@ -6,7 +6,7 @@ import Layout from '@/components/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { StepStatusIndicator, getStepStatusClasses } from '@/components/ui/step-status-indicator';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Loader2, ArrowLeft, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
@@ -132,9 +132,9 @@ const ProductionSensor = () => {
                       key={step.id}
                       className={`flex items-center gap-4 p-4 rounded-lg border-2 transition-all ${
                         status === 'current'
-                          ? 'border-primary bg-primary/5'
+                          ? 'border-status-in-progress-foreground/50 bg-status-in-progress/20'
                           : status === 'completed'
-                          ? 'border-accent bg-accent/30'
+                          ? 'border-status-completed-foreground/50 bg-status-completed/20'
                           : 'border-border bg-muted/30'
                       }`}
                       onClick={() => status === 'current' && navigate(`/production/step/${item.id}`)}
@@ -142,9 +142,9 @@ const ProductionSensor = () => {
                     >
                       <div className={`flex items-center justify-center h-10 w-10 rounded-full ${
                         status === 'completed'
-                          ? 'bg-accent text-accent-foreground'
+                          ? 'bg-status-completed text-status-completed-foreground'
                           : status === 'current'
-                          ? 'bg-primary text-primary-foreground'
+                          ? 'bg-status-in-progress text-status-in-progress-foreground'
                           : 'bg-muted text-muted-foreground'
                       }`}>
                         {status === 'completed' ? (
@@ -166,7 +166,7 @@ const ProductionSensor = () => {
                         )}
                       </div>
                       {status === 'current' && (
-                        <Badge variant="default">Active</Badge>
+                        <StepStatusIndicator status="current" size="sm" language={language as 'en' | 'nl'} />
                       )}
                     </div>
                   );

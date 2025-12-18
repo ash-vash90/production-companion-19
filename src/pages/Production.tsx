@@ -7,6 +7,8 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { StatusIndicator } from '@/components/ui/status-indicator';
+import { StepStatusIndicator } from '@/components/ui/step-status-indicator';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -261,16 +263,6 @@ const Production = () => {
     }
   };
 
-  const getStatusColor = (status: string) => {
-    const colors: Record<string, string> = {
-      planned: 'bg-status-planned text-status-planned-foreground',
-      in_progress: 'bg-status-in-progress text-status-in-progress-foreground',
-      completed: 'bg-status-completed text-status-completed-foreground',
-      on_hold: 'bg-status-on-hold text-status-on-hold-foreground',
-      cancelled: 'bg-status-cancelled text-status-cancelled-foreground',
-    };
-    return colors[status] || 'bg-secondary text-secondary-foreground';
-  };
 
   if (!user) return null;
 
@@ -534,9 +526,7 @@ const Production = () => {
                   <CardTitle className="text-xl md:text-2xl">{t('production')} {t('items')}</CardTitle>
                   <CardDescription className="text-sm mt-1">{t('trackItems')}</CardDescription>
                 </div>
-                <Badge className={`${getStatusColor(workOrder.status)} flex-shrink-0`}>
-                  {formatStatus(workOrder.status, language as 'en' | 'nl')}
-                </Badge>
+                <StatusIndicator status={workOrder.status as any} showIcon language={language as 'en' | 'nl'} />
               </div>
             </CardHeader>
             <CardContent>
@@ -562,9 +552,7 @@ const Production = () => {
                     
                     {/* Actions - fixed size, no shrink */}
                     <div className="flex-shrink-0 flex items-center gap-1.5 md:gap-2">
-                      <Badge className={`${getStatusColor(item.status)} shrink-0`}>
-                        {formatStatus(item.status, language as 'en' | 'nl')}
-                      </Badge>
+                      <StepStatusIndicator status={item.status as any} size="sm" language={language as 'en' | 'nl'} />
                       {item.status === 'completed' && (
                         <>
                           <Button

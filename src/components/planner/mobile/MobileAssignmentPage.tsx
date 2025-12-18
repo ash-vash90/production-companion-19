@@ -252,9 +252,9 @@ const MobileAssignmentPage: React.FC<MobileAssignmentPageProps> = ({
     switch (status) {
       case 'completed':
       case 'skipped':
-        return <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />;
+        return <CheckCircle2 className="h-3.5 w-3.5 text-status-completed-foreground" />;
       case 'in_progress':
-        return <Clock className="h-3.5 w-3.5 text-amber-500" />;
+        return <Clock className="h-3.5 w-3.5 text-status-in-progress-foreground" />;
       default:
         return <Circle className="h-3.5 w-3.5 text-muted-foreground/50" />;
     }
@@ -635,26 +635,26 @@ const MobileAssignmentPage: React.FC<MobileAssignmentPageProps> = ({
                                   variant="outline" 
                                   className={cn(
                                     "font-mono text-[10px] h-5 w-5 flex items-center justify-center p-0",
-                                    isStepComplete && "border-emerald-500/50 text-emerald-600",
-                                    isStepInProgress && "border-amber-500/50 text-amber-600"
+                                    isStepComplete && "border-status-completed-foreground/50 text-status-completed-foreground",
+                                    isStepInProgress && "border-status-in-progress-foreground/50 text-status-in-progress-foreground"
                                   )}
                                 >
                                   {step.step_number}
                                 </Badge>
                                 <span className={cn(
                                   "text-xs flex-1 truncate",
-                                  isStepComplete && "text-emerald-600",
-                                  isStepInProgress && "text-amber-600"
+                                  isStepComplete && "text-status-completed-foreground",
+                                  isStepInProgress && "text-status-in-progress-foreground"
                                 )}>
                                   {getStepTitle(step)}
                                 </span>
                                 {isStepComplete && (
-                                  <Badge variant="outline" className="text-[9px] h-4 border-emerald-500/50 bg-emerald-500/10 text-emerald-600">
+                                  <Badge variant="outline" className="text-[9px] h-4 border-status-completed-foreground/50 bg-status-completed/30 text-status-completed-foreground">
                                     {language === 'nl' ? 'Klaar' : 'Done'}
                                   </Badge>
                                 )}
                                 {isStepInProgress && (
-                                  <Badge variant="outline" className="text-[9px] h-4 border-amber-500/50 bg-amber-500/10 text-amber-600">
+                                  <Badge variant="outline" className="text-[9px] h-4 border-status-in-progress-foreground/50 bg-status-in-progress/30 text-status-in-progress-foreground">
                                     {language === 'nl' ? 'Bezig' : 'Active'}
                                   </Badge>
                                 )}
