@@ -130,11 +130,11 @@ export function WorkOrderCard({
     }
   };
 
-  // Progress color based on percentage
+  // Progress color based on percentage (uses status tokens)
   const getProgressColor = () => {
     const percent = workOrder.progressPercent || 0;
-    if (percent === 100) return 'bg-emerald-500';
-    if (percent >= 50) return 'bg-blue-500';
+    if (percent === 100) return 'bg-status-completed-foreground';
+    if (percent >= 50) return 'bg-status-in-progress-foreground';
     return 'bg-muted-foreground/30';
   };
 
