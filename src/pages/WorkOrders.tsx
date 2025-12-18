@@ -26,7 +26,7 @@ import { PullToRefresh } from '@/components/PullToRefresh';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Plus, Package, RotateCcw, LayoutGrid, List, ChevronDown, ChevronRight, Columns, CheckSquare, Square, Users } from 'lucide-react';
+import { Plus, Package, RotateCcw, LayoutGrid, List, ChevronDown, ChevronRight, Columns, CheckSquare, Square } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format, differenceInDays, parseISO } from 'date-fns';
@@ -608,24 +608,14 @@ const WorkOrders = () => {
             title={t('workOrders')}
             description={t('manageWorkOrders')}
             actions={
-              <div className="flex items-center gap-2">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => navigate('/capacity-planning')}
-                >
-                  <Users className="mr-1.5 h-3.5 w-3.5" />
-                  <span className="hidden sm:inline">{language === 'nl' ? 'Capaciteit' : 'Capacity'}</span>
-                </Button>
-                <Button 
-                  variant="default" 
-                  size="sm" 
-                  onClick={() => setDialogOpen(true)}
-                >
-                  <Plus className="mr-1.5 h-3.5 w-3.5" />
-                  {t('createWorkOrder')}
-                </Button>
-              </div>
+              <Button 
+                variant="default" 
+                size="sm" 
+                onClick={() => setDialogOpen(true)}
+              >
+                <Plus className="mr-1.5 h-3.5 w-3.5" />
+                {t('createWorkOrder')}
+              </Button>
             }
           />
 
@@ -654,10 +644,10 @@ const WorkOrders = () => {
                 </Button>
               )}
               
-              {/* Separator before selection controls */}
+              {/* Selection controls - hidden on mobile */}
               {viewMode !== 'kanban' && (
-                <>
-                  <div className="h-6 w-px bg-border hidden sm:block" />
+                <div className="hidden sm:flex items-center gap-2">
+                  <div className="h-6 w-px bg-border" />
                   
                   {/* Selection Mode Toggle */}
                   <Button
@@ -678,7 +668,7 @@ const WorkOrders = () => {
                     ) : (
                       <Square className="h-3.5 w-3.5" />
                     )}
-                    <span className="hidden sm:inline">{t('select') || 'Select'}</span>
+                    {t('select') || 'Select'}
                   </Button>
                   
                   {/* Select All toggle when in selection mode */}
@@ -710,7 +700,7 @@ const WorkOrders = () => {
                     onRefresh={refetch}
                     onRequestCancel={openBulkCancelDialog}
                   />
-                </>
+                </div>
               )}
             </div>
             
