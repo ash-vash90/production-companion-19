@@ -358,8 +358,8 @@ export function WorkOrderFilters({
             )}
           </Button>
           <Sheet open={filterOpen} onOpenChange={setFilterOpen}>
-            <SheetContent side="bottom" className="h-full flex flex-col">
-              <SheetHeader className="pb-4">
+            <SheetContent side="bottom" className="h-[100dvh] flex flex-col overflow-hidden">
+              <SheetHeader className="pb-4 shrink-0">
                 <div className="flex items-center justify-between">
                   <SheetTitle>{t('filter')}</SheetTitle>
                   {localActiveFilterCount > 0 && (
@@ -369,10 +369,12 @@ export function WorkOrderFilters({
                   )}
                 </div>
               </SheetHeader>
-              <ScrollArea className="flex-1 -mx-6 px-6">
-                {renderFilterContent(true)}
+              <ScrollArea className="flex-1 -mx-6 overflow-y-auto">
+                <div className="px-6 py-2">
+                  {renderFilterContent(true)}
+                </div>
               </ScrollArea>
-              <SheetFooter className="pt-4 border-t mt-4 flex-row gap-3">
+              <SheetFooter className="pt-4 border-t mt-auto flex-row gap-3 shrink-0">
                 <Button 
                   variant="outline"
                   className="flex-1 h-12" 
