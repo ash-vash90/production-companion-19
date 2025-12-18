@@ -61,9 +61,9 @@ export function DataControlsBar({
   const showViewToggle = views && views.length > 1 && onViewChange;
 
   return (
-    <div className={cn("flex items-center justify-between gap-2 mb-3 sm:mb-4", className)}>
+    <div className={cn("flex items-center justify-between gap-3 py-2", className)}>
       {/* Left cluster - Filter/Sort controls */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-3">
         {leftContent || (
           onFilterClick && (
             <Button 
@@ -88,7 +88,7 @@ export function DataControlsBar({
       </div>
 
       {/* Right cluster - View toggle */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-3">
         {rightContent || (
           showViewToggle && (
             <div className="flex border rounded-lg overflow-hidden">
