@@ -7,7 +7,7 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import { MobileHeader } from '@/components/MobileHeader';
 import { SearchModal } from '@/components/SearchModal';
 import { GlobalSearch } from '@/components/GlobalSearch';
-import { useHapticFeedback } from '@/hooks/useTouchDevice';
+import { useHapticFeedback, useTouchDevice } from '@/hooks/useTouchDevice';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -54,13 +54,14 @@ const SwipeHintIndicator: React.FC<{ visible: boolean }> = ({ visible }) => {
 const LayoutContent: React.FC<LayoutProps> = ({ children }) => {
   const [searchOpen, setSearchOpen] = useState(false);
   const location = useLocation();
-  const { setOpenMobile, openMobile, isMobile } = useSidebar();
+  const { setOpenMobile, openMobile, isMobile, open, setOpen } = useSidebar();
   const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
   const haptic = useHapticFeedback();
+  const isTouch = useTouchDevice();
 
-  // Add touch listeners to detect swipes
+  // Add touch listeners to detect swipes on touch devices (mobile + tablet)
   useEffect(() => {
-    if (!isMobile) return;
+    if (!isTouch) return;
 
     const edgeThreshold = 30; // pixels from left edge to trigger open
     const swipeThreshold = 50; // minimum swipe distance
@@ -89,16 +90,27 @@ const LayoutContent: React.FC<LayoutProps> = ({ children }) => {
         return;
       }
 
+      // Determine if sidebar is currently open (mobile uses openMobile, desktop/tablet uses open)
+      const sidebarIsOpen = isMobile ? openMobile : !open;
+
       // Swipe right from left edge to OPEN
-      if (!openMobile && touchStartRef.current.x < edgeThreshold && deltaX > swipeThreshold) {
+      if (!sidebarIsOpen && touchStartRef.current.x < edgeThreshold && deltaX > swipeThreshold) {
         haptic.lightTap();
-        setOpenMobile(true);
+        if (isMobile) {
+          setOpenMobile(true);
+        } else {
+          setOpen(true);
+        }
       }
       
       // Swipe left to CLOSE (when sidebar is open)
-      if (openMobile && deltaX < -swipeThreshold) {
+      if (sidebarIsOpen && deltaX < -swipeThreshold) {
         haptic.lightTap();
-        setOpenMobile(false);
+        if (isMobile) {
+          setOpenMobile(false);
+        } else {
+          setOpen(false);
+        }
       }
 
       touchStartRef.current = null;
@@ -111,12 +123,12 @@ const LayoutContent: React.FC<LayoutProps> = ({ children }) => {
       document.removeEventListener('touchstart', handleTouchStart);
       document.removeEventListener('touchend', handleTouchEnd);
     };
-  }, [isMobile, openMobile, setOpenMobile, haptic]);
+  }, [isTouch, isMobile, openMobile, setOpenMobile, open, setOpen, haptic]);
 
   return (
     <>
-      {/* Swipe hint indicator - only visible on mobile when sidebar is closed */}
-      <SwipeHintIndicator visible={isMobile && !openMobile} />
+      {/* Swipe hint indicator - only visible on touch devices when sidebar is closed */}
+      <SwipeHintIndicator visible={isTouch && (isMobile ? !openMobile : !open)} />
       
       <div className="flex min-h-screen w-full bg-background overflow-x-hidden">
         <AppSidebar />
