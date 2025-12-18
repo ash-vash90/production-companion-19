@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import Layout from '@/components/Layout';
 import { PageHeader } from '@/components/PageHeader';
+import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useUserProfile } from '@/contexts/UserProfileContext';
@@ -10,8 +11,10 @@ import PlannerCalendar from '@/components/planner/PlannerCalendar';
 import PlannerWorkOrderDetail from '@/components/planner/PlannerWorkOrderDetail';
 import MobilePlannerFlow from '@/components/planner/MobilePlannerFlow';
 import DesktopCapacityBar from '@/components/planner/DesktopCapacityBar';
+import { CreateWorkOrderDialog } from '@/components/CreateWorkOrderDialog';
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, parseISO, addMonths, subMonths, addWeeks, subWeeks } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { Plus, Calendar, List } from 'lucide-react';
 
 export interface PlannerWorkOrder {
   id: string;
@@ -159,6 +162,9 @@ const ProductionPlanner = () => {
     fetchWorkOrders();
   };
 
+  // Create work order dialog
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+
   // Mobile navigation
   const handleMobileBack = () => {
     switch (mobileStep) {
@@ -193,6 +199,36 @@ const ProductionPlanner = () => {
             <PageHeader
               title={language === 'nl' ? 'Productieplanner' : 'Production Planner'}
               description={language === 'nl' ? 'Plan en beheer productieorders visueel op de kalender' : 'Plan and manage production orders visually on the calendar'}
+              actions={
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center border rounded-md">
+                    <Button
+                      variant={calendarView === 'month' ? 'secondary' : 'ghost'}
+                      size="sm"
+                      onClick={() => setCalendarView('month')}
+                      className="rounded-r-none"
+                    >
+                      <Calendar className="h-4 w-4 mr-1" />
+                      {language === 'nl' ? 'Maand' : 'Month'}
+                    </Button>
+                    <Button
+                      variant={calendarView === 'week' ? 'secondary' : 'ghost'}
+                      size="sm"
+                      onClick={() => setCalendarView('week')}
+                      className="rounded-l-none"
+                    >
+                      <List className="h-4 w-4 mr-1" />
+                      {language === 'nl' ? 'Week' : 'Week'}
+                    </Button>
+                  </div>
+                  {isAdmin && (
+                    <Button onClick={() => setCreateDialogOpen(true)} size="sm">
+                      <Plus className="h-4 w-4 mr-1" />
+                      {language === 'nl' ? 'Nieuwe order' : 'New Order'}
+                    </Button>
+                  )}
+                </div>
+              }
             />
           </div>
           {/* Desktop: Split view - Calendar left, Detail right */}
@@ -234,6 +270,12 @@ const ProductionPlanner = () => {
           {/* Desktop Capacity Bar */}
           <DesktopCapacityBar currentDate={currentDate} />
         </div>
+
+        <CreateWorkOrderDialog
+          open={createDialogOpen}
+          onOpenChange={setCreateDialogOpen}
+          onSuccess={handleWorkOrderUpdate}
+        />
       </Layout>
     );
   }
