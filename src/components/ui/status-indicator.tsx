@@ -5,19 +5,19 @@ import { CheckCircle2, Clock, Pause, XCircle, Calendar } from "lucide-react";
 
 const statusIndicatorVariants = cva(
   [
-    "inline-flex items-center gap-1.5 rounded-full border-2 px-3 py-1",
-    "text-[11px] font-medium font-mono uppercase tracking-wide",
+    "inline-flex items-center gap-1.5 rounded-full border px-3 py-1",
+    "text-[11px] font-mono font-medium uppercase tracking-wide",
     "whitespace-nowrap flex-shrink-0 shadow-sm",
     "transition-colors duration-150",
   ].join(" "),
   {
     variants: {
       status: {
-        planned: "bg-status-planned text-status-planned-foreground border-status-planned-foreground/30",
-        in_progress: "bg-status-in-progress text-status-in-progress-foreground border-status-in-progress-foreground/30",
-        on_hold: "bg-status-on-hold text-status-on-hold-foreground border-status-on-hold-foreground/30",
-        completed: "bg-status-completed text-status-completed-foreground border-status-completed-foreground/30",
-        cancelled: "bg-status-cancelled text-status-cancelled-foreground border-status-cancelled-foreground/30",
+        planned: "bg-status-planned text-status-planned-foreground border-status-planned-border",
+        in_progress: "bg-status-in-progress text-status-in-progress-foreground border-status-in-progress-border",
+        on_hold: "bg-status-on-hold text-status-on-hold-foreground border-status-on-hold-border",
+        completed: "bg-status-completed text-status-completed-foreground border-status-completed-border",
+        cancelled: "bg-status-cancelled text-status-cancelled-foreground border-status-cancelled-border",
       },
       size: {
         sm: "text-[10px] px-2 py-0.5 gap-1",
