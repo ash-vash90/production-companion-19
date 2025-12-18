@@ -581,18 +581,19 @@ export function WorkOrderKanbanView({ workOrders, onStatusChange, onCancel }: Wo
         onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
       >
-        <div className="overflow-x-auto pb-4">
-          <div className="flex gap-3 w-full">
+        <div className="overflow-x-auto pb-4 snap-x snap-mandatory sm:snap-none">
+          <div className="flex gap-3 w-max sm:w-full">
             {visibleColumns.map(({ status }) => (
-              <KanbanColumn
-                key={status}
-                status={status}
-                workOrders={ordersByStatus[status] || []}
-                columnOrders={columnOrders}
-                onReorder={handleReorder}
-                isOver={hoveredColumn === status}
-                isDragging={!!activeId}
-              />
+              <div key={status} className="w-[85vw] sm:w-auto sm:flex-1 snap-center sm:snap-align-none">
+                <KanbanColumn
+                  status={status}
+                  workOrders={ordersByStatus[status] || []}
+                  columnOrders={columnOrders}
+                  onReorder={handleReorder}
+                  isOver={hoveredColumn === status}
+                  isDragging={!!activeId}
+                />
+              </div>
             ))}
           </div>
         </div>

@@ -8,8 +8,17 @@ import { StatusIndicator } from '@/components/ui/status-indicator';
 import { WorkOrderStatusSelect } from './WorkOrderStatusSelect';
 import { ProductBreakdownBadges } from './ProductBreakdownBadges';
 import { formatDate, ProductBreakdown } from '@/lib/utils';
-import { AlertTriangle, Clock, Calendar, Truck, Eye, CalendarClock } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
+import { Badge } from '@/components/ui/badge';
+import { AlertTriangle, Clock, Calendar, Truck, Eye, CalendarClock, UserX } from 'lucide-react';
 import { parseISO, isBefore } from 'date-fns';
+
+interface AssignedOperator {
+  id: string;
+  full_name: string;
+  avatar_url: string | null;
+}
 
 export interface WorkOrderRowData {
   id: string;
@@ -26,6 +35,7 @@ export interface WorkOrderRowData {
   cancellation_reason?: string | null;
   productBreakdown: ProductBreakdown[];
   progressPercent?: number;
+  assignedOperators?: AssignedOperator[];
 }
 
 interface WorkOrderTableRowProps {
@@ -52,6 +62,8 @@ interface WorkOrderTableRowProps {
   onSelectionChange?: (selected: boolean) => void;
   /** Plan callback - opens planner */
   onPlan?: () => void;
+  /** Show assigned operators column */
+  showAssignees?: boolean;
 }
 
 export function WorkOrderTableRow({
@@ -71,9 +83,18 @@ export function WorkOrderTableRow({
   selected = false,
   onSelectionChange,
   onPlan,
+  showAssignees = false,
 }: WorkOrderTableRowProps) {
   const navigate = useNavigate();
   const { t, language } = useLanguage();
+
+  const assignedOperators = workOrder.assignedOperators || [];
+  const hasAssignedOperators = assignedOperators.length > 0;
+  const isActiveWorkOrder = workOrder.status !== 'completed' && workOrder.status !== 'cancelled';
+
+  const getInitials = (name: string) => {
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  };
 
   // Urgency calculations
   const isShippingOverdue = (): boolean => {
@@ -98,20 +119,21 @@ export function WorkOrderTableRow({
   };
 
   return (
-    <TableRow 
-      className={`cursor-pointer hover:bg-muted/50 ${selected ? 'bg-primary/5' : ''}`}
-      onClick={handleClick}
-    >
-      {/* Selection checkbox */}
-      {selectable && (
-        <TableCell className="w-10" onClick={(e) => e.stopPropagation()}>
-          <Checkbox
-            checked={selected}
-            onCheckedChange={(checked) => onSelectionChange?.(!!checked)}
-            className="h-4 w-4"
-          />
-        </TableCell>
-      )}
+    <TooltipProvider>
+      <TableRow 
+        className={`cursor-pointer hover:bg-muted/50 ${selected ? 'bg-primary/5' : ''}`}
+        onClick={handleClick}
+      >
+        {/* Selection checkbox */}
+        {selectable && (
+          <TableCell className="w-10" onClick={(e) => e.stopPropagation()}>
+            <Checkbox
+              checked={selected}
+              onCheckedChange={(checked) => onSelectionChange?.(!!checked)}
+              className="h-4 w-4"
+            />
+          </TableCell>
+        )}
 
       {/* WO Number + Urgency icons */}
       <TableCell className="font-mono font-semibold whitespace-nowrap">
@@ -158,6 +180,52 @@ export function WorkOrderTableRow({
           )}
         </div>
       </TableCell>
+
+      {/* Assigned operators */}
+      {showAssignees && (
+        <TableCell className="hidden lg:table-cell">
+          {hasAssignedOperators ? (
+            <div className="flex items-center -space-x-1.5">
+              {assignedOperators.slice(0, 3).map((operator) => (
+                <Tooltip key={operator.id}>
+                  <TooltipTrigger asChild>
+                    <Avatar className="h-6 w-6 border-2 border-card">
+                      <AvatarImage src={operator.avatar_url || undefined} alt={operator.full_name} />
+                      <AvatarFallback className="text-[10px] bg-primary/10 text-primary">
+                        {getInitials(operator.full_name)}
+                      </AvatarFallback>
+                    </Avatar>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="text-xs">
+                    {operator.full_name}
+                  </TooltipContent>
+                </Tooltip>
+              ))}
+              {assignedOperators.length > 3 && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="h-6 w-6 rounded-full border-2 border-card bg-muted flex items-center justify-center">
+                      <span className="text-[10px] font-medium text-muted-foreground">
+                        +{assignedOperators.length - 3}
+                      </span>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="text-xs">
+                    {assignedOperators.slice(3).map(op => op.full_name).join(', ')}
+                  </TooltipContent>
+                </Tooltip>
+              )}
+            </div>
+          ) : isActiveWorkOrder ? (
+            <Badge variant="outline" className="text-[10px] px-1.5 py-0 gap-1 text-warning border-warning/50">
+              <UserX className="h-3 w-3" />
+              Unassigned
+            </Badge>
+          ) : (
+            <span className="text-muted-foreground">-</span>
+          )}
+        </TableCell>
+      )}
 
       {/* Dates - Start & Ship */}
       <TableCell className="text-xs whitespace-nowrap hidden lg:table-cell">
@@ -242,5 +310,6 @@ export function WorkOrderTableRow({
         </div>
       </TableCell>
     </TableRow>
+    </TooltipProvider>
   );
 }
