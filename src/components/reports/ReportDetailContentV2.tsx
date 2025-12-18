@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { WorkOrderStatusBadge } from '@/components/workorders/WorkOrderStatusBadge';
+import { StatusIndicator } from '@/components/ui/status-indicator';
 import { StepTimeline } from '@/components/reports/StepTimeline';
 import { ProductionStory } from '@/components/reports/ProductionStory';
 import { ExportReportDialog } from '@/components/reports/ExportReportDialog';
@@ -76,7 +76,7 @@ export function ReportDetailContentV2({
         <div>
           <div className="flex items-center gap-2 flex-wrap">
             <h2 className="text-lg font-semibold">{data.workOrder.wo_number}</h2>
-            <WorkOrderStatusBadge status={data.workOrder.status} />
+            <StatusIndicator status={data.workOrder.status as any} size="default" />
           </div>
           <p className="text-sm text-muted-foreground mt-1">
             {data.workOrder.product_type.replace(/_/g, ' ')} • {data.workOrder.batch_size}{' '}

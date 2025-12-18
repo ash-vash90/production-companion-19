@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { WorkOrderCard } from '@/components/workorders/WorkOrderCard';
 import { WorkOrderTableRow } from '@/components/workorders/WorkOrderTableRow';
-import { WorkOrderStatusBadge } from '@/components/workorders/WorkOrderStatusBadge';
+import { StatusIndicator } from '@/components/ui/status-indicator';
 import { ProductBreakdownBadges } from '@/components/workorders/ProductBreakdownBadges';
 import { ReportDetailContentV2 } from '@/components/reports/ReportDetailContentV2';
 import { useProductionReports, ProductionReportItem } from '@/hooks/useProductionReports';
@@ -297,7 +297,7 @@ const ProductionReports = () => {
                                   <div className="min-w-0 flex-1">
                                     <div className="flex items-center gap-2">
                                       <span className="font-mono font-medium text-sm truncate">{wo.wo_number}</span>
-                                      <WorkOrderStatusBadge status={wo.status} />
+                                      <StatusIndicator status={wo.status as any} size="sm" />
                                     </div>
                                     {wo.customer_name && (
                                       <p className="text-xs text-muted-foreground mt-0.5 truncate">{wo.customer_name}</p>
@@ -373,7 +373,7 @@ const ProductionReports = () => {
                   {selectedReportData && (
                     <>
                       <h2 className="font-bold text-lg">{selectedReportData.workOrder.wo_number}</h2>
-                      <WorkOrderStatusBadge status={selectedReportData.workOrder.status} />
+                      <StatusIndicator status={selectedReportData.workOrder.status as any} size="default" />
                     </>
                   )}
                 </div>

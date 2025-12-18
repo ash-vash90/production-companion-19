@@ -14,7 +14,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { toast } from 'sonner';
 import { formatDate, formatProductType, cn } from '@/lib/utils';
-import { WorkOrderStatusBadge } from '@/components/workorders/WorkOrderStatusBadge';
+import { StatusIndicator } from '@/components/ui/status-indicator';
 import ItemLevelAssignmentPanel from '@/components/workorders/ItemLevelAssignmentPanel';
 import StepAssignmentPanel from '@/components/workorders/StepAssignmentPanel';
 import { X, Package, Calendar as CalendarIcon, Truck, DollarSign, Play, AlertTriangle, Users, FileText, Layers } from 'lucide-react';
@@ -165,7 +165,7 @@ const PlannerWorkOrderDetail: React.FC<PlannerWorkOrderDetailProps> = ({
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
             <h2 className="font-mono text-xl font-semibold truncate">{workOrder.wo_number}</h2>
-            <WorkOrderStatusBadge status={workOrder.status} />
+            <StatusIndicator status={workOrder.status as any} size="default" />
           </div>
           <div className="flex items-center gap-2">
             {isActiveWorkOrder && (
