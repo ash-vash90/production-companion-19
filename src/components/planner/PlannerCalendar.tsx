@@ -302,17 +302,20 @@ const PlannerCalendar: React.FC<PlannerCalendarProps> = ({
           </div>
         </div>
 
+        {/* Sticky Week day headers */}
+        <div className="sticky top-0 z-10 bg-background border-b px-4 pt-2 pb-1">
+          <div className="grid grid-cols-7">
+            {(language === 'nl' ? weekDaysNl : weekDays).map((day) => (
+              <div key={day} className="text-center text-xs font-medium text-muted-foreground py-2">
+                {day}
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* Calendar Grid */}
         <ScrollArea className="flex-1">
-          <div className="p-4">
-            {/* Week day headers */}
-            <div className="grid grid-cols-7 mb-2">
-              {(language === 'nl' ? weekDaysNl : weekDays).map((day) => (
-                <div key={day} className="text-center text-xs font-medium text-muted-foreground py-2">
-                  {day}
-                </div>
-              ))}
-            </div>
+          <div className="p-4 pt-2">
 
             {/* Calendar cells */}
             <div className={cn(
