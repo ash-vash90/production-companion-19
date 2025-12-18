@@ -5,6 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Progress } from '@/components/ui/progress';
 import {
   Accordion,
   AccordionContent,
@@ -23,8 +24,18 @@ import {
   AlertTriangle,
   Users,
   Package,
-  ChevronDown
+  ChevronDown,
+  CheckCircle2,
+  Circle,
+  Clock
 } from 'lucide-react';
+
+interface StepExecution {
+  id: string;
+  work_order_item_id: string;
+  production_step_id: string;
+  status: 'pending' | 'in_progress' | 'completed' | 'skipped';
+}
 
 interface ProductionStep {
   id: string;
@@ -73,6 +84,7 @@ const MobileAssignmentPage: React.FC<MobileAssignmentPageProps> = ({
   const [steps, setSteps] = useState<ProductionStep[]>([]);
   const [operators, setOperators] = useState<Operator[]>([]);
   const [stepAssignments, setStepAssignments] = useState<Map<string, Map<string, string>>>(new Map()); // itemId -> (stepId -> operatorId)
+  const [stepExecutions, setStepExecutions] = useState<Map<string, Map<string, StepExecution>>>(new Map()); // itemId -> (stepId -> execution)
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [selectedOperatorForAll, setSelectedOperatorForAll] = useState<string | null>(null);
@@ -173,6 +185,24 @@ const MobileAssignmentPage: React.FC<MobileAssignmentPageProps> = ({
       });
       setStepAssignments(initialAssignments);
 
+      // Fetch step executions for completion status
+      const itemIds = fetchedItems.map(i => i.id);
+      if (itemIds.length > 0) {
+        const { data: executionsData } = await supabase
+          .from('step_executions')
+          .select('id, work_order_item_id, production_step_id, status')
+          .in('work_order_item_id', itemIds);
+
+        const executionsMap = new Map<string, Map<string, StepExecution>>();
+        (executionsData || []).forEach((exec: any) => {
+          if (!executionsMap.has(exec.work_order_item_id)) {
+            executionsMap.set(exec.work_order_item_id, new Map());
+          }
+          executionsMap.get(exec.work_order_item_id)!.set(exec.production_step_id, exec);
+        });
+        setStepExecutions(executionsMap);
+      }
+
     } catch (error) {
       console.error('Error fetching assignment data:', error);
     } finally {
@@ -184,6 +214,51 @@ const MobileAssignmentPage: React.FC<MobileAssignmentPageProps> = ({
 
   const getStepTitle = (step: ProductionStep) => 
     language === 'nl' && step.title_nl ? step.title_nl : step.title_en;
+
+  const getStepStatus = (itemId: string, stepId: string) => {
+    const itemExecs = stepExecutions.get(itemId);
+    if (!itemExecs) return 'pending';
+    const exec = itemExecs.get(stepId);
+    return exec?.status || 'pending';
+  };
+
+  const getItemCompletionStats = (itemId: string) => {
+    const itemExecs = stepExecutions.get(itemId);
+    if (!itemExecs || steps.length === 0) {
+      return { completed: 0, inProgress: 0, total: steps.length, percentage: 0 };
+    }
+    
+    let completed = 0;
+    let inProgress = 0;
+    
+    steps.forEach(step => {
+      const exec = itemExecs.get(step.id);
+      if (exec?.status === 'completed' || exec?.status === 'skipped') {
+        completed++;
+      } else if (exec?.status === 'in_progress') {
+        inProgress++;
+      }
+    });
+    
+    return { 
+      completed, 
+      inProgress, 
+      total: steps.length, 
+      percentage: steps.length > 0 ? Math.round((completed / steps.length) * 100) : 0 
+    };
+  };
+
+  const getStepStatusIcon = (status: string) => {
+    switch (status) {
+      case 'completed':
+      case 'skipped':
+        return <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />;
+      case 'in_progress':
+        return <Clock className="h-3.5 w-3.5 text-amber-500" />;
+      default:
+        return <Circle className="h-3.5 w-3.5 text-muted-foreground/50" />;
+    }
+  };
 
   const assignmentStats = useMemo(() => {
     const assignedItems = items.filter(i => i.assigned_to || stepAssignments.has(i.id)).length;
@@ -435,29 +510,62 @@ const MobileAssignmentPage: React.FC<MobileAssignmentPageProps> = ({
             {items.map((item) => {
               const itemSteps = stepAssignments.get(item.id) || new Map();
               const isUnassigned = !item.assigned_to && itemSteps.size === 0;
+              const completionStats = getItemCompletionStats(item.id);
+              const isComplete = completionStats.completed === completionStats.total && completionStats.total > 0;
+              const hasProgress = completionStats.completed > 0 || completionStats.inProgress > 0;
               
               return (
                 <AccordionItem 
                   key={item.id} 
                   value={item.id}
-                  className="border rounded-lg overflow-hidden"
+                  className={cn(
+                    "border rounded-lg overflow-hidden",
+                    isComplete && "border-emerald-500/50 bg-emerald-500/5"
+                  )}
                 >
                   <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-muted/50">
                     <div className="flex items-center gap-3 flex-1 text-left">
-                      <Package className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                      {isComplete ? (
+                        <CheckCircle2 className="h-4 w-4 text-emerald-500 flex-shrink-0" />
+                      ) : (
+                        <Package className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                      )}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <span className="font-mono text-sm truncate">{item.serial_number}</span>
                           <Badge variant="outline" className="text-[10px] h-5">
                             #{item.position_in_batch}
                           </Badge>
+                          {hasProgress && (
+                            <Badge 
+                              variant="outline" 
+                              className={cn(
+                                "text-[10px] h-5",
+                                isComplete 
+                                  ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-600"
+                                  : completionStats.inProgress > 0
+                                    ? "border-amber-500/50 bg-amber-500/10 text-amber-600"
+                                    : "border-sky-500/50 bg-sky-500/10 text-sky-600"
+                              )}
+                            >
+                              {completionStats.completed}/{completionStats.total}
+                            </Badge>
+                          )}
                         </div>
-                        <p className={cn(
-                          "text-xs mt-0.5",
-                          isUnassigned ? "text-warning" : "text-muted-foreground"
-                        )}>
-                          {getItemAssignmentSummary(item)}
-                        </p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <p className={cn(
+                            "text-xs",
+                            isUnassigned ? "text-warning" : "text-muted-foreground"
+                          )}>
+                            {getItemAssignmentSummary(item)}
+                          </p>
+                          {hasProgress && !isComplete && (
+                            <Progress 
+                              value={completionStats.percentage} 
+                              className="h-1 w-16 flex-shrink-0"
+                            />
+                          )}
+                        </div>
                       </div>
                     </div>
                   </AccordionTrigger>
@@ -505,14 +613,51 @@ const MobileAssignmentPage: React.FC<MobileAssignmentPageProps> = ({
                       <div className="space-y-2">
                         {steps.map((step) => {
                           const assignedOpId = itemSteps.get(step.id);
+                          const stepStatus = getStepStatus(item.id, step.id);
+                          const isStepComplete = stepStatus === 'completed' || stepStatus === 'skipped';
+                          const isStepInProgress = stepStatus === 'in_progress';
                           
                           return (
-                            <div key={step.id} className="bg-muted/30 rounded-md p-2">
+                            <div 
+                              key={step.id} 
+                              className={cn(
+                                "rounded-md p-2",
+                                isStepComplete 
+                                  ? "bg-emerald-500/10 border border-emerald-500/30"
+                                  : isStepInProgress
+                                    ? "bg-amber-500/10 border border-amber-500/30"
+                                    : "bg-muted/30"
+                              )}
+                            >
                               <div className="flex items-center gap-2 mb-2">
-                                <Badge variant="outline" className="font-mono text-[10px] h-5 w-5 flex items-center justify-center p-0">
+                                {getStepStatusIcon(stepStatus)}
+                                <Badge 
+                                  variant="outline" 
+                                  className={cn(
+                                    "font-mono text-[10px] h-5 w-5 flex items-center justify-center p-0",
+                                    isStepComplete && "border-emerald-500/50 text-emerald-600",
+                                    isStepInProgress && "border-amber-500/50 text-amber-600"
+                                  )}
+                                >
                                   {step.step_number}
                                 </Badge>
-                                <span className="text-xs flex-1 truncate">{getStepTitle(step)}</span>
+                                <span className={cn(
+                                  "text-xs flex-1 truncate",
+                                  isStepComplete && "text-emerald-600",
+                                  isStepInProgress && "text-amber-600"
+                                )}>
+                                  {getStepTitle(step)}
+                                </span>
+                                {isStepComplete && (
+                                  <Badge variant="outline" className="text-[9px] h-4 border-emerald-500/50 bg-emerald-500/10 text-emerald-600">
+                                    {language === 'nl' ? 'Klaar' : 'Done'}
+                                  </Badge>
+                                )}
+                                {isStepInProgress && (
+                                  <Badge variant="outline" className="text-[9px] h-4 border-amber-500/50 bg-amber-500/10 text-amber-600">
+                                    {language === 'nl' ? 'Bezig' : 'Active'}
+                                  </Badge>
+                                )}
                               </div>
                               <div className="flex flex-wrap gap-1">
                                 {operators.map((op) => (
