@@ -302,6 +302,76 @@ export function useHapticFeedback() {
 }
 
 /**
+ * Long press gesture detection
+ */
+interface LongPressOptions {
+  delay?: number; // Time in ms to trigger long press (default 500ms)
+  onLongPress: () => void;
+  onPress?: () => void; // Regular tap handler
+}
+
+export function useLongPress(options: LongPressOptions) {
+  const { delay = 500, onLongPress, onPress } = options;
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const isLongPressRef = useRef(false);
+  const startPosRef = useRef({ x: 0, y: 0 });
+
+  const clearTimer = useCallback(() => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+  }, []);
+
+  const onTouchStart = useCallback((e: React.TouchEvent) => {
+    const touch = e.touches[0];
+    startPosRef.current = { x: touch.clientX, y: touch.clientY };
+    isLongPressRef.current = false;
+
+    timerRef.current = setTimeout(() => {
+      isLongPressRef.current = true;
+      onLongPress();
+      // Haptic feedback if available
+      if ('vibrate' in navigator) {
+        navigator.vibrate(20);
+      }
+    }, delay);
+  }, [delay, onLongPress]);
+
+  const onTouchMove = useCallback((e: React.TouchEvent) => {
+    const touch = e.touches[0];
+    const moveThreshold = 10;
+    const deltaX = Math.abs(touch.clientX - startPosRef.current.x);
+    const deltaY = Math.abs(touch.clientY - startPosRef.current.y);
+
+    // Cancel long press if user moves finger
+    if (deltaX > moveThreshold || deltaY > moveThreshold) {
+      clearTimer();
+    }
+  }, [clearTimer]);
+
+  const onTouchEnd = useCallback((e: React.TouchEvent) => {
+    clearTimer();
+    
+    // If it wasn't a long press, treat as regular tap
+    if (!isLongPressRef.current && onPress) {
+      onPress();
+    }
+  }, [clearTimer, onPress]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => clearTimer();
+  }, [clearTimer]);
+
+  return {
+    onTouchStart,
+    onTouchMove,
+    onTouchEnd,
+  };
+}
+
+/**
  * Safe area insets (for notched devices)
  */
 export function useSafeAreaInsets() {

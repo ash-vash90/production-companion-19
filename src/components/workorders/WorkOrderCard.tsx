@@ -12,6 +12,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import { AlertTriangle, Clock, ChevronRight, Calendar, Truck, UserX, CalendarClock } from 'lucide-react';
 import { parseISO, isBefore, differenceInDays } from 'date-fns';
+import { useLongPress, useTouchDevice } from '@/hooks/useTouchDevice';
 
 interface AssignedOperator {
   id: string;
@@ -53,6 +54,7 @@ interface WorkOrderCardProps {
   selectable?: boolean;
   selected?: boolean;
   onSelectionChange?: (selected: boolean) => void;
+  onEnableSelectionMode?: () => void;
 }
 
 export function WorkOrderCard({
@@ -70,9 +72,11 @@ export function WorkOrderCard({
   selectable = false,
   selected = false,
   onSelectionChange,
+  onEnableSelectionMode,
 }: WorkOrderCardProps) {
   const navigate = useNavigate();
   const { t, language } = useLanguage();
+  const isTouch = useTouchDevice();
 
   // Urgency calculations
   const isShippingOverdue = (): boolean => {
@@ -126,6 +130,27 @@ export function WorkOrderCard({
     e.stopPropagation();
   };
 
+  // Long press to enable selection mode on mobile
+  const longPressHandlers = useLongPress({
+    delay: 500,
+    onLongPress: () => {
+      if (onEnableSelectionMode && !selectable) {
+        onEnableSelectionMode();
+        // After enabling selection mode, also select this card
+        setTimeout(() => onSelectionChange?.(true), 50);
+      } else if (selectable) {
+        // If already in selection mode, toggle this card
+        onSelectionChange?.(!selected);
+      }
+    },
+    onPress: () => {
+      // Only handle regular tap on touch devices when not in selection mode
+      if (!selectable) {
+        handleClick();
+      }
+    },
+  });
+
   const isActiveWorkOrder = workOrder.status !== 'completed' && workOrder.status !== 'cancelled';
   const assignedOperators = workOrder.assignedOperators || [];
   const hasAssignedOperators = assignedOperators.length > 0;
@@ -135,11 +160,21 @@ export function WorkOrderCard({
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };
 
+  // Determine event handlers based on device type
+  const cardProps = isTouch
+    ? {
+        ...longPressHandlers,
+        onClick: selectable ? () => onSelectionChange?.(!selected) : undefined,
+      }
+    : {
+        onClick: handleClick,
+      };
+
   return (
     <TooltipProvider>
       <div
         className={`group relative rounded-xl border border-l-4 bg-card p-4 md:p-5 transition-all cursor-pointer hover:shadow-lg hover:border-muted-foreground/30 ${urgencyClass} ${selected ? 'ring-2 ring-primary bg-primary/5' : ''}`}
-        onClick={handleClick}
+        {...cardProps}
         onMouseEnter={onHover}
       >
       {/* Selection checkbox */}
