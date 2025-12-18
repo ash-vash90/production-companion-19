@@ -6,7 +6,6 @@ import { useUserProfile } from '@/contexts/UserProfileContext';
 import { useTheme } from '@/hooks/useTheme';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import Layout from '@/components/Layout';
-import ProtectedRoute from '@/components/ProtectedRoute';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -464,51 +463,46 @@ const Profile: React.FC = () => {
 
   if (loading) {
     return (
-      <ProtectedRoute>
-        <Layout>
-          <div className="container max-w-4xl mx-auto py-6 px-4 space-y-6">
-            <Skeleton className="h-10 w-32" />
-            <Card>
-              <CardHeader>
-                <div className="flex items-center gap-4">
-                  <Skeleton className="h-20 w-20 rounded-full" />
-                  <div className="space-y-2">
-                    <Skeleton className="h-6 w-48" />
-                    <Skeleton className="h-4 w-32" />
-                  </div>
+      <Layout>
+        <div className="container max-w-4xl mx-auto py-6 px-4 space-y-6">
+          <Skeleton className="h-10 w-32" />
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-4">
+                <Skeleton className="h-20 w-20 rounded-full" />
+                <div className="space-y-2">
+                  <Skeleton className="h-6 w-48" />
+                  <Skeleton className="h-4 w-32" />
                 </div>
-              </CardHeader>
-            </Card>
-            <Skeleton className="h-96" />
-          </div>
-        </Layout>
-      </ProtectedRoute>
+              </div>
+            </CardHeader>
+          </Card>
+          <Skeleton className="h-96" />
+        </div>
+      </Layout>
     );
   }
 
   if (!profileData) {
     return (
-      <ProtectedRoute>
-        <Layout>
-          <div className="container max-w-4xl mx-auto py-6 px-4">
-            <div className="text-center py-12">
-              <h2 className="text-xl font-semibold mb-2">
-                {language === 'nl' ? 'Gebruiker niet gevonden' : 'User not found'}
-              </h2>
-              <Button onClick={() => navigate(-1)}>
-                {language === 'nl' ? 'Terug' : 'Go Back'}
-              </Button>
-            </div>
+      <Layout>
+        <div className="container max-w-4xl mx-auto py-6 px-4">
+          <div className="text-center py-12">
+            <h2 className="text-xl font-semibold mb-2">
+              {language === 'nl' ? 'Gebruiker niet gevonden' : 'User not found'}
+            </h2>
+            <Button onClick={() => navigate(-1)}>
+              {language === 'nl' ? 'Terug' : 'Go Back'}
+            </Button>
           </div>
-        </Layout>
-      </ProtectedRoute>
+        </div>
+      </Layout>
     );
   }
 
   return (
-    <ProtectedRoute>
-      <Layout>
-        <div className="container max-w-4xl mx-auto py-6 px-4 space-y-6">
+    <Layout>
+      <div className="container max-w-4xl mx-auto py-6 px-4 space-y-6">
           {/* Back Button (only when viewing another user) */}
           {!isOwnProfile && (
             <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="gap-2">
@@ -827,7 +821,6 @@ const Profile: React.FC = () => {
           />
         )}
       </Layout>
-    </ProtectedRoute>
   );
 };
 
