@@ -134,7 +134,7 @@ const LayoutContent: React.FC<LayoutProps> = ({ children }) => {
         <AppSidebar />
         <SidebarInset className="flex flex-col overflow-x-hidden">
           {/* Mobile Header - visible on mobile/tablet */}
-          <MobileHeader onSearchClick={location.pathname === '/work-orders' ? undefined : () => setSearchOpen(true)} />
+          <MobileHeader onSearchClick={() => setSearchOpen(true)} />
 
           {/* Desktop Header - hidden on mobile only, visible on tablet+ */}
           <header className="sticky top-0 z-40 hidden md:flex h-14 shrink-0 items-center border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
