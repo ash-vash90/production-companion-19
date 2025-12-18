@@ -3,11 +3,13 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Users, AlertTriangle } from 'lucide-react';
+import UpcomingTimeOff from './UpcomingTimeOff';
 
 interface Operator {
   id: string;
@@ -130,7 +132,8 @@ const DesktopCapacityBar: React.FC<DesktopCapacityBarProps> = ({ currentDate }) 
 
   return (
     <div className="flex-none border-t bg-muted/30">
-      <div className="px-4 py-3">
+      <div className="px-4 py-3 space-y-3">
+        {/* Team Capacity Row */}
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2 text-sm text-muted-foreground flex-shrink-0">
             <Users className="h-4 w-4" />
@@ -182,6 +185,9 @@ const DesktopCapacityBar: React.FC<DesktopCapacityBarProps> = ({ currentDate }) 
             <ScrollBar orientation="horizontal" />
           </ScrollArea>
         </div>
+
+        {/* Upcoming Time Off Row */}
+        <UpcomingTimeOff compact daysAhead={14} />
       </div>
     </div>
   );
