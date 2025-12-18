@@ -358,8 +358,11 @@ export function WorkOrderFilters({
             )}
           </Button>
           <Sheet open={filterOpen} onOpenChange={setFilterOpen}>
-            <SheetContent side="bottom" className="h-[100dvh] flex flex-col overflow-hidden">
-              <SheetHeader className="pb-4 shrink-0">
+            <SheetContent
+              side="bottom"
+              className="h-[100dvh] w-screen max-w-none p-0 rounded-none flex flex-col"
+            >
+              <SheetHeader className="px-6 pt-6 pb-4 shrink-0 text-left">
                 <div className="flex items-center justify-between">
                   <SheetTitle>{t('filter')}</SheetTitle>
                   {localActiveFilterCount > 0 && (
@@ -369,24 +372,21 @@ export function WorkOrderFilters({
                   )}
                 </div>
               </SheetHeader>
-              <ScrollArea className="flex-1 -mx-6 overflow-y-auto">
-                <div className="px-6 py-2">
+              <ScrollArea className="flex-1 px-6">
+                <div className="py-2 pb-6">
                   {renderFilterContent(true)}
                 </div>
               </ScrollArea>
-              <SheetFooter className="pt-4 border-t mt-auto flex-row gap-3 shrink-0">
-                <Button 
+              <SheetFooter className="px-6 pt-4 pb-6 border-t mt-auto flex-row gap-3 shrink-0">
+                <Button
                   variant="outline"
-                  className="flex-1 h-12" 
+                  className="flex-1 h-12"
                   onClick={clearLocalFilters}
                   disabled={localActiveFilterCount === 0}
                 >
                   {t('reset') || 'Reset'}
                 </Button>
-                <Button 
-                  className="flex-1 h-12" 
-                  onClick={applyFilters}
-                >
+                <Button className="flex-1 h-12" onClick={applyFilters}>
                   {t('apply') || 'Apply'}
                   {localActiveFilterCount > 0 && ` (${localActiveFilterCount})`}
                 </Button>
