@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef, memo, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -69,6 +70,7 @@ const getMinutesSinceOnline = (onlineAt: string): number => {
 };
 
 export const ActiveOperators = memo(function ActiveOperators() {
+  const navigate = useNavigate();
   const { language } = useLanguage();
   const { user } = useAuth();
   const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([]);
@@ -482,7 +484,8 @@ export const ActiveOperators = memo(function ActiveOperators() {
               return (
                 <div
                   key={member.id}
-                  className="flex items-center gap-3 p-3 rounded-lg border border-border bg-background hover:border-primary/20 transition-colors"
+                  onClick={() => navigate(`/profile/${member.id}`)}
+                  className="flex items-center gap-3 p-3 rounded-lg border border-border bg-background hover:border-primary/20 hover:bg-muted/30 transition-colors cursor-pointer"
                 >
                   <div className="relative shrink-0">
                     <Avatar className="h-9 w-9">
