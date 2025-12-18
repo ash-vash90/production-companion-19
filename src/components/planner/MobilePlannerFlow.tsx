@@ -6,12 +6,11 @@ import QuickScheduleDialog from './QuickScheduleDialog';
 import {
   MobileCalendarPage,
   MobileWorkOrderDetailPage,
-  MobileItemAssignmentPage,
-  MobileStepAssignmentPage,
+  MobileAssignmentPage,
   MobileOperatorCapacityPage,
 } from './mobile';
 
-type MobileStep = 'calendar' | 'detail' | 'items' | 'steps' | 'capacity';
+type MobileStep = 'calendar' | 'detail' | 'assignment' | 'capacity';
 
 interface MobilePlannerFlowProps {
   currentStep: string;
@@ -91,8 +90,7 @@ const MobilePlannerFlow: React.FC<MobilePlannerFlowProps> = ({
         setWorkOrderDetail(null);
         onCloseDetail();
         break;
-      case 'items':
-      case 'steps':
+      case 'assignment':
         setStep('detail');
         break;
       case 'capacity':
@@ -140,26 +138,14 @@ const MobilePlannerFlow: React.FC<MobilePlannerFlowProps> = ({
             workOrderId={workOrderDetail.id}
             onBack={handleBack}
             onUpdate={onWorkOrderUpdate}
-            onAssignItems={() => setStep('items')}
-            onAssignSteps={() => setStep('steps')}
+            onAssign={() => setStep('assignment')}
           />
         );
 
-      case 'items':
+      case 'assignment':
         if (!workOrderDetail) return null;
         return (
-          <MobileItemAssignmentPage
-            workOrderId={workOrderDetail.id}
-            scheduledDate={workOrderDetail.scheduledDate}
-            onBack={handleBack}
-            onUpdate={onWorkOrderUpdate}
-          />
-        );
-
-      case 'steps':
-        if (!workOrderDetail) return null;
-        return (
-          <MobileStepAssignmentPage
+          <MobileAssignmentPage
             workOrderId={workOrderDetail.id}
             productType={workOrderDetail.productType}
             scheduledDate={workOrderDetail.scheduledDate}
