@@ -2,26 +2,24 @@ import React from 'react';
 import { Menu, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useSidebar } from '@/components/ui/sidebar';
-import { RhosonicsLogo } from '@/components/RhosonicsLogo';
+import { NotificationCenter } from '@/components/notifications/NotificationCenter';
 
 interface MobileHeaderProps {
-  /** If omitted, the search icon is hidden (and spacing is preserved). */
-  onSearchClick?: () => void;
+  onSearchClick: () => void;
 }
 
 /**
  * Global App Header - Layer 1 of the 4-layer layout system
  *
- * Purpose: Navigation, identity, one global utility.
+ * Purpose: Navigation, identity, global utilities.
  *
  * Rules:
  * - Height: 56px (never taller)
- * - Position: sticky / fixed
+ * - Position: sticky
  * - Content:
  *   - Left: Hamburger (always)
- *   - Center: Logo icon only (no "Rhosonics PMS" text on mobile)
- *   - Right: ONE icon (Search) — optional per page
- * - No page-specific actions here — ever
+ *   - Right: Search + Notifications (always)
+ * - White background with subtle shadow
  */
 export function MobileHeader({ onSearchClick }: MobileHeaderProps) {
   const { toggleSidebar, isMobile } = useSidebar();
@@ -32,38 +30,31 @@ export function MobileHeader({ onSearchClick }: MobileHeaderProps) {
   }
 
   return (
-    <header className="sticky top-0 z-50 flex h-14 items-center justify-between border-b border-sidebar-border bg-sidebar px-3">
+    <header className="sticky top-0 z-50 flex h-14 items-center justify-between bg-background px-3 shadow-sm">
       {/* Left: Hamburger menu */}
       <Button
         variant="ghost"
         size="icon"
-        className="h-10 w-10 text-sidebar-foreground hover:bg-sidebar-accent"
+        className="h-10 w-10 text-foreground"
         onClick={toggleSidebar}
         aria-label="Toggle menu"
       >
         <Menu className="h-5 w-5" />
       </Button>
 
-      {/* Center: Logo only */}
-      <div className="flex items-center">
-        <RhosonicsLogo size={24} />
-      </div>
-
-      {/* Right: Single utility icon (Search) */}
-      {onSearchClick ? (
+      {/* Right: Search + Notifications */}
+      <div className="flex items-center gap-1">
         <Button
           variant="ghost"
           size="icon"
-          className="h-10 w-10 text-sidebar-foreground hover:bg-sidebar-accent"
+          className="h-10 w-10 text-foreground"
           onClick={onSearchClick}
           aria-label="Search"
         >
           <Search className="h-5 w-5" />
         </Button>
-      ) : (
-        // Keep spacing so the logo stays centered
-        <div className="h-10 w-10" aria-hidden="true" />
-      )}
+        <NotificationCenter />
+      </div>
     </header>
   );
 }
