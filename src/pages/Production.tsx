@@ -263,11 +263,11 @@ const Production = () => {
 
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
-      planned: 'bg-info text-info-foreground',
-      in_progress: 'bg-warning text-warning-foreground',
-      completed: 'bg-success text-success-foreground',
-      on_hold: 'bg-muted text-muted-foreground',
-      cancelled: 'bg-destructive text-destructive-foreground',
+      planned: 'bg-status-planned text-status-planned-foreground',
+      in_progress: 'bg-status-in-progress text-status-in-progress-foreground',
+      completed: 'bg-status-completed text-status-completed-foreground',
+      on_hold: 'bg-status-on-hold text-status-on-hold-foreground',
+      cancelled: 'bg-status-cancelled text-status-cancelled-foreground',
     };
     return colors[status] || 'bg-secondary text-secondary-foreground';
   };
