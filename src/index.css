@@ -79,30 +79,30 @@
   --info-foreground: 0 0% 100%;
   
   /* ========================================
-     WORK ORDER STATUS COLORS
+     WORK ORDER STATUS COLORS - High contrast foregrounds
      ======================================== */
   --status-planned: 200 70% 50%;
-  --status-planned-foreground: 200 80% 25%;
+  --status-planned-foreground: 0 0% 100%;
   --status-planned-bg: 200 70% 95%;
   --status-planned-border: 200 70% 70%;
   
   --status-in-progress: 45 93% 47%;
-  --status-in-progress-foreground: 45 90% 25%;
+  --status-in-progress-foreground: 0 0% 100%;
   --status-in-progress-bg: 45 93% 92%;
   --status-in-progress-border: 45 93% 60%;
   
   --status-on-hold: 215 16% 47%;
-  --status-on-hold-foreground: 215 19% 30%;
+  --status-on-hold-foreground: 0 0% 100%;
   --status-on-hold-bg: 215 16% 94%;
   --status-on-hold-border: 215 16% 70%;
   
   --status-completed: 138 68% 28%;
-  --status-completed-foreground: 138 68% 18%;
+  --status-completed-foreground: 0 0% 100%;
   --status-completed-bg: 138 68% 92%;
   --status-completed-border: 138 68% 50%;
   
   --status-cancelled: 0 84% 60%;
-  --status-cancelled-foreground: 0 70% 35%;
+  --status-cancelled-foreground: 0 0% 100%;
   --status-cancelled-bg: 0 84% 95%;
   --status-cancelled-border: 0 70% 70%;
   

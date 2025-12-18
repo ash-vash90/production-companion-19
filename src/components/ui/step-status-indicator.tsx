@@ -6,7 +6,7 @@ import { Circle, Clock, CheckCircle2, SkipForward } from "lucide-react";
 const stepStatusIndicatorVariants = cva(
   [
     "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5",
-    "text-[10px] font-medium font-mono uppercase tracking-wide",
+    "text-[10px] font-mono font-medium uppercase tracking-wide",
     "whitespace-nowrap flex-shrink-0",
     "transition-colors duration-150",
   ].join(" "),
@@ -14,9 +14,9 @@ const stepStatusIndicatorVariants = cva(
     variants: {
       status: {
         pending: "bg-muted/50 text-muted-foreground border-muted-foreground/20",
-        current: "bg-status-in-progress text-status-in-progress-foreground border-status-in-progress-foreground/30",
-        in_progress: "bg-status-in-progress text-status-in-progress-foreground border-status-in-progress-foreground/30",
-        completed: "bg-status-completed text-status-completed-foreground border-status-completed-foreground/30",
+        current: "bg-status-in-progress text-status-in-progress-foreground border-status-in-progress-border",
+        in_progress: "bg-status-in-progress text-status-in-progress-foreground border-status-in-progress-border",
+        completed: "bg-status-completed text-status-completed-foreground border-status-completed-border",
         skipped: "bg-muted/30 text-muted-foreground/70 border-muted-foreground/20",
       },
       size: {
