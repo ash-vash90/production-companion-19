@@ -358,7 +358,7 @@ export function WorkOrderFilters({
             )}
           </Button>
           <Sheet open={filterOpen} onOpenChange={setFilterOpen}>
-            <SheetContent side="bottom" className="h-[85vh] flex flex-col">
+            <SheetContent side="bottom" className="h-full flex flex-col">
               <SheetHeader className="pb-4">
                 <div className="flex items-center justify-between">
                   <SheetTitle>{t('filter')}</SheetTitle>
@@ -374,10 +374,10 @@ export function WorkOrderFilters({
               </ScrollArea>
               <SheetFooter className="pt-4 border-t mt-4">
                 <Button 
-                  className="w-full h-12" 
+                  className="w-full h-12 capitalize" 
                   onClick={applyFilters}
                 >
-                  {t('apply') || 'Apply Filters'}
+                  {t('apply') || 'Apply'}
                   {localActiveFilterCount > 0 && ` (${localActiveFilterCount})`}
                 </Button>
               </SheetFooter>
@@ -403,8 +403,8 @@ export function WorkOrderFilters({
         </Popover>
       )}
 
-      {/* Group Popover - hidden on mobile and in Kanban view */}
-      {!hideGroupBy && !isMobile && (
+      {/* Group Popover - hidden in Kanban view */}
+      {!hideGroupBy && (
         <Popover open={groupOpen} onOpenChange={setGroupOpen}>
           <PopoverTrigger asChild>
             <Button variant="outline" size="sm" className="h-9 gap-2">
