@@ -194,45 +194,44 @@ const ProductionPlanner = () => {
   if (!isMobile) {
     return (
       <Layout>
-        <div className="h-[calc(100vh-4rem)] flex flex-col overflow-hidden">
-          <div className="px-4 pt-4">
-            <PageHeader
-              title={language === 'nl' ? 'Productieplanner' : 'Production Planner'}
-              description={language === 'nl' ? 'Plan en beheer productieorders visueel op de kalender' : 'Plan and manage production orders visually on the calendar'}
-              actions={
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center border rounded-md">
-                    <Button
-                      variant={calendarView === 'month' ? 'secondary' : 'ghost'}
-                      size="sm"
-                      onClick={() => setCalendarView('month')}
-                      className="rounded-r-none"
-                    >
-                      <Calendar className="h-4 w-4 mr-1" />
-                      {language === 'nl' ? 'Maand' : 'Month'}
-                    </Button>
-                    <Button
-                      variant={calendarView === 'week' ? 'secondary' : 'ghost'}
-                      size="sm"
-                      onClick={() => setCalendarView('week')}
-                      className="rounded-l-none"
-                    >
-                      <List className="h-4 w-4 mr-1" />
-                      {language === 'nl' ? 'Week' : 'Week'}
-                    </Button>
-                  </div>
-                  {isAdmin && (
-                    <Button onClick={() => setCreateDialogOpen(true)} size="sm">
-                      <Plus className="h-4 w-4 mr-1" />
-                      {language === 'nl' ? 'Nieuwe order' : 'New Order'}
-                    </Button>
-                  )}
+        <div className="space-y-4">
+          <PageHeader
+            title={language === 'nl' ? 'Productieplanner' : 'Production Planner'}
+            description={language === 'nl' ? 'Plan en beheer productieorders visueel op de kalender' : 'Plan and manage production orders visually on the calendar'}
+            actions={
+              <div className="flex items-center gap-2">
+                <div className="flex items-center border rounded-md">
+                  <Button
+                    variant={calendarView === 'month' ? 'secondary' : 'ghost'}
+                    size="sm"
+                    onClick={() => setCalendarView('month')}
+                    className="rounded-r-none"
+                  >
+                    <Calendar className="h-4 w-4 mr-1" />
+                    {language === 'nl' ? 'Maand' : 'Month'}
+                  </Button>
+                  <Button
+                    variant={calendarView === 'week' ? 'secondary' : 'ghost'}
+                    size="sm"
+                    onClick={() => setCalendarView('week')}
+                    className="rounded-l-none"
+                  >
+                    <List className="h-4 w-4 mr-1" />
+                    {language === 'nl' ? 'Week' : 'Week'}
+                  </Button>
                 </div>
-              }
-            />
-          </div>
+                {isAdmin && (
+                  <Button onClick={() => setCreateDialogOpen(true)} size="sm">
+                    <Plus className="h-4 w-4 mr-1" />
+                    {language === 'nl' ? 'Nieuwe order' : 'New Order'}
+                  </Button>
+                )}
+              </div>
+            }
+          />
+
           {/* Desktop: Split view - Calendar left, Detail right */}
-          <div className="flex-1 flex overflow-hidden">
+          <div className="flex h-[calc(100vh-14rem)] overflow-hidden border rounded-lg">
             {/* Calendar Panel */}
             <div className={cn(
               "flex-1 overflow-hidden border-r transition-all duration-300",
