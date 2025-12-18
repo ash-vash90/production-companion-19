@@ -5,7 +5,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import Layout from '@/components/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
-import { PageIdentity, PrimaryAction, DataControlsBar, ViewOption } from '@/components/layout';
+import { PageIdentity, DataControlsBar, ViewOption } from '@/components/layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -621,18 +621,11 @@ const WorkOrders = () => {
           disabled={!isMobile || loading}
           className="h-full"
         >
-        <div className="space-y-0">
+        <div className="space-y-4 sm:space-y-5">
           {/* Layer 2: Page Identity */}
           <PageIdentity
             title={t('workOrders')}
             description={t('manageWorkOrders')}
-          />
-
-          {/* Layer 3: Primary Action */}
-          <PrimaryAction 
-            label={t('createWorkOrder')}
-            icon={Plus}
-            onClick={() => setDialogOpen(true)}
           />
 
           {/* Layer 4: Data Controls Bar */}
@@ -640,8 +633,9 @@ const WorkOrders = () => {
             views={['cards', 'table', 'kanban']}
             currentView={VIEW_MODE_TO_OPTION[viewMode]}
             onViewChange={(v) => setViewMode(OPTION_TO_VIEW_MODE[v])}
+            className="py-2"
             leftContent={
-              <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-3 flex-wrap">
                 <WorkOrderFilters
                   filters={filters}
                   onFiltersChange={setFilters}
@@ -666,7 +660,7 @@ const WorkOrders = () => {
                 
                 {/* Selection controls - hidden on mobile */}
                 {viewMode !== 'kanban' && (
-                  <div className="hidden sm:flex items-center gap-2">
+                  <div className="hidden sm:flex items-center gap-3">
                     <div className="h-6 w-px bg-border" />
                     
                     {/* Selection Mode Toggle */}
@@ -727,7 +721,7 @@ const WorkOrders = () => {
           />
 
           {/* Work Orders List */}
-          <div className="w-full">
+          <div className="w-full pt-1">
             {loading ? (
               viewMode === 'cards' ? (
                 <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
@@ -893,6 +887,15 @@ const WorkOrders = () => {
             )}
           </div>
         </div>
+        
+        {/* Floating Action Button */}
+        <Button
+          onClick={() => setDialogOpen(true)}
+          className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg z-50"
+          size="icon"
+        >
+          <Plus className="h-6 w-6" />
+        </Button>
         </PullToRefresh>
 
         <CreateWorkOrderDialog 
