@@ -112,7 +112,7 @@ export function AppSidebar() {
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
-      <SidebarHeader className="border-b border-sidebar-border bg-sidebar h-12 lg:h-14 flex items-center justify-center">
+      <SidebarHeader className="border-b border-sidebar-border bg-sidebar h-14 flex items-center justify-center">
         <div className={cn(
           "flex items-center w-full gap-2",
           isCollapsed ? "justify-center px-0" : "px-3"
