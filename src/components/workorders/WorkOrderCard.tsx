@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
-import { AlertTriangle, Clock, ChevronRight, Calendar, Truck, UserX, CalendarClock } from 'lucide-react';
+import { AlertTriangle, Clock, Calendar, Truck, UserX, CalendarClock, Eye } from 'lucide-react';
 import { parseISO, isBefore, differenceInDays } from 'date-fns';
 import { useLongPress, useTouchDevice } from '@/hooks/useTouchDevice';
 
@@ -161,6 +161,8 @@ export function WorkOrderCard({
   };
 
   // Determine event handlers based on device type
+  // On touch: only handle selection via long-press, no tap navigation (use buttons instead)
+  // On desktop: clicking card navigates
   const cardProps = isTouch
     ? {
         ...longPressHandlers,
@@ -168,12 +170,13 @@ export function WorkOrderCard({
       }
     : {
         onClick: handleClick,
+        className: 'cursor-pointer',
       };
 
   return (
     <TooltipProvider>
       <div
-        className={`group relative rounded-xl border border-l-4 bg-card p-4 md:p-5 transition-all cursor-pointer hover:shadow-lg hover:border-muted-foreground/30 ${urgencyClass} ${selected ? 'ring-2 ring-primary bg-primary/5' : ''}`}
+        className={`group relative rounded-xl border border-l-4 bg-card p-4 md:p-5 transition-all hover:shadow-lg hover:border-muted-foreground/30 ${urgencyClass} ${selected ? 'ring-2 ring-primary bg-primary/5' : ''} ${!isTouch ? 'cursor-pointer' : ''}`}
         {...cardProps}
         onMouseEnter={onHover}
       >
@@ -296,8 +299,37 @@ export function WorkOrderCard({
         )}
       </div>
 
-      {/* Quick Action Button - Plan (clicking card goes to production) */}
-      {isActiveWorkOrder && (
+      {/* Action Buttons - View & Plan (explicit touch targets to prevent accidental navigation) */}
+      {isTouch && (
+        <div className="flex items-center gap-2 mb-3">
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-9 text-xs gap-1.5 flex-1"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleClick();
+            }}
+          >
+            <Eye className="h-3.5 w-3.5" />
+            {language === 'nl' ? 'Bekijken' : 'View'}
+          </Button>
+          {isActiveWorkOrder && (
+            <Button
+              variant={hasAssignedOperators ? "outline" : "default"}
+              size="sm"
+              className="h-9 text-xs gap-1.5 flex-1"
+              onClick={handlePlan}
+            >
+              <CalendarClock className="h-3.5 w-3.5" />
+              {language === 'nl' ? 'Plannen' : 'Plan'}
+            </Button>
+          )}
+        </div>
+      )}
+      
+      {/* Desktop: only show Plan button for active work orders */}
+      {!isTouch && isActiveWorkOrder && (
         <div className="flex items-center gap-2 mb-3">
           <Button
             variant={hasAssignedOperators ? "outline" : "default"}
@@ -336,8 +368,6 @@ export function WorkOrderCard({
           </span>
         </div>
 
-        {/* Arrow indicator */}
-        <ChevronRight className="h-5 w-5 text-muted-foreground/40 group-hover:text-primary transition-colors shrink-0" />
       </div>
       </div>
     </TooltipProvider>
