@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Loader2, Package, FileText, X, Command, Boxes } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { formatProductType, cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useDebounce } from '@/hooks/useDebounce';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface SearchResult {
   type: 'work_order' | 'serial_number' | 'material' | 'batch';
@@ -26,13 +27,33 @@ interface SearchModalProps {
 export function SearchModal({ open, onOpenChange }: SearchModalProps) {
   const navigate = useNavigate();
   const { t } = useLanguage();
+  const isMobile = useIsMobile();
   const [query, setQuery] = useState('');
   const [searching, setSearching] = useState(false);
   const [results, setResults] = useState<SearchResult[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [isVisible, setIsVisible] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
   
   // Debounce search
   const debouncedQuery = useDebounce(query, 300);
+
+  // Handle animation states for mobile
+  useEffect(() => {
+    if (open) {
+      setIsVisible(true);
+      // Focus input after mount
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 50);
+    } else {
+      // Keep visible during exit animation
+      const timer = setTimeout(() => {
+        setIsVisible(false);
+      }, 200);
+      return () => clearTimeout(timer);
+    }
+  }, [open]);
 
   // Reset state when modal opens
   useEffect(() => {
@@ -171,6 +192,9 @@ export function SearchModal({ open, onOpenChange }: SearchModalProps) {
     } else if (event.key === 'Enter' && results.length > 0) {
       event.preventDefault();
       handleResultClick(results[selectedIndex]);
+    } else if (event.key === 'Escape') {
+      event.preventDefault();
+      onOpenChange(false);
     }
   };
 
@@ -201,24 +225,117 @@ export function SearchModal({ open, onOpenChange }: SearchModalProps) {
     }
   }, []);
 
+  const renderResults = () => (
+    <>
+      {results.length > 0 ? (
+        <div className="py-2">
+          <div className="px-3 py-1.5">
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              {t('results')}
+            </span>
+          </div>
+          {results.map((result, index) => (
+            <div
+              key={`${result.type}-${result.id}-${index}`}
+              onClick={() => handleResultClick(result)}
+              className={cn(
+                "flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors",
+                index === selectedIndex ? "bg-accent" : "hover:bg-accent/50"
+              )}
+            >
+              <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                {getResultIcon(result.type)}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-mono text-sm font-medium truncate">{result.title}</p>
+                <p className="text-xs text-muted-foreground truncate">
+                  {result.type === 'work_order' ? t('workOrder') : t('serialNumber')} • {result.subtitle}
+                </p>
+              </div>
+              <Badge className={cn("text-xs shrink-0", getStatusColor(result.status))}>
+                {formatStatus(result.status)}
+              </Badge>
+            </div>
+          ))}
+        </div>
+      ) : query.length >= 2 && !searching ? (
+        <div className="py-12 text-center">
+          <Search className="h-10 w-10 mx-auto mb-3 text-muted-foreground/50" />
+          <p className="text-sm text-muted-foreground">{t('noResultsFound')}</p>
+          <p className="text-xs text-muted-foreground/70 mt-1">
+            {t('tryDifferentSearch')}
+          </p>
+        </div>
+      ) : (
+        <div className="py-12 text-center">
+          <Search className="h-10 w-10 mx-auto mb-3 text-muted-foreground/50" />
+          <p className="text-sm text-muted-foreground">{t('searchHint')}</p>
+          <p className="text-xs text-muted-foreground/70 mt-1">
+            {t('searchByWOorSerial')}
+          </p>
+        </div>
+      )}
+    </>
+  );
+
+  // Mobile: Fullscreen overlay with slide-up animation
+  if (isMobile) {
+    if (!isVisible && !open) return null;
+
+    return (
+      <div
+        className={cn(
+          "fixed inset-0 z-[100] flex flex-col bg-background transition-transform duration-200 ease-out",
+          open ? "translate-y-0" : "translate-y-full"
+        )}
+        role="dialog"
+        aria-modal="true"
+        aria-label={t('search')}
+      >
+        {/* Header with search input and close button */}
+        <div className="flex items-center gap-2 border-b border-border bg-background px-4 py-3 safe-top">
+          <Search className="h-5 w-5 text-primary shrink-0" />
+          <Input
+            ref={inputRef}
+            value={query}
+            onChange={(e) => {
+              const val = e.target.value.toUpperCase();
+              setQuery(val);
+            }}
+            onKeyDown={handleKeyDown}
+            placeholder={`${t('searchWorkOrdersSerials')}...`}
+            className="h-10 border-0 bg-transparent focus-visible:ring-0 text-base pl-2 placeholder:text-muted-foreground/70 flex-1"
+          />
+          {searching && (
+            <Loader2 className="h-5 w-5 animate-spin text-primary shrink-0" />
+          )}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-10 w-10 shrink-0"
+            onClick={() => onOpenChange(false)}
+          >
+            <X className="h-5 w-5" />
+          </Button>
+        </div>
+
+        {/* Scrollable results area */}
+        <div className="flex-1 overflow-auto">
+          {renderResults()}
+        </div>
+      </div>
+    );
+  }
+
+  // Desktop: Standard dialog
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="fixed inset-0 h-full w-full max-w-full max-h-full rounded-none border-0 p-0 gap-0 overflow-hidden sm:inset-auto sm:top-[10%] sm:left-1/2 sm:-translate-x-1/2 sm:translate-y-0 sm:h-auto sm:max-w-xl sm:max-h-[80vh] sm:rounded-lg sm:border data-[state=open]:slide-in-from-bottom-4 sm:data-[state=open]:slide-in-from-top-4">
+      <DialogContent className="sm:max-w-xl p-0 gap-0 overflow-hidden">
         <DialogHeader className="sr-only">
           <DialogTitle>{t('search')}</DialogTitle>
         </DialogHeader>
         
-        {/* Close button for mobile */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="absolute right-2 top-2 z-10 h-10 w-10 sm:hidden"
-          onClick={() => onOpenChange(false)}
-        >
-          <X className="h-5 w-5" />
-        </Button>
-        
-        <div className="flex items-center border-b border-border bg-muted/30 px-4 pt-2 sm:pt-0">
+        <div className="flex items-center border-b border-border bg-muted/30 px-4">
           <Search className="h-5 w-5 text-primary shrink-0" />
           <Input
             value={query}
@@ -239,55 +356,8 @@ export function SearchModal({ open, onOpenChange }: SearchModalProps) {
           </kbd>
         </div>
 
-        <div className="flex-1 overflow-auto sm:max-h-[60vh]">
-          {results.length > 0 ? (
-            <div className="py-2">
-              <div className="px-3 py-1.5">
-                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  {t('results')}
-                </span>
-              </div>
-              {results.map((result, index) => (
-                <div
-                  key={`${result.type}-${result.id}-${index}`}
-                  onClick={() => handleResultClick(result)}
-                  className={cn(
-                    "flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors",
-                    index === selectedIndex ? "bg-accent" : "hover:bg-accent/50"
-                  )}
-                >
-                  <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                    {getResultIcon(result.type)}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-mono text-sm font-medium truncate">{result.title}</p>
-                    <p className="text-xs text-muted-foreground truncate">
-                      {result.type === 'work_order' ? t('workOrder') : t('serialNumber')} • {result.subtitle}
-                    </p>
-                  </div>
-                  <Badge className={cn("text-xs shrink-0", getStatusColor(result.status))}>
-                    {formatStatus(result.status)}
-                  </Badge>
-                </div>
-              ))}
-            </div>
-          ) : query.length >= 2 && !searching ? (
-            <div className="py-12 text-center">
-              <Search className="h-10 w-10 mx-auto mb-3 text-muted-foreground/50" />
-              <p className="text-sm text-muted-foreground">{t('noResultsFound')}</p>
-              <p className="text-xs text-muted-foreground/70 mt-1">
-                {t('tryDifferentSearch')}
-              </p>
-            </div>
-          ) : (
-            <div className="py-12 text-center">
-              <Search className="h-10 w-10 mx-auto mb-3 text-muted-foreground/50" />
-              <p className="text-sm text-muted-foreground">{t('searchHint')}</p>
-              <p className="text-xs text-muted-foreground/70 mt-1">
-                {t('searchByWOorSerial')}
-              </p>
-            </div>
-          )}
+        <div className="max-h-[60vh] overflow-auto">
+          {renderResults()}
         </div>
 
         <div className="hidden lg:flex items-center justify-between border-t px-4 py-2 text-xs text-muted-foreground bg-muted/30">
