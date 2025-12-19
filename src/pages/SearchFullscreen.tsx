@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Loader2, Package, FileText, Boxes, ArrowLeft } from 'lucide-react';
+import { Search, Loader2, Package, FileText, ArrowLeft } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -10,7 +10,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useDebounce } from '@/hooks/useDebounce';
 
 interface SearchResult {
-  type: 'work_order' | 'serial_number' | 'material' | 'batch';
+  type: 'work_order' | 'serial_number';
   id: string;
   title: string;
   subtitle: string;
@@ -95,28 +95,18 @@ const SearchFullscreen = () => {
       setSearching(true);
 
       try {
-        const [workOrdersRes, itemsRes, materialsRes, stockRes] = await Promise.all([
+        const [workOrdersRes, itemsRes] = await Promise.all([
           supabase
             .from('work_orders')
             .select('id, wo_number, product_type, status')
             .ilike('wo_number', `%${q}%`)
             .neq('status', 'cancelled')
-            .limit(4),
+            .limit(5),
           supabase
             .from('work_order_items')
             .select('id, serial_number, status, work_order:work_orders(wo_number)')
             .ilike('serial_number', `%${q}%`)
-            .limit(4),
-          supabase
-            .from('materials')
-            .select('id, name, sku, material_type, active')
-            .or(`name.ilike.%${q}%,sku.ilike.%${q}%,material_type.ilike.%${q}%`)
-            .limit(3),
-          supabase
-            .from('inventory_stock')
-            .select('id, batch_number, quantity_on_hand, material:materials(name)')
-            .ilike('batch_number', `%${q}%`)
-            .limit(3)
+            .limit(5),
         ]);
 
         const searchResults: SearchResult[] = [];
@@ -142,29 +132,6 @@ const SearchFullscreen = () => {
           });
         }
 
-        for (const mat of materialsRes.data || []) {
-          searchResults.push({
-            type: 'material',
-            id: mat.id,
-            title: mat.name,
-            subtitle: `SKU: ${mat.sku}`,
-            status: mat.active ? 'active' : 'inactive',
-          });
-        }
-
-        for (const stock of stockRes.data || []) {
-          if (stock.batch_number) {
-            const mat = stock.material as any;
-            searchResults.push({
-              type: 'batch',
-              id: stock.id,
-              title: stock.batch_number,
-              subtitle: mat?.name || 'Unknown material',
-              status: stock.quantity_on_hand > 0 ? 'in_stock' : 'out_of_stock',
-            });
-          }
-        }
-
         setResults(searchResults);
         setSelectedIndex(0);
       } catch (error) {
@@ -180,8 +147,6 @@ const SearchFullscreen = () => {
   const handleResultClick = useCallback((result: SearchResult) => {
     if (result.type === 'work_order') {
       navigate(`/production/${result.id}`);
-    } else if (result.type === 'material' || result.type === 'batch') {
-      navigate('/inventory');
     } else {
       navigate(`/genealogy/${encodeURIComponent(result.id)}`);
     }
@@ -217,10 +182,7 @@ const SearchFullscreen = () => {
       case 'completed': return 'bg-success text-success-foreground';
       case 'in_progress': return 'bg-warning text-warning-foreground';
       case 'planned': return 'bg-info text-info-foreground';
-      case 'active':
-      case 'in_stock': return 'bg-success text-success-foreground';
-      case 'inactive':
-      case 'out_of_stock': return 'bg-muted text-muted-foreground';
+      case 'on_hold': return 'bg-muted text-muted-foreground';
       default: return 'bg-muted text-muted-foreground';
     }
   }, []);
@@ -233,8 +195,6 @@ const SearchFullscreen = () => {
     switch (type) {
       case 'work_order': return <Package className="h-5 w-5 text-primary" />;
       case 'serial_number': return <FileText className="h-5 w-5 text-primary" />;
-      case 'material':
-      case 'batch': return <Boxes className="h-5 w-5 text-primary" />;
       default: return <FileText className="h-5 w-5 text-primary" />;
     }
   }, []);

@@ -5,10 +5,7 @@ export type NotificationType =
   | 'work_order_cancelled'
   | 'exact_sync_success'
   | 'exact_sync_error'
-  | 'user_mentioned'
-  | 'low_stock_alert'
-  | 'stock_consumed'
-  | 'material_out_of_stock';
+  | 'user_mentioned';
 
 export type NotificationPriority = 'low' | 'normal' | 'high' | 'urgent';
 
@@ -129,98 +126,14 @@ export async function notifyExactSyncError(
 }
 
 /**
- * Notify about low stock level
- */
-export async function notifyLowStock(
-  userId: string,
-  materialName: string,
-  materialId: string,
-  currentQuantity: number,
-  reorderPoint: number
-): Promise<void> {
-  await createNotification({
-    userId,
-    type: 'low_stock_alert',
-    title: 'Low Stock Alert',
-    message: `${materialName} is running low. Current: ${currentQuantity}, Reorder point: ${reorderPoint}`,
-    entityType: 'material',
-    entityId: materialId,
-    priority: 'high',
-    sendPush: true,
-  });
-}
-
-/**
- * Notify about material out of stock
- */
-export async function notifyOutOfStock(
-  userId: string,
-  materialName: string,
-  materialId: string
-): Promise<void> {
-  await createNotification({
-    userId,
-    type: 'material_out_of_stock',
-    title: 'Out of Stock!',
-    message: `${materialName} is now out of stock. Reorder immediately.`,
-    entityType: 'material',
-    entityId: materialId,
-    priority: 'urgent',
-    sendPush: true,
-  });
-}
-
-/**
- * Check inventory levels and send low stock notifications
- * Called after stock consumption
- */
-export async function checkAndNotifyLowStock(
-  materialId: string,
-  materialName: string,
-  currentQuantity: number,
-  reorderPoint: number
-): Promise<void> {
-  // Get users with inventory_manager or admin role to notify
-  const { data: adminUsers, error } = await supabase
-    .from('profiles')
-    .select('id')
-    .or('role.eq.admin,role.eq.supervisor');
-
-  if (error || !adminUsers?.length) {
-    console.warn('No admin users found for low stock notification');
-    return;
-  }
-
-  // Determine notification type based on stock level
-  const isOutOfStock = currentQuantity <= 0;
-  const isLowStock = currentQuantity > 0 && currentQuantity <= reorderPoint;
-
-  if (isOutOfStock) {
-    // Send out of stock notifications to all admins
-    await Promise.all(
-      adminUsers.map(user =>
-        notifyOutOfStock(user.id, materialName, materialId)
-      )
-    );
-  } else if (isLowStock) {
-    // Send low stock notifications to all admins
-    await Promise.all(
-      adminUsers.map(user =>
-        notifyLowStock(user.id, materialName, materialId, currentQuantity, reorderPoint)
-      )
-    );
-  }
-}
-
-/**
  * Get all users subscribed to a notification type
  */
 export async function getNotificationSubscribers(
   notificationType: NotificationType
 ): Promise<string[]> {
-  // For now, return all admin/supervisor users for stock notifications
+  // For now, return all admin/supervisor users for work order notifications
   // In the future, this could be based on user preferences
-  if (['low_stock_alert', 'material_out_of_stock', 'stock_consumed'].includes(notificationType)) {
+  if (['work_order_completed', 'work_order_cancelled'].includes(notificationType)) {
     const { data } = await supabase
       .from('profiles')
       .select('id')
