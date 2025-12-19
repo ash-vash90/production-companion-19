@@ -138,9 +138,7 @@ const LayoutContent: React.FC<LayoutProps> = ({ children }) => {
           {/* Desktop Header - hidden on mobile only, visible on tablet+ */}
           <header className="sticky top-0 z-40 hidden md:flex h-14 shrink-0 items-center border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
             <div className="flex flex-1 items-center justify-center px-3 max-w-2xl mx-auto">
-              {location.pathname !== '/work-orders' && (
-                <GlobalSearch onOpenModal={() => setSearchOpen(true)} />
-              )}
+              <GlobalSearch onOpenModal={() => setSearchOpen(true)} />
             </div>
             <div className="absolute right-0 flex items-center gap-1 px-3">
               <ThemeToggle />
