@@ -130,24 +130,19 @@ export function WorkOrderCard({
     e.stopPropagation();
   };
 
-  // Long press to enable selection mode on mobile
+  // Long press to enable selection mode on mobile (only used in selection mode)
   const longPressHandlers = useLongPress({
     delay: 500,
     onLongPress: () => {
       if (onEnableSelectionMode && !selectable) {
         onEnableSelectionMode();
-        // After enabling selection mode, also select this card
         setTimeout(() => onSelectionChange?.(true), 50);
       } else if (selectable) {
-        // If already in selection mode, toggle this card
         onSelectionChange?.(!selected);
       }
     },
     onPress: () => {
-      // Only handle regular tap on touch devices when not in selection mode
-      if (!selectable) {
-        handleClick();
-      }
+      // Do nothing on tap - navigation is handled by buttons on touch devices
     },
   });
 
@@ -160,26 +155,16 @@ export function WorkOrderCard({
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };
 
-  // Determine event handlers based on device type
-  // On touch: only handle selection via long-press, no tap navigation (use buttons instead)
-  // On desktop: clicking card navigates
-  const cardProps = isTouch
-    ? {
-        ...longPressHandlers,
-        onClick: selectable ? () => onSelectionChange?.(!selected) : undefined,
-      }
-    : {
-        onClick: handleClick,
-        className: 'cursor-pointer',
-      };
-
   return (
     <TooltipProvider>
       <div
-        className={`group relative rounded-xl border border-l-4 bg-card p-4 md:p-5 transition-all hover:shadow-lg hover:border-muted-foreground/30 ${urgencyClass} ${selected ? 'ring-2 ring-primary bg-primary/5' : ''} ${!isTouch ? 'cursor-pointer' : ''}`}
-        {...cardProps}
+        className={`group relative rounded-xl border border-l-4 bg-card transition-all hover:shadow-lg hover:border-muted-foreground/30 ${urgencyClass} ${selected ? 'ring-2 ring-primary bg-primary/5' : ''} ${!isTouch ? 'cursor-pointer' : ''}`}
+        onClick={!isTouch ? handleClick : (selectable ? () => onSelectionChange?.(!selected) : undefined)}
+        {...(isTouch && !selectable ? longPressHandlers : {})}
         onMouseEnter={onHover}
       >
+        {/* Card content area */}
+        <div className="p-4 md:p-5">
       {/* Selection checkbox */}
       {selectable && (
         <div 
@@ -280,7 +265,7 @@ export function WorkOrderCard({
       )}
 
       {/* Dates row */}
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mb-3 text-xs text-muted-foreground">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
         {workOrder.start_date && (
           <div className="flex items-center gap-1.5">
             <Calendar className="h-3.5 w-3.5" />
@@ -299,52 +284,8 @@ export function WorkOrderCard({
         )}
       </div>
 
-      {/* Action Buttons - View & Plan (explicit touch targets to prevent accidental navigation) */}
-      {isTouch && (
-        <div className="flex items-center gap-2 mb-3">
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-9 text-xs gap-1.5 flex-1"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleClick();
-            }}
-          >
-            <Eye className="h-3.5 w-3.5" />
-            {language === 'nl' ? 'Bekijken' : 'View'}
-          </Button>
-          {isActiveWorkOrder && (
-            <Button
-              variant={hasAssignedOperators ? "outline" : "default"}
-              size="sm"
-              className="h-9 text-xs gap-1.5 flex-1"
-              onClick={handlePlan}
-            >
-              <CalendarClock className="h-3.5 w-3.5" />
-              {language === 'nl' ? 'Plannen' : 'Plan'}
-            </Button>
-          )}
-        </div>
-      )}
-      
-      {/* Desktop: only show Plan button for active work orders */}
-      {!isTouch && isActiveWorkOrder && (
-        <div className="flex items-center gap-2 mb-3">
-          <Button
-            variant={hasAssignedOperators ? "outline" : "default"}
-            size="sm"
-            className="h-9 text-xs gap-1.5 min-w-[90px]"
-            onClick={handlePlan}
-          >
-            <CalendarClock className="h-3.5 w-3.5" />
-            {language === 'nl' ? 'Plannen' : 'Plan'}
-          </Button>
-        </div>
-      )}
-
       {/* Bottom row: Price + Progress */}
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex items-center justify-between gap-4 mt-3">
         {/* Order value */}
         <div className="shrink-0">
           {workOrder.order_value ? (
@@ -367,8 +308,57 @@ export function WorkOrderCard({
             {workOrder.progressPercent || 0}%
           </span>
         </div>
-
       </div>
+      </div>
+
+      {/* Action Buttons - separate bottom layer (touch devices only) */}
+      {isTouch && (
+        <div className="flex items-center gap-2 p-3 pt-0 border-t border-border/50 mt-0 bg-muted/30 rounded-b-xl">
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-10 text-xs gap-1.5 flex-1 bg-background"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleClick();
+            }}
+          >
+            <Eye className="h-4 w-4" />
+            {language === 'nl' ? 'Bekijken' : 'View'}
+          </Button>
+          {isActiveWorkOrder && (
+            <Button
+              variant={hasAssignedOperators ? "outline" : "default"}
+              size="sm"
+              className={`h-10 text-xs gap-1.5 flex-1 ${hasAssignedOperators ? 'bg-background' : ''}`}
+              onClick={handlePlan}
+            >
+              <CalendarClock className="h-4 w-4" />
+              {language === 'nl' ? 'Plannen' : 'Plan'}
+            </Button>
+          )}
+        </div>
+      )}
+      
+      {/* Desktop: only show Plan button for active work orders (inside card content) */}
+      {!isTouch && isActiveWorkOrder && (
+        <div className="flex items-center gap-2 px-4 md:px-5 pb-4 md:pb-5">
+          <Button
+            variant={hasAssignedOperators ? "outline" : "default"}
+            size="sm"
+            className="h-9 text-xs gap-1.5 min-w-[90px]"
+            onClick={handlePlan}
+          >
+            <CalendarClock className="h-3.5 w-3.5" />
+            {language === 'nl' ? 'Plannen' : 'Plan'}
+          </Button>
+        </div>
+      )}
+      
+      {/* Add bottom padding for cards without buttons */}
+      {!isTouch && !isActiveWorkOrder && (
+        <div className="pb-4 md:pb-5" />
+      )}
       </div>
     </TooltipProvider>
   );
