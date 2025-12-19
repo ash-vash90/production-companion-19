@@ -20,7 +20,7 @@ type CalendarView = 'day' | 'week' | 'month';
 interface MobilePlannerFlowProps {
   currentStep: string;
   currentDate: Date;
-  calendarView: 'month' | 'week';
+  calendarView: 'month' | 'week' | 'day';
   workOrders: PlannerWorkOrder[];
   unscheduledOrders: PlannerWorkOrder[];
   loading: boolean;
@@ -31,7 +31,7 @@ interface MobilePlannerFlowProps {
   onNavigatePrevious: () => void;
   onNavigateNext: () => void;
   onNavigateToday: () => void;
-  onViewChange: (view: 'month' | 'week') => void;
+  onViewChange: (view: 'month' | 'week' | 'day') => void;
   onWorkOrderUpdate: () => void;
   onCloseDetail: () => void;
   isAdmin: boolean;

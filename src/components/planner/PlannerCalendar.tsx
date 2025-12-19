@@ -9,8 +9,8 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, parseISO, isSameMonth, isToday } from 'date-fns';
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, LayoutGrid, Package, ChevronDown, GripVertical } from 'lucide-react';
+import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, parseISO, isSameMonth, isToday, eachHourOfInterval, startOfDay, endOfDay, setHours } from 'date-fns';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, LayoutGrid, Package, ChevronDown, GripVertical, Clock } from 'lucide-react';
 import { cn, formatProductType } from '@/lib/utils';
 import { PlannerWorkOrder } from '@/pages/ProductionPlanner';
 import {
@@ -27,7 +27,7 @@ import {
 
 interface PlannerCalendarProps {
   currentDate: Date;
-  calendarView: 'month' | 'week';
+  calendarView: 'month' | 'week' | 'day';
   workOrders: PlannerWorkOrder[];
   unscheduledOrders: PlannerWorkOrder[];
   loading: boolean;
@@ -36,7 +36,7 @@ interface PlannerCalendarProps {
   onNavigatePrevious: () => void;
   onNavigateNext: () => void;
   onNavigateToday: () => void;
-  onViewChange: (view: 'month' | 'week') => void;
+  onViewChange: (view: 'month' | 'week' | 'day') => void;
   onWorkOrderUpdate: () => void;
   isAdmin: boolean;
 }
@@ -106,7 +106,7 @@ const DroppableCalendarCell: React.FC<{
   dayOrders: PlannerWorkOrder[];
   selectedWorkOrderId: string | null;
   onSelectWorkOrder: (id: string) => void;
-  calendarView: 'month' | 'week';
+  calendarView: 'month' | 'week' | 'day';
 }> = ({ day, isCurrentMonth, isDayToday, dayOrders, selectedWorkOrderId, onSelectWorkOrder, calendarView }) => {
   const { setNodeRef, isOver } = useDroppable({
     id: `day-${format(day, 'yyyy-MM-dd')}`,
@@ -156,6 +156,65 @@ const DroppableCalendarCell: React.FC<{
   );
 };
 
+// Droppable week cell - taller cells with more details for week view
+const DroppableWeekCell: React.FC<{
+  day: Date;
+  isDayToday: boolean;
+  dayOrders: PlannerWorkOrder[];
+  selectedWorkOrderId: string | null;
+  onSelectWorkOrder: (id: string) => void;
+}> = ({ day, isDayToday, dayOrders, selectedWorkOrderId, onSelectWorkOrder }) => {
+  const { language } = useLanguage();
+  const { setNodeRef, isOver } = useDroppable({
+    id: `day-${format(day, 'yyyy-MM-dd')}`,
+    data: { date: day },
+  });
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={cn(
+        "border rounded-lg p-2 transition-colors min-h-[300px] flex flex-col",
+        isDayToday && "ring-2 ring-primary ring-offset-1",
+        "hover:bg-muted/10",
+        isOver && "bg-primary/10 ring-2 ring-primary/50"
+      )}
+    >
+      <div className="flex-1 space-y-2 overflow-y-auto">
+        {dayOrders.length === 0 && (
+          <div className="text-xs text-muted-foreground text-center py-4">
+            {language === 'nl' ? 'Geen orders' : 'No orders'}
+          </div>
+        )}
+        {dayOrders.map((order) => (
+          <button
+            key={order.id}
+            onClick={() => onSelectWorkOrder(order.id)}
+            className={cn(
+              "w-full text-left rounded-md border p-2 text-xs transition-colors hover:ring-1 hover:ring-primary/50",
+              getStatusColor(order.status),
+              selectedWorkOrderId === order.id && "ring-2 ring-primary"
+            )}
+          >
+            <div className="flex items-center justify-between mb-1">
+              <span className="font-mono font-medium">{order.wo_number}</span>
+            </div>
+            <p className="text-[10px] text-foreground/70 truncate mb-1">
+              {order.customer_name || (language === 'nl' ? 'Geen klant' : 'No customer')}
+            </p>
+            <div className="flex items-center justify-between">
+              <Badge variant="outline" className="text-[9px] px-1 py-0">
+                {formatProductType(order.product_type)}
+              </Badge>
+              <span className="text-[9px] text-foreground/60">{order.batch_size}x</span>
+            </div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 const PlannerCalendar: React.FC<PlannerCalendarProps> = ({
   currentDate,
   calendarView,
@@ -190,6 +249,9 @@ const PlannerCalendar: React.FC<PlannerCalendarProps> = ({
       const calendarStart = startOfWeek(monthStart, { weekStartsOn: 1 });
       const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: 1 });
       return eachDayOfInterval({ start: calendarStart, end: calendarEnd });
+    }
+    if (calendarView === 'day') {
+      return [currentDate];
     }
     const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
     const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 });
@@ -274,7 +336,9 @@ const PlannerCalendar: React.FC<PlannerCalendarProps> = ({
               <h2 className="font-semibold min-w-[140px] text-center">
                 {calendarView === 'month'
                   ? format(currentDate, language === 'nl' ? 'MMMM yyyy' : 'MMMM yyyy')
-                  : `${format(startOfWeek(currentDate, { weekStartsOn: 1 }), 'd MMM')} - ${format(endOfWeek(currentDate, { weekStartsOn: 1 }), 'd MMM yyyy')}`
+                  : calendarView === 'day'
+                    ? format(currentDate, language === 'nl' ? 'EEEE d MMMM yyyy' : 'EEEE, MMMM d, yyyy')
+                    : `${format(startOfWeek(currentDate, { weekStartsOn: 1 }), 'd MMM')} - ${format(endOfWeek(currentDate, { weekStartsOn: 1 }), 'd MMM yyyy')}`
                 }
               </h2>
               <Button variant="outline" size="icon" onClick={onNavigateNext}>
@@ -286,15 +350,19 @@ const PlannerCalendar: React.FC<PlannerCalendarProps> = ({
             </div>
 
             <div className="flex items-center gap-2">
-              <Tabs value={calendarView} onValueChange={(v) => onViewChange(v as 'month' | 'week')}>
+              <Tabs value={calendarView} onValueChange={(v) => onViewChange(v as 'month' | 'week' | 'day')}>
                 <TabsList className="h-8">
-                  <TabsTrigger value="month" className="text-xs gap-1.5 px-2">
-                    <CalendarIcon className="h-3.5 w-3.5" />
-                    {language === 'nl' ? 'Maand' : 'Month'}
+                  <TabsTrigger value="day" className="text-xs gap-1.5 px-2">
+                    <Clock className="h-3.5 w-3.5" />
+                    {language === 'nl' ? 'Dag' : 'Day'}
                   </TabsTrigger>
                   <TabsTrigger value="week" className="text-xs gap-1.5 px-2">
                     <LayoutGrid className="h-3.5 w-3.5" />
                     {language === 'nl' ? 'Week' : 'Week'}
+                  </TabsTrigger>
+                  <TabsTrigger value="month" className="text-xs gap-1.5 px-2">
+                    <CalendarIcon className="h-3.5 w-3.5" />
+                    {language === 'nl' ? 'Maand' : 'Month'}
                   </TabsTrigger>
                 </TabsList>
               </Tabs>
@@ -302,45 +370,129 @@ const PlannerCalendar: React.FC<PlannerCalendarProps> = ({
           </div>
         </div>
 
-        {/* Sticky Week day headers */}
-        <div className="sticky top-0 z-10 bg-background border-b px-4 pt-2 pb-1">
-          <div className="grid grid-cols-7">
-            {(language === 'nl' ? weekDaysNl : weekDays).map((day) => (
-              <div key={day} className="text-center text-xs font-medium text-muted-foreground py-2">
-                {day}
-              </div>
-            ))}
+        {/* Sticky Week day headers - only for month and week views */}
+        {calendarView !== 'day' && (
+          <div className="sticky top-0 z-10 bg-background border-b px-4 pt-2 pb-1">
+            <div className={cn(
+              "grid",
+              calendarView === 'week' ? 'grid-cols-7 gap-2' : 'grid-cols-7'
+            )}>
+              {calendarView === 'week' 
+                ? days.map((day) => (
+                    <div key={day.toISOString()} className={cn(
+                      "text-center py-2",
+                      isToday(day) && "text-primary font-semibold"
+                    )}>
+                      <div className="text-xs text-muted-foreground">
+                        {format(day, language === 'nl' ? 'EEE' : 'EEE')}
+                      </div>
+                      <div className={cn(
+                        "text-lg font-medium",
+                        isToday(day) && "bg-primary text-primary-foreground rounded-full w-8 h-8 mx-auto flex items-center justify-center"
+                      )}>
+                        {format(day, 'd')}
+                      </div>
+                    </div>
+                  ))
+                : (language === 'nl' ? weekDaysNl : weekDays).map((day) => (
+                    <div key={day} className="text-center text-xs font-medium text-muted-foreground py-2">
+                      {day}
+                    </div>
+                  ))
+              }
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Calendar Grid */}
         <ScrollArea className="flex-1">
           <div className="p-4 pt-2">
 
-            {/* Calendar cells */}
-            <div className={cn(
-              "grid grid-cols-7 gap-1",
-              calendarView === 'week' ? 'auto-rows-[minmax(120px,1fr)]' : 'auto-rows-[minmax(80px,1fr)]'
-            )}>
-              {days.map((day) => {
-                const dayOrders = getWorkOrdersForDate(day);
-                const isCurrentMonth = isSameMonth(day, currentDate);
-                const isDayToday = isToday(day);
+            {/* Day View */}
+            {calendarView === 'day' && (
+              <div className="space-y-2">
+                {(() => {
+                  const dayOrders = getWorkOrdersForDate(currentDate);
+                  if (dayOrders.length === 0) {
+                    return (
+                      <div className="text-center py-12 text-muted-foreground">
+                        {language === 'nl' ? 'Geen werkorders gepland voor deze dag' : 'No work orders scheduled for this day'}
+                      </div>
+                    );
+                  }
+                  return dayOrders.map((order) => (
+                    <button
+                      key={order.id}
+                      onClick={() => onSelectWorkOrder(order.id)}
+                      className={cn(
+                        "w-full text-left rounded-lg border p-4 transition-colors hover:bg-muted/50",
+                        getStatusColor(order.status),
+                        selectedWorkOrderId === order.id && "ring-2 ring-primary"
+                      )}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-mono text-base font-semibold">{order.wo_number}</span>
+                        <Badge variant="outline">{formatProductType(order.product_type)}</Badge>
+                      </div>
+                      <p className="text-sm text-foreground/80 mb-1">
+                        {order.customer_name || (language === 'nl' ? 'Geen klant' : 'No customer')}
+                      </p>
+                      <div className="flex items-center justify-between text-xs text-foreground/60">
+                        <span>{order.batch_size} {language === 'nl' ? 'items' : 'items'}</span>
+                        <Badge className={cn("text-[10px]", getStatusColor(order.status))}>
+                          {order.status}
+                        </Badge>
+                      </div>
+                    </button>
+                  ));
+                })()}
+              </div>
+            )}
 
-                return (
-                  <DroppableCalendarCell
-                    key={day.toISOString()}
-                    day={day}
-                    isCurrentMonth={isCurrentMonth}
-                    isDayToday={isDayToday}
-                    dayOrders={dayOrders}
-                    selectedWorkOrderId={selectedWorkOrderId}
-                    onSelectWorkOrder={onSelectWorkOrder}
-                    calendarView={calendarView}
-                  />
-                );
-              })}
-            </div>
+            {/* Week View */}
+            {calendarView === 'week' && (
+              <div className="grid grid-cols-7 gap-2 min-h-[400px]">
+                {days.map((day) => {
+                  const dayOrders = getWorkOrdersForDate(day);
+                  const isDayToday = isToday(day);
+
+                  return (
+                    <DroppableWeekCell
+                      key={day.toISOString()}
+                      day={day}
+                      isDayToday={isDayToday}
+                      dayOrders={dayOrders}
+                      selectedWorkOrderId={selectedWorkOrderId}
+                      onSelectWorkOrder={onSelectWorkOrder}
+                    />
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Month View */}
+            {calendarView === 'month' && (
+              <div className="grid grid-cols-7 gap-1 auto-rows-[minmax(80px,1fr)]">
+                {days.map((day) => {
+                  const dayOrders = getWorkOrdersForDate(day);
+                  const isCurrentMonth = isSameMonth(day, currentDate);
+                  const isDayToday = isToday(day);
+
+                  return (
+                    <DroppableCalendarCell
+                      key={day.toISOString()}
+                      day={day}
+                      isCurrentMonth={isCurrentMonth}
+                      isDayToday={isDayToday}
+                      dayOrders={dayOrders}
+                      selectedWorkOrderId={selectedWorkOrderId}
+                      onSelectWorkOrder={onSelectWorkOrder}
+                      calendarView={calendarView}
+                    />
+                  );
+                })}
+              </div>
+            )}
 
             {/* Unscheduled Orders */}
             {unscheduledOrders.length > 0 && (

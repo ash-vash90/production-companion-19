@@ -12,9 +12,9 @@ import PlannerWorkOrderDetail from '@/components/planner/PlannerWorkOrderDetail'
 import MobilePlannerFlow from '@/components/planner/MobilePlannerFlow';
 import DesktopCapacityBar from '@/components/planner/DesktopCapacityBar';
 import { CreateWorkOrderDialog } from '@/components/CreateWorkOrderDialog';
-import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, parseISO, addMonths, subMonths, addWeeks, subWeeks } from 'date-fns';
+import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, parseISO, addMonths, subMonths, addWeeks, subWeeks, addDays, subDays } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { Plus, Calendar, List } from 'lucide-react';
+import { Plus } from 'lucide-react';
 
 export interface PlannerWorkOrder {
   id: string;
@@ -31,7 +31,7 @@ export interface PlannerWorkOrder {
   assigned_to: string | null;
 }
 
-type CalendarView = 'month' | 'week';
+type CalendarView = 'month' | 'week' | 'day';
 
 const ProductionPlanner = () => {
   const navigate = useNavigate();
@@ -61,6 +61,12 @@ const ProductionPlanner = () => {
       return {
         start: startOfMonth(currentDate),
         end: endOfMonth(currentDate),
+      };
+    }
+    if (calendarView === 'day') {
+      return {
+        start: currentDate,
+        end: currentDate,
       };
     }
     return {
@@ -126,16 +132,20 @@ const ProductionPlanner = () => {
   const goToPrevious = () => {
     if (calendarView === 'month') {
       setCurrentDate(subMonths(currentDate, 1));
-    } else {
+    } else if (calendarView === 'week') {
       setCurrentDate(subWeeks(currentDate, 1));
+    } else {
+      setCurrentDate(subDays(currentDate, 1));
     }
   };
 
   const goToNext = () => {
     if (calendarView === 'month') {
       setCurrentDate(addMonths(currentDate, 1));
-    } else {
+    } else if (calendarView === 'week') {
       setCurrentDate(addWeeks(currentDate, 1));
+    } else {
+      setCurrentDate(addDays(currentDate, 1));
     }
   };
 
@@ -201,35 +211,13 @@ const ProductionPlanner = () => {
             description={language === 'nl' ? 'Plan en beheer productieorders visueel op de kalender' : 'Plan and manage production orders visually on the calendar'}
           />
 
-          {/* Layer 3: Primary Action + Layer 4: Data Controls */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            {isAdmin && (
-              <Button onClick={() => setCreateDialogOpen(true)} className="w-full sm:w-auto h-11 sm:h-10">
-                <Plus className="h-4 w-4 mr-2" />
-                {language === 'nl' ? 'Nieuwe order' : 'New Order'}
-              </Button>
-            )}
-            <div className="flex items-center border rounded-md ml-auto">
-              <Button
-                variant={calendarView === 'month' ? 'secondary' : 'ghost'}
-                size="sm"
-                onClick={() => setCalendarView('month')}
-                className="rounded-r-none h-9"
-              >
-                <Calendar className="h-4 w-4 mr-1" />
-                {language === 'nl' ? 'Maand' : 'Month'}
-              </Button>
-              <Button
-                variant={calendarView === 'week' ? 'secondary' : 'ghost'}
-                size="sm"
-                onClick={() => setCalendarView('week')}
-                className="rounded-l-none h-9"
-              >
-                <List className="h-4 w-4 mr-1" />
-                {language === 'nl' ? 'Week' : 'Week'}
-              </Button>
-            </div>
-          </div>
+          {/* Layer 3: Primary Action */}
+          {isAdmin && (
+            <Button onClick={() => setCreateDialogOpen(true)} className="w-full sm:w-auto h-11 sm:h-10">
+              <Plus className="h-4 w-4 mr-2" />
+              {language === 'nl' ? 'Nieuwe order' : 'New Order'}
+            </Button>
+          )}
 
           {/* Desktop: Split view - Calendar left, Detail right */}
           <div className="flex h-[calc(100vh-14rem)] overflow-hidden border rounded-lg">
