@@ -253,16 +253,40 @@ const handler = async (req: Request): Promise<Response> => {
       ? (language === "nl" ? "Wachtwoord Resetten - Rhosonics" : "Password Reset - Rhosonics")
       : (language === "nl" ? "Verificatiecode - Rhosonics" : "Verification Code - Rhosonics");
 
-    const { error: emailError } = await resend.emails.send({
-      from: "Rhosonics MES <noreply@rhosonics.com>",
-      to: [emailLower],
-      subject,
-      html: getVerificationEmailHtml(code, type, language),
-    });
+    // Try with custom domain first, fall back to Resend's default if needed
+    let emailError;
+    try {
+      const result = await resend.emails.send({
+        from: "Rhosonics MES <noreply@rhosonics.com>",
+        to: [emailLower],
+        subject,
+        html: getVerificationEmailHtml(code, type, language),
+      });
+      emailError = result.error;
+      
+      // If custom domain fails, try with Resend's default sender
+      if (emailError) {
+        console.log("Custom domain failed, trying Resend default sender:", emailError);
+        const fallbackResult = await resend.emails.send({
+          from: "Rhosonics <onboarding@resend.dev>",
+          to: [emailLower],
+          subject,
+          html: getVerificationEmailHtml(code, type, language),
+        });
+        emailError = fallbackResult.error;
+      }
+    } catch (sendError: any) {
+      console.error("Email send exception:", sendError);
+      emailError = sendError;
+    }
 
     if (emailError) {
-      console.error("Failed to send email:", emailError);
-      // Still return success to not reveal email delivery status
+      console.error("Failed to send email after all attempts:", emailError);
+      // Return error to help debugging
+      return new Response(
+        JSON.stringify({ success: false, error: "Failed to send verification email. Please try again." }),
+        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
     }
 
     console.log(`Verification code sent successfully to: ${emailLower} (type: ${type})`);
