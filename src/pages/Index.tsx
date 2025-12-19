@@ -8,7 +8,6 @@ import { RecentActivity } from '@/components/dashboard/RecentActivity';
 import { ActiveOperators } from '@/components/dashboard/ActiveOperators';
 import { TodaysSchedule } from '@/components/dashboard/TodaysSchedule';
 import { WeatherWidget } from '@/components/dashboard/WeatherWidget';
-import { LowStockAlerts } from '@/components/dashboard/LowStockAlerts';
 import { supabase } from '@/integrations/supabase/client';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -212,10 +211,7 @@ const Index = () => {
         {/* Dashboard Sections - No primary action on dashboard */}
         <div className="space-y-4">
           <TodaysSchedule />
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <ActiveOperators />
-            <LowStockAlerts />
-          </div>
+          <ActiveOperators />
           <ProductionOverview />
           <RecentActivity />
         </div>

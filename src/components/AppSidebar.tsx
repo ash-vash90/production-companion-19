@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { LayoutDashboard, Package, Settings, CalendarClock, BarChart3, Users, FileText, ClipboardList, PanelLeft, Globe, Moon, Sun, Monitor, Warehouse } from 'lucide-react';
+import { LayoutDashboard, Package, Settings, CalendarClock, BarChart3, Users, FileText, ClipboardList, PanelLeft, Globe, Moon, Sun, Monitor } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -35,7 +35,7 @@ export function AppSidebar() {
   const navigate = useNavigate();
   const location = useLocation();
   const { t, language, setLanguage } = useLanguage();
-  const { isAdmin, canManageInventory, loading } = useUserProfile();
+  const { isAdmin, loading } = useUserProfile();
   const { theme, setTheme } = useTheme();
   const { state, toggleSidebar, setOpenMobile, isMobile, setOpen } = useSidebar();
   const haptic = useHapticFeedback();
@@ -89,11 +89,6 @@ export function AppSidebar() {
     { title: t('qualityCertificates'), url: '/quality-certificates', icon: FileText },
     { title: t('productionReports'), url: '/production-reports', icon: ClipboardList },
   ];
-
-  // Items visible to users who can manage inventory (admin or supervisor)
-  const inventoryItems = canManageInventory && !loading ? [
-    { title: t('inventory'), url: '/inventory', icon: Warehouse },
-  ] : [];
 
   // Only show admin items if user is admin (and not still loading)
   const adminItems = [
@@ -187,29 +182,6 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-
-        {inventoryItems.length > 0 && (
-          <SidebarGroup>
-            <SidebarGroupLabel>{t('inventory')}</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {inventoryItems.map((item) => (
-                  <SidebarMenuItem key={item.url}>
-                    <SidebarMenuButton
-                      isActive={isActive(item.url)}
-                      onClick={() => navigate(item.url)}
-                      onMouseEnter={() => prefetchRoute(item.url)}
-                      tooltip={isCollapsed ? item.title : undefined}
-                    >
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
 
         <SidebarGroup>
           <SidebarGroupLabel>{t('administration')}</SidebarGroupLabel>
