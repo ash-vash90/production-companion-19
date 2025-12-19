@@ -121,14 +121,14 @@
   /* Radius */
   --radius: 0.5rem;
   
-  /* Sidebar - obsidian dark */
-  --sidebar: 215 33% 10%;
-  --sidebar-foreground: 210 40% 98%;
+  /* Sidebar - white in light mode */
+  --sidebar: 0 0% 100%;
+  --sidebar-foreground: 228 25% 10%;
   --sidebar-primary: 138 68% 28%;
   --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 215 28% 17%;
-  --sidebar-accent-foreground: 210 40% 98%;
-  --sidebar-border: 215 28% 17%;
+  --sidebar-accent: 210 40% 96%;
+  --sidebar-accent-foreground: 228 25% 10%;
+  --sidebar-border: 214 32% 91%;
   --sidebar-ring: 138 68% 28%;
   
   /* ========================================
