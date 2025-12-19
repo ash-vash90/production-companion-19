@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { Search, Loader2, Package, FileText, X, Command, Boxes } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -33,8 +34,13 @@ export function SearchModal({ open, onOpenChange }: SearchModalProps) {
   const [results, setResults] = useState<SearchResult[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   // Debounce search
   const debouncedQuery = useDebounce(query, 300);
 
@@ -54,6 +60,23 @@ export function SearchModal({ open, onOpenChange }: SearchModalProps) {
       return () => clearTimeout(timer);
     }
   }, [open]);
+
+  // Lock background scroll on mobile while the fullscreen search is visible
+  useEffect(() => {
+    if (!isMobile) return;
+    if (!isVisible) return;
+
+    const prevBodyOverflow = document.body.style.overflow;
+    const prevHtmlOverflow = document.documentElement.style.overflow;
+
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+
+    return () => {
+      document.body.style.overflow = prevBodyOverflow;
+      document.documentElement.style.overflow = prevHtmlOverflow;
+    };
+  }, [isMobile, isVisible]);
 
   // Reset state when modal opens
   useEffect(() => {
@@ -278,14 +301,15 @@ export function SearchModal({ open, onOpenChange }: SearchModalProps) {
     </>
   );
 
-  // Mobile: Fullscreen overlay with slide-up animation
+  // Mobile: Fullscreen overlay with slide-up animation (portaled to document.body to avoid transform/viewport bugs)
   if (isMobile) {
+    if (!mounted) return null;
     if (!isVisible && !open) return null;
 
-    return (
+    const overlay = (
       <div
         className={cn(
-          "fixed inset-0 z-[100] flex flex-col bg-background transition-transform duration-200 ease-out",
+          "fixed inset-0 z-[100] flex h-[100dvh] w-[100vw] flex-col overflow-hidden bg-background overscroll-none transition-transform duration-200 ease-out",
           open ? "translate-y-0" : "translate-y-full"
         )}
         role="dialog"
@@ -293,7 +317,7 @@ export function SearchModal({ open, onOpenChange }: SearchModalProps) {
         aria-label={t('search')}
       >
         {/* Header with search input and close button */}
-        <div className="flex items-center gap-2 border-b border-border bg-background px-4 py-3 safe-top">
+        <div className="flex items-center gap-2 border-b border-border bg-background px-4 pt-[calc(0.75rem+env(safe-area-inset-top))] pb-3">
           <Search className="h-5 w-5 text-primary shrink-0" />
           <Input
             ref={inputRef}
@@ -320,11 +344,13 @@ export function SearchModal({ open, onOpenChange }: SearchModalProps) {
         </div>
 
         {/* Scrollable results area */}
-        <div className="flex-1 overflow-auto">
+        <div className="flex-1 overflow-auto overscroll-contain pb-[env(safe-area-inset-bottom)]">
           {renderResults()}
         </div>
       </div>
     );
+
+    return createPortal(overlay, document.body);
   }
 
   // Desktop: Standard dialog
