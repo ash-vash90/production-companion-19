@@ -311,31 +311,30 @@ export function WorkOrderCard({
       </div>
       </div>
 
-      {/* Action Buttons - separate bottom layer (touch devices only) */}
+      {/* Action Buttons - full-width bottom section (touch devices only) */}
       {isTouch && (
-        <div className="flex items-center gap-2 p-3 pt-0 border-t border-border/50 mt-0 bg-muted/30 rounded-b-xl">
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-10 text-xs gap-1.5 flex-1 bg-background"
+        <div className="flex items-stretch border-t border-border/40">
+          <button
+            className="flex-1 flex items-center justify-center gap-2 py-4 text-sm font-medium text-foreground bg-muted/20 hover:bg-muted/40 active:bg-muted/60 transition-colors border-r border-border/40"
             onClick={(e) => {
               e.stopPropagation();
               handleClick();
             }}
           >
-            <Eye className="h-4 w-4" />
+            <Eye className="h-5 w-5" />
             {language === 'nl' ? 'Bekijken' : 'View'}
-          </Button>
+          </button>
           {isActiveWorkOrder && (
-            <Button
-              variant={hasAssignedOperators ? "outline" : "default"}
-              size="sm"
-              className={`h-10 text-xs gap-1.5 flex-1 ${hasAssignedOperators ? 'bg-background' : ''}`}
+            <button
+              className="flex-1 flex items-center justify-center gap-2 py-4 text-sm font-medium text-primary-foreground bg-primary hover:bg-primary/90 active:bg-primary/80 transition-colors rounded-br-xl"
               onClick={handlePlan}
             >
-              <CalendarClock className="h-4 w-4" />
+              <CalendarClock className="h-5 w-5" />
               {language === 'nl' ? 'Plannen' : 'Plan'}
-            </Button>
+            </button>
+          )}
+          {!isActiveWorkOrder && (
+            <div className="flex-1" /> 
           )}
         </div>
       )}
