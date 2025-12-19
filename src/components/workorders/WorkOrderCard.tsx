@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
-import { AlertTriangle, Clock, Calendar, Truck, UserX, CalendarClock, Eye } from 'lucide-react';
+import { Calendar, Truck, UserX, CalendarClock, Eye } from 'lucide-react';
 import { parseISO, isBefore, differenceInDays } from 'date-fns';
 import { useLongPress, useTouchDevice } from '@/hooks/useTouchDevice';
 
@@ -106,14 +106,7 @@ export function WorkOrderCard({
   const startOverdue = showUrgency && isStartOverdue();
   const startApproaching = showUrgency && isStartApproaching();
 
-  let urgencyClass = '';
-  if (shippingOverdue) urgencyClass = 'border-l-destructive';
-  else if (startOverdue) urgencyClass = 'border-l-warning';
-  else if (shippingApproaching) urgencyClass = 'border-l-warning/60';
-  else if (startApproaching) urgencyClass = 'border-l-info/60';
-
   const handleClick = () => {
-    // Always navigate directly to production page
     navigate(`/production/${workOrder.id}`);
   };
 
@@ -130,7 +123,7 @@ export function WorkOrderCard({
     e.stopPropagation();
   };
 
-  // Long press to enable selection mode on mobile (only used in selection mode)
+  // Long press to enable selection mode on mobile
   const longPressHandlers = useLongPress({
     delay: 500,
     onLongPress: () => {
@@ -141,16 +134,13 @@ export function WorkOrderCard({
         onSelectionChange?.(!selected);
       }
     },
-    onPress: () => {
-      // Do nothing on tap - navigation is handled by buttons on touch devices
-    },
+    onPress: () => {},
   });
 
   const isActiveWorkOrder = workOrder.status !== 'completed' && workOrder.status !== 'cancelled';
   const assignedOperators = workOrder.assignedOperators || [];
   const hasAssignedOperators = assignedOperators.length > 0;
 
-  // Get initials from full name
   const getInitials = (name: string) => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };
@@ -158,206 +148,210 @@ export function WorkOrderCard({
   return (
     <TooltipProvider>
       <div
-        className={`group relative rounded-xl border border-l-4 bg-card transition-all hover:shadow-lg hover:border-muted-foreground/30 ${urgencyClass} ${selected ? 'ring-2 ring-primary bg-primary/5' : ''} ${!isTouch ? 'cursor-pointer' : ''}`}
+        className={`
+          group relative rounded-xl border bg-card shadow-sm
+          transition-all duration-200
+          hover:shadow-md hover:border-border/80
+          ${selected ? 'ring-2 ring-primary bg-primary/5' : ''}
+          ${!isTouch ? 'cursor-pointer' : ''}
+        `}
         onClick={!isTouch ? handleClick : (selectable ? () => onSelectionChange?.(!selected) : undefined)}
         {...(isTouch && !selectable ? longPressHandlers : {})}
         onMouseEnter={onHover}
       >
-        {/* Card content area */}
-        <div className="p-4 md:p-5">
-      {/* Selection checkbox */}
-      {selectable && (
-        <div 
-          className="absolute top-3 left-3 z-10"
-          onClick={handleCheckboxChange}
-        >
-          <Checkbox
-            checked={selected}
-            onCheckedChange={(checked) => onSelectionChange?.(!!checked)}
-            className="h-5 w-5 border-2"
-          />
-        </div>
-      )}
+        {/* Selection checkbox */}
+        {selectable && (
+          <div 
+            className="absolute top-4 left-4 z-10"
+            onClick={handleCheckboxChange}
+          >
+            <Checkbox
+              checked={selected}
+              onCheckedChange={(checked) => onSelectionChange?.(!!checked)}
+              className="h-5 w-5 border-2"
+            />
+          </div>
+        )}
 
-      {/* Header: WO Number + Status */}
-      <div className={`flex items-start justify-between gap-3 mb-3 ${selectable ? 'pl-8' : ''}`}>
-        <div className="flex items-center gap-2 min-w-0 flex-wrap">
-          <span className="font-mono font-bold text-base md:text-lg truncate">{workOrder.wo_number}</span>
-          {shippingOverdue && <AlertTriangle className="h-4 w-4 text-destructive shrink-0" />}
-          {startOverdue && !shippingOverdue && <Clock className="h-4 w-4 text-warning shrink-0" />}
-          
-          {/* Assigned operators avatars */}
-          {hasAssignedOperators ? (
-            <div className="flex items-center -space-x-1.5 shrink-0">
-              {assignedOperators.slice(0, 3).map((operator) => (
-                <Tooltip key={operator.id}>
-                  <TooltipTrigger asChild>
-                    <Avatar className="h-6 w-6 border-2 border-card">
-                      <AvatarImage src={operator.avatar_url || undefined} alt={operator.full_name} />
-                      <AvatarFallback className="text-[10px] bg-primary/10 text-primary">
-                        {getInitials(operator.full_name)}
-                      </AvatarFallback>
-                    </Avatar>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom" className="text-xs">
-                    {operator.full_name}
-                  </TooltipContent>
-                </Tooltip>
-              ))}
-              {assignedOperators.length > 3 && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="h-6 w-6 rounded-full border-2 border-card bg-muted flex items-center justify-center">
-                      <span className="text-[10px] font-medium text-muted-foreground">
-                        +{assignedOperators.length - 3}
-                      </span>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom" className="text-xs">
-                    {assignedOperators.slice(3).map(op => op.full_name).join(', ')}
-                  </TooltipContent>
-                </Tooltip>
+        {/* ========== HEADER SECTION ========== */}
+        <div className={`px-5 pt-5 pb-4 ${selectable ? 'pl-12' : ''}`}>
+          <div className="flex items-start justify-between gap-3">
+            {/* Left: WO ID + Meta row */}
+            <div className="min-w-0 flex-1">
+              {/* Primary title: Work Order ID */}
+              <h3 className="font-mono font-medium text-base text-foreground truncate">
+                {workOrder.wo_number}
+              </h3>
+              
+              {/* Secondary meta row */}
+              <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                {/* Assignment status */}
+                {hasAssignedOperators ? (
+                  <div className="flex items-center -space-x-1">
+                    {assignedOperators.slice(0, 3).map((operator) => (
+                      <Tooltip key={operator.id}>
+                        <TooltipTrigger asChild>
+                          <Avatar className="h-5 w-5 border-2 border-card">
+                            <AvatarImage src={operator.avatar_url || undefined} alt={operator.full_name} />
+                            <AvatarFallback className="text-[9px] bg-muted text-muted-foreground">
+                              {getInitials(operator.full_name)}
+                            </AvatarFallback>
+                          </Avatar>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom" className="text-xs">
+                          {operator.full_name}
+                        </TooltipContent>
+                      </Tooltip>
+                    ))}
+                    {assignedOperators.length > 3 && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="h-5 w-5 rounded-full border-2 border-card bg-muted flex items-center justify-center">
+                            <span className="text-[9px] font-medium text-muted-foreground">
+                              +{assignedOperators.length - 3}
+                            </span>
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom" className="text-xs">
+                          {assignedOperators.slice(3).map(op => op.full_name).join(', ')}
+                        </TooltipContent>
+                      </Tooltip>
+                    )}
+                  </div>
+                ) : isActiveWorkOrder ? (
+                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 gap-1 text-muted-foreground border-muted-foreground/30">
+                    <UserX className="h-3 w-3" />
+                    {language === 'nl' ? 'Niet toegewezen' : 'Unassigned'}
+                  </Badge>
+                ) : null}
+
+                {/* Item chips */}
+                <ProductBreakdownBadges
+                  breakdown={workOrder.productBreakdown}
+                  batchSize={workOrder.batch_size}
+                  compact
+                />
+              </div>
+            </div>
+
+            {/* Right: Status pill */}
+            <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
+              {showStatusEdit ? (
+                <WorkOrderStatusSelect
+                  workOrderId={workOrder.id}
+                  currentStatus={workOrder.status}
+                  onStatusChange={onStatusChange}
+                  onRequestCancel={onRequestCancel || onCancel}
+                  compact
+                />
+              ) : (
+                <StatusIndicator status={workOrder.status as any} showIcon size="sm" />
               )}
             </div>
-          ) : isActiveWorkOrder ? (
-            <Badge variant="outline" className="text-[10px] px-1.5 py-0 gap-1 text-warning border-warning/50 shrink-0">
-              <UserX className="h-3 w-3" />
-              Unassigned
-            </Badge>
-          ) : null}
+          </div>
         </div>
-        <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
-          {showStatusEdit ? (
-            <WorkOrderStatusSelect
-              workOrderId={workOrder.id}
-              currentStatus={workOrder.status}
-              onStatusChange={onStatusChange}
-              onRequestCancel={onRequestCancel || onCancel}
-              compact
+
+        {/* ========== BODY SECTION ========== */}
+        <div className="px-5 pb-4 space-y-3">
+          {/* Description / Customer name */}
+          {workOrder.customer_name && (
+            <p className="text-sm text-foreground line-clamp-2">
+              {workOrder.customer_name}
+            </p>
+          )}
+
+          {/* Cancellation reason */}
+          {workOrder.status === 'cancelled' && workOrder.cancellation_reason && (
+            <div className="text-xs text-destructive/80 italic bg-destructive/5 px-2.5 py-1.5 rounded-md">
+              "{workOrder.cancellation_reason}"
+            </div>
+          )}
+
+          {/* Dates row */}
+          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+            {workOrder.start_date && (
+              <div className="flex items-center gap-1.5">
+                <Calendar className="h-3.5 w-3.5 text-muted-foreground/70" />
+                <span className={startOverdue ? 'text-warning font-medium' : ''}>
+                  {formatDate(workOrder.start_date)}
+                </span>
+              </div>
+            )}
+            {workOrder.shipping_date && (
+              <div className="flex items-center gap-1.5">
+                <Truck className="h-3.5 w-3.5 text-muted-foreground/70" />
+                <span className={shippingOverdue ? 'text-destructive font-medium' : ''}>
+                  {formatDate(workOrder.shipping_date)}
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* ========== VALUE SECTION ========== */}
+        <div className="px-5 pb-4">
+          <div className="flex flex-col">
+            <span className="text-[10px] uppercase tracking-wide text-muted-foreground mb-0.5">
+              {language === 'nl' ? 'Orderwaarde' : 'Order value'}
+            </span>
+            <span className="text-lg font-semibold text-foreground tabular-nums">
+              {workOrder.order_value 
+                ? `€${workOrder.order_value.toLocaleString('nl-NL')}`
+                : '—'
+              }
+            </span>
+          </div>
+        </div>
+
+        {/* ========== PROGRESS SECTION ========== */}
+        <div className="px-5 pb-5">
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                {language === 'nl' ? 'Voortgang' : 'Execution progress'}
+              </span>
+              <span className="text-xs font-medium text-muted-foreground tabular-nums">
+                {workOrder.progressPercent || 0}%
+              </span>
+            </div>
+            <Progress 
+              value={workOrder.progressPercent || 0} 
+              status="auto"
+              className="h-1.5"
             />
-          ) : (
-            <StatusIndicator status={workOrder.status as any} showIcon />
-          )}
-        </div>
-      </div>
-
-      {/* Product badges */}
-      <div className="mb-3">
-        <ProductBreakdownBadges
-          breakdown={workOrder.productBreakdown}
-          batchSize={workOrder.batch_size}
-          compact
-        />
-      </div>
-
-      {/* Customer name - prominent */}
-      {workOrder.customer_name && (
-        <div className="mb-3">
-          <span className="text-sm font-medium text-foreground">{workOrder.customer_name}</span>
-        </div>
-      )}
-
-      {/* Cancellation reason */}
-      {workOrder.status === 'cancelled' && workOrder.cancellation_reason && (
-        <div className="mb-3 text-xs text-destructive/80 italic bg-destructive/5 px-2 py-1 rounded">
-          "{workOrder.cancellation_reason}"
-        </div>
-      )}
-
-      {/* Dates row */}
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-        {workOrder.start_date && (
-          <div className="flex items-center gap-1.5">
-            <Calendar className="h-3.5 w-3.5" />
-            <span className={startOverdue ? 'text-warning font-medium' : ''}>
-              {language === 'nl' ? 'Start' : 'Start'}: {formatDate(workOrder.start_date)}
-            </span>
           </div>
-        )}
-        {workOrder.shipping_date && (
-          <div className="flex items-center gap-1.5">
-            <Truck className="h-3.5 w-3.5" />
-            <span className={shippingOverdue ? 'text-destructive font-medium' : ''}>
-              {language === 'nl' ? 'Verzending' : 'Ship'}: {formatDate(workOrder.shipping_date)}
-            </span>
-          </div>
-        )}
-      </div>
-
-      {/* Bottom row: Price + Progress */}
-      <div className="flex items-center justify-between gap-4 mt-3">
-        {/* Order value */}
-        <div className="shrink-0">
-          {workOrder.order_value ? (
-            <span className="text-sm font-semibold text-foreground">
-              €{workOrder.order_value.toLocaleString('nl-NL')}
-            </span>
-          ) : (
-            <span className="text-sm text-muted-foreground">-</span>
-          )}
         </div>
 
-        {/* Progress bar + percentage */}
-        <div className="flex-1 max-w-[180px] flex items-center gap-2">
-          <Progress 
-            value={workOrder.progressPercent || 0} 
-            status="auto"
-            className="h-2 flex-1"
-          />
-          <span className="text-xs font-medium text-muted-foreground w-10 text-right">
-            {workOrder.progressPercent || 0}%
-          </span>
-        </div>
-      </div>
-      </div>
-
-      {/* Action Buttons - full-width bottom section (touch devices only) */}
-      {isTouch && (
-        <div className="flex items-stretch border-t border-border shadow-[inset_0_4px_6px_-4px_rgba(0,0,0,0.1)] dark:shadow-[inset_0_4px_6px_-4px_rgba(0,0,0,0.3)]">
+        {/* ========== FOOTER / ACTIONS SECTION ========== */}
+        <div className="flex items-stretch border-t border-border/50">
+          {/* View button */}
           <button
-            className="flex-1 flex items-center justify-center gap-2 py-4 text-sm font-medium text-foreground bg-muted/20 hover:bg-muted/40 active:bg-muted/60 transition-colors border-r border-border/40"
+            className="flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 active:bg-muted transition-colors"
             onClick={(e) => {
               e.stopPropagation();
               handleClick();
             }}
           >
-            <Eye className="h-5 w-5" />
+            <Eye className="h-4 w-4" />
             {language === 'nl' ? 'Bekijken' : 'View'}
           </button>
+
+          {/* Plan button - only for active work orders */}
           {isActiveWorkOrder && (
             <button
-              className="flex-1 flex items-center justify-center gap-2 py-4 text-sm font-medium text-primary-foreground bg-primary hover:bg-primary/90 active:bg-primary/80 transition-colors rounded-br-xl"
+              className="flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium text-primary-foreground bg-primary hover:bg-primary/90 active:bg-primary/80 transition-colors rounded-br-xl"
               onClick={handlePlan}
             >
-              <CalendarClock className="h-5 w-5" />
+              <CalendarClock className="h-4 w-4" />
               {language === 'nl' ? 'Plannen' : 'Plan'}
             </button>
           )}
+
+          {/* Empty space for completed/cancelled orders */}
           {!isActiveWorkOrder && (
-            <div className="flex-1" /> 
+            <div className="flex-1" />
           )}
         </div>
-      )}
-      
-      {/* Desktop: only show Plan button for active work orders (inside card content) */}
-      {!isTouch && isActiveWorkOrder && (
-        <div className="flex items-center gap-2 px-4 md:px-5 pb-4 md:pb-5">
-          <Button
-            variant={hasAssignedOperators ? "outline" : "default"}
-            size="sm"
-            className="h-9 text-xs gap-1.5 min-w-[90px]"
-            onClick={handlePlan}
-          >
-            <CalendarClock className="h-3.5 w-3.5" />
-            {language === 'nl' ? 'Plannen' : 'Plan'}
-          </Button>
-        </div>
-      )}
-      
-      {/* Add bottom padding for cards without buttons */}
-      {!isTouch && !isActiveWorkOrder && (
-        <div className="pb-4 md:pb-5" />
-      )}
       </div>
     </TooltipProvider>
   );
