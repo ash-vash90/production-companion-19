@@ -25,17 +25,18 @@ const SearchFullscreen = () => {
   const [results, setResults] = useState<SearchResult[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const touchStartRef = useRef<{ y: number; time: number } | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   
   const debouncedQuery = useDebounce(query, 300);
 
   // Slide-up animation on mount
   useEffect(() => {
-    // Trigger animation after mount
     requestAnimationFrame(() => {
       setIsVisible(true);
     });
-    // Focus input
     setTimeout(() => {
       inputRef.current?.focus();
     }, 50);
@@ -54,6 +55,33 @@ const SearchFullscreen = () => {
       document.documentElement.style.overflow = prevHtmlOverflow;
     };
   }, []);
+
+  // Swipe-down gesture to close
+  const handleTouchStart = (e: React.TouchEvent) => {
+    // Only trigger swipe close when at the top of the results
+    const scrollContainer = containerRef.current?.querySelector('[data-scroll-container]');
+    if (scrollContainer && scrollContainer.scrollTop > 10) return;
+    
+    touchStartRef.current = {
+      y: e.touches[0].clientY,
+      time: Date.now(),
+    };
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (!touchStartRef.current || isClosing) return;
+    
+    const deltaY = e.changedTouches[0].clientY - touchStartRef.current.y;
+    const duration = Date.now() - touchStartRef.current.time;
+    const velocity = deltaY / duration;
+    
+    // Swipe down with enough distance (100px) or velocity (0.5px/ms)
+    if (deltaY > 100 || (deltaY > 50 && velocity > 0.5)) {
+      handleClose();
+    }
+    
+    touchStartRef.current = null;
+  };
 
   // Perform search when debounced query changes
   useEffect(() => {
@@ -160,12 +188,13 @@ const SearchFullscreen = () => {
   }, [navigate]);
 
   const handleClose = useCallback(() => {
+    if (isClosing) return;
+    setIsClosing(true);
     setIsVisible(false);
-    // Wait for animation to complete before navigating back
     setTimeout(() => {
       navigate(-1);
     }, 200);
-  }, [navigate]);
+  }, [navigate, isClosing]);
 
   const handleKeyDown = (event: React.KeyboardEvent) => {
     if (event.key === 'ArrowDown') {
@@ -212,10 +241,13 @@ const SearchFullscreen = () => {
 
   return (
     <div
+      ref={containerRef}
       className={cn(
         "fixed inset-0 z-[100] flex h-[100dvh] w-[100vw] flex-col overflow-hidden bg-background overscroll-none transition-transform duration-200 ease-out",
         isVisible ? "translate-y-0" : "translate-y-full"
       )}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
     >
       {/* Header with search input and back button */}
       <div className="flex items-center gap-2 border-b border-border bg-background px-4 pt-[calc(0.75rem+env(safe-area-inset-top))] pb-3">
@@ -245,7 +277,10 @@ const SearchFullscreen = () => {
       </div>
 
       {/* Scrollable results area */}
-      <div className="flex-1 overflow-auto overscroll-contain pb-[env(safe-area-inset-bottom)]">
+      <div 
+        data-scroll-container
+        className="flex-1 overflow-auto overscroll-contain pb-[env(safe-area-inset-bottom)]"
+      >
         {results.length > 0 ? (
           <div className="py-2">
             <div className="px-3 py-1.5">
