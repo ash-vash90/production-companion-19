@@ -4,18 +4,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { ScanBarcode, Plus, X, Camera, AlertTriangle, Package } from 'lucide-react';
+import { ScanBarcode, Plus, X, Camera } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { formatDate } from '@/lib/utils';
 import { CameraScannerDialog } from '@/components/scanner/CameraScannerDialog';
-import { QuickReceiveDialog } from '@/components/inventory/QuickReceiveDialog';
-import { useBatchCheck, useConsumeStock } from '@/hooks/useInventory';
-import { Material } from '@/services/inventoryService';
 
 interface BatchScanDialogProps {
   open: boolean;
@@ -40,15 +36,8 @@ const BatchScanDialog: React.FC<BatchScanDialogProps> = ({
   const [scannedBatches, setScannedBatches] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Camera and inventory state
+  // Camera state
   const [showCameraScanner, setShowCameraScanner] = useState(false);
-  const [showQuickReceive, setShowQuickReceive] = useState(false);
-  const [pendingMaterial, setPendingMaterial] = useState<Material | null>(null);
-  const [pendingBatchNumber, setPendingBatchNumber] = useState<string>('');
-  const [inventoryWarning, setInventoryWarning] = useState<string | null>(null);
-
-  const { checkBatch } = useBatchCheck();
-  const consumeStock = useConsumeStock();
 
   const materialTypes = [
     { value: 'epoxy', label: 'Epoxy', requiresDate: true },
@@ -66,7 +55,6 @@ const BatchScanDialog: React.FC<BatchScanDialogProps> = ({
   useEffect(() => {
     if (open) {
       fetchScannedBatches();
-      setInventoryWarning(null);
     }
   }, [open]);
 
@@ -88,7 +76,7 @@ const BatchScanDialog: React.FC<BatchScanDialogProps> = ({
     }
   };
 
-  const handleScanBatch = async (bypassInventory = false) => {
+  const handleScanBatch = async () => {
     if (!materialType || !batchNumber) {
       toast.error('Error', {
         description: language === 'nl'
@@ -106,55 +94,6 @@ const BatchScanDialog: React.FC<BatchScanDialogProps> = ({
           : 'Opening date is required for this material'
       });
       return;
-    }
-
-    // Check inventory if not bypassing
-    if (!bypassInventory) {
-      const inventoryCheck = await checkBatch(batchNumber, materialType);
-
-      if (!inventoryCheck.found) {
-        // Batch not in inventory - show quick receive dialog
-        if (inventoryCheck.material) {
-          setPendingMaterial(inventoryCheck.material);
-          setPendingBatchNumber(batchNumber);
-          setShowQuickReceive(true);
-          return;
-        } else {
-          // Material type not configured in inventory system - allow with warning
-          setInventoryWarning(
-            language === 'nl'
-              ? `Materiaaltype "${materialType}" is niet geconfigureerd in het voorraadsysteem. Batch wordt niet gevolgd.`
-              : `Material type "${materialType}" is not configured in the inventory system. Batch will not be tracked.`
-          );
-        }
-      } else if (inventoryCheck.availableQuantity <= 0) {
-        // In stock but none available
-        toast.error('Error', {
-          description: language === 'nl'
-            ? `Batch "${batchNumber}" heeft geen beschikbare voorraad`
-            : `Batch "${batchNumber}" has no available stock`,
-        });
-        return;
-      } else {
-        // Valid stock - consume 1 unit
-        try {
-          await consumeStock.mutateAsync({
-            materialId: inventoryCheck.material!.id,
-            batchNumber,
-            quantity: 1,
-            workOrderId: workOrderItem.work_order_id,
-            workOrderItemId: workOrderItem.id,
-            productionStepId: productionStep.id,
-          });
-        } catch {
-          // Consumption failed - still allow scanning but warn
-          setInventoryWarning(
-            language === 'nl'
-              ? 'Voorraad kon niet worden bijgewerkt, maar batch is geregistreerd.'
-              : 'Stock could not be updated, but batch has been registered.'
-          );
-        }
-      }
     }
 
     // Save batch to batch_materials table
@@ -199,7 +138,6 @@ const BatchScanDialog: React.FC<BatchScanDialogProps> = ({
       setScannedBatches(prev => [data, ...prev]);
       setBatchNumber('');
       setOpeningDate('');
-      setInventoryWarning(null);
       toast.success(language === 'nl' ? 'Succes' : 'Success', {
         description: language === 'nl' ? 'Batch succesvol gescand' : 'Batch scanned successfully'
       });
@@ -207,14 +145,6 @@ const BatchScanDialog: React.FC<BatchScanDialogProps> = ({
       console.error('Error scanning batch:', error);
       toast.error('Error', { description: error.message });
     }
-  };
-
-  const handleQuickReceiveSuccess = () => {
-    // After quick receive, try scanning again with bypass
-    setShowQuickReceive(false);
-    setPendingMaterial(null);
-    // Now scan with inventory (it should find the stock now)
-    handleScanBatch(false);
   };
 
   const handleCameraScan = (scannedValue: string) => {
@@ -259,13 +189,6 @@ const BatchScanDialog: React.FC<BatchScanDialogProps> = ({
           </DialogHeader>
 
           <div className="space-y-5 py-4">
-            {inventoryWarning && (
-              <Alert>
-                <AlertTriangle className="h-4 w-4" />
-                <AlertDescription>{inventoryWarning}</AlertDescription>
-              </Alert>
-            )}
-
             <div className="space-y-4 p-5 border-2 rounded-lg bg-accent/20">
               <div className="space-y-3">
                 <Label htmlFor="materialType" className="text-base font-data uppercase tracking-wider">
@@ -415,23 +338,6 @@ const BatchScanDialog: React.FC<BatchScanDialogProps> = ({
           ? 'Richt de camera op de barcode van de batch'
           : 'Point the camera at the batch barcode'}
       />
-
-      {/* Quick Receive Dialog */}
-      {pendingMaterial && (
-        <QuickReceiveDialog
-          open={showQuickReceive}
-          onOpenChange={(open) => {
-            setShowQuickReceive(open);
-            if (!open) {
-              setPendingMaterial(null);
-              setPendingBatchNumber('');
-            }
-          }}
-          material={pendingMaterial}
-          batchNumber={pendingBatchNumber}
-          onSuccess={handleQuickReceiveSuccess}
-        />
-      )}
     </>
   );
 };

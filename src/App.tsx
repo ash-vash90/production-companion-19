@@ -29,7 +29,6 @@ const pageImports = {
   '/search-fullscreen': () => import("./pages/SearchFullscreen"),
   '/genealogy': () => import("./pages/Genealogy"),
   '/settings': () => import("./pages/Settings"),
-  '/inventory': () => import("./pages/Inventory"),
   '/profile': () => import("./pages/Profile"),
 };
 
@@ -57,7 +56,6 @@ const ProductionPlanner = lazy(pageImports['/planner']);
 const Genealogy = lazy(pageImports['/genealogy']);
 const Search = lazy(pageImports['/search']);
 const SearchFullscreen = lazy(pageImports['/search-fullscreen']);
-const Inventory = lazy(pageImports['/inventory']);
 const Profile = lazy(pageImports['/profile']);
 const NotFound = lazy(() => import("./pages/NotFound"));
 
@@ -156,7 +154,6 @@ const AnimatedRoutes = () => {
         <Route path="/search-fullscreen" element={<ProtectedRoute><SearchFullscreen /></ProtectedRoute>} />
         <Route path="/genealogy/:serialNumber" element={<ProtectedRoute><Genealogy /></ProtectedRoute>} />
         <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-        <Route path="/inventory" element={<ProtectedRoute><Inventory /></ProtectedRoute>} />
         <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
         <Route path="/profile/:userId" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

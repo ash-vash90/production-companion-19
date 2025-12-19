@@ -12,7 +12,6 @@ interface UserProfileContextType {
   profile: UserProfileData | null;
   isAdmin: boolean;
   isSupervisor: boolean;
-  canManageInventory: boolean;
   permissions: string[];
   hasPermission: (permissionId: string) => boolean;
   loading: boolean;
@@ -100,15 +99,11 @@ export function UserProfileProvider({ children }: { children: React.ReactNode })
     return permissions.includes(permissionId);
   }, [isAdmin, permissions]);
 
-  // Computed permission for inventory management
-  const canManageInventory = isAdmin || isSupervisor || permissions.includes('manage_inventory');
-
   return (
     <UserProfileContext.Provider value={{ 
       profile, 
       isAdmin, 
       isSupervisor, 
-      canManageInventory, 
       permissions,
       hasPermission,
       loading, 
