@@ -313,7 +313,7 @@ export function WorkOrderCard({
 
       {/* Action Buttons - full-width bottom section (touch devices only) */}
       {isTouch && (
-        <div className="flex items-stretch border-t border-border/40">
+        <div className="flex items-stretch border-t border-border shadow-[inset_0_4px_6px_-4px_rgba(0,0,0,0.1)] dark:shadow-[inset_0_4px_6px_-4px_rgba(0,0,0,0.3)]">
           <button
             className="flex-1 flex items-center justify-center gap-2 py-4 text-sm font-medium text-foreground bg-muted/20 hover:bg-muted/40 active:bg-muted/60 transition-colors border-r border-border/40"
             onClick={(e) => {
