@@ -932,15 +932,17 @@ const WorkOrders = () => {
       </Layout>
 
       {/* Floating Action Button - Outside Layout to avoid transform issues */}
-      <Button
-        onClick={() => setDialogOpen(true)}
-        size="icon"
-        aria-label={t('createWorkOrder') || 'Create work order'}
-        className="fixed right-4 sm:right-6 bottom-6 h-14 w-14 rounded-full shadow-xl z-[60] transition-transform hover:scale-105 active:scale-95"
-        style={{ bottom: 'max(1.5rem, env(safe-area-inset-bottom, 1.5rem))' }}
-      >
-        <Plus className="h-6 w-6" />
-      </Button>
+      {!dialogOpen && (
+        <Button
+          onClick={() => setDialogOpen(true)}
+          size="icon"
+          aria-label={t('createWorkOrder') || 'Create work order'}
+          className="fixed right-4 sm:right-6 bottom-6 h-14 w-14 rounded-full shadow-xl z-40 transition-transform hover:scale-105 active:scale-95"
+          style={{ bottom: 'max(1.5rem, env(safe-area-inset-bottom, 1.5rem))' }}
+        >
+          <Plus className="h-6 w-6" />
+        </Button>
+      )}
     </ProtectedRoute>
   );
 };
