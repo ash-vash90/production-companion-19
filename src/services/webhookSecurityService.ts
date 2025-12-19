@@ -376,9 +376,6 @@ export const WEBHOOK_EVENT_TYPES = {
 
   // Material Events
   MATERIAL_BATCH_SCANNED: 'material_batch_scanned',
-  LOW_STOCK_ALERT: 'low_stock_alert',
-  STOCK_RECEIVED: 'stock_received',
-  STOCK_CONSUMED: 'stock_consumed',
 
   // Item Events
   ITEM_COMPLETED: 'item_completed',
@@ -454,21 +451,6 @@ export function getEventTypeMetadata(eventType: WebhookEventType): {
     material_batch_scanned: {
       label: 'Material Batch Scanned',
       description: 'Fired when a material batch is scanned during production',
-      category: 'Materials',
-    },
-    low_stock_alert: {
-      label: 'Low Stock Alert',
-      description: 'Fired when inventory drops below reorder point',
-      category: 'Materials',
-    },
-    stock_received: {
-      label: 'Stock Received',
-      description: 'Fired when inventory is received',
-      category: 'Materials',
-    },
-    stock_consumed: {
-      label: 'Stock Consumed',
-      description: 'Fired when inventory is consumed',
       category: 'Materials',
     },
     item_completed: {
