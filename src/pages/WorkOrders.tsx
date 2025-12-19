@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { GlobalSearch } from '@/components/GlobalSearch';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import Layout from '@/components/Layout';
@@ -623,18 +622,11 @@ const WorkOrders = () => {
           className="h-full"
         >
         <div className="space-y-4 sm:space-y-5">
-          {/* Layer 2: Page Identity with Search */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <PageIdentity
-              title={t('workOrders')}
-              description={t('manageWorkOrders')}
-            />
-            {!isMobile && (
-              <div className="hidden sm:block">
-                <GlobalSearch />
-              </div>
-            )}
-          </div>
+          {/* Layer 2: Page Identity */}
+          <PageIdentity
+            title={t('workOrders')}
+            description={t('manageWorkOrders')}
+          />
 
           {/* Layer 4: Data Controls Bar */}
           <DataControlsBar
