@@ -26,6 +26,7 @@ const pageImports = {
   '/role-management': () => import("./pages/RoleManagement"),
   '/planner': () => import("./pages/ProductionPlanner"),
   '/search': () => import("./pages/Search"),
+  '/search-fullscreen': () => import("./pages/SearchFullscreen"),
   '/genealogy': () => import("./pages/Genealogy"),
   '/settings': () => import("./pages/Settings"),
   '/inventory': () => import("./pages/Inventory"),
@@ -55,6 +56,7 @@ const RoleManagement = lazy(pageImports['/role-management']);
 const ProductionPlanner = lazy(pageImports['/planner']);
 const Genealogy = lazy(pageImports['/genealogy']);
 const Search = lazy(pageImports['/search']);
+const SearchFullscreen = lazy(pageImports['/search-fullscreen']);
 const Inventory = lazy(pageImports['/inventory']);
 const Profile = lazy(pageImports['/profile']);
 const NotFound = lazy(() => import("./pages/NotFound"));
@@ -151,6 +153,7 @@ const AnimatedRoutes = () => {
         <Route path="/role-management" element={<ProtectedRoute><RoleManagement /></ProtectedRoute>} />
         <Route path="/planner" element={<ProtectedRoute><ProductionPlanner /></ProtectedRoute>} />
         <Route path="/search" element={<ProtectedRoute><Search /></ProtectedRoute>} />
+        <Route path="/search-fullscreen" element={<ProtectedRoute><SearchFullscreen /></ProtectedRoute>} />
         <Route path="/genealogy/:serialNumber" element={<ProtectedRoute><Genealogy /></ProtectedRoute>} />
         <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
         <Route path="/inventory" element={<ProtectedRoute><Inventory /></ProtectedRoute>} />
