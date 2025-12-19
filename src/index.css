@@ -121,12 +121,12 @@
   /* Radius */
   --radius: 0.5rem;
   
-  /* Sidebar - white in light mode */
-  --sidebar: 0 0% 100%;
+  /* Sidebar - matches background in light mode */
+  --sidebar: 210 40% 98%;
   --sidebar-foreground: 228 25% 10%;
   --sidebar-primary: 138 68% 28%;
   --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 210 40% 96%;
+  --sidebar-accent: 214 32% 91%;
   --sidebar-accent-foreground: 228 25% 10%;
   --sidebar-border: 214 32% 91%;
   --sidebar-ring: 138 68% 28%;
