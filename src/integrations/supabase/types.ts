@@ -286,6 +286,48 @@ export type Database = {
           },
         ]
       }
+      customers: {
+        Row: {
+          address: Json | null
+          created_at: string | null
+          email: string | null
+          exact_customer_id: string
+          id: string
+          is_active: boolean | null
+          last_synced_at: string | null
+          name: string
+          name_nl: string | null
+          phone: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          address?: Json | null
+          created_at?: string | null
+          email?: string | null
+          exact_customer_id: string
+          id?: string
+          is_active?: boolean | null
+          last_synced_at?: string | null
+          name: string
+          name_nl?: string | null
+          phone?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          address?: Json | null
+          created_at?: string | null
+          email?: string | null
+          exact_customer_id?: string
+          id?: string
+          is_active?: boolean | null
+          last_synced_at?: string | null
+          name?: string
+          name_nl?: string | null
+          phone?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       incoming_webhooks: {
         Row: {
           created_at: string
@@ -1661,6 +1703,7 @@ export type Database = {
           completed_at: string | null
           created_at: string
           created_by: string
+          customer_id: string | null
           customer_name: string | null
           exact_shop_order_link: string | null
           exact_shop_order_number: string | null
@@ -1692,6 +1735,7 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           created_by: string
+          customer_id?: string | null
           customer_name?: string | null
           exact_shop_order_link?: string | null
           exact_shop_order_number?: string | null
@@ -1723,6 +1767,7 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           created_by?: string
+          customer_id?: string | null
           customer_name?: string | null
           exact_shop_order_link?: string | null
           exact_shop_order_number?: string | null
@@ -1748,6 +1793,13 @@ export type Database = {
           wo_number?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "work_orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "work_orders_parent_wo_id_fkey"
             columns: ["parent_wo_id"]

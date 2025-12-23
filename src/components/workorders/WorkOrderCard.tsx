@@ -341,16 +341,16 @@ export function WorkOrderCard({
             </div>
           </div>
 
-          {/* ========== VALUE SECTION ========== */}
+          {/* ========== ITEMS COUNT SECTION ========== */}
           <div className="px-5 pb-3">
             <div className="flex flex-col">
               <span className="text-[10px] uppercase tracking-wide text-muted-foreground mb-0.5">
-                {language === 'nl' ? 'Orderwaarde' : 'Order value'}
+                {language === 'nl' ? 'Items' : 'Items'}
               </span>
               <span className="text-lg font-semibold text-foreground tabular-nums">
-                {workOrder.order_value 
-                  ? `€${workOrder.order_value.toLocaleString('nl-NL')}`
-                  : '—'
+                {workOrder.completedItems !== undefined && workOrder.totalItems !== undefined
+                  ? `${workOrder.completedItems}/${workOrder.totalItems}`
+                  : workOrder.batch_size
                 }
               </span>
             </div>
