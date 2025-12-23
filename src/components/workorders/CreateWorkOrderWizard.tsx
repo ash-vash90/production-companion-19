@@ -15,20 +15,21 @@ import {
   Loader2, 
   Plus, 
   Trash2, 
-  RefreshCw, 
   CalendarIcon, 
   CheckCircle, 
   Clock, 
   ExternalLink,
   AlertCircle,
-  ArrowRight,
-  Send
+  Send,
+  RefreshCw,
+  ArrowRight
 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { formatProductType, cn } from '@/lib/utils';
 import { SettingsService, SerialPrefixes } from '@/services/settingsService';
 import { format } from 'date-fns';
 import { triggerWebhook } from '@/lib/webhooks';
+import { CustomerSelect } from './CustomerSelect';
 
 type ProductType = 'SDM_ECO' | 'SENSOR' | 'MLA' | 'HMI' | 'TRANSMITTER';
 
@@ -57,11 +58,11 @@ export function CreateWorkOrderWizard({ open, onOpenChange, onSuccess }: CreateW
   const { language } = useLanguage();
   
   // Form state
-  const [woNumber, setWoNumber] = useState('');
-  const [generatingWO, setGeneratingWO] = useState(false);
+  const [shopOrderNumber, setShopOrderNumber] = useState('');
   const [serialPrefixes, setSerialPrefixes] = useState<SerialPrefixes | null>(null);
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [shippingDate, setShippingDate] = useState<Date | undefined>(undefined);
+  const [customerId, setCustomerId] = useState<string | null>(null);
   const [customerName, setCustomerName] = useState('');
   const [externalOrderNumber, setExternalOrderNumber] = useState('');
   const [productBatches, setProductBatches] = useState<ProductBatch[]>([
@@ -78,6 +79,7 @@ export function CreateWorkOrderWizard({ open, onOpenChange, onSuccess }: CreateW
   
   // Validation errors
   const [errors, setErrors] = useState<{
+    shopOrderNumber?: string;
     startDate?: string;
     shippingDate?: string;
     customerName?: string;
@@ -87,11 +89,12 @@ export function CreateWorkOrderWizard({ open, onOpenChange, onSuccess }: CreateW
   // Reset form when dialog opens
   useEffect(() => {
     if (open) {
-      generateWONumber();
       loadSerialPrefixes();
       setWizardStep('form');
+      setShopOrderNumber('');
       setStartDate(undefined);
       setShippingDate(undefined);
+      setCustomerId(null);
       setCustomerName('');
       setExternalOrderNumber('');
       setProductBatches([{ id: crypto.randomUUID(), productType: 'SDM_ECO', quantity: 1 }]);
@@ -146,20 +149,6 @@ export function CreateWorkOrderWizard({ open, onOpenChange, onSuccess }: CreateW
     return () => clearInterval(pollInterval);
   }, [wizardStep, createdWorkOrderId, syncStartTime, language]);
 
-  const generateWONumber = async () => {
-    setGeneratingWO(true);
-    try {
-      const generatedNumber = await SettingsService.generateWorkOrderNumber();
-      setWoNumber(generatedNumber);
-    } catch (error) {
-      console.error('Error generating WO number:', error);
-      const fallback = `WO-${Date.now()}`;
-      setWoNumber(fallback);
-    } finally {
-      setGeneratingWO(false);
-    }
-  };
-
   const loadSerialPrefixes = async () => {
     const prefixes = await SettingsService.getSerialPrefixes();
     setSerialPrefixes(prefixes);
@@ -186,8 +175,17 @@ export function CreateWorkOrderWizard({ open, onOpenChange, onSuccess }: CreateW
 
   const getTotalItems = () => productBatches.reduce((sum, b) => sum + b.quantity, 0);
 
+  const handleCustomerChange = (id: string | null, name: string | null) => {
+    setCustomerId(id);
+    setCustomerName(name || '');
+  };
+
   const validate = (): boolean => {
     const newErrors: typeof errors = {};
+
+    if (!shopOrderNumber.trim()) {
+      newErrors.shopOrderNumber = language === 'nl' ? 'Werkordernummer is verplicht' : 'Shop order number is required';
+    }
 
     if (!startDate) {
       newErrors.startDate = language === 'nl' ? 'Startdatum is verplicht' : 'Start date is required';
@@ -202,11 +200,7 @@ export function CreateWorkOrderWizard({ open, onOpenChange, onSuccess }: CreateW
     }
 
     if (!customerName.trim()) {
-      newErrors.customerName = language === 'nl' ? 'Klantnaam is verplicht' : 'Customer name is required';
-    }
-
-    if (!externalOrderNumber.trim()) {
-      newErrors.externalOrderNumber = language === 'nl' ? 'Ordernummer is verplicht' : 'Order number is required';
+      newErrors.customerName = language === 'nl' ? 'Klant is verplicht' : 'Customer is required';
     }
 
     setErrors(newErrors);
@@ -229,7 +223,7 @@ export function CreateWorkOrderWizard({ open, onOpenChange, onSuccess }: CreateW
       const { data: workOrder, error: woError } = await supabase
         .from('work_orders')
         .insert({
-          wo_number: woNumber,
+          wo_number: shopOrderNumber.trim(),
           product_type: primaryProductType,
           batch_size: totalBatchSize,
           created_by: user.id,
@@ -237,7 +231,8 @@ export function CreateWorkOrderWizard({ open, onOpenChange, onSuccess }: CreateW
           start_date: startDate ? format(startDate, 'yyyy-MM-dd') : null,
           shipping_date: shippingDate ? format(shippingDate, 'yyyy-MM-dd') : null,
           customer_name: customerName.trim(),
-          external_order_number: externalOrderNumber.trim(),
+          customer_id: customerId,
+          external_order_number: externalOrderNumber.trim() || null,
           sync_status: 'waiting_for_exact',
         })
         .select()
@@ -253,7 +248,7 @@ export function CreateWorkOrderWizard({ open, onOpenChange, onSuccess }: CreateW
       const items: any[] = [];
       let position = 1;
       
-      const woSuffix = woNumber.replace(/[^0-9]/g, '').slice(-6) || Date.now().toString().slice(-6);
+      const woSuffix = shopOrderNumber.replace(/[^0-9]/g, '').slice(-6) || Date.now().toString().slice(-6);
 
       for (const batch of productBatches) {
         const prefix = prefixes[batch.productType] || batch.productType.charAt(0);
@@ -289,21 +284,22 @@ export function CreateWorkOrderWizard({ open, onOpenChange, onSuccess }: CreateW
         entity_type: 'work_order',
         entity_id: workOrder.id,
         details: { 
-          wo_number: woNumber, 
+          wo_number: shopOrderNumber.trim(), 
           product_batches: productBatches.map(b => ({ type: b.productType, quantity: b.quantity })),
           total_items: totalBatchSize 
         },
       });
 
       // Trigger webhook for work order creation (to Zapier → Exact)
-      await triggerWebhook('workOrder.create.requested', {
+      await triggerWebhook('shopOrder.create.requested', {
         work_order_id: workOrder.id,
-        wo_number: woNumber,
+        shop_order_number: shopOrderNumber.trim(),
         product_type: primaryProductType,
         batch_size: totalBatchSize,
         product_batches: productBatches.map(b => ({ type: b.productType, quantity: b.quantity })),
+        customer_id: customerId,
         customer_name: customerName.trim(),
-        external_order_number: externalOrderNumber.trim(),
+        external_order_number: externalOrderNumber.trim() || null,
         start_date: startDate ? format(startDate, 'yyyy-MM-dd') : null,
         shipping_date: shippingDate ? format(shippingDate, 'yyyy-MM-dd') : null,
         serial_numbers: items.map(i => i.serial_number),
@@ -378,30 +374,16 @@ export function CreateWorkOrderWizard({ open, onOpenChange, onSuccess }: CreateW
     <form onSubmit={handleCreate} className="space-y-4">
       <div className="space-y-2">
         <Label className="text-xs font-medium uppercase tracking-wider">
-          {language === 'nl' ? 'Werkordernummer' : 'Work Order Number'}
+          {language === 'nl' ? 'Werkordernummer' : 'Shop Order Number'} <span className="text-destructive">*</span>
         </Label>
-        <div className="flex items-center gap-2">
-          <div className="flex-1 p-2.5 rounded-md border bg-muted/50 font-mono text-sm font-semibold">
-            {generatingWO ? (
-              <span className="flex items-center gap-2 text-muted-foreground">
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                {language === 'nl' ? 'Genereren...' : 'Generating...'}
-              </span>
-            ) : (
-              woNumber
-            )}
-          </div>
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            className="h-9 w-9"
-            onClick={generateWONumber}
-            disabled={generatingWO}
-          >
-            <RefreshCw className={cn('h-3.5 w-3.5', generatingWO && 'animate-spin')} />
-          </Button>
-        </div>
+        <Input
+          value={shopOrderNumber}
+          onChange={(e) => setShopOrderNumber(e.target.value)}
+          placeholder={language === 'nl' ? 'bijv. SO-2024-001234' : 'e.g. SO-2024-001234'}
+          className={cn("font-mono text-base", errors.shopOrderNumber && "border-destructive")}
+          maxLength={50}
+        />
+        {errors.shopOrderNumber && <p className="text-xs text-destructive">{errors.shopOrderNumber}</p>}
       </div>
 
       <div className="grid grid-cols-2 gap-3">
@@ -472,12 +454,10 @@ export function CreateWorkOrderWizard({ open, onOpenChange, onSuccess }: CreateW
           <Label className="text-xs font-medium">
             {language === 'nl' ? 'Klant' : 'Customer'} <span className="text-destructive">*</span>
           </Label>
-          <Input
-            value={customerName}
-            onChange={(e) => setCustomerName(e.target.value)}
-            placeholder={language === 'nl' ? 'Klantnaam' : 'Customer name'}
-            className={cn("text-base", errors.customerName && "border-destructive")}
-            maxLength={255}
+          <CustomerSelect
+            value={customerId}
+            onChange={handleCustomerChange}
+            error={errors.customerName}
           />
           {errors.customerName && <p className="text-xs text-destructive">{errors.customerName}</p>}
         </div>
@@ -563,7 +543,7 @@ export function CreateWorkOrderWizard({ open, onOpenChange, onSuccess }: CreateW
         <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
           {language === 'nl' ? 'Annuleren' : 'Cancel'}
         </Button>
-        <Button type="submit" disabled={generatingWO}>
+        <Button type="submit" disabled={!shopOrderNumber.trim()}>
           <Send className="h-4 w-4 mr-2" />
           {language === 'nl' ? 'Aanmaken & Sync' : 'Create & Sync'}
         </Button>
