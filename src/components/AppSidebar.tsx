@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { LayoutDashboard, Package, Settings, CalendarClock, BarChart3, Users, FileText, ClipboardList, PanelLeft, Globe, Moon, Sun, Monitor } from 'lucide-react';
+import { LayoutDashboard, Package, Settings, CalendarClock, BarChart3, Users, FileText, ClipboardList, PanelLeft, Globe, Moon, Sun, Monitor, Boxes } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -94,6 +94,7 @@ export function AppSidebar() {
   const adminItems = [
     { title: t('analytics'), url: '/analytics', icon: BarChart3 },
     ...(isAdmin && !loading ? [
+      { title: language === 'nl' ? 'Items Beheer' : 'Items', url: '/items', icon: Boxes },
       { title: t('roleManagement'), url: '/role-management', icon: Users },
       { title: t('settingsPage'), url: '/settings', icon: Settings },
     ] : []),
