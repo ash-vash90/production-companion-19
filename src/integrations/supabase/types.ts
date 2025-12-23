@@ -980,6 +980,7 @@ export type Database = {
           id: string
           is_active: boolean | null
           item_code: string
+          items_group: string | null
           last_synced_at: string | null
           name: string
           name_nl: string | null
@@ -993,6 +994,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           item_code: string
+          items_group?: string | null
           last_synced_at?: string | null
           name: string
           name_nl?: string | null
@@ -1006,6 +1008,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           item_code?: string
+          items_group?: string | null
           last_synced_at?: string | null
           name?: string
           name_nl?: string | null
@@ -1278,6 +1281,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      sync_configurations: {
+        Row: {
+          created_at: string
+          enabled: boolean
+          frequency: string
+          id: string
+          last_synced_at: string | null
+          next_sync_at: string | null
+          scheduled_time: string | null
+          sync_type: string
+          timezone: string
+          updated_at: string
+          webhook_url: string | null
+        }
+        Insert: {
+          created_at?: string
+          enabled?: boolean
+          frequency?: string
+          id?: string
+          last_synced_at?: string | null
+          next_sync_at?: string | null
+          scheduled_time?: string | null
+          sync_type: string
+          timezone?: string
+          updated_at?: string
+          webhook_url?: string | null
+        }
+        Update: {
+          created_at?: string
+          enabled?: boolean
+          frequency?: string
+          id?: string
+          last_synced_at?: string | null
+          next_sync_at?: string | null
+          scheduled_time?: string | null
+          sync_type?: string
+          timezone?: string
+          updated_at?: string
+          webhook_url?: string | null
+        }
+        Relationships: []
       }
       system_settings: {
         Row: {

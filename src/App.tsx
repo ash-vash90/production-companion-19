@@ -30,6 +30,7 @@ const pageImports = {
   '/genealogy': () => import("./pages/Genealogy"),
   '/settings': () => import("./pages/Settings"),
   '/profile': () => import("./pages/Profile"),
+  '/items': () => import("./pages/ItemsManagement"),
 };
 
 // Export prefetch function for use in sidebar
@@ -57,6 +58,7 @@ const Genealogy = lazy(pageImports['/genealogy']);
 const Search = lazy(pageImports['/search']);
 const SearchFullscreen = lazy(pageImports['/search-fullscreen']);
 const Profile = lazy(pageImports['/profile']);
+const ItemsManagement = lazy(pageImports['/items']);
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient({
@@ -156,6 +158,7 @@ const AnimatedRoutes = () => {
         <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
         <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
         <Route path="/profile/:userId" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+        <Route path="/items" element={<ProtectedRoute><ItemsManagement /></ProtectedRoute>} />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
       </Routes>
