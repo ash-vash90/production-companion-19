@@ -11,7 +11,7 @@ import PlannerCalendar from '@/components/planner/PlannerCalendar';
 import PlannerWorkOrderDetail from '@/components/planner/PlannerWorkOrderDetail';
 import MobilePlannerFlow from '@/components/planner/MobilePlannerFlow';
 import DesktopCapacityBar from '@/components/planner/DesktopCapacityBar';
-import { CreateWorkOrderDialog } from '@/components/CreateWorkOrderDialog';
+import { CreateWorkOrderWizard } from '@/components/workorders/CreateWorkOrderWizard';
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, parseISO, addMonths, subMonths, addWeeks, subWeeks, addDays, subDays } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Plus } from 'lucide-react';
@@ -259,7 +259,7 @@ const ProductionPlanner = () => {
           <DesktopCapacityBar currentDate={currentDate} />
         </div>
 
-        <CreateWorkOrderDialog
+        <CreateWorkOrderWizard
           open={createDialogOpen}
           onOpenChange={setCreateDialogOpen}
           onSuccess={handleWorkOrderUpdate}

@@ -77,6 +77,21 @@ const FIELD_MAPPINGS: Record<string, Record<string, string>> = {
   trigger_outgoing_webhook: {
     webhookUrl: 'webhook_url',
   },
+  // Exact sync mappings
+  sync_exact_work_order: {
+    workOrderId: 'work_order_id',
+    workOrderNumber: 'wo_number',
+    exactShopOrderNumber: 'exact_shop_order_number',
+    exactShopOrderLink: 'exact_shop_order_link',
+    status: 'status',
+    productionReadyDate: 'production_ready_date',
+    materialsSummary: 'materials_summary',
+    materialsIssuedStatus: 'materials_issued_status',
+  },
+  assign_batch_numbers: {
+    workOrderId: 'work_order_id',
+    batchAssignments: 'batch_assignments',
+  },
 };
 
 /**
@@ -366,6 +381,162 @@ async function executeRules(
           if (!success) {
             errors.push(`Rule "${rule.name}": Failed after ${maxRetries} attempts - ${lastError}`);
           }
+          break;
+        }
+        
+        // Exact sync: Update work order with Exact shop order info
+        case 'sync_exact_work_order': {
+          // Can use either work_order_id or wo_number to find the work order
+          const workOrderId = getValue('workOrderId', 'work_order_id');
+          const woNumber = getValue('workOrderNumber', 'wo_number');
+          const exactShopOrderNumber = getValue('exactShopOrderNumber', 'exact_shop_order_number');
+          const exactShopOrderLink = getValue('exactShopOrderLink', 'exact_shop_order_link');
+          const newStatus = getValue('status');
+          const productionReadyDate = getValue('productionReadyDate', 'production_ready_date');
+          const materialsSummary = getValue('materialsSummary', 'materials_summary');
+          const materialsIssuedStatus = getValue('materialsIssuedStatus', 'materials_issued_status');
+          
+          if (!workOrderId && !woNumber) {
+            errors.push(`Rule "${rule.name}": Missing workOrderId or workOrderNumber`);
+            continue;
+          }
+          
+          const updates: any = {
+            sync_status: 'synced',
+            last_sync_at: new Date().toISOString(),
+            last_sync_error: null,
+          };
+          
+          if (exactShopOrderNumber) updates.exact_shop_order_number = exactShopOrderNumber;
+          if (exactShopOrderLink) updates.exact_shop_order_link = exactShopOrderLink;
+          if (newStatus) updates.status = newStatus;
+          if (productionReadyDate) updates.production_ready_date = productionReadyDate;
+          if (materialsSummary) updates.materials_summary = materialsSummary;
+          if (materialsIssuedStatus) updates.materials_issued_status = materialsIssuedStatus;
+          
+          let query = supabase.from('work_orders').update(updates);
+          if (workOrderId) {
+            query = query.eq('id', workOrderId);
+          } else {
+            query = query.eq('wo_number', woNumber);
+          }
+          
+          const { data: updated, error } = await query.select('id, wo_number').single();
+          
+          if (error) {
+            // Mark as sync failed
+            const failQuery = supabase.from('work_orders').update({
+              sync_status: 'sync_failed',
+              last_sync_error: error.message,
+              last_sync_at: new Date().toISOString(),
+            });
+            if (workOrderId) {
+              await failQuery.eq('id', workOrderId);
+            } else if (woNumber) {
+              await failQuery.eq('wo_number', woNumber);
+            }
+            errors.push(`Rule "${rule.name}": ${error.message}`);
+          } else {
+            executed.push({ 
+              rule: rule.name, 
+              action: 'sync_exact_work_order', 
+              result: { 
+                workOrderId: updated.id,
+                workOrderNumber: updated.wo_number,
+                exactShopOrderNumber,
+                syncStatus: 'synced',
+              } 
+            });
+            console.log(`Synced work order ${updated.wo_number} with Exact: ${exactShopOrderNumber}`);
+          }
+          break;
+        }
+        
+        // Exact sync: Assign batch numbers to work order items
+        case 'assign_batch_numbers': {
+          const workOrderId = getValue('workOrderId', 'work_order_id');
+          const batchAssignments = getValue('batchAssignments', 'batch_assignments');
+          
+          if (!workOrderId) {
+            errors.push(`Rule "${rule.name}": Missing workOrderId`);
+            continue;
+          }
+          
+          if (!batchAssignments || !Array.isArray(batchAssignments)) {
+            errors.push(`Rule "${rule.name}": Invalid or missing batchAssignments array`);
+            continue;
+          }
+          
+          let successCount = 0;
+          let failCount = 0;
+          
+          for (const assignment of batchAssignments) {
+            // Assignment can identify item by serial_number or position_in_batch
+            const { serial_number, position_in_batch, batch_number } = assignment;
+            
+            if (!batch_number) continue;
+            
+            let itemQuery = supabase
+              .from('work_order_items')
+              .update({ 
+                batch_number, 
+                batch_assigned_at: new Date().toISOString() 
+              })
+              .eq('work_order_id', workOrderId);
+            
+            if (serial_number) {
+              itemQuery = itemQuery.eq('serial_number', serial_number);
+            } else if (position_in_batch) {
+              itemQuery = itemQuery.eq('position_in_batch', position_in_batch);
+            } else {
+              continue;
+            }
+            
+            const { error: itemError } = await itemQuery;
+            if (itemError) {
+              failCount++;
+              console.error(`Failed to assign batch to item:`, itemError);
+            } else {
+              successCount++;
+            }
+          }
+          
+          // Update materials issued status on work order
+          if (successCount > 0) {
+            const { data: items } = await supabase
+              .from('work_order_items')
+              .select('batch_number')
+              .eq('work_order_id', workOrderId);
+            
+            const totalItems = items?.length || 0;
+            const assignedItems = items?.filter((i: { batch_number: string | null }) => i.batch_number).length || 0;
+            
+            let issuedStatus = 'not_issued';
+            if (assignedItems === totalItems && totalItems > 0) {
+              issuedStatus = 'complete';
+            } else if (assignedItems > 0) {
+              issuedStatus = 'partial';
+            }
+            
+            await supabase
+              .from('work_orders')
+              .update({ 
+                materials_issued_status: issuedStatus,
+                last_sync_at: new Date().toISOString(),
+              })
+              .eq('id', workOrderId);
+          }
+          
+          executed.push({ 
+            rule: rule.name, 
+            action: 'assign_batch_numbers', 
+            result: { 
+              workOrderId,
+              assigned: successCount,
+              failed: failCount,
+            } 
+          });
+          console.log(`Assigned ${successCount} batch numbers to work order ${workOrderId}`);
           break;
         }
       }

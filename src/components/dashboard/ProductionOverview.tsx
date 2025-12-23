@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getProductBreakdown, formatProductBreakdownText, ProductBreakdown } from '@/lib/utils';
 import { ExternalLink, Plus, Eye, AlertCircle, RefreshCw, Package } from 'lucide-react';
-import { CreateWorkOrderDialog } from '@/components/CreateWorkOrderDialog';
+import { CreateWorkOrderWizard } from '@/components/workorders/CreateWorkOrderWizard';
 import { useResilientQuery } from '@/hooks/useResilientQuery';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
@@ -290,7 +290,7 @@ export function ProductionOverview() {
         </div>
       </div>
 
-      <CreateWorkOrderDialog
+      <CreateWorkOrderWizard
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         onSuccess={() => {
