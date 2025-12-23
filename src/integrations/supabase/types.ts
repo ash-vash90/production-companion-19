@@ -1512,6 +1512,8 @@ export type Database = {
       work_order_items: {
         Row: {
           assigned_to: string | null
+          batch_assigned_at: string | null
+          batch_number: string | null
           certificate_generated: boolean
           completed_at: string | null
           created_at: string
@@ -1533,6 +1535,8 @@ export type Database = {
         }
         Insert: {
           assigned_to?: string | null
+          batch_assigned_at?: string | null
+          batch_number?: string | null
           certificate_generated?: boolean
           completed_at?: string | null
           created_at?: string
@@ -1554,6 +1558,8 @@ export type Database = {
         }
         Update: {
           assigned_to?: string | null
+          batch_assigned_at?: string | null
+          batch_number?: string | null
           certificate_generated?: boolean
           completed_at?: string | null
           created_at?: string
@@ -1656,17 +1662,26 @@ export type Database = {
           created_at: string
           created_by: string
           customer_name: string | null
+          exact_shop_order_link: string | null
+          exact_shop_order_number: string | null
           external_order_number: string | null
           id: string
+          last_sync_at: string | null
+          last_sync_error: string | null
+          materials_issued_status: string | null
+          materials_summary: Json | null
           notes: string | null
           order_value: number | null
           parent_wo_id: string | null
           product_type: Database["public"]["Enums"]["product_type"]
+          production_ready_date: string | null
           scheduled_date: string | null
           shipping_date: string | null
           start_date: string | null
           started_at: string | null
           status: Database["public"]["Enums"]["work_order_status"]
+          sync_retry_count: number | null
+          sync_status: string | null
           updated_at: string
           wo_number: string
         }
@@ -1678,17 +1693,26 @@ export type Database = {
           created_at?: string
           created_by: string
           customer_name?: string | null
+          exact_shop_order_link?: string | null
+          exact_shop_order_number?: string | null
           external_order_number?: string | null
           id?: string
+          last_sync_at?: string | null
+          last_sync_error?: string | null
+          materials_issued_status?: string | null
+          materials_summary?: Json | null
           notes?: string | null
           order_value?: number | null
           parent_wo_id?: string | null
           product_type: Database["public"]["Enums"]["product_type"]
+          production_ready_date?: string | null
           scheduled_date?: string | null
           shipping_date?: string | null
           start_date?: string | null
           started_at?: string | null
           status?: Database["public"]["Enums"]["work_order_status"]
+          sync_retry_count?: number | null
+          sync_status?: string | null
           updated_at?: string
           wo_number: string
         }
@@ -1700,17 +1724,26 @@ export type Database = {
           created_at?: string
           created_by?: string
           customer_name?: string | null
+          exact_shop_order_link?: string | null
+          exact_shop_order_number?: string | null
           external_order_number?: string | null
           id?: string
+          last_sync_at?: string | null
+          last_sync_error?: string | null
+          materials_issued_status?: string | null
+          materials_summary?: Json | null
           notes?: string | null
           order_value?: number | null
           parent_wo_id?: string | null
           product_type?: Database["public"]["Enums"]["product_type"]
+          production_ready_date?: string | null
           scheduled_date?: string | null
           shipping_date?: string | null
           start_date?: string | null
           started_at?: string | null
           status?: Database["public"]["Enums"]["work_order_status"]
+          sync_retry_count?: number | null
+          sync_status?: string | null
           updated_at?: string
           wo_number?: string
         }
