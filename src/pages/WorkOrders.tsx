@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { CreateWorkOrderDialog } from '@/components/CreateWorkOrderDialog';
+import { CreateWorkOrderWizard } from '@/components/workorders/CreateWorkOrderWizard';
 import { WorkOrderFilters, FilterState, GroupByOption } from '@/components/workorders/WorkOrderFilters';
 import { WorkOrderCard } from '@/components/workorders/WorkOrderCard';
 import { WorkOrderTableRow, WorkOrderRowData } from '@/components/workorders/WorkOrderTableRow';
@@ -890,7 +890,7 @@ const WorkOrders = () => {
         
         </PullToRefresh>
 
-        <CreateWorkOrderDialog 
+        <CreateWorkOrderWizard 
           open={dialogOpen} 
           onOpenChange={setDialogOpen} 
           onSuccess={refetch}
