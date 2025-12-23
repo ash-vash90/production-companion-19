@@ -5,7 +5,10 @@ export type NotificationType =
   | 'work_order_cancelled'
   | 'exact_sync_success'
   | 'exact_sync_error'
-  | 'user_mentioned';
+  | 'user_mentioned'
+  | 'materials_issued'
+  | 'production_ready'
+  | 'production_start_approaching';
 
 export type NotificationPriority = 'low' | 'normal' | 'high' | 'urgent';
 
@@ -126,6 +129,56 @@ export async function notifyExactSyncError(
 }
 
 /**
+ * Notify supervisors (Anton/Erwin) when materials are issued and production can begin
+ */
+export async function notifyMaterialsIssued(
+  shopOrderNumber: string,
+  workOrderId: string,
+  productName?: string
+): Promise<void> {
+  const supervisors = await getSupervisors();
+  
+  for (const userId of supervisors) {
+    await createNotification({
+      userId,
+      type: 'materials_issued',
+      title: 'Materials Ready for Production',
+      message: `Shop Order ${shopOrderNumber}${productName ? ` (${productName})` : ''} has all materials issued. Production can begin.`,
+      entityType: 'work_order',
+      entityId: workOrderId,
+      priority: 'high',
+    });
+  }
+}
+
+/**
+ * Notify production team when planned start date is approaching
+ */
+export async function notifyProductionStartApproaching(
+  shopOrderNumber: string,
+  workOrderId: string,
+  startDate: string,
+  daysUntilStart: number,
+  productName?: string
+): Promise<void> {
+  const productionTeam = await getProductionTeam();
+  
+  const dayText = daysUntilStart === 1 ? 'tomorrow' : `in ${daysUntilStart} days`;
+  
+  for (const userId of productionTeam) {
+    await createNotification({
+      userId,
+      type: 'production_start_approaching',
+      title: 'Production Starting Soon',
+      message: `Shop Order ${shopOrderNumber}${productName ? ` (${productName})` : ''} is scheduled to start ${dayText} (${startDate}).`,
+      entityType: 'work_order',
+      entityId: workOrderId,
+      priority: daysUntilStart <= 1 ? 'high' : 'normal',
+    });
+  }
+}
+
+/**
  * Get all users subscribed to a notification type
  */
 export async function getNotificationSubscribers(
@@ -142,4 +195,73 @@ export async function getNotificationSubscribers(
   }
 
   return [];
+}
+
+/**
+ * Get supervisors (Anton/Erwin) for materials issued notifications
+ */
+async function getSupervisors(): Promise<string[]> {
+  const { data } = await supabase
+    .from('profiles')
+    .select('id')
+    .or('role.eq.admin,role.eq.supervisor');
+  return data?.map(u => u.id) || [];
+}
+
+/**
+ * Get production team (operators) for start date notifications
+ */
+async function getProductionTeam(): Promise<string[]> {
+  const { data } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('role', 'operator');
+  return data?.map(u => u.id) || [];
+}
+
+/**
+ * Check for approaching production start dates and send notifications
+ * This should be called by a scheduled job (e.g., daily cron)
+ */
+export async function checkApproachingStartDates(): Promise<void> {
+  const today = new Date();
+  const threeDaysFromNow = new Date(today);
+  threeDaysFromNow.setDate(today.getDate() + 3);
+  
+  // Find work orders starting in the next 3 days
+  const { data: workOrders, error } = await supabase
+    .from('work_orders')
+    .select(`
+      id,
+      wo_number,
+      exact_shop_order_number,
+      start_date,
+      product_id,
+      products:product_id (name)
+    `)
+    .gte('start_date', today.toISOString().split('T')[0])
+    .lte('start_date', threeDaysFromNow.toISOString().split('T')[0])
+    .in('status', ['planned', 'on_hold'])
+    .eq('materials_issued_status', 'complete');
+  
+  if (error) {
+    console.error('Failed to check approaching start dates:', error);
+    return;
+  }
+  
+  for (const wo of workOrders || []) {
+    const startDate = new Date(wo.start_date);
+    const daysUntilStart = Math.ceil((startDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    
+    const shopOrderNumber = wo.exact_shop_order_number || wo.wo_number;
+    const productName = (wo.products as { name?: string } | null)?.name;
+    
+    await notifyProductionStartApproaching(
+      shopOrderNumber,
+      wo.id,
+      wo.start_date,
+      daysUntilStart,
+      productName
+    );
+  }
 }
