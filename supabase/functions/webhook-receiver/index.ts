@@ -92,6 +92,10 @@ const FIELD_MAPPINGS: Record<string, Record<string, string>> = {
     workOrderId: 'work_order_id',
     batchAssignments: 'batch_assignments',
   },
+  // Products sync from Exact
+  sync_products: {
+    products: 'products',
+  },
 };
 
 /**
@@ -537,6 +541,60 @@ async function executeRules(
             } 
           });
           console.log(`Assigned ${successCount} batch numbers to work order ${workOrderId}`);
+          break;
+        }
+        
+        // Sync products from Exact
+        case 'sync_products': {
+          const products = getValue('products');
+          
+          if (!products || !Array.isArray(products)) {
+            errors.push(`Rule "${rule.name}": Missing or invalid products array`);
+            continue;
+          }
+          
+          let upsertCount = 0;
+          let failCount = 0;
+          
+          for (const product of products) {
+            const { exact_item_id, item_code, name, name_nl, description, product_type, is_active } = product;
+            
+            if (!exact_item_id || !item_code || !name) {
+              failCount++;
+              continue;
+            }
+            
+            const { error: upsertError } = await supabase
+              .from('products')
+              .upsert({
+                exact_item_id,
+                item_code,
+                name,
+                name_nl: name_nl || null,
+                description: description || null,
+                product_type: product_type || 'SDM_ECO',
+                is_active: is_active !== false,
+                last_synced_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+              }, { onConflict: 'exact_item_id' });
+            
+            if (upsertError) {
+              failCount++;
+              console.error(`Failed to upsert product ${item_code}:`, upsertError);
+            } else {
+              upsertCount++;
+            }
+          }
+          
+          executed.push({ 
+            rule: rule.name, 
+            action: 'sync_products', 
+            result: { 
+              synced: upsertCount,
+              failed: failCount,
+            } 
+          });
+          console.log(`Synced ${upsertCount} products from Exact`);
           break;
         }
       }

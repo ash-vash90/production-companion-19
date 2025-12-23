@@ -972,6 +972,48 @@ export type Database = {
         }
         Relationships: []
       }
+      products: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          exact_item_id: string
+          id: string
+          is_active: boolean | null
+          item_code: string
+          last_synced_at: string | null
+          name: string
+          name_nl: string | null
+          product_type: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          exact_item_id: string
+          id?: string
+          is_active?: boolean | null
+          item_code: string
+          last_synced_at?: string | null
+          name: string
+          name_nl?: string | null
+          product_type?: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          exact_item_id?: string
+          id?: string
+          is_active?: boolean | null
+          item_code?: string
+          last_synced_at?: string | null
+          name?: string
+          name_nl?: string | null
+          product_type?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -1716,6 +1758,7 @@ export type Database = {
           notes: string | null
           order_value: number | null
           parent_wo_id: string | null
+          product_id: string | null
           product_type: Database["public"]["Enums"]["product_type"]
           production_ready_date: string | null
           scheduled_date: string | null
@@ -1748,6 +1791,7 @@ export type Database = {
           notes?: string | null
           order_value?: number | null
           parent_wo_id?: string | null
+          product_id?: string | null
           product_type: Database["public"]["Enums"]["product_type"]
           production_ready_date?: string | null
           scheduled_date?: string | null
@@ -1780,6 +1824,7 @@ export type Database = {
           notes?: string | null
           order_value?: number | null
           parent_wo_id?: string | null
+          product_id?: string | null
           product_type?: Database["public"]["Enums"]["product_type"]
           production_ready_date?: string | null
           scheduled_date?: string | null
@@ -1805,6 +1850,13 @@ export type Database = {
             columns: ["parent_wo_id"]
             isOneToOne: false
             referencedRelation: "work_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_orders_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
             referencedColumns: ["id"]
           },
         ]
