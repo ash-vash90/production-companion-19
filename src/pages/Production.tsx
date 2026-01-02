@@ -37,9 +37,14 @@ const Production = () => {
       navigate('/auth');
       return;
     }
-    if (itemId) {
-      fetchProductionData();
+    // Validate that itemId is a proper UUID before fetching
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!itemId || !uuidRegex.test(itemId)) {
+      console.error('Invalid itemId:', itemId);
+      navigate('/work-orders');
+      return;
     }
+    fetchProductionData();
   }, [user, itemId, navigate]);
 
   const fetchProductionData = async () => {
