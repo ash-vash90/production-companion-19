@@ -85,7 +85,8 @@ const RoutePersistence = () => {
   // Store the last visited route (excluding the auth page)
   useEffect(() => {
     // Don't store auth page or during initial restoration
-    if (location.pathname !== "/auth") {
+    // Also ignore accidental route templates like "/production/:itemId"
+    if (location.pathname !== "/auth" && !location.pathname.includes(":")) {
       const fullPath = `${location.pathname}${location.search}${location.hash}`;
       localStorage.setItem(LAST_ROUTE_KEY, fullPath);
     }
@@ -103,6 +104,14 @@ const RoutePersistence = () => {
 
     if (location.pathname === "/") {
       const lastRoute = localStorage.getItem(LAST_ROUTE_KEY);
+
+      // Guard against accidentally persisted route templates like "/production/:itemId"
+      if (lastRoute && lastRoute.includes(":")) {
+        console.warn("Ignoring invalid persisted route:", lastRoute);
+        localStorage.removeItem(LAST_ROUTE_KEY);
+        return;
+      }
+
       if (lastRoute && lastRoute !== "/" && lastRoute !== "/auth") {
         // Use a small delay to ensure auth state is settled
         const timer = setTimeout(() => {

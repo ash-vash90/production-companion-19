@@ -11,6 +11,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Loader2, ArrowLeft, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
 
+const isUuid = (value?: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value ?? "");
+
 const ProductionSensor = () => {
   const { itemId } = useParams();
   const { user } = useAuth();
@@ -27,9 +29,14 @@ const ProductionSensor = () => {
       navigate('/auth');
       return;
     }
-    if (itemId) {
-      fetchData();
+
+    if (!itemId || !isUuid(itemId)) {
+      console.error('Invalid itemId:', itemId);
+      navigate('/work-orders');
+      return;
     }
+
+    fetchData();
   }, [user, itemId, navigate]);
 
   const fetchData = async () => {

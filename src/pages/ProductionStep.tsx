@@ -40,6 +40,8 @@ interface StepCompletionInfo {
   avatar_url: string | null;
 }
 
+const isUuid = (value?: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value ?? "");
+
 const ProductionStep = () => {
   const { itemId } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -92,7 +94,7 @@ const ProductionStep = () => {
 
   // Set up real-time presence
   useEffect(() => {
-    if (!user || !itemId || !currentUserProfile) return;
+    if (!user || !itemId || !isUuid(itemId) || !currentUserProfile) return;
 
     const channel = supabase.channel(`item-presence-${itemId}`);
 
@@ -140,10 +142,14 @@ const ProductionStep = () => {
   }, [searchParams, setSearchParams]);
 
   useEffect(() => {
-    if (user && itemId) {
-      fetchData();
+    if (!user) return;
+    if (!itemId || !isUuid(itemId)) {
+      console.error('Invalid itemId:', itemId);
+      navigate('/work-orders');
+      return;
     }
-  }, [user, itemId]);
+    fetchData();
+  }, [user, itemId, navigate]);
 
   const fetchData = async () => {
     try {
