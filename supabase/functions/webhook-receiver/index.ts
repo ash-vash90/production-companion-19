@@ -546,9 +546,23 @@ async function executeRules(
         
         // Sync products from Exact
         case 'sync_products': {
-          const products = getValue('products');
+          // Support both flat array and Exact's nested Items.Item structure
+          let products = getValue('products');
           
-          if (!products || !Array.isArray(products)) {
+          // Handle Exact's nested structure: { Items: { Item: [...] } }
+          if (!products) {
+            const items = payload.Items || payload.items;
+            if (items) {
+              products = items.Item || items.item || items;
+            }
+          }
+          
+          // Ensure products is an array
+          if (products && !Array.isArray(products)) {
+            products = [products];
+          }
+          
+          if (!products || !Array.isArray(products) || products.length === 0) {
             errors.push(`Rule "${rule.name}": Missing or invalid products array`);
             continue;
           }
@@ -557,10 +571,24 @@ async function executeRules(
           let failCount = 0;
           
           for (const product of products) {
-            const { exact_item_id, item_code, name, name_nl, description, product_type, is_active } = product;
+            // Map Exact field names to our schema
+            // Exact uses: 'Items ID', 'Items Code', 'Items Description', 'Items Item Group', 'Items Barcode', 'Items Stock'
+            const exact_item_id = product.exact_item_id || product['Items ID'] || product['items_id'];
+            const item_code = product.item_code || product['Items Code'] || product['items_code'];
+            const name = product.name || product['Items Description'] || product['items_description'];
+            const items_group = product.items_group || product['Items Item Group'] || product['items_item_group'];
+            const barcode = product.barcode || product['Items Barcode'] || product['items_barcode'];
+            const stock = product.stock ?? product['Items Stock'] ?? product['items_stock'];
+            
+            // Optional fields with fallbacks
+            const name_nl = product.name_nl || null;
+            const description = product.description || null;
+            const product_type = product.product_type || 'SDM_ECO';
+            const is_active = product.is_active !== false;
             
             if (!exact_item_id || !item_code || !name) {
               failCount++;
+              console.log(`Skipping product - missing required fields. ID: ${exact_item_id}, Code: ${item_code}, Name: ${name}`);
               continue;
             }
             
@@ -570,10 +598,13 @@ async function executeRules(
                 exact_item_id,
                 item_code,
                 name,
-                name_nl: name_nl || null,
-                description: description || null,
-                product_type: product_type || 'SDM_ECO',
-                is_active: is_active !== false,
+                name_nl,
+                description,
+                items_group: items_group || null,
+                barcode: barcode || null,
+                stock: stock != null ? Number(stock) : 0,
+                product_type,
+                is_active,
                 last_synced_at: new Date().toISOString(),
                 updated_at: new Date().toISOString(),
               }, { onConflict: 'exact_item_id' });
@@ -592,9 +623,10 @@ async function executeRules(
             result: { 
               synced: upsertCount,
               failed: failCount,
+              totalReceived: products.length,
             } 
           });
-          console.log(`Synced ${upsertCount} products from Exact`);
+          console.log(`Synced ${upsertCount} products from Exact (${failCount} failed)`);
           break;
         }
       }
