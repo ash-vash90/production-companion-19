@@ -13,9 +13,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Package, RefreshCw, Settings, Clock, Calendar, ExternalLink, Copy, Check, Send, Loader2, Download, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Search, Package, RefreshCw, Settings, Clock, Calendar, ExternalLink, Copy, Check, Send, Loader2, Download, AlertCircle, CheckCircle2, FileJson, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const FREQUENCY_OPTIONS = [
   { value: "5min", label: "Every 5 minutes" },
@@ -68,6 +69,44 @@ export default function ItemsManagement() {
       return data;
     },
   });
+
+  // Fetch incoming webhooks that could be used for items sync
+  const { data: itemsSyncWebhooks = [] } = useQuery({
+    queryKey: ["items-sync-webhooks"],
+    queryFn: async () => {
+      // Get all incoming webhooks - user can configure any for items sync
+      const { data, error } = await supabase
+        .from("incoming_webhooks_safe")
+        .select("id, name, endpoint_key, enabled, trigger_count, last_triggered_at")
+        .order("created_at", { ascending: false });
+      
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  // Fetch recent webhook logs for items sync
+  const { data: webhookLogs = [], refetch: refetchLogs } = useQuery({
+    queryKey: ["items-webhook-logs"],
+    queryFn: async () => {
+      // Get logs from webhooks with sync_products rules
+      const webhookIds = itemsSyncWebhooks.map((w: any) => w.id).filter(Boolean);
+      if (webhookIds.length === 0) return [];
+      
+      const { data, error } = await supabase
+        .from("webhook_logs")
+        .select("*")
+        .in("incoming_webhook_id", webhookIds)
+        .order("created_at", { ascending: false })
+        .limit(20);
+      
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: itemsSyncWebhooks.length > 0,
+  });
+
+  const [selectedLog, setSelectedLog] = useState<typeof webhookLogs[0] | null>(null);
 
   // Update sync configuration
   const updateConfig = useMutation({
@@ -708,6 +747,173 @@ export default function ItemsManagement() {
                   </div>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Recent Webhook Logs */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <FileJson className="h-5 w-5" />
+                    {language === "nl" ? "Recente Webhook Logs" : "Recent Webhook Logs"}
+                  </CardTitle>
+                  <CardDescription>
+                    {language === "nl" 
+                      ? "Bekijk inkomende webhook payloads" 
+                      : "View incoming webhook payloads"}
+                  </CardDescription>
+                </div>
+                <Button variant="outline" size="sm" onClick={() => refetchLogs()} className="gap-2">
+                  <RefreshCw className="h-4 w-4" />
+                  {language === "nl" ? "Vernieuwen" : "Refresh"}
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {itemsSyncWebhooks.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <AlertCircle className="h-12 w-12 mx-auto opacity-50 mb-2" />
+                  <p className="font-medium">
+                    {language === "nl" ? "Geen webhook geconfigureerd" : "No webhook configured"}
+                  </p>
+                  <p className="text-sm mt-1">
+                    {language === "nl" 
+                      ? "Maak eerst een incoming webhook aan in Instellingen → Webhooks" 
+                      : "First create an incoming webhook in Settings → Webhooks"}
+                  </p>
+                  <Button variant="link" className="mt-2" onClick={() => window.location.href = "/settings"}>
+                    {language === "nl" ? "Ga naar Instellingen" : "Go to Settings"}
+                  </Button>
+                </div>
+              ) : webhookLogs.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <FileJson className="h-12 w-12 mx-auto opacity-50 mb-2" />
+                  <p>{language === "nl" ? "Nog geen webhook logs ontvangen" : "No webhook logs received yet"}</p>
+                  <p className="text-sm mt-1">
+                    {language === "nl" 
+                      ? "Stuur een test webhook om het te proberen" 
+                      : "Send a test webhook to try it out"}
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {/* Configured webhooks info */}
+                  <div className="flex flex-wrap gap-2">
+                    {itemsSyncWebhooks.map((webhook: any) => (
+                      <Badge 
+                        key={webhook.id} 
+                        variant={webhook.enabled ? "default" : "secondary"}
+                        className="gap-1"
+                      >
+                        {webhook.enabled ? <CheckCircle2 className="h-3 w-3" /> : <AlertCircle className="h-3 w-3" />}
+                        {webhook.name}
+                        {webhook.trigger_count > 0 && (
+                          <span className="ml-1 opacity-70">({webhook.trigger_count}x)</span>
+                        )}
+                      </Badge>
+                    ))}
+                  </div>
+
+                  {/* Logs table */}
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-[160px]">{language === "nl" ? "Tijdstip" : "Time"}</TableHead>
+                          <TableHead className="w-[80px]">{language === "nl" ? "Status" : "Status"}</TableHead>
+                          <TableHead>{language === "nl" ? "Payload Preview" : "Payload Preview"}</TableHead>
+                          <TableHead className="w-[80px]"></TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {webhookLogs.map((log) => (
+                          <TableRow key={log.id}>
+                            <TableCell className="font-mono text-xs">
+                              {format(new Date(log.created_at), "dd/MM HH:mm:ss")}
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant={log.response_status === 200 ? "default" : log.response_status === 207 ? "secondary" : "destructive"}>
+                                {log.response_status}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="font-mono text-xs truncate max-w-[300px]">
+                              {log.request_body ? JSON.stringify(log.request_body).slice(0, 100) + "..." : "—"}
+                            </TableCell>
+                            <TableCell>
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                onClick={() => setSelectedLog(log)}
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+
+                  {/* Selected log detail */}
+                  {selectedLog && (
+                    <Card className="border-primary/50">
+                      <CardHeader className="pb-2">
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="text-sm">
+                            {language === "nl" ? "Payload Details" : "Payload Details"} - {format(new Date(selectedLog.created_at), "dd/MM/yyyy HH:mm:ss")}
+                          </CardTitle>
+                          <div className="flex gap-2">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => {
+                                setTestPayload(JSON.stringify(selectedLog.request_body, null, 2));
+                                toast.success(language === "nl" ? "Payload gekopieerd naar test veld" : "Payload copied to test field");
+                              }}
+                            >
+                              {language === "nl" ? "Gebruik als test" : "Use as test"}
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => setSelectedLog(null)}
+                            >
+                              ✕
+                            </Button>
+                          </div>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <ScrollArea className="h-[300px]">
+                          <pre className="text-xs bg-muted p-4 rounded-lg overflow-x-auto">
+                            {JSON.stringify(selectedLog.request_body, null, 2)}
+                          </pre>
+                        </ScrollArea>
+                        {selectedLog.error_message && (
+                          <div className="mt-4 p-3 bg-destructive/10 rounded-lg border border-destructive/30">
+                            <p className="text-sm font-medium text-destructive">
+                              {language === "nl" ? "Fout:" : "Error:"}
+                            </p>
+                            <p className="text-sm">{selectedLog.error_message}</p>
+                          </div>
+                        )}
+                        {selectedLog.executed_rules && (selectedLog.executed_rules as unknown[]).length > 0 && (
+                          <div className="mt-4 p-3 bg-green-500/10 rounded-lg border border-green-500/30">
+                            <p className="text-sm font-medium text-green-500">
+                              {language === "nl" ? "Uitgevoerde regels:" : "Executed rules:"}
+                            </p>
+                            <pre className="text-xs mt-2">
+                              {JSON.stringify(selectedLog.executed_rules, null, 2)}
+                            </pre>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
