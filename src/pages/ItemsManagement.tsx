@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Package, RefreshCw, Settings, Clock, Calendar, ExternalLink, Copy, Check } from "lucide-react";
+import { Search, Package, RefreshCw, Settings, Clock, Calendar, ExternalLink, Copy, Check, Send, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -35,6 +35,7 @@ export default function ItemsManagement() {
   const [searchQuery, setSearchQuery] = useState("");
   const [groupFilter, setGroupFilter] = useState<string>("all");
   const [copied, setCopied] = useState(false);
+  const [isTesting, setIsTesting] = useState(false);
 
   // Fetch products
   const { data: products = [], isLoading: productsLoading } = useQuery({
@@ -104,6 +105,44 @@ export default function ItemsManagement() {
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
     toast.success(language === "nl" ? "Gekopieerd!" : "Copied!");
+  };
+
+  const testWebhook = async () => {
+    if (!webhookUrl) {
+      toast.error(language === "nl" ? "Voer eerst een webhook URL in" : "Enter a webhook URL first");
+      return;
+    }
+
+    setIsTesting(true);
+    try {
+      // Send request to Zapier webhook to trigger a sync
+      await fetch(webhookUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        mode: "no-cors", // Required for Zapier webhooks
+        body: JSON.stringify({
+          action: "request_items_sync",
+          timestamp: new Date().toISOString(),
+          triggered_from: window.location.origin,
+          receiver_endpoint: receiverEndpoint,
+        }),
+      });
+
+      toast.success(
+        language === "nl" 
+          ? "Test verzonden naar Zapier. Controleer de Zap-geschiedenis om te bevestigen." 
+          : "Test sent to Zapier. Check your Zap history to confirm."
+      );
+    } catch (error) {
+      console.error("Webhook test error:", error);
+      toast.error(
+        language === "nl" 
+          ? "Fout bij verzenden naar Zapier" 
+          : "Failed to send to Zapier"
+      );
+    } finally {
+      setIsTesting(false);
+    }
   };
 
   const getDisplayName = (product: typeof products[0]) => {
@@ -281,11 +320,27 @@ export default function ItemsManagement() {
               {/* Webhook URL from Exact */}
               <div className="space-y-2">
                 <Label>{language === "nl" ? "Zapier Webhook URL" : "Zapier Webhook URL"}</Label>
-                <Input
-                  placeholder="https://hooks.zapier.com/hooks/catch/..."
-                  value={webhookUrl}
-                  onChange={(e) => updateConfig.mutate({ webhook_url: e.target.value })}
-                />
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="https://hooks.zapier.com/hooks/catch/..."
+                    value={webhookUrl}
+                    onChange={(e) => updateConfig.mutate({ webhook_url: e.target.value })}
+                    className="flex-1"
+                  />
+                  <Button
+                    variant="outline"
+                    onClick={testWebhook}
+                    disabled={!webhookUrl || isTesting}
+                    className="gap-2"
+                  >
+                    {isTesting ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Send className="h-4 w-4" />
+                    )}
+                    {language === "nl" ? "Test" : "Test"}
+                  </Button>
+                </div>
                 <p className="text-sm text-muted-foreground">
                   {language === "nl" 
                     ? "De Zapier webhook die Exact items ophaalt en doorstuurt" 
