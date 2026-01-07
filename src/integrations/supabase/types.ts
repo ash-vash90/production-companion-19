@@ -2010,6 +2010,7 @@ export type Database = {
         | "update_item_status"
         | "log_activity"
         | "trigger_outgoing_webhook"
+        | "sync_products"
       operator_initials: "MB" | "HL" | "AB" | "EV"
       product_type: "SDM_ECO" | "SENSOR" | "MLA" | "HMI" | "TRANSMITTER"
       step_status: "pending" | "in_progress" | "completed" | "skipped"
@@ -2153,6 +2154,7 @@ export const Constants = {
         "update_item_status",
         "log_activity",
         "trigger_outgoing_webhook",
+        "sync_products",
       ],
       operator_initials: ["MB", "HL", "AB", "EV"],
       product_type: ["SDM_ECO", "SENSOR", "MLA", "HMI", "TRANSMITTER"],
