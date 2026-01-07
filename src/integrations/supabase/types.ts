@@ -974,6 +974,7 @@ export type Database = {
       }
       products: {
         Row: {
+          barcode: string | null
           created_at: string | null
           description: string | null
           exact_item_id: string
@@ -985,9 +986,11 @@ export type Database = {
           name: string
           name_nl: string | null
           product_type: string
+          stock: number | null
           updated_at: string | null
         }
         Insert: {
+          barcode?: string | null
           created_at?: string | null
           description?: string | null
           exact_item_id: string
@@ -999,9 +1002,11 @@ export type Database = {
           name: string
           name_nl?: string | null
           product_type?: string
+          stock?: number | null
           updated_at?: string | null
         }
         Update: {
+          barcode?: string | null
           created_at?: string | null
           description?: string | null
           exact_item_id?: string
@@ -1013,6 +1018,7 @@ export type Database = {
           name?: string
           name_nl?: string | null
           product_type?: string
+          stock?: number | null
           updated_at?: string | null
         }
         Relationships: []
