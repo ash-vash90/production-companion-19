@@ -98,10 +98,10 @@ export default function ItemsManagement() {
   });
 
   // Fetch recent webhook logs for items sync
-  const { data: webhookLogs = [], refetch: refetchLogs } = useQuery({
-    queryKey: ["items-webhook-logs"],
+  const webhookIds = itemsSyncWebhooks.map((w: any) => w.id).filter(Boolean);
+  const { data: webhookLogs = [], refetch: refetchLogs, isRefetching: isRefetchingLogs } = useQuery({
+    queryKey: ["items-webhook-logs", webhookIds],
     queryFn: async () => {
-      const webhookIds = itemsSyncWebhooks.map((w: any) => w.id).filter(Boolean);
       if (webhookIds.length === 0) return [];
       
       const { data, error } = await supabase
@@ -114,7 +114,7 @@ export default function ItemsManagement() {
       if (error) throw error;
       return data || [];
     },
-    enabled: itemsSyncWebhooks.length > 0,
+    enabled: webhookIds.length > 0,
   });
 
   // Update sync config mutation
@@ -928,8 +928,8 @@ export default function ItemsManagement() {
                       : "View incoming webhook payloads"}
                   </CardDescription>
                 </div>
-                <Button variant="outline" size="sm" onClick={() => refetchLogs()} className="gap-2">
-                  <RefreshCw className="h-4 w-4" />
+                <Button variant="outline" size="sm" onClick={() => refetchLogs()} disabled={isRefetchingLogs} className="gap-2">
+                  <RefreshCw className={`h-4 w-4 ${isRefetchingLogs ? 'animate-spin' : ''}`} />
                   {language === "nl" ? "Vernieuwen" : "Refresh"}
                 </Button>
               </div>
