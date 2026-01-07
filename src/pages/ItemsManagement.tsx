@@ -240,7 +240,7 @@ export default function ItemsManagement() {
 
     try {
       // First validate JSON
-      let parsed;
+      let parsed: any;
       try {
         parsed = JSON.parse(testPayload);
       } catch {
@@ -264,33 +264,54 @@ export default function ItemsManagement() {
       if (parsed.action !== "sync_products") {
         setParseResult({
           success: false,
-          message: language === "nl" 
-            ? `Onverwachte action: '${parsed.action}'. Verwacht: 'sync_products'` 
-            : `Unexpected action: '${parsed.action}'. Expected: 'sync_products'`,
+          message:
+            language === "nl"
+              ? `Onverwachte action: '${parsed.action}'. Verwacht: 'sync_products'`
+              : `Unexpected action: '${parsed.action}'. Expected: 'sync_products'`,
           data: parsed,
         });
         return;
       }
 
-      if (!parsed.data) {
+      const itemsContainer = parsed.Items ?? parsed.items;
+      let items: any[] | undefined;
+
+      if (Array.isArray(itemsContainer)) {
+        items = itemsContainer;
+      } else if (itemsContainer && typeof itemsContainer === "object") {
+        // Also support Exact's older nested shape: { Items: { Item: [...] } }
+        if (Array.isArray(itemsContainer.Item)) items = itemsContainer.Item;
+        else if (Array.isArray(itemsContainer.item)) items = itemsContainer.item;
+      }
+
+      if (!items || items.length === 0) {
         setParseResult({
           success: false,
-          message: language === "nl" ? "Ontbrekend 'data' veld" : "Missing 'data' field",
+          message:
+            language === "nl"
+              ? "Ontbrekend of leeg 'Items' array"
+              : "Missing or empty 'Items' array",
           data: parsed,
         });
         return;
       }
 
-      const requiredFields = ["exact_item_id", "item_code", "name"];
-      const missingFields = requiredFields.filter((f) => !parsed.data[f]);
+      const requiredKeys = ["Items ID", "Items Code", "Items Description"];
+      const invalidIndices: number[] = [];
 
-      if (missingFields.length > 0) {
+      items.forEach((it, idx) => {
+        const missing = requiredKeys.filter((k) => it?.[k] === undefined || it?.[k] === null || it?.[k] === "");
+        if (missing.length > 0) invalidIndices.push(idx);
+      });
+
+      if (invalidIndices.length > 0) {
         setParseResult({
           success: false,
-          message: language === "nl" 
-            ? `Ontbrekende verplichte velden: ${missingFields.join(", ")}` 
-            : `Missing required fields: ${missingFields.join(", ")}`,
-          data: parsed.data,
+          message:
+            language === "nl"
+              ? `Ontbrekende verplichte velden in item(s): ${invalidIndices.map((i) => i + 1).join(", ")}. Vereist: ${requiredKeys.join(", ")}`
+              : `Missing required fields in item(s): ${invalidIndices.map((i) => i + 1).join(", ")}. Required: ${requiredKeys.join(", ")}`,
+          data: { itemsCount: items.length, firstItem: items[0] },
         });
         return;
       }
@@ -304,22 +325,23 @@ export default function ItemsManagement() {
         setParseResult({
           success: false,
           message: response.error.message || "Webhook receiver error",
-          data: parsed.data,
+          data: { itemsCount: items.length, firstItem: items[0] },
         });
         return;
       }
 
       setParseResult({
         success: true,
-        message: language === "nl" 
-          ? "Payload succesvol verwerkt! Item toegevoegd/bijgewerkt." 
-          : "Payload processed successfully! Item added/updated.",
+        message:
+          language === "nl"
+            ? `Payload succesvol verwerkt! ${items.length} item(s) gesynchroniseerd.`
+            : `Payload processed successfully! ${items.length} item(s) synced.`,
         data: response.data,
       });
 
       // Refresh products list
       queryClient.invalidateQueries({ queryKey: ["products"] });
-      toast.success(language === "nl" ? "Item gesynchroniseerd" : "Item synced");
+      toast.success(language === "nl" ? "Items gesynchroniseerd" : "Items synced");
     } catch (error) {
       console.error("Test receive error:", error);
       setParseResult({
@@ -331,18 +353,31 @@ export default function ItemsManagement() {
     }
   };
 
-  const samplePayload = JSON.stringify({
-    action: "sync_products",
-    data: {
-      exact_item_id: "abc123",
-      item_code: "SDM-ECO-001",
-      name: "SDM ECO Sensor",
-      name_nl: "SDM ECO Sensor",
-      description: "Ultrasonic density meter",
-      product_type: "SDM_ECO",
-      items_group: "Sensors",
+  const samplePayload = JSON.stringify(
+    {
+      action: "sync_products",
+      Items: [
+        {
+          "Items ID": "abc123-guid",
+          "Items Code": "SENSOR-001",
+          "Items Description": "Ultrasonic Sensor Pro",
+          "Items Item Group": "Sensors",
+          "Items Barcode": "1234567890123",
+          "Items Stock": 50,
+        },
+        {
+          "Items ID": "def456-guid",
+          "Items Code": "TRANS-002",
+          "Items Description": "Digital Transmitter",
+          "Items Item Group": "Transmitters",
+          "Items Barcode": "9876543210987",
+          "Items Stock": 25,
+        },
+      ],
     },
-  }, null, 2);
+    null,
+    2
+  );
 
   return (
     <Layout>
@@ -825,40 +860,53 @@ export default function ItemsManagement() {
                     <span>{language === "nl" ? "Verplicht" : "Required"}</span>
                     <span>{language === "nl" ? "Beschrijving" : "Description"}</span>
                   </div>
+
                   <div className="grid grid-cols-3 gap-2">
-                    <code className="text-xs">exact_item_id</code>
-                    <span className="text-green-500">✓</span>
-                    <span className="text-muted-foreground">{language === "nl" ? "Unieke ID uit Exact" : "Unique ID from Exact"}</span>
+                    <code className="text-xs">Items[].Items ID</code>
+                    <span className="text-primary">✓</span>
+                    <span className="text-muted-foreground">
+                      {language === "nl" ? "Unieke ID uit Exact (→ exact_item_id)" : "Unique ID from Exact (→ exact_item_id)"}
+                    </span>
                   </div>
+
                   <div className="grid grid-cols-3 gap-2">
-                    <code className="text-xs">item_code</code>
-                    <span className="text-green-500">✓</span>
-                    <span className="text-muted-foreground">{language === "nl" ? "Artikelcode" : "Item code"}</span>
+                    <code className="text-xs">Items[].Items Code</code>
+                    <span className="text-primary">✓</span>
+                    <span className="text-muted-foreground">
+                      {language === "nl" ? "Artikelcode (→ item_code)" : "Item code (→ item_code)"}
+                    </span>
                   </div>
+
                   <div className="grid grid-cols-3 gap-2">
-                    <code className="text-xs">name</code>
-                    <span className="text-green-500">✓</span>
-                    <span className="text-muted-foreground">{language === "nl" ? "Artikelnaam (EN)" : "Item name (EN)"}</span>
+                    <code className="text-xs">Items[].Items Description</code>
+                    <span className="text-primary">✓</span>
+                    <span className="text-muted-foreground">
+                      {language === "nl" ? "Omschrijving/naam (→ name)" : "Description/name (→ name)"}
+                    </span>
                   </div>
+
                   <div className="grid grid-cols-3 gap-2">
-                    <code className="text-xs">name_nl</code>
+                    <code className="text-xs">Items[].Items Item Group</code>
                     <span className="text-muted-foreground">—</span>
-                    <span className="text-muted-foreground">{language === "nl" ? "Artikelnaam (NL)" : "Item name (NL)"}</span>
+                    <span className="text-muted-foreground">
+                      {language === "nl" ? "Artikelgroep (→ items_group)" : "Items group (→ items_group)"}
+                    </span>
                   </div>
+
                   <div className="grid grid-cols-3 gap-2">
-                    <code className="text-xs">description</code>
+                    <code className="text-xs">Items[].Items Barcode</code>
                     <span className="text-muted-foreground">—</span>
-                    <span className="text-muted-foreground">{language === "nl" ? "Omschrijving" : "Description"}</span>
+                    <span className="text-muted-foreground">
+                      {language === "nl" ? "Barcode (→ barcode)" : "Barcode (→ barcode)"}
+                    </span>
                   </div>
+
                   <div className="grid grid-cols-3 gap-2">
-                    <code className="text-xs">product_type</code>
+                    <code className="text-xs">Items[].Items Stock</code>
                     <span className="text-muted-foreground">—</span>
-                    <span className="text-muted-foreground">{language === "nl" ? "Type product" : "Product type"}</span>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2">
-                    <code className="text-xs">items_group</code>
-                    <span className="text-muted-foreground">—</span>
-                    <span className="text-muted-foreground">{language === "nl" ? "Artikelgroep" : "Items group"}</span>
+                    <span className="text-muted-foreground">
+                      {language === "nl" ? "Voorraad (→ stock)" : "Stock level (→ stock)"}
+                    </span>
                   </div>
                 </div>
               </div>
