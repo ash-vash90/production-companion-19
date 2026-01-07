@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
 import Layout from "@/components/Layout";
@@ -13,13 +13,19 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Package, RefreshCw, Settings, Copy, Check, Send, Loader2, Download, AlertCircle, CheckCircle2, FileJson, Eye, ExternalLink } from "lucide-react";
+import { Search, Package, RefreshCw, Settings, Copy, Check, Send, Loader2, Download, AlertCircle, CheckCircle2, FileJson, Eye, ExternalLink, Clock, Play } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useNavigate } from "react-router-dom";
 
-// Removed frequency/time options - webhooks are now configured in Settings
+const FREQUENCY_OPTIONS = [
+  { value: "5min", label: "Every 5 minutes", labelNl: "Elke 5 minuten" },
+  { value: "15min", label: "Every 15 minutes", labelNl: "Elke 15 minuten" },
+  { value: "hourly", label: "Hourly", labelNl: "Elk uur" },
+  { value: "daily", label: "Daily", labelNl: "Dagelijks" },
+  { value: "weekly", label: "Weekly", labelNl: "Wekelijks" },
+];
 
 export default function ItemsManagement() {
   const { t, language } = useLanguage();
@@ -31,6 +37,9 @@ export default function ItemsManagement() {
   const [testPayload, setTestPayload] = useState("");
   const [parseResult, setParseResult] = useState<{ success: boolean; message: string; data?: unknown } | null>(null);
   const [isTestingReceive, setIsTestingReceive] = useState(false);
+  const [isTriggeringSync, setIsTriggeringSync] = useState(false);
+  const [selectedFrequency, setSelectedFrequency] = useState<string>("");
+  const [selectedWebhookId, setSelectedWebhookId] = useState<string>("");
 
   // Fetch products
   const { data: products = [], isLoading: productsLoading } = useQuery({
@@ -64,10 +73,23 @@ export default function ItemsManagement() {
   const { data: itemsSyncWebhooks = [] } = useQuery({
     queryKey: ["items-sync-webhooks"],
     queryFn: async () => {
-      // Get all incoming webhooks - user can configure any for items sync
       const { data, error } = await supabase
         .from("incoming_webhooks_safe")
         .select("id, name, endpoint_key, enabled, trigger_count, last_triggered_at")
+        .order("created_at", { ascending: false });
+      
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  // Fetch outgoing webhooks for items sync trigger
+  const { data: outgoingWebhooks = [] } = useQuery({
+    queryKey: ["outgoing-webhooks-items"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("zapier_webhooks")
+        .select("id, name, webhook_url, enabled, event_type")
         .order("created_at", { ascending: false });
       
       if (error) throw error;
@@ -79,7 +101,6 @@ export default function ItemsManagement() {
   const { data: webhookLogs = [], refetch: refetchLogs } = useQuery({
     queryKey: ["items-webhook-logs"],
     queryFn: async () => {
-      // Get logs from webhooks with sync_products rules
       const webhookIds = itemsSyncWebhooks.map((w: any) => w.id).filter(Boolean);
       if (webhookIds.length === 0) return [];
       
@@ -95,6 +116,86 @@ export default function ItemsManagement() {
     },
     enabled: itemsSyncWebhooks.length > 0,
   });
+
+  // Update sync config mutation
+  const updateConfig = useMutation({
+    mutationFn: async ({ frequency, webhookUrl }: { frequency: string; webhookUrl?: string }) => {
+      const existing = syncConfig;
+      
+      if (existing) {
+        const { error } = await supabase
+          .from("sync_configurations")
+          .update({
+            frequency,
+            webhook_url: webhookUrl,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", existing.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("sync_configurations")
+          .insert({
+            sync_type: "items",
+            frequency,
+            webhook_url: webhookUrl,
+            enabled: true,
+            timezone: "Europe/Amsterdam",
+          });
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["sync-config", "items"] });
+      toast.success(language === "nl" ? "Instellingen opgeslagen" : "Settings saved");
+    },
+    onError: (error) => {
+      console.error("Failed to update config:", error);
+      toast.error(language === "nl" ? "Fout bij opslaan" : "Failed to save");
+    },
+  });
+
+  // Trigger sync manually
+  const triggerSync = async () => {
+    const selectedWebhook = outgoingWebhooks.find((w: any) => w.id === selectedWebhookId);
+    if (!selectedWebhook?.webhook_url) {
+      toast.error(language === "nl" ? "Selecteer eerst een outgoing webhook" : "Select an outgoing webhook first");
+      return;
+    }
+
+    setIsTriggeringSync(true);
+    try {
+      const response = await supabase.functions.invoke("send-outgoing-webhook", {
+        body: {
+          webhookId: selectedWebhookId,
+          eventType: "items.sync.requested",
+          payload: {
+            action: "sync_items",
+            timestamp: new Date().toISOString(),
+            source: "manual_trigger",
+          },
+        },
+      });
+
+      if (response.error) throw response.error;
+      
+      toast.success(language === "nl" ? "Sync verzoek verzonden naar Zapier" : "Sync request sent to Zapier");
+      
+      // Update last synced
+      if (syncConfig?.id) {
+        await supabase
+          .from("sync_configurations")
+          .update({ last_synced_at: new Date().toISOString() })
+          .eq("id", syncConfig.id);
+        queryClient.invalidateQueries({ queryKey: ["sync-config", "items"] });
+      }
+    } catch (error) {
+      console.error("Sync trigger error:", error);
+      toast.error(language === "nl" ? "Fout bij verzenden sync verzoek" : "Failed to send sync request");
+    } finally {
+      setIsTriggeringSync(false);
+    }
+  };
 
   const [selectedLog, setSelectedLog] = useState<typeof webhookLogs[0] | null>(null);
 
@@ -378,17 +479,168 @@ export default function ItemsManagement() {
         </TabsContent>
 
         <TabsContent value="sync" className="space-y-4">
-          {/* Select Webhook from Settings */}
+          {/* Sync Interval & Outgoing Webhook */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <RefreshCw className="h-5 w-5" />
-                {language === "nl" ? "Webhook Configuratie" : "Webhook Configuration"}
+                <Clock className="h-5 w-5" />
+                {language === "nl" ? "Sync Interval & Trigger" : "Sync Interval & Trigger"}
               </CardTitle>
               <CardDescription>
                 {language === "nl" 
-                  ? "Selecteer een incoming webhook voor items synchronisatie" 
-                  : "Select an incoming webhook for items sync"}
+                  ? "Configureer hoe vaak de app een sync trigger stuurt naar Zapier" 
+                  : "Configure how often the app sends a sync trigger to Zapier"}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Sync Frequency */}
+              <div className="space-y-2">
+                <Label>{language === "nl" ? "Sync Frequentie" : "Sync Frequency"}</Label>
+                <Select 
+                  value={selectedFrequency || syncConfig?.frequency || ""} 
+                  onValueChange={(value) => {
+                    setSelectedFrequency(value);
+                    updateConfig.mutate({ frequency: value, webhookUrl: syncConfig?.webhook_url || undefined });
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={language === "nl" ? "Selecteer frequentie" : "Select frequency"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {FREQUENCY_OPTIONS.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        {language === "nl" ? opt.labelNl : opt.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-sm text-muted-foreground">
+                  {language === "nl" 
+                    ? "De app stuurt op dit interval een webhook naar Zapier om items op te halen uit Exact" 
+                    : "The app sends a webhook to Zapier at this interval to fetch items from Exact"}
+                </p>
+              </div>
+
+              {/* Outgoing Webhook Selection */}
+              <div className="space-y-2">
+                <Label>{language === "nl" ? "Outgoing Webhook (naar Zapier)" : "Outgoing Webhook (to Zapier)"}</Label>
+                {outgoingWebhooks.length === 0 ? (
+                  <div className="rounded-lg border border-dashed p-4 text-center">
+                    <p className="text-sm text-muted-foreground mb-2">
+                      {language === "nl" 
+                        ? "Geen outgoing webhooks geconfigureerd" 
+                        : "No outgoing webhooks configured"}
+                    </p>
+                    <Button variant="outline" size="sm" onClick={() => navigate("/settings")} className="gap-2">
+                      <Settings className="h-4 w-4" />
+                      {language === "nl" ? "Maak webhook aan" : "Create Webhook"}
+                    </Button>
+                  </div>
+                ) : (
+                  <Select 
+                    value={selectedWebhookId || ""} 
+                    onValueChange={setSelectedWebhookId}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={language === "nl" ? "Selecteer outgoing webhook" : "Select outgoing webhook"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {outgoingWebhooks.map((webhook: any) => (
+                        <SelectItem key={webhook.id} value={webhook.id}>
+                          <div className="flex items-center gap-2">
+                            <div className={`h-2 w-2 rounded-full ${webhook.enabled ? 'bg-green-500' : 'bg-muted-foreground'}`} />
+                            {webhook.name}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+                <p className="text-sm text-muted-foreground">
+                  {language === "nl" 
+                    ? "Selecteer de outgoing webhook die naar Zapier stuurt om items op te halen" 
+                    : "Select the outgoing webhook that triggers Zapier to fetch items"}
+                </p>
+              </div>
+
+              {/* Manual Trigger */}
+              <div className="rounded-lg border p-4 space-y-3">
+                <h4 className="font-medium">{language === "nl" ? "Handmatig Triggeren" : "Manual Trigger"}</h4>
+                <p className="text-sm text-muted-foreground">
+                  {language === "nl" 
+                    ? "Test de sync door handmatig een trigger naar Zapier te sturen" 
+                    : "Test the sync by manually sending a trigger to Zapier"}
+                </p>
+                <Button
+                  onClick={triggerSync}
+                  disabled={!selectedWebhookId || isTriggeringSync}
+                  className="gap-2"
+                >
+                  {isTriggeringSync ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Play className="h-4 w-4" />
+                  )}
+                  {language === "nl" ? "Trigger Sync Nu" : "Trigger Sync Now"}
+                </Button>
+              </div>
+
+              {/* Sync Status */}
+              <div className="rounded-lg border p-4 space-y-3">
+                <h4 className="font-medium">{language === "nl" ? "Sync Status" : "Sync Status"}</h4>
+                <div className="grid gap-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">
+                      {language === "nl" ? "Frequentie" : "Frequency"}
+                    </span>
+                    <span>
+                      {syncConfig?.frequency 
+                        ? FREQUENCY_OPTIONS.find(f => f.value === syncConfig.frequency)?.[language === "nl" ? "labelNl" : "label"] || syncConfig.frequency
+                        : language === "nl" ? "Niet ingesteld" : "Not set"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">
+                      {language === "nl" ? "Laatst gesynchroniseerd" : "Last synced"}
+                    </span>
+                    <span>
+                      {syncConfig?.last_synced_at 
+                        ? format(new Date(syncConfig.last_synced_at), "dd/MM/yyyy HH:mm")
+                        : language === "nl" ? "Nooit" : "Never"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">
+                      {language === "nl" ? "Volgende sync" : "Next sync"}
+                    </span>
+                    <span>
+                      {syncConfig?.next_sync_at 
+                        ? format(new Date(syncConfig.next_sync_at), "dd/MM/yyyy HH:mm")
+                        : language === "nl" ? "Niet gepland" : "Not scheduled"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">
+                      {language === "nl" ? "Totaal items" : "Total items"}
+                    </span>
+                    <span>{products.length}</span>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Incoming Webhook (from Zapier) */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Download className="h-5 w-5" />
+                {language === "nl" ? "Incoming Webhook (van Zapier)" : "Incoming Webhook (from Zapier)"}
+              </CardTitle>
+              <CardDescription>
+                {language === "nl" 
+                  ? "Zapier stuurt items terug naar dit endpoint" 
+                  : "Zapier sends items back to this endpoint"}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -396,7 +648,7 @@ export default function ItemsManagement() {
                 <div className="rounded-lg border border-dashed p-6 text-center">
                   <AlertCircle className="h-10 w-10 mx-auto text-muted-foreground opacity-50 mb-3" />
                   <p className="font-medium mb-1">
-                    {language === "nl" ? "Geen webhooks geconfigureerd" : "No webhooks configured"}
+                    {language === "nl" ? "Geen incoming webhooks geconfigureerd" : "No incoming webhooks configured"}
                   </p>
                   <p className="text-sm text-muted-foreground mb-4">
                     {language === "nl" 
@@ -410,9 +662,9 @@ export default function ItemsManagement() {
                 </div>
               ) : (
                 <>
-                  {/* Available Webhooks */}
+                  {/* Available Incoming Webhooks */}
                   <div className="space-y-3">
-                    <Label>{language === "nl" ? "Beschikbare Webhooks" : "Available Webhooks"}</Label>
+                    <Label>{language === "nl" ? "Beschikbare Incoming Webhooks" : "Available Incoming Webhooks"}</Label>
                     <div className="grid gap-3">
                       {itemsSyncWebhooks.map((webhook: any) => (
                         <div 
@@ -469,29 +721,6 @@ export default function ItemsManagement() {
                         ? "Zapier moet items naar dit endpoint sturen met action: sync_products" 
                         : "Zapier should send items to this endpoint with action: sync_products"}
                     </p>
-                  </div>
-
-                  {/* Sync Status */}
-                  <div className="rounded-lg border p-4 space-y-3">
-                    <h4 className="font-medium">{language === "nl" ? "Sync Status" : "Sync Status"}</h4>
-                    <div className="grid gap-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">
-                          {language === "nl" ? "Laatst gesynchroniseerd" : "Last synced"}
-                        </span>
-                        <span>
-                          {syncConfig?.last_synced_at 
-                            ? format(new Date(syncConfig.last_synced_at), "dd/MM/yyyy HH:mm")
-                            : language === "nl" ? "Nooit" : "Never"}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">
-                          {language === "nl" ? "Totaal items" : "Total items"}
-                        </span>
-                        <span>{products.length}</span>
-                      </div>
-                    </div>
                   </div>
                 </>
               )}
