@@ -6,13 +6,14 @@ import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Package, RefreshCw, Settings, Clock, Calendar, ExternalLink, Copy, Check, Send, Loader2 } from "lucide-react";
+import { Search, Package, RefreshCw, Settings, Clock, Calendar, ExternalLink, Copy, Check, Send, Loader2, Download, AlertCircle, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -36,6 +37,9 @@ export default function ItemsManagement() {
   const [groupFilter, setGroupFilter] = useState<string>("all");
   const [copied, setCopied] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
+  const [testPayload, setTestPayload] = useState("");
+  const [parseResult, setParseResult] = useState<{ success: boolean; message: string; data?: unknown } | null>(null);
+  const [isTestingReceive, setIsTestingReceive] = useState(false);
 
   // Fetch products
   const { data: products = [], isLoading: productsLoading } = useQuery({
@@ -151,6 +155,121 @@ export default function ItemsManagement() {
     }
     return product.name;
   };
+
+  const testReceiveWebhook = async () => {
+    if (!testPayload.trim()) {
+      toast.error(language === "nl" ? "Voer een JSON payload in" : "Enter a JSON payload");
+      return;
+    }
+
+    setIsTestingReceive(true);
+    setParseResult(null);
+
+    try {
+      // First validate JSON
+      let parsed;
+      try {
+        parsed = JSON.parse(testPayload);
+      } catch {
+        setParseResult({
+          success: false,
+          message: language === "nl" ? "Ongeldige JSON syntax" : "Invalid JSON syntax",
+        });
+        return;
+      }
+
+      // Validate expected structure
+      if (!parsed.action) {
+        setParseResult({
+          success: false,
+          message: language === "nl" ? "Ontbrekend 'action' veld" : "Missing 'action' field",
+          data: parsed,
+        });
+        return;
+      }
+
+      if (parsed.action !== "sync_products") {
+        setParseResult({
+          success: false,
+          message: language === "nl" 
+            ? `Onverwachte action: '${parsed.action}'. Verwacht: 'sync_products'` 
+            : `Unexpected action: '${parsed.action}'. Expected: 'sync_products'`,
+          data: parsed,
+        });
+        return;
+      }
+
+      if (!parsed.data) {
+        setParseResult({
+          success: false,
+          message: language === "nl" ? "Ontbrekend 'data' veld" : "Missing 'data' field",
+          data: parsed,
+        });
+        return;
+      }
+
+      const requiredFields = ["exact_item_id", "item_code", "name"];
+      const missingFields = requiredFields.filter((f) => !parsed.data[f]);
+
+      if (missingFields.length > 0) {
+        setParseResult({
+          success: false,
+          message: language === "nl" 
+            ? `Ontbrekende verplichte velden: ${missingFields.join(", ")}` 
+            : `Missing required fields: ${missingFields.join(", ")}`,
+          data: parsed.data,
+        });
+        return;
+      }
+
+      // Send to actual webhook receiver for live test
+      const response = await supabase.functions.invoke("webhook-receiver", {
+        body: parsed,
+      });
+
+      if (response.error) {
+        setParseResult({
+          success: false,
+          message: response.error.message || "Webhook receiver error",
+          data: parsed.data,
+        });
+        return;
+      }
+
+      setParseResult({
+        success: true,
+        message: language === "nl" 
+          ? "Payload succesvol verwerkt! Item toegevoegd/bijgewerkt." 
+          : "Payload processed successfully! Item added/updated.",
+        data: response.data,
+      });
+
+      // Refresh products list
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      toast.success(language === "nl" ? "Item gesynchroniseerd" : "Item synced");
+    } catch (error) {
+      console.error("Test receive error:", error);
+      setParseResult({
+        success: false,
+        message: error instanceof Error ? error.message : "Unknown error",
+      });
+    } finally {
+      setIsTestingReceive(false);
+    }
+  };
+
+  const samplePayload = JSON.stringify({
+    action: "sync_products",
+    data: {
+      exact_item_id: "abc123",
+      item_code: "SDM-ECO-001",
+      name: "SDM ECO Sensor",
+      name_nl: "SDM ECO Sensor",
+      description: "Ultrasonic density meter",
+      product_type: "SDM_ECO",
+      items_group: "Sensors",
+    },
+  }, null, 2);
 
   return (
     <div className="container mx-auto py-6 space-y-6">
@@ -454,34 +573,141 @@ export default function ItemsManagement() {
             </CardContent>
           </Card>
 
-          {/* Payload Documentation */}
+          {/* Receive & Test Webhooks */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <ExternalLink className="h-5 w-5" />
-                {language === "nl" ? "Webhook Payload Formaat" : "Webhook Payload Format"}
+                <Download className="h-5 w-5" />
+                {language === "nl" ? "Webhook Ontvangen & Testen" : "Receive & Test Webhooks"}
               </CardTitle>
               <CardDescription>
                 {language === "nl" 
-                  ? "Het verwachte formaat voor sync_products webhook calls" 
-                  : "The expected format for sync_products webhook calls"}
+                  ? "Test inkomende webhook payloads voordat je ze vanuit Zapier stuurt" 
+                  : "Test incoming webhook payloads before sending from Zapier"}
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <pre className="rounded-lg bg-muted p-4 overflow-x-auto text-sm">
-{`{
-  "action": "sync_products",
-  "data": {
-    "exact_item_id": "abc123",
-    "item_code": "SDM-ECO-001",
-    "name": "SDM ECO Sensor",
-    "name_nl": "SDM ECO Sensor",
-    "description": "Ultrasonic density meter",
-    "product_type": "SDM_ECO",
-    "items_group": "Sensors"
-  }
-}`}
-              </pre>
+            <CardContent className="space-y-4">
+              {/* Expected Format */}
+              <div className="space-y-2">
+                <Label>{language === "nl" ? "Verwacht payload formaat" : "Expected payload format"}</Label>
+                <pre className="rounded-lg bg-muted p-4 overflow-x-auto text-sm">
+{samplePayload}
+                </pre>
+              </div>
+
+              {/* Test Input */}
+              <div className="space-y-2">
+                <Label>{language === "nl" ? "Test JSON Payload" : "Test JSON Payload"}</Label>
+                <Textarea
+                  placeholder={language === "nl" ? "Plak hier je JSON payload..." : "Paste your JSON payload here..."}
+                  value={testPayload}
+                  onChange={(e) => {
+                    setTestPayload(e.target.value);
+                    setParseResult(null);
+                  }}
+                  className="font-mono text-sm min-h-[150px]"
+                />
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setTestPayload(samplePayload)}
+                    size="sm"
+                  >
+                    {language === "nl" ? "Laad voorbeeld" : "Load sample"}
+                  </Button>
+                  <Button
+                    onClick={testReceiveWebhook}
+                    disabled={!testPayload.trim() || isTestingReceive}
+                    size="sm"
+                    className="gap-2"
+                  >
+                    {isTestingReceive ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Send className="h-4 w-4" />
+                    )}
+                    {language === "nl" ? "Test & Verwerk" : "Test & Process"}
+                  </Button>
+                </div>
+              </div>
+
+              {/* Parse Result */}
+              {parseResult && (
+                <div className={`rounded-lg border p-4 ${parseResult.success ? "border-green-500/50 bg-green-500/10" : "border-destructive/50 bg-destructive/10"}`}>
+                  <div className="flex items-start gap-3">
+                    {parseResult.success ? (
+                      <CheckCircle2 className="h-5 w-5 text-green-500 mt-0.5" />
+                    ) : (
+                      <AlertCircle className="h-5 w-5 text-destructive mt-0.5" />
+                    )}
+                    <div className="space-y-2 flex-1">
+                      <p className={`font-medium ${parseResult.success ? "text-green-500" : "text-destructive"}`}>
+                        {parseResult.success 
+                          ? (language === "nl" ? "Succes" : "Success")
+                          : (language === "nl" ? "Fout" : "Error")}
+                      </p>
+                      <p className="text-sm">{parseResult.message}</p>
+                      {parseResult.data && (
+                        <details className="text-sm">
+                          <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
+                            {language === "nl" ? "Bekijk parsed data" : "View parsed data"}
+                          </summary>
+                          <pre className="mt-2 rounded bg-muted p-2 overflow-x-auto text-xs">
+                            {JSON.stringify(parseResult.data, null, 2)}
+                          </pre>
+                        </details>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Field Reference */}
+              <div className="rounded-lg border p-4 space-y-3">
+                <h4 className="font-medium">{language === "nl" ? "Veld referentie" : "Field Reference"}</h4>
+                <div className="grid gap-2 text-sm">
+                  <div className="grid grid-cols-3 gap-2 font-medium text-muted-foreground border-b pb-2">
+                    <span>{language === "nl" ? "Veld" : "Field"}</span>
+                    <span>{language === "nl" ? "Verplicht" : "Required"}</span>
+                    <span>{language === "nl" ? "Beschrijving" : "Description"}</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <code className="text-xs">exact_item_id</code>
+                    <span className="text-green-500">✓</span>
+                    <span className="text-muted-foreground">{language === "nl" ? "Unieke ID uit Exact" : "Unique ID from Exact"}</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <code className="text-xs">item_code</code>
+                    <span className="text-green-500">✓</span>
+                    <span className="text-muted-foreground">{language === "nl" ? "Artikelcode" : "Item code"}</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <code className="text-xs">name</code>
+                    <span className="text-green-500">✓</span>
+                    <span className="text-muted-foreground">{language === "nl" ? "Artikelnaam (EN)" : "Item name (EN)"}</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <code className="text-xs">name_nl</code>
+                    <span className="text-muted-foreground">—</span>
+                    <span className="text-muted-foreground">{language === "nl" ? "Artikelnaam (NL)" : "Item name (NL)"}</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <code className="text-xs">description</code>
+                    <span className="text-muted-foreground">—</span>
+                    <span className="text-muted-foreground">{language === "nl" ? "Omschrijving" : "Description"}</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <code className="text-xs">product_type</code>
+                    <span className="text-muted-foreground">—</span>
+                    <span className="text-muted-foreground">{language === "nl" ? "Type product" : "Product type"}</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <code className="text-xs">items_group</code>
+                    <span className="text-muted-foreground">—</span>
+                    <span className="text-muted-foreground">{language === "nl" ? "Artikelgroep" : "Items group"}</span>
+                  </div>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
