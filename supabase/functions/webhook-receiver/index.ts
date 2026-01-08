@@ -400,6 +400,11 @@ async function executeRules(
           const materialsSummary = getValue('materialsSummary', 'materials_summary');
           const materialsIssuedStatus = getValue('materialsIssuedStatus', 'materials_issued_status');
           
+          // Get product info from payload to match with database
+          const productData = getValue('product') || {};
+          const exactItemId = productData.exact_item_id || getValue('exactItemId');
+          const itemCode = productData.item_code || getValue('itemCode');
+          
           if (!workOrderId && !woNumber) {
             errors.push(`Rule "${rule.name}": Missing workOrderId or workOrderNumber`);
             continue;
@@ -410,6 +415,30 @@ async function executeRules(
             last_sync_at: new Date().toISOString(),
             last_sync_error: null,
           };
+          
+          // Match product from Exact with database product
+          if (exactItemId || itemCode) {
+            let productQuery = supabase.from('products').select('id, name, product_type');
+            
+            if (exactItemId) {
+              productQuery = productQuery.eq('exact_item_id', exactItemId);
+            } else if (itemCode) {
+              productQuery = productQuery.eq('item_code', itemCode);
+            }
+            
+            const { data: matchedProduct, error: productError } = await productQuery.single();
+            
+            if (matchedProduct) {
+              updates.product_id = matchedProduct.id;
+              // Also update product_type if it's a valid enum value
+              if (matchedProduct.product_type && ['SDM_ECO', 'SENSOR', 'MLA', 'HMI', 'TRANSMITTER'].includes(matchedProduct.product_type)) {
+                updates.product_type = matchedProduct.product_type;
+              }
+              console.log(`Matched product: ${matchedProduct.name} (${matchedProduct.id})`);
+            } else if (productError) {
+              console.warn(`Could not match product with exact_item_id=${exactItemId}, item_code=${itemCode}: ${productError.message}`);
+            }
+          }
           
           if (exactShopOrderNumber) updates.exact_shop_order_number = exactShopOrderNumber;
           if (exactShopOrderLink) updates.exact_shop_order_link = exactShopOrderLink;
