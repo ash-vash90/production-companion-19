@@ -34,6 +34,7 @@ export default function ItemsManagement() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [groupFilter, setGroupFilter] = useState<string>("all");
+  const [typeFilter, setTypeFilter] = useState<string>("all");
   const [copied, setCopied] = useState(false);
   const [testPayload, setTestPayload] = useState("");
   const [parseResult, setParseResult] = useState<{ success: boolean; message: string; data?: unknown } | null>(null);
@@ -49,7 +50,7 @@ export default function ItemsManagement() {
 
   // Fetch products with pagination
   const { data: productsData, isLoading: productsLoading } = useQuery({
-    queryKey: ["products", currentPage, debouncedSearch, groupFilter],
+    queryKey: ["products", currentPage, debouncedSearch, groupFilter, typeFilter],
     queryFn: async () => {
       const from = (currentPage - 1) * pageSize;
       const to = from + pageSize - 1;
@@ -66,6 +67,9 @@ export default function ItemsManagement() {
       }
       if (groupFilter !== "all") {
         query = query.eq("items_group", groupFilter);
+      }
+      if (typeFilter !== "all") {
+        query = query.eq("product_type", typeFilter);
       }
 
       const { data, error, count } = await query;
@@ -85,6 +89,10 @@ export default function ItemsManagement() {
   };
   const handleGroupChange = (value: string) => {
     setGroupFilter(value);
+    setCurrentPage(1);
+  };
+  const handleTypeChange = (value: string) => {
+    setTypeFilter(value);
     setCurrentPage(1);
   };
 
@@ -244,6 +252,21 @@ export default function ItemsManagement() {
       if (error) throw error;
       const uniqueGroups = [...new Set(data?.map((p) => p.items_group).filter(Boolean))] as string[];
       return uniqueGroups;
+    },
+  });
+
+  // Fetch unique product types for filter dropdown
+  const { data: productTypes = [] } = useQuery({
+    queryKey: ["product-types"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("products")
+        .select("product_type")
+        .eq("is_active", true)
+        .not("product_type", "is", null);
+      if (error) throw error;
+      const uniqueTypes = [...new Set(data?.map((p) => p.product_type).filter(Boolean))] as string[];
+      return uniqueTypes;
     },
   });
 
@@ -452,7 +475,7 @@ export default function ItemsManagement() {
                   />
                 </div>
                 <Select value={groupFilter} onValueChange={handleGroupChange}>
-                  <SelectTrigger className="w-full sm:w-[200px]">
+                  <SelectTrigger className="w-full sm:w-[180px]">
                     <SelectValue placeholder={language === "nl" ? "Alle groepen" : "All groups"} />
                   </SelectTrigger>
                   <SelectContent>
@@ -462,6 +485,21 @@ export default function ItemsManagement() {
                     {groups.map((group) => (
                       <SelectItem key={group} value={group!}>
                         {group}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={typeFilter} onValueChange={handleTypeChange}>
+                  <SelectTrigger className="w-full sm:w-[180px]">
+                    <SelectValue placeholder={language === "nl" ? "Alle types" : "All types"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">
+                      {language === "nl" ? "Alle types" : "All types"}
+                    </SelectItem>
+                    {productTypes.map((type) => (
+                      <SelectItem key={type} value={type!}>
+                        {type}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -520,6 +558,7 @@ export default function ItemsManagement() {
                         <TableHead>{language === "nl" ? "Omschrijving" : "Description"}</TableHead>
                         <TableHead>{language === "nl" ? "Artikelgroep" : "Items Group"}</TableHead>
                         <TableHead>{language === "nl" ? "Type" : "Type"}</TableHead>
+                        <TableHead className="text-right">{language === "nl" ? "Voorraad" : "Stock"}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -537,7 +576,20 @@ export default function ItemsManagement() {
                             )}
                           </TableCell>
                           <TableCell>
-                            <Badge variant="outline">{product.product_type}</Badge>
+                            {product.product_type ? (
+                              <Badge variant="outline">{product.product_type}</Badge>
+                            ) : (
+                              <span className="text-muted-foreground">—</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right font-mono">
+                            {product.stock != null ? (
+                              <span className={product.stock <= 0 ? "text-destructive" : ""}>
+                                {Number(product.stock).toLocaleString()}
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground">—</span>
+                            )}
                           </TableCell>
                         </TableRow>
                       ))}
