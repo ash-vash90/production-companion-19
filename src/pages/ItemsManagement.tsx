@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -13,11 +13,12 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Package, RefreshCw, Settings, Copy, Check, Send, Loader2, Download, AlertCircle, CheckCircle2, FileJson, Eye, ExternalLink, Clock, Play } from "lucide-react";
+import { Search, Package, RefreshCw, Settings, Copy, Check, Send, Loader2, Download, AlertCircle, CheckCircle2, FileJson, Eye, ExternalLink, Clock, Play, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useNavigate } from "react-router-dom";
+import { useDebounce } from "@/hooks/useDebounce";
 
 const FREQUENCY_OPTIONS = [
   { value: "5min", label: "Every 5 minutes", labelNl: "Elke 5 minuten" },
@@ -40,20 +41,52 @@ export default function ItemsManagement() {
   const [isTriggeringSync, setIsTriggeringSync] = useState(false);
   const [selectedFrequency, setSelectedFrequency] = useState<string>("");
   const [selectedWebhookId, setSelectedWebhookId] = useState<string>("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 50;
 
-  // Fetch products
-  const { data: products = [], isLoading: productsLoading } = useQuery({
-    queryKey: ["products"],
+  // Debounce search query for API calls
+  const debouncedSearch = useDebounce(searchQuery, 300);
+
+  // Fetch products with pagination
+  const { data: productsData, isLoading: productsLoading } = useQuery({
+    queryKey: ["products", currentPage, debouncedSearch, groupFilter],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const from = (currentPage - 1) * pageSize;
+      const to = from + pageSize - 1;
+
+      let query = supabase
         .from("products")
-        .select("*")
+        .select("*", { count: "exact" })
         .eq("is_active", true)
-        .order("item_code");
+        .order("item_code")
+        .range(from, to);
+
+      if (debouncedSearch) {
+        query = query.or(`item_code.ilike.%${debouncedSearch}%,name.ilike.%${debouncedSearch}%`);
+      }
+      if (groupFilter !== "all") {
+        query = query.eq("items_group", groupFilter);
+      }
+
+      const { data, error, count } = await query;
       if (error) throw error;
-      return data;
+      return { products: data || [], totalCount: count || 0 };
     },
   });
+
+  const products = productsData?.products || [];
+  const totalCount = productsData?.totalCount || 0;
+  const totalPages = Math.ceil(totalCount / pageSize);
+
+  // Reset to page 1 when filters change
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+    setCurrentPage(1);
+  };
+  const handleGroupChange = (value: string) => {
+    setGroupFilter(value);
+    setCurrentPage(1);
+  };
 
   // Fetch sync configuration
   const { data: syncConfig, isLoading: configLoading } = useQuery({
@@ -199,17 +232,19 @@ export default function ItemsManagement() {
 
   const [selectedLog, setSelectedLog] = useState<typeof webhookLogs[0] | null>(null);
 
-  // Get unique groups
-  const groups = [...new Set(products.map((p) => p.items_group).filter(Boolean))];
-
-  // Filter products
-  const filteredProducts = products.filter((product) => {
-    const matchesSearch =
-      product.item_code?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      product.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      product.description?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesGroup = groupFilter === "all" || product.items_group === groupFilter;
-    return matchesSearch && matchesGroup;
+  // Fetch unique groups for filter dropdown
+  const { data: groups = [] } = useQuery({
+    queryKey: ["product-groups"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("products")
+        .select("items_group")
+        .eq("is_active", true)
+        .not("items_group", "is", null);
+      if (error) throw error;
+      const uniqueGroups = [...new Set(data?.map((p) => p.items_group).filter(Boolean))] as string[];
+      return uniqueGroups;
+    },
   });
 
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -412,11 +447,11 @@ export default function ItemsManagement() {
                   <Input
                     placeholder={language === "nl" ? "Zoek items..." : "Search items..."}
                     value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onChange={(e) => handleSearchChange(e.target.value)}
                     className="pl-10"
                   />
                 </div>
-                <Select value={groupFilter} onValueChange={setGroupFilter}>
+                <Select value={groupFilter} onValueChange={handleGroupChange}>
                   <SelectTrigger className="w-full sm:w-[200px]">
                     <SelectValue placeholder={language === "nl" ? "Alle groepen" : "All groups"} />
                   </SelectTrigger>
@@ -442,7 +477,8 @@ export default function ItemsManagement() {
                 <div>
                   <CardTitle>{language === "nl" ? "Items" : "Items"}</CardTitle>
                   <CardDescription>
-                    {filteredProducts.length} {language === "nl" ? "items gevonden" : "items found"}
+                    {totalCount.toLocaleString()} {language === "nl" ? "items totaal" : "items total"}
+                    {(searchQuery || groupFilter !== "all") && ` • ${language === "nl" ? "Pagina" : "Page"} ${currentPage} ${language === "nl" ? "van" : "of"} ${totalPages}`}
                   </CardDescription>
                 </div>
                 {syncConfig?.last_synced_at && (
@@ -459,9 +495,9 @@ export default function ItemsManagement() {
                 <div className="flex items-center justify-center py-8">
                   <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
                 </div>
-              ) : filteredProducts.length === 0 ? (
+              ) : products.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
-                  {products.length === 0 ? (
+                  {totalCount === 0 && !searchQuery && groupFilter === "all" ? (
                     <div className="space-y-2">
                       <Package className="h-12 w-12 mx-auto opacity-50" />
                       <p>{language === "nl" ? "Geen items gevonden" : "No items found"}</p>
@@ -487,7 +523,7 @@ export default function ItemsManagement() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredProducts.map((product) => (
+                      {products.map((product) => (
                         <TableRow key={product.id}>
                           <TableCell className="font-mono font-medium">
                             {product.item_code}
@@ -507,6 +543,38 @@ export default function ItemsManagement() {
                       ))}
                     </TableBody>
                   </Table>
+                </div>
+              )}
+
+              {/* Pagination Controls */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between pt-4">
+                  <p className="text-sm text-muted-foreground">
+                    {language === "nl" ? "Toont" : "Showing"} {((currentPage - 1) * pageSize) + 1}–{Math.min(currentPage * pageSize, totalCount)} {language === "nl" ? "van" : "of"} {totalCount.toLocaleString()}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                      {language === "nl" ? "Vorige" : "Previous"}
+                    </Button>
+                    <span className="text-sm text-muted-foreground px-2">
+                      {currentPage} / {totalPages}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                      disabled={currentPage === totalPages}
+                    >
+                      {language === "nl" ? "Volgende" : "Next"}
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               )}
             </CardContent>
