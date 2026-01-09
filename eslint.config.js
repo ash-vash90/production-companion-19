@@ -21,6 +21,26 @@ export default tseslint.config(
       ...reactHooks.configs.recommended.rules,
       "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
       "@typescript-eslint/no-unused-vars": "off",
+      // Block font-mono and font-data classes - use DataText/CodeText components instead
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector: "Literal[value=/font-mono/]",
+          message: "Do not use 'font-mono'. Use the DataText or CodeText component, or 'tabular-nums font-semibold tracking-wide' classes instead."
+        },
+        {
+          selector: "TemplateElement[value.raw=/font-mono/]",
+          message: "Do not use 'font-mono'. Use the DataText or CodeText component, or 'tabular-nums font-semibold tracking-wide' classes instead."
+        },
+        {
+          selector: "Literal[value=/font-data/]",
+          message: "Do not use 'font-data'. Use the DataText or CodeText component instead."
+        },
+        {
+          selector: "TemplateElement[value.raw=/font-data/]",
+          message: "Do not use 'font-data'. Use the DataText or CodeText component instead."
+        }
+      ],
     },
   },
 );
