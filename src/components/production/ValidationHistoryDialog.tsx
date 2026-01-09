@@ -97,7 +97,7 @@ const ValidationHistoryDialog = ({ open, onOpenChange, workOrderItemId, serialNu
                         <h4 className="font-semibold font-ui">
                           Step {exec.production_step?.step_number}: {exec.production_step?.title_en}
                         </h4>
-                        <p className="text-sm text-muted-foreground font-data">
+                        <p className="text-sm text-muted-foreground">
                           {exec.executed_by_profile?.full_name || 'Unknown'} • {exec.operator_initials || 'N/A'}
                         </p>
                       </div>
@@ -108,13 +108,13 @@ const ValidationHistoryDialog = ({ open, onOpenChange, workOrderItemId, serialNu
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
                       <span className="text-muted-foreground">Started:</span>
-                      <p className="font-medium font-data">
+                      <p className="font-medium">
                         {exec.started_at ? format(new Date(exec.started_at), 'PPp') : 'N/A'}
                       </p>
                     </div>
                     <div>
                       <span className="text-muted-foreground">Completed:</span>
-                      <p className="font-medium font-data">
+                      <p className="font-medium">
                         {exec.completed_at ? format(new Date(exec.completed_at), 'PPp') : 'In Progress'}
                       </p>
                     </div>
@@ -126,8 +126,8 @@ const ValidationHistoryDialog = ({ open, onOpenChange, workOrderItemId, serialNu
                       <div className="grid grid-cols-2 gap-2 text-sm bg-muted/30 p-3 rounded">
                         {Object.entries(exec.measurement_values).map(([key, value]) => (
                           <div key={key} className="flex justify-between">
-                            <span className="text-muted-foreground font-data">{key}:</span>
-                            <span className="font-medium font-data">{String(value)}</span>
+                            <span className="text-muted-foreground">{key}:</span>
+                            <span className="font-medium">{String(value)}</span>
                           </div>
                         ))}
                       </div>
@@ -140,28 +140,28 @@ const ValidationHistoryDialog = ({ open, onOpenChange, workOrderItemId, serialNu
                         ? 'bg-destructive/10 text-destructive' 
                         : 'bg-primary/10 text-primary'
                     }`}>
-                      <p className="font-medium font-data">{exec.validation_message}</p>
+                      <p className="font-medium">{exec.validation_message}</p>
                     </div>
                   )}
 
                   {exec.batch_number && (
                     <div className="text-sm">
                       <span className="text-muted-foreground">Batch Number:</span>
-                      <span className="ml-2 font-medium font-mono">{exec.batch_number}</span>
+                      <span className="ml-2 font-medium tabular-nums tracking-wide">{exec.batch_number}</span>
                     </div>
                   )}
 
                   {exec.notes && (
                     <div className="text-sm">
                       <span className="text-muted-foreground">Notes:</span>
-                      <p className="mt-1 font-data">{exec.notes}</p>
+                      <p className="mt-1">{exec.notes}</p>
                     </div>
                   )}
 
                   {exec.retry_count && exec.retry_count > 0 && (
                     <div className="flex items-center gap-2 text-sm text-warning">
                       <AlertTriangle className="h-4 w-4" />
-                      <span className="font-data">Retry attempt #{exec.retry_count}</span>
+                      <span>Retry attempt #{exec.retry_count}</span>
                     </div>
                   )}
                 </div>

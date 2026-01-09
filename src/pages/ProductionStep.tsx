@@ -690,8 +690,8 @@ const ProductionStep = () => {
               <ArrowLeft className="h-6 w-6 md:h-5 md:w-5" />
             </Button>
             <div className="space-y-1">
-              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight font-data">{item.serial_number}</h1>
-              <p className="text-sm sm:text-base md:text-lg text-muted-foreground font-data">
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight">{item.serial_number}</h1>
+              <p className="text-sm sm:text-base md:text-lg text-muted-foreground">
                 {item.product_type || workOrder.product_type} • {t('step')} {item.current_step} {t('of')} {productionSteps.length}
               </p>
             </div>

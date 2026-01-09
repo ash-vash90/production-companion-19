@@ -163,7 +163,7 @@ export function InviteUserDialog({ onInviteCreated }: InviteUserDialogProps) {
                   <Input
                     value={inviteLink}
                     readOnly
-                    className="font-mono text-xs"
+                    className="text-xs font-medium tabular-nums tracking-wide"
                   />
                   <Button variant="outline" size="icon" onClick={handleCopyLink}>
                     {copied ? <Check className="h-4 w-4 text-success" /> : <Copy className="h-4 w-4" />}

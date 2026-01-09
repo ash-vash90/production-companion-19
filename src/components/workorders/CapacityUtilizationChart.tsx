@@ -136,7 +136,7 @@ const CapacityUtilizationChart: React.FC<CapacityUtilizationChartProps> = ({
             <Users className="h-4 w-4" />
             {language === 'nl' ? 'Dagoverzicht' : 'Daily Overview'}
           </CardTitle>
-          <Badge variant="outline" className="gap-1.5 font-mono">
+          <Badge variant="outline" className="gap-1.5 font-medium tracking-wide">
             <Calendar className="h-3 w-3" />
             {format(selectedDate, 'd MMM', { locale })}
           </Badge>
@@ -178,7 +178,7 @@ const CapacityUtilizationChart: React.FC<CapacityUtilizationChartProps> = ({
                   {language === 'nl' ? 'Afwezig' : 'Away'}
                 </Badge>
               ) : (
-                <Badge variant={op.assignment_count > 0 ? 'secondary' : 'outline'} className="font-mono">
+                <Badge variant={op.assignment_count > 0 ? 'secondary' : 'outline'} className="font-semibold tabular-nums tracking-wide">
                   {op.assignment_count}
                 </Badge>
               )}

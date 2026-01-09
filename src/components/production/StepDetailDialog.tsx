@@ -236,7 +236,7 @@ const StepDetailDialog = ({
                       <div key={material.id} className="p-2 bg-accent/50 rounded border text-sm">
                         <div className="flex justify-between">
                           <span className="font-medium">{material.material_type}</span>
-                          <span className="font-mono text-xs">{material.batch_number}</span>
+                          <span className="text-xs font-semibold tabular-nums tracking-wide">{material.batch_number}</span>
                         </div>
                         {material.opening_date && (
                           <p className="text-xs text-muted-foreground mt-0.5">
