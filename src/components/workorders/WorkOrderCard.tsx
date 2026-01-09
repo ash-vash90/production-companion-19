@@ -164,7 +164,7 @@ export function WorkOrderCard({
           <div className="p-3">
             {/* Header row */}
             <div className="flex items-center justify-between gap-2 mb-2">
-              <span className="font-mono font-medium text-sm text-foreground truncate">
+              <span className="font-semibold text-sm text-foreground truncate">
                 {workOrder.wo_number}
               </span>
               <StatusIndicator status={workOrder.status as any} size="sm" />
@@ -232,7 +232,7 @@ export function WorkOrderCard({
               {/* Left: WO ID + Meta row */}
               <div className="min-w-0 flex-1">
                 {/* Primary title: Work Order ID */}
-                <h3 className="font-mono font-medium text-base text-foreground truncate">
+                <h3 className="font-semibold text-base text-foreground truncate">
                   {workOrder.wo_number}
                 </h3>
                 

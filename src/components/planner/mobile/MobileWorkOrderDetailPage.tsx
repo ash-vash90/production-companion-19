@@ -185,7 +185,7 @@ const MobileWorkOrderDetailPage: React.FC<MobileWorkOrderDetailPageProps> = ({
           </Button>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <h1 className="font-mono text-xl font-semibold truncate">{workOrder.wo_number}</h1>
+              <h1 className="text-xl font-semibold truncate">{workOrder.wo_number}</h1>
               <StatusIndicator status={workOrder.status as any} showIcon />
             </div>
             <p className="text-sm text-muted-foreground truncate">
@@ -202,7 +202,7 @@ const MobileWorkOrderDetailPage: React.FC<MobileWorkOrderDetailPageProps> = ({
           <CardContent className="p-4">
             <div className="flex justify-between text-sm mb-2">
               <span className="text-muted-foreground">{language === 'nl' ? 'Voortgang' : 'Progress'}</span>
-              <span className="font-mono font-medium">
+              <span className="font-semibold tabular-nums">
                 {progress.completed}/{progress.total} ({progress.percent}%)
               </span>
             </div>

@@ -663,7 +663,7 @@ const AutomationManager = () => {
             <div className="space-y-2">
               <Label className="text-sm text-muted-foreground">Webhook URL</Label>
               <div className="flex items-center gap-2">
-                <code className="flex-1 text-[10px] sm:text-xs bg-muted p-2 rounded border truncate font-mono overflow-x-auto">
+                <code className="flex-1 text-[10px] sm:text-xs bg-muted p-2 rounded border truncate overflow-x-auto">
                   {getWebhookUrl(selectedWebhook.endpoint_key)}
                 </code>
                 <Button variant="outline" size="icon" className="shrink-0 h-8 w-8" onClick={() => copyToClipboard(getWebhookUrl(selectedWebhook.endpoint_key))}>
@@ -678,7 +678,7 @@ const AutomationManager = () => {
               {newlyCreatedSecrets[selectedWebhook.id] ? (
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
-                    <code className="flex-1 text-[10px] sm:text-xs bg-green-500/10 border-green-500/30 p-2 rounded border font-mono truncate text-green-700 dark:text-green-400">
+                    <code className="flex-1 text-[10px] sm:text-xs bg-green-500/10 border-green-500/30 p-2 rounded border truncate text-green-700 dark:text-green-400">
                       {newlyCreatedSecrets[selectedWebhook.id]}
                     </code>
                     <Button variant="outline" size="icon" className="shrink-0 h-8 w-8" onClick={() => copyToClipboard(newlyCreatedSecrets[selectedWebhook.id])}>
@@ -693,7 +693,7 @@ const AutomationManager = () => {
               ) : (
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
-                    <code className="flex-1 text-[10px] sm:text-xs bg-muted p-2 rounded border font-mono truncate">
+                    <code className="flex-1 text-[10px] sm:text-xs bg-muted p-2 rounded border truncate">
                       {maskSecret(selectedWebhook.secret_key)}
                     </code>
                     <Button 
@@ -814,7 +814,7 @@ const AutomationManager = () => {
                                         field_mappings: { ...prev.field_mappings, [field.key]: e.target.value }
                                       }))}
                                       placeholder={field.placeholder}
-                                      className="font-mono text-sm"
+                                      className="text-sm"
                                     />
                                     <p className="text-xs text-muted-foreground">{field.hint}</p>
                                   </div>
@@ -852,7 +852,7 @@ const AutomationManager = () => {
                                       conditions: { ...prev.conditions, field: e.target.value }
                                     }))}
                                     placeholder="$.data.type"
-                                    className="font-mono text-sm"
+                                    className="text-sm"
                                   />
                                 </div>
                                 <div className="grid grid-cols-2 gap-3">
@@ -930,7 +930,7 @@ const AutomationManager = () => {
                             <Badge variant="secondary" className="text-xs">Conditional</Badge>
                           )}
                         </div>
-                        <p className="text-xs text-muted-foreground font-mono truncate">
+                        <p className="text-xs text-muted-foreground truncate">
                           {Object.entries(rule.field_mappings)
                             .filter(([_, v]) => v)
                             .slice(0, 2)
@@ -1106,7 +1106,7 @@ const AutomationManager = () => {
                       
                       {/* URL Row */}
                       <div className="flex items-center gap-2">
-                        <code className="flex-1 text-xs bg-muted p-2 rounded border truncate font-mono">
+                        <code className="flex-1 text-xs bg-muted p-2 rounded border truncate">
                           {webhook.webhook_url}
                         </code>
                         <Button variant="outline" size="icon" className="shrink-0 h-8 w-8" onClick={() => copyToClipboard(webhook.webhook_url)}>
@@ -1118,7 +1118,7 @@ const AutomationManager = () => {
                       <div className="flex items-center gap-2">
                         <div className="flex items-center gap-2 flex-1 min-w-0">
                           <Key className="h-4 w-4 text-muted-foreground shrink-0" />
-                          <code className="text-xs bg-muted p-2 rounded border font-mono flex-1 truncate">
+                          <code className="text-xs bg-muted p-2 rounded border flex-1 truncate">
                             {showSecret || hasNewSecret ? displaySecret : maskSecret(displaySecret)}
                           </code>
                         </div>

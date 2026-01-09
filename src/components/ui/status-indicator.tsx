@@ -6,7 +6,7 @@ import { CheckCircle2, Clock, Pause, XCircle, Calendar } from "lucide-react";
 const statusIndicatorVariants = cva(
   [
     "inline-flex items-center gap-1.5 rounded-full border px-3 py-1",
-    "text-[11px] font-mono font-medium uppercase tracking-wide",
+    "text-[11px] font-semibold uppercase tracking-wide",
     "whitespace-nowrap flex-shrink-0 shadow-sm",
     "transition-colors duration-150",
   ].join(" "),

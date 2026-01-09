@@ -255,7 +255,7 @@ export function GlobalSearch({ onOpenModal }: GlobalSearchProps) {
                 {getResultIcon(result.type)}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-mono text-sm font-medium truncate">{result.title}</p>
+                <p className="text-sm font-semibold truncate">{result.title}</p>
                 <p className="text-xs text-muted-foreground truncate">{result.subtitle}</p>
               </div>
               <Badge className={cn("text-xs", getStatusColor(result.status))}>

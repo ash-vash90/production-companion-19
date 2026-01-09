@@ -137,10 +137,10 @@ const QualityCertificates = () => {
                   <TableBody>
                     {filteredCertificates.map((cert) => (
                       <TableRow key={cert.id}>
-                        <TableCell className="font-mono font-medium">
+                        <TableCell className="font-semibold">
                           {cert.work_order_item?.serial_number || t('na')}
                         </TableCell>
-                        <TableCell className="font-mono">
+                        <TableCell>
                           {cert.work_order_item?.work_order?.wo_number || t('na')}
                         </TableCell>
                         <TableCell>

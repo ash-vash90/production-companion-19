@@ -136,7 +136,7 @@ export function WorkOrderTableRow({
         )}
 
       {/* WO Number + Urgency icons */}
-      <TableCell className="font-mono font-semibold whitespace-nowrap">
+      <TableCell className="font-semibold whitespace-nowrap">
         <div className="flex items-center gap-2">
           {workOrder.wo_number}
           {shippingOverdue && <AlertTriangle className="h-3.5 w-3.5 text-destructive" />}

@@ -170,7 +170,7 @@ const AssignedWorkSection: React.FC<AssignedWorkSectionProps> = ({ userId }) => 
                 <div className="flex items-start justify-between gap-2 mb-2">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-mono font-semibold text-sm">{wo.wo_number}</span>
+                      <span className="font-semibold text-sm">{wo.wo_number}</span>
                       <Badge variant="outline" className="text-xs">
                         {formatProductType(wo.product_type)}
                       </Badge>

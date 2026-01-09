@@ -261,7 +261,7 @@ const SearchFullscreen = () => {
                   {getResultIcon(result.type)}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-mono text-sm font-medium truncate">{result.title}</p>
+                  <p className="text-sm font-semibold truncate">{result.title}</p>
                   <p className="text-xs text-muted-foreground truncate">
                     {result.type === 'work_order' ? t('workOrder') : t('serialNumber')} • {result.subtitle}
                   </p>

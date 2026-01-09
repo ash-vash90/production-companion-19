@@ -113,7 +113,7 @@ const WorkOrderDetailDialog: React.FC<WorkOrderDetailDialogProps> = ({
             <DialogHeader className="px-6 pt-6 pb-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-3 min-w-0">
-                  <DialogTitle className="font-mono text-xl">{workOrder.wo_number}</DialogTitle>
+                  <DialogTitle className="text-xl font-semibold">{workOrder.wo_number}</DialogTitle>
                   <StatusIndicator status={workOrder.status as any} showIcon />
                   {isUnassigned && isActiveWorkOrder && (
                     <Badge variant="outline" className="gap-1 text-warning border-warning/50">
@@ -177,7 +177,7 @@ const WorkOrderDetailDialog: React.FC<WorkOrderDetailDialogProps> = ({
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">{language === 'nl' ? 'Voortgang' : 'Progress'}</span>
-                        <span className="font-medium font-mono">
+                        <span className="font-semibold tabular-nums">
                           {progress.completed}/{progress.total} ({progress.percent}%)
                         </span>
                       </div>
@@ -190,7 +190,7 @@ const WorkOrderDetailDialog: React.FC<WorkOrderDetailDialogProps> = ({
                           <Package className="h-3.5 w-3.5" />
                           {language === 'nl' ? 'Producttype' : 'Product Type'}
                         </div>
-                        <Badge variant="outline" className="font-mono">
+                        <Badge variant="outline">
                           {formatProductType(workOrder.product_type)}
                         </Badge>
                       </div>
@@ -199,7 +199,7 @@ const WorkOrderDetailDialog: React.FC<WorkOrderDetailDialogProps> = ({
                           <DollarSign className="h-3.5 w-3.5" />
                           {language === 'nl' ? 'Orderwaarde' : 'Order Value'}
                         </div>
-                        <p className="font-medium font-mono">
+                        <p className="font-semibold tabular-nums">
                           {workOrder.order_value ? `€${workOrder.order_value.toLocaleString('nl-NL')}` : '-'}
                         </p>
                       </div>
@@ -226,7 +226,7 @@ const WorkOrderDetailDialog: React.FC<WorkOrderDetailDialogProps> = ({
                     {workOrder.batch_size && (
                       <div className="text-sm">
                         <span className="text-muted-foreground">{language === 'nl' ? 'Batchgrootte' : 'Batch Size'}: </span>
-                        <span className="font-medium font-mono">
+                        <span className="font-semibold tabular-nums">
                           {workOrder.batch_size} {language === 'nl' ? 'items' : 'items'}
                         </span>
                       </div>
@@ -235,7 +235,7 @@ const WorkOrderDetailDialog: React.FC<WorkOrderDetailDialogProps> = ({
                     {workOrder.external_order_number && (
                       <div className="text-sm">
                         <span className="text-muted-foreground">{language === 'nl' ? 'Extern ordernr' : 'External Order'}: </span>
-                        <span className="font-medium font-mono">{workOrder.external_order_number}</span>
+                        <span className="font-semibold">{workOrder.external_order_number}</span>
                       </div>
                     )}
 

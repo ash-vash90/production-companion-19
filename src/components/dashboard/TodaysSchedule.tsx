@@ -229,7 +229,7 @@ export const TodaysSchedule = memo(function TodaysSchedule() {
                   </div>
                   {wo.shipping_date && (
                     <span className={cn(
-                      "text-xs font-mono shrink-0",
+                      "text-xs tabular-nums shrink-0",
                       urgency === 'overdue' && "text-destructive font-medium",
                       urgency === 'urgent' && "text-warning font-medium",
                       !urgency && "text-muted-foreground"

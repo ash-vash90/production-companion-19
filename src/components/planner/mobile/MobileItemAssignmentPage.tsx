@@ -354,7 +354,7 @@ const MobileItemAssignmentPage: React.FC<MobileItemAssignmentPageProps> = ({
                   <div className="flex items-center justify-between gap-2 mb-2">
                     <div className="flex items-center gap-2 min-w-0">
                       <Package className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                      <span className="font-mono text-sm truncate">{item.serial_number}</span>
+                      <span className="text-sm truncate">{item.serial_number}</span>
                     </div>
                     <span className="text-xs text-muted-foreground">
                       #{item.position_in_batch}

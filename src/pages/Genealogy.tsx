@@ -244,11 +244,11 @@ const Genealogy = () => {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div>
                   <p className="text-sm text-muted-foreground">Serial Number</p>
-                  <p className="font-mono font-bold text-lg">{data.item.serial_number}</p>
+                  <p className="font-bold text-lg">{data.item.serial_number}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Work Order</p>
-                  <p className="font-mono font-medium">{data.item.work_order.wo_number}</p>
+                  <p className="font-semibold">{data.item.work_order.wo_number}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Product Type</p>
@@ -284,7 +284,7 @@ const Genealogy = () => {
                         </div>
                         <div>
                           <p className="font-medium">{sub.component_type}</p>
-                          <p className="text-sm text-muted-foreground font-mono">
+                          <p className="text-sm text-muted-foreground">
                             {sub.child_serial_number}
                           </p>
                         </div>
@@ -318,7 +318,7 @@ const Genealogy = () => {
                     <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
                       <div className="flex items-center gap-3">
                         <Badge variant="secondary">{batch.material_type}</Badge>
-                        <span className="font-mono font-medium">{batch.batch_number}</span>
+                        <span className="font-semibold">{batch.batch_number}</span>
                       </div>
                       <div className="text-sm text-muted-foreground">
                         {batch.opening_date && (
@@ -378,7 +378,7 @@ const Genealogy = () => {
                         <div className="text-sm text-muted-foreground">
                           {Object.entries(measurement.measurement_values).map(([key, value]) => (
                             <span key={key} className="mr-4">
-                              {key}: <span className="font-mono">{String(value)}</span>
+                              {key}: <span className="tabular-nums">{String(value)}</span>
                             </span>
                           ))}
                         </div>

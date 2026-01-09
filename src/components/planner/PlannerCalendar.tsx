@@ -81,7 +81,7 @@ const DraggableWorkOrder: React.FC<{ order: PlannerWorkOrder; onSelect: () => vo
         </div>
         <button onClick={onSelect} className="flex-1 text-left">
           <div className="flex items-center justify-between mb-1">
-            <span className="font-mono text-sm font-medium">{order.wo_number}</span>
+            <span className="text-sm font-semibold">{order.wo_number}</span>
             <Badge variant="outline" className="text-[10px]">
               {formatProductType(order.product_type)}
             </Badge>
@@ -143,7 +143,7 @@ const DroppableCalendarCell: React.FC<{
               selectedWorkOrderId === order.id && "ring-2 ring-primary"
             )}
           >
-            <span className="font-mono">{order.wo_number}</span>
+            <span className="font-semibold">{order.wo_number}</span>
           </button>
         ))}
         {dayOrders.length > (calendarView === 'week' ? 5 : 3) && (
@@ -197,7 +197,7 @@ const DroppableWeekCell: React.FC<{
             )}
           >
             <div className="flex items-center justify-between mb-1">
-              <span className="font-mono font-medium">{order.wo_number}</span>
+              <span className="font-semibold">{order.wo_number}</span>
             </div>
             <p className="text-[10px] text-foreground/70 truncate mb-1">
               {order.customer_name || (language === 'nl' ? 'Geen klant' : 'No customer')}
@@ -431,7 +431,7 @@ const PlannerCalendar: React.FC<PlannerCalendarProps> = ({
                       )}
                     >
                       <div className="flex items-center justify-between mb-2">
-                        <span className="font-mono text-base font-semibold">{order.wo_number}</span>
+                        <span className="text-base font-semibold">{order.wo_number}</span>
                         <Badge variant="outline">{formatProductType(order.product_type)}</Badge>
                       </div>
                       <p className="text-sm text-foreground/80 mb-1">
@@ -536,7 +536,7 @@ const PlannerCalendar: React.FC<PlannerCalendarProps> = ({
         {activeOrder && (
           <div className="p-3 rounded-lg border bg-background shadow-lg">
             <div className="flex items-center justify-between mb-1">
-              <span className="font-mono text-sm font-medium">{activeOrder.wo_number}</span>
+              <span className="text-sm font-semibold">{activeOrder.wo_number}</span>
               <Badge variant="outline" className="text-[10px]">
                 {formatProductType(activeOrder.product_type)}
               </Badge>

@@ -203,7 +203,7 @@ const TestOutgoingWebhookDialog: React.FC<TestOutgoingWebhookDialogProps> = ({
             Test Outgoing Webhook
           </DialogTitle>
           <DialogDescription>
-            Send a test payload to <span className="font-mono text-xs">{webhookName}</span>
+            Send a test payload to <span className="text-xs font-semibold">{webhookName}</span>
           </DialogDescription>
         </DialogHeader>
 
@@ -329,7 +329,7 @@ const TestOutgoingWebhookDialog: React.FC<TestOutgoingWebhookDialogProps> = ({
                     </Button>
                   </div>
                   <ScrollArea className="h-[200px] w-full rounded-md border bg-muted/30">
-                    <pre className="p-3 text-xs font-mono whitespace-pre-wrap break-all">
+                    <pre className="p-3 text-xs whitespace-pre-wrap break-all">
                       {formatResponseBody(result.response_body)}
                     </pre>
                   </ScrollArea>
