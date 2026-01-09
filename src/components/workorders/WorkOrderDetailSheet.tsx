@@ -153,7 +153,7 @@ const WorkOrderDetailSheet: React.FC<WorkOrderDetailSheetProps> = ({
           <>
             <SheetHeader className="pb-4">
               <div className="flex items-center gap-3">
-                <SheetTitle className="font-mono text-xl">{workOrder.wo_number}</SheetTitle>
+                <SheetTitle className="font-semibold text-xl">{workOrder.wo_number}</SheetTitle>
                 <StatusIndicator status={workOrder.status as any} showIcon />
               </div>
               <SheetDescription>
@@ -183,7 +183,7 @@ const WorkOrderDetailSheet: React.FC<WorkOrderDetailSheetProps> = ({
                       <p className="text-xs text-muted-foreground uppercase tracking-wider">
                         {language === 'nl' ? 'Exact Werkorder' : 'Exact Shop Order'}
                       </p>
-                      <p className="font-mono font-semibold">{workOrder.exact_shop_order_number}</p>
+                      <p className="font-semibold">{workOrder.exact_shop_order_number}</p>
                     </div>
                     {workOrder.exact_shop_order_link && (
                       <Button variant="outline" size="sm" asChild>
@@ -285,8 +285,8 @@ const WorkOrderDetailSheet: React.FC<WorkOrderDetailSheetProps> = ({
                           key={item.id}
                           className="flex items-center justify-between text-sm py-1.5 px-2 rounded bg-muted/50"
                         >
-                          <span className="font-mono text-xs">{item.serial_number}</span>
-                          <Badge variant="outline" className="font-mono text-xs">
+                          <span className="font-semibold text-xs">{item.serial_number}</span>
+                          <Badge variant="outline" className="text-xs">
                             {item.batch_number}
                           </Badge>
                         </div>

@@ -170,7 +170,7 @@ function KanbanCard({ workOrder }: KanbanCardProps) {
         <div className="pl-5">
           {/* WO Number + Operators */}
           <div className="flex items-center justify-between gap-2 mb-3">
-            <span className="font-mono font-semibold text-sm">{workOrder.wo_number}</span>
+            <span className="font-semibold text-sm">{workOrder.wo_number}</span>
             
             {/* Assigned operators or unassigned badge */}
             {hasAssignedOperators ? (
@@ -247,7 +247,7 @@ function KanbanCard({ workOrder }: KanbanCardProps) {
           <div className="flex items-center justify-between gap-4">
             <div className="shrink-0">
               {workOrder.order_value ? (
-                <span className="text-sm font-semibold text-foreground font-mono">
+                <span className="text-sm font-semibold text-foreground tabular-nums">
                   €{workOrder.order_value.toLocaleString('nl-NL')}
                 </span>
               ) : (
@@ -256,7 +256,7 @@ function KanbanCard({ workOrder }: KanbanCardProps) {
             </div>
             <div className="flex-1 flex items-center gap-2">
               <Progress value={workOrder.progressPercent || 0} status="auto" className="h-1.5 flex-1" />
-              <span className="text-xs text-muted-foreground font-medium font-mono">{workOrder.progressPercent || 0}%</span>
+              <span className="text-xs text-muted-foreground font-medium tabular-nums">{workOrder.progressPercent || 0}%</span>
             </div>
           </div>
         </div>

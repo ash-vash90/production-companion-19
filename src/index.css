@@ -267,12 +267,7 @@
     font-family: 'Instrument Sans', sans-serif;
   }
   
-  .font-data {
-    font-family: 'Instrument Sans', sans-serif;
-    font-weight: 600;
-    letter-spacing: 0.02em;
-    font-feature-settings: 'tnum' 1;
-  }
+  /* Data typography - uses semibold with tabular numbers for numeric alignment */
   
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Instrument Sans', sans-serif;
@@ -318,18 +313,18 @@
   }
   
   .text-data {
-    @apply font-data text-sm;
-    letter-spacing: 0.02em;
+    @apply text-sm font-semibold tracking-wide;
+    font-feature-settings: 'tnum' 1;
   }
   
   .text-data-lg {
-    @apply font-data text-lg sm:text-xl;
-    letter-spacing: 0.02em;
+    @apply text-lg sm:text-xl font-semibold tracking-wide;
+    font-feature-settings: 'tnum' 1;
   }
   
   .text-data-xl {
-    @apply font-data text-2xl sm:text-3xl font-semibold;
-    letter-spacing: 0.02em;
+    @apply text-2xl sm:text-3xl font-bold tracking-wide;
+    font-feature-settings: 'tnum' 1;
   }
 }
 
@@ -418,7 +413,8 @@
      DATA DISPLAY STYLES
      ======================================== */
   .data-value {
-    @apply font-data text-foreground;
+    @apply font-semibold text-foreground tracking-wide;
+    font-feature-settings: 'tnum' 1;
   }
   
   .data-label {

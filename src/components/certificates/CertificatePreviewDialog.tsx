@@ -127,7 +127,7 @@ const CertificatePreviewDialog: React.FC<CertificatePreviewDialogProps> = ({ tri
                   <Input
                     value={data.serialNumber}
                     onChange={(e) => setData(prev => ({ ...prev, serialNumber: e.target.value }))}
-                    className="font-mono text-sm"
+                    className="font-semibold text-sm"
                   />
                 </div>
                 <div className="space-y-2">
@@ -135,7 +135,7 @@ const CertificatePreviewDialog: React.FC<CertificatePreviewDialogProps> = ({ tri
                   <Input
                     value={data.workOrderNumber}
                     onChange={(e) => setData(prev => ({ ...prev, workOrderNumber: e.target.value }))}
-                    className="font-mono text-sm"
+                    className="font-semibold text-sm"
                   />
                 </div>
                 <div className="space-y-2">
@@ -218,7 +218,7 @@ const CertificatePreviewDialog: React.FC<CertificatePreviewDialogProps> = ({ tri
                       </Button>
                     </div>
                   </div>
-                  <div className="text-xs text-muted-foreground font-mono">
+                  <div className="text-xs text-muted-foreground font-medium">
                     {Object.entries(m.values).map(([k, v]) => `${k}: ${v}`).join(' | ')}
                   </div>
                 </div>
@@ -257,7 +257,7 @@ const CertificatePreviewDialog: React.FC<CertificatePreviewDialogProps> = ({ tri
                       setData(prev => ({ ...prev, batchMaterials: newMaterials }));
                     }}
                     placeholder="Batch number"
-                    className="flex-1 h-8 text-sm font-mono"
+                    className="flex-1 h-8 text-sm font-semibold"
                   />
                   <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => removeMaterial(index)}>
                     <Trash2 className="h-3 w-3" />

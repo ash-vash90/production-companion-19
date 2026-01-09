@@ -431,7 +431,7 @@ const MobileStepAssignmentPage: React.FC<MobileStepAssignmentPageProps> = ({
               <Card key={step.id} className={assignAllMode ? 'opacity-50' : ''}>
                 <CardContent className="p-3">
                   <div className="flex items-center gap-2 mb-2">
-                    <Badge variant="outline" className="font-mono text-xs h-6 w-6 flex items-center justify-center p-0">
+                    <Badge variant="outline" className="text-xs font-semibold h-6 w-6 flex items-center justify-center p-0">
                       {step.step_number}
                     </Badge>
                     <span className="text-sm flex-1 truncate">{getStepTitle(step)}</span>

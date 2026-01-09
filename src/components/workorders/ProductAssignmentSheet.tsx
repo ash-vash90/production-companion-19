@@ -199,8 +199,8 @@ const ProductAssignmentSheet: React.FC<ProductAssignmentSheetProps> = ({
           <div className="flex items-start justify-between">
             <div className="min-w-0 flex-1">
               <SheetTitle className="flex items-center gap-2 text-base sm:text-lg">
-                <span className="font-mono">{workOrder.wo_number}</span>
-                <Badge variant="outline" className="font-mono text-xs">
+                <span className="font-semibold">{workOrder.wo_number}</span>
+                <Badge variant="outline" className="text-xs">
                   {formatProductType(workOrder.product_type)}
                 </Badge>
               </SheetTitle>

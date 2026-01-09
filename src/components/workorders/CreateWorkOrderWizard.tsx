@@ -488,7 +488,7 @@ export function CreateWorkOrderWizard({ open, onOpenChange, onSuccess }: CreateW
           {language === 'nl' ? 'Werkorder gesynchroniseerd!' : 'Shop Order Synced!'}
         </p>
         {exactShopOrderNumber && (
-          <p className="text-2xl font-mono font-bold text-primary">
+          <p className="text-2xl font-bold text-primary">
             {exactShopOrderNumber}
           </p>
         )}

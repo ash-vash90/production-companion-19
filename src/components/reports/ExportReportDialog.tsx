@@ -144,7 +144,7 @@ export function ExportReportDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>{t('exportPdf')}</DialogTitle>
-          <DialogDescription className="font-mono text-sm">
+          <DialogDescription className="font-semibold text-sm">
             {woNumber}
           </DialogDescription>
         </DialogHeader>

@@ -119,9 +119,9 @@ const DraggableWorkOrder: React.FC<DraggableWorkOrderProps> = ({ assignment, wor
       <div className="flex items-center gap-2">
         <GripVertical className="h-4 w-4 text-muted-foreground shrink-0" />
         <div className="min-w-0 flex-1">
-          <p className="font-mono text-sm font-medium truncate">{workOrder.wo_number}</p>
+          <p className="text-sm font-medium truncate">{workOrder.wo_number}</p>
           <div className="flex items-center gap-1.5 mt-1">
-            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5 font-mono">
+            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5 font-semibold">
               {workOrder.batch_size}×
             </Badge>
             <span className="text-[11px] text-muted-foreground truncate">
@@ -168,8 +168,8 @@ const DraggableUnassignedOrder: React.FC<DraggableUnassignedOrderProps> = ({ wor
         <GripVertical className="h-4 w-4 text-muted-foreground shrink-0 mt-1" />
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between gap-2">
-            <p className="font-mono text-sm font-medium truncate">{workOrder.wo_number}</p>
-            <Badge variant="outline" className="text-[10px] shrink-0 font-mono">
+            <p className="text-sm font-medium truncate">{workOrder.wo_number}</p>
+            <Badge variant="outline" className="text-[10px] shrink-0 font-semibold">
               <Layers className="h-3 w-3 mr-1" />
               {workOrder.batch_size}
             </Badge>
@@ -278,7 +278,7 @@ const DroppableOperatorCard: React.FC<{
                   key={type} 
                   variant="outline" 
                   className={cn(
-                    "text-[10px] px-1.5 py-0 font-mono h-5",
+                    "text-[10px] px-1.5 py-0 font-semibold h-5",
                     productTypeColors[type] || 'bg-muted'
                   )}
                 >

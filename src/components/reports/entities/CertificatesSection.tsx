@@ -83,7 +83,7 @@ export function CertificatesSection({ certificates, compact = false }: Certifica
           >
             <div className="space-y-1">
               <div className="flex items-center gap-2">
-                <Badge variant="outline" className="font-mono text-xs">
+                <Badge variant="outline" className="text-xs font-semibold">
                   {cert.serial_number}
                 </Badge>
                 {cert.pdf_url ? (

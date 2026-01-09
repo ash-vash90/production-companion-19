@@ -162,7 +162,7 @@ const TestWebhookDialog: React.FC<TestWebhookDialogProps> = ({
               <Textarea
                 value={payload}
                 onChange={(e) => setPayload(e.target.value)}
-                className="font-mono text-xs min-h-[150px]"
+                className="text-xs min-h-[150px]"
                 placeholder='{"key": "value"}'
               />
             </div>

@@ -270,7 +270,7 @@ export function SearchModal({ open, onOpenChange }: SearchModalProps) {
                 {getResultIcon(result.type)}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-mono text-sm font-medium truncate">{result.title}</p>
+                <p className="text-sm font-medium truncate">{result.title}</p>
                 <p className="text-xs text-muted-foreground truncate">
                   {result.type === 'work_order' ? t('workOrder') : t('serialNumber')} • {result.subtitle}
                 </p>
@@ -377,7 +377,7 @@ export function SearchModal({ open, onOpenChange }: SearchModalProps) {
           {searching && (
             <Loader2 className="h-5 w-5 animate-spin text-primary shrink-0" />
           )}
-          <kbd className="hidden lg:inline-flex h-6 items-center gap-1 rounded border bg-background px-2 font-mono text-xs text-muted-foreground">
+          <kbd className="hidden lg:inline-flex h-6 items-center gap-1 rounded border bg-background px-2 text-xs text-muted-foreground">
             <Command className="h-3 w-3" />K
           </kbd>
         </div>

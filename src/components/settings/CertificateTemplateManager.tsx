@@ -504,7 +504,7 @@ export function CertificateTemplateManager() {
                   {selectedTemplate.detected_fields?.map((fieldName) => (
                     <div key={fieldName} className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
                       <div className="sm:flex-1">
-                        <Label className="text-sm font-mono bg-muted px-2 py-1 rounded">{fieldName}</Label>
+                        <Label className="text-sm font-semibold bg-muted px-2 py-1 rounded">{fieldName}</Label>
                       </div>
                       <div className="sm:flex-1">
                         <Select

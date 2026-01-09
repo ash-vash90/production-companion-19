@@ -153,7 +153,7 @@ const Search = () => {
                       value={query}
                       onChange={(e) => setQuery(e.target.value.toUpperCase())}
                       placeholder={t('searchPlaceholder')}
-                      className="font-mono text-lg"
+                      className="font-semibold text-lg"
                       autoFocus
                     />
                     <Button type="submit" disabled={searching || !query.trim()} size="lg">
@@ -176,7 +176,7 @@ const Search = () => {
                           key={search}
                           variant="outline"
                           size="sm"
-                          className="font-mono"
+                          className="font-semibold"
                           onClick={() => {
                             setQuery(search);
                             handleSearch(search);
@@ -226,7 +226,7 @@ const Search = () => {
                               )}
                             </div>
                             <div>
-                              <p className="font-mono font-semibold">{result.title}</p>
+                              <p className="font-semibold">{result.title}</p>
                               <p className="text-sm text-muted-foreground">{result.subtitle}</p>
                             </div>
                           </div>
