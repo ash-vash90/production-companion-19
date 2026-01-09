@@ -103,7 +103,7 @@ export function MaterialsSection({ materials, compact = false }: MaterialsSectio
         {groupedMaterials.map(({ serialNumber, materials: mats }) => (
           <div key={serialNumber} className="border rounded-lg p-3">
             <div className="flex items-center gap-2 mb-2 pb-2 border-b">
-              <Badge variant="outline" className="font-mono text-xs">
+              <Badge variant="outline" className="text-xs font-semibold">
                 {serialNumber}
               </Badge>
               <span className="text-xs text-muted-foreground">
@@ -117,7 +117,7 @@ export function MaterialsSection({ materials, compact = false }: MaterialsSectio
                     <Badge variant="secondary" className="text-xs">
                       {material.material_type}
                     </Badge>
-                    <span className="font-mono text-xs text-muted-foreground">
+                    <span className="font-semibold text-xs text-muted-foreground">
                       {material.batch_number}
                     </span>
                   </div>

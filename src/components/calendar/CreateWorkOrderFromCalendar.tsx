@@ -312,7 +312,7 @@ export function CreateWorkOrderDialogWithDate({
           <div className="space-y-2">
             <Label className="text-xs font-medium uppercase tracking-wider">{t('workOrderNumber')}</Label>
             <div className="flex items-center gap-2">
-              <div className="flex-1 p-2.5 rounded-md border bg-muted/50 font-mono text-sm font-semibold">
+              <div className="flex-1 p-2.5 rounded-md border bg-muted/50 text-sm font-semibold">
                 {generatingWO ? (
                   <span className="flex items-center gap-2 text-muted-foreground">
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />

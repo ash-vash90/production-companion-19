@@ -118,7 +118,7 @@ export const SyncStatusBanner: React.FC<SyncStatusBannerProps> = ({
             <div className="flex items-center gap-2">
               <span className="font-medium text-sm">{label}</span>
               {exactShopOrderNumber && (
-                <Badge variant="outline" className="font-mono text-xs">
+                <Badge variant="outline" className="text-xs font-semibold">
                   {exactShopOrderNumber}
                 </Badge>
               )}

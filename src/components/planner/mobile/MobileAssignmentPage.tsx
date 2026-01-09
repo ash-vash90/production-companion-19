@@ -532,7 +532,7 @@ const MobileAssignmentPage: React.FC<MobileAssignmentPageProps> = ({
                       )}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          <span className="font-mono text-sm truncate">{item.serial_number}</span>
+                          <span className="font-semibold text-sm truncate">{item.serial_number}</span>
                           <Badge variant="outline" className="text-[10px] h-5">
                             #{item.position_in_batch}
                           </Badge>
@@ -634,7 +634,7 @@ const MobileAssignmentPage: React.FC<MobileAssignmentPageProps> = ({
                                 <Badge 
                                   variant="outline" 
                                   className={cn(
-                                    "font-mono text-[10px] h-5 w-5 flex items-center justify-center p-0",
+                                    "text-[10px] h-5 w-5 flex items-center justify-center p-0 font-semibold",
                                     isStepComplete && "border-status-completed-foreground/50 text-status-completed-foreground",
                                     isStepInProgress && "border-status-in-progress-foreground/50 text-status-in-progress-foreground"
                                   )}

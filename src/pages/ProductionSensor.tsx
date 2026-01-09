@@ -118,7 +118,7 @@ const ProductionSensor = () => {
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <div>
-              <h1 className="text-3xl font-bold tracking-tight font-data">{item.serial_number}</h1>
+              <h1 className="text-3xl font-bold tracking-tight">{item.serial_number}</h1>
               <p className="text-lg text-muted-foreground">
                 Sensor Production • Step {item.current_step} of {productionSteps.length}
               </p>

@@ -215,7 +215,7 @@ export const TodaysSchedule = memo(function TodaysSchedule() {
                 >
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="font-mono font-semibold text-sm">{wo.wo_number}</span>
+                      <span className="font-semibold text-sm">{wo.wo_number}</span>
                       <Badge variant={getStatusVariant(wo.status) as any} className="text-[10px]">
                         {formatStatus(wo.status)}
                       </Badge>

@@ -255,7 +255,7 @@ export function ProductionOverview() {
                 >
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-mono font-semibold text-sm">{wo.wo_number}</span>
+                      <span className="font-semibold text-sm">{wo.wo_number}</span>
                       <Badge variant={getStatusVariant(wo.status)} className="text-[10px]">
                         {getStatusLabel(wo.status)}
                       </Badge>

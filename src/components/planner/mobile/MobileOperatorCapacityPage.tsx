@@ -314,7 +314,7 @@ const MobileOperatorCapacityPage: React.FC<MobileOperatorCapacityPageProps> = ({
                               className="w-full text-left p-2 rounded-lg border bg-muted/30 hover:bg-muted/50 transition-colors"
                             >
                               <div className="flex items-center gap-2">
-                                <span className="font-mono text-xs font-medium">
+                                <span className="text-xs font-medium">
                                   {assignment.work_order.wo_number}
                                 </span>
                                 <Badge variant="outline" className="text-[10px]">

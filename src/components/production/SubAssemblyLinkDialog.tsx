@@ -366,7 +366,7 @@ const SubAssemblyLinkDialog: React.FC<SubAssemblyLinkDialogProps> = ({
               </div>
               <div className="flex items-center gap-2">
                 <Badge variant="outline">{expectedComponentType}</Badge>
-                <span className="font-mono font-medium">{existingLink.child_item.serial_number}</span>
+                <span className="font-semibold">{existingLink.child_item.serial_number}</span>
                 <Badge variant="success" className="text-xs">
                   {existingLink.child_item.status}
                 </Badge>
@@ -385,7 +385,7 @@ const SubAssemblyLinkDialog: React.FC<SubAssemblyLinkDialogProps> = ({
                   value={serialNumber}
                   onChange={(e) => setSerialNumber(e.target.value.toUpperCase())}
                   placeholder={`${COMPONENT_PREFIXES[expectedComponentType]}XXXX`}
-                  className="font-mono text-lg h-12"
+                  className="font-semibold text-lg h-12"
                   autoFocus
                   autoComplete="off"
                   onKeyDown={(e) => {
@@ -487,7 +487,7 @@ const SubAssemblyLinkDialog: React.FC<SubAssemblyLinkDialogProps> = ({
                                   {isRecommended && (
                                     <Star className="h-3.5 w-3.5 text-amber-500 fill-amber-500" />
                                   )}
-                                  <span className="font-mono font-medium text-sm truncate">
+                                  <span className="font-semibold text-sm truncate">
                                     {component.serial_number}
                                   </span>
                                   {isRecommended && (

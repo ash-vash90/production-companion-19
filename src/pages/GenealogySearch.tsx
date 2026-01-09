@@ -89,7 +89,7 @@ const GenealogySearch = () => {
                         value={serialNumber}
                         onChange={(e) => setSerialNumber(e.target.value.toUpperCase())}
                         placeholder="e.g., Q-0001, W-0042, SDM-0001"
-                        className="font-mono"
+                        className="font-semibold"
                         autoFocus
                       />
                       <Button type="submit" disabled={searching || !serialNumber.trim()}>
@@ -113,7 +113,7 @@ const GenealogySearch = () => {
                           key={serial}
                           variant="outline"
                           size="sm"
-                          className="font-mono"
+                          className="font-semibold"
                           onClick={() => handleQuickSearch(serial)}
                         >
                           {serial}

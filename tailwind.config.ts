@@ -19,7 +19,6 @@ export default {
     extend: {
       fontFamily: {
         sans: ['Instrument Sans', 'system-ui', 'sans-serif'],
-        mono: ['Instrument Sans', 'system-ui', 'sans-serif'],
         display: ['Unbounded', 'system-ui', 'sans-serif'],
       },
       colors: {

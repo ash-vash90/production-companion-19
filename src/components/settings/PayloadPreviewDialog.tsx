@@ -206,7 +206,7 @@ const PayloadPreviewDialog: React.FC<PayloadPreviewDialogProps> = ({
               <Textarea
                 value={sampleJson}
                 onChange={(e) => setSampleJson(e.target.value)}
-                className="font-mono text-xs min-h-[120px]"
+                className="text-xs min-h-[120px]"
                 placeholder='{"key": "value"}'
               />
             </div>
@@ -308,7 +308,7 @@ const PayloadPreviewDialog: React.FC<PayloadPreviewDialogProps> = ({
                 <Separator />
                 <div className="space-y-2">
                   <Label>Resulting Database Values</Label>
-                  <pre className="p-3 bg-muted rounded-lg text-xs font-mono overflow-x-auto">
+                  <pre className="p-3 bg-muted rounded-lg text-xs overflow-x-auto">
                     {JSON.stringify(
                       Object.fromEntries(
                         Object.entries(extractedValues)

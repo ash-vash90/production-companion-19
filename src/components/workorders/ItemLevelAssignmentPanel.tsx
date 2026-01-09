@@ -232,7 +232,7 @@ const ItemLevelAssignmentPanel: React.FC<ItemLevelAssignmentPanelProps> = ({
               <div className="p-3 sm:p-4">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <div className="flex items-center gap-2 min-w-0">
-                    <Badge variant="outline" className="font-mono">
+                    <Badge variant="outline" className="font-semibold">
                       {formatProductType(group.product_type)}
                     </Badge>
                     <span className="text-xs text-muted-foreground">
@@ -325,7 +325,7 @@ const ItemLevelAssignmentPanel: React.FC<ItemLevelAssignmentPanelProps> = ({
                       )}
                     >
                       <div className="min-w-0">
-                        <p className="font-mono text-xs truncate">{item.serial_number}</p>
+                        <p className="font-semibold text-xs truncate">{item.serial_number}</p>
                         <p className="text-[10px] text-muted-foreground">
                           {language === 'nl' ? 'Item' : 'Item'} {item.position_in_batch ?? ''}
                         </p>

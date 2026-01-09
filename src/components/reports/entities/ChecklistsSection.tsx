@@ -109,7 +109,7 @@ export function ChecklistsSection({ responses, compact = false }: ChecklistsSect
         {groupedBySerial.map(([serialNumber, items]) => (
           <div key={serialNumber} className="border rounded-lg p-3">
             <div className="flex items-center gap-2 mb-3 pb-2 border-b">
-              <Badge variant="outline" className="font-mono text-xs">
+              <Badge variant="outline" className="text-xs font-semibold">
                 {serialNumber}
               </Badge>
             </div>

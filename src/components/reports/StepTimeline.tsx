@@ -129,7 +129,7 @@ export function StepTimeline({ stepExecutions }: StepTimelineProps) {
                   "h-4 w-4 text-muted-foreground transition-transform flex-shrink-0",
                   isOpen && "rotate-180"
                 )} />
-                <Badge variant="outline" className="font-mono text-xs">
+                <Badge variant="outline" className="text-xs font-semibold">
                   {serial}
                 </Badge>
                 <span className={cn("text-sm", summary.color)}>
@@ -178,7 +178,7 @@ export function StepTimeline({ stepExecutions }: StepTimelineProps) {
                         <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-xs">
                           {Object.entries(exec.measurement_values).map(([key, value]) => (
                             <span key={key} className="text-muted-foreground">
-                              {key}: <span className="font-mono text-foreground">{String(value)}</span>
+                              {key}: <span className="font-semibold text-foreground">{String(value)}</span>
                             </span>
                           ))}
                         </div>
