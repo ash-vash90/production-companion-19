@@ -357,7 +357,7 @@ const StepAssignmentPanel: React.FC<StepAssignmentPanelProps> = ({
             {language === 'nl' ? 'Staptoewijzingen' : 'Step Assignments'}
           </CardTitle>
           <div className="flex items-center gap-2">
-            <Badge variant={assignedCount === totalSteps ? 'default' : 'secondary'} className="font-mono">
+            <Badge variant={assignedCount === totalSteps ? 'default' : 'secondary'} className="tabular-nums">
               {assignedCount}/{totalSteps}
             </Badge>
             {assignedCount > 0 && (
@@ -416,7 +416,7 @@ const StepAssignmentPanel: React.FC<StepAssignmentPanelProps> = ({
                           {meta.reason || (language === 'nl' ? 'Afwezig' : 'Away')}
                         </Badge>
                       ) : (
-                        <Badge variant="outline" className="text-[9px] px-1 py-0 font-mono">
+                        <Badge variant="outline" className="text-[9px] px-1 py-0 tabular-nums">
                           {meta.dayCount} {language === 'nl' ? 'orders' : 'orders'}
                         </Badge>
                       )}
@@ -451,7 +451,7 @@ const StepAssignmentPanel: React.FC<StepAssignmentPanelProps> = ({
                     <div className="flex items-center gap-2 min-w-0 flex-1">
                       <Badge
                         variant="outline"
-                        className="shrink-0 font-mono text-[10px] h-6 w-6 flex items-center justify-center p-0"
+                        className="shrink-0 tabular-nums text-[10px] h-6 w-6 flex items-center justify-center p-0"
                       >
                         {step.step_number}
                       </Badge>

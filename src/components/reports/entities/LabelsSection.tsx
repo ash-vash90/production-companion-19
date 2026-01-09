@@ -84,7 +84,7 @@ export function LabelsSection({ items, compact = false }: LabelsSectionProps) {
           >
             <div className="flex items-center gap-2">
               <CheckCircle className="h-4 w-4 text-success" />
-              <Badge variant="outline" className="font-mono text-xs">
+              <Badge variant="outline" className="text-xs">
                 {item.serial_number}
               </Badge>
             </div>
@@ -112,7 +112,7 @@ export function LabelsSection({ items, compact = false }: LabelsSectionProps) {
             </p>
             <div className="flex flex-wrap gap-1">
               {unprintedItems.map(item => (
-                <Badge key={item.id} variant="secondary" className="font-mono text-xs">
+                <Badge key={item.id} variant="secondary" className="text-xs">
                   {item.serial_number}
                 </Badge>
               ))}

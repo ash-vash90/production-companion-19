@@ -159,7 +159,7 @@ export const MaterialsSummary: React.FC<MaterialsSummaryProps> = ({
                 >
                   <span className="truncate flex-1">{material.name}</span>
                   <span className={cn(
-                    'font-mono text-xs',
+                    'tabular-nums text-xs',
                     material.shortage && material.shortage > 0 && 'text-destructive'
                   )}>
                     {material.inStock}/{material.required}
@@ -184,7 +184,7 @@ export const MaterialsSummary: React.FC<MaterialsSummaryProps> = ({
                 >
                   <span className="truncate flex-1">{material.name}</span>
                   {material.batchNumber && (
-                    <Badge variant="outline" className="font-mono text-xs ml-2">
+                    <Badge variant="outline" className="text-xs ml-2">
                       {material.batchNumber}
                     </Badge>
                   )}

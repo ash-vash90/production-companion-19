@@ -249,7 +249,7 @@ export function ProductionStory({
                         </div>
                       )}
                       {event.serialNumber && (
-                        <Badge variant="outline" className="text-xs font-mono h-5">
+                        <Badge variant="outline" className="text-xs h-5">
                           {event.serialNumber}
                         </Badge>
                       )}

@@ -234,7 +234,7 @@ const SubAssemblyLinking: React.FC<SubAssemblyLinkingProps> = ({
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
                         <Badge variant="outline">{link.component_type}</Badge>
-                        <span className="font-mono font-medium">{link.child_item.serial_number}</span>
+                        <span className="font-semibold">{link.child_item.serial_number}</span>
                       </div>
                       <p className="text-xs text-muted-foreground mt-1">
                         Linked: {formatDateTime(link.linked_at)}

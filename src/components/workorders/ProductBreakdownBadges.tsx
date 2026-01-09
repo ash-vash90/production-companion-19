@@ -25,19 +25,19 @@ export function ProductBreakdownBadges({
             <Badge 
               key={idx} 
               variant="secondary" 
-              className={`font-mono ${compact ? "text-[10px] px-1.5 py-0" : "text-xs"}`}
+              className={`tabular-nums ${compact ? "text-[10px] px-1.5 py-0" : "text-xs"}`}
             >
               {item.count}× {item.label}
             </Badge>
           ))}
           {hiddenCount > 0 && (
-            <Badge variant="outline" className={`font-mono ${compact ? "text-[10px] px-1.5 py-0" : "text-xs"}`}>
+            <Badge variant="outline" className={`tabular-nums ${compact ? "text-[10px] px-1.5 py-0" : "text-xs"}`}>
               +{hiddenCount}
             </Badge>
           )}
         </>
       ) : batchSize ? (
-        <span className="text-xs text-muted-foreground font-mono">{batchSize} items</span>
+        <span className="text-xs text-muted-foreground tabular-nums">{batchSize} items</span>
       ) : null}
     </div>
   );

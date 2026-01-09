@@ -435,8 +435,8 @@ const MobileCalendarPage: React.FC<MobileCalendarPageProps> = ({
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
-                          <span className="font-mono font-semibold">{order.wo_number}</span>
-                          <Badge variant="outline" className="font-mono text-xs">
+                          <span className="font-semibold">{order.wo_number}</span>
+                          <Badge variant="outline" className="text-xs">
                             {formatProductType(order.product_type)}
                           </Badge>
                         </div>
@@ -512,7 +512,7 @@ const OrderCard: React.FC<OrderCardProps> = ({ order, onSelect, language, compac
           <CardContent className="p-3">
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2 min-w-0">
-                <span className="font-mono font-semibold text-sm">{order.wo_number}</span>
+                <span className="font-semibold text-sm">{order.wo_number}</span>
                 <Badge className={cn('text-xs', getStatusColor(order.status))}>
                   {order.status}
                 </Badge>
@@ -540,7 +540,7 @@ const OrderCard: React.FC<OrderCardProps> = ({ order, onSelect, language, compac
           <div className="flex items-start justify-between gap-3">
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
-                <span className="font-mono font-semibold">{order.wo_number}</span>
+                <span className="font-semibold">{order.wo_number}</span>
                 <Badge className={cn('text-xs', getStatusColor(order.status))}>
                   {order.status}
                 </Badge>
@@ -549,7 +549,7 @@ const OrderCard: React.FC<OrderCardProps> = ({ order, onSelect, language, compac
                 {order.customer_name || (language === 'nl' ? 'Geen klant' : 'No customer')}
               </p>
               <div className="flex items-center gap-3 mt-2">
-                <Badge variant="outline" className="font-mono text-xs">
+                <Badge variant="outline" className="text-xs">
                   {formatProductType(order.product_type)}
                 </Badge>
                 <span className="text-xs text-muted-foreground">

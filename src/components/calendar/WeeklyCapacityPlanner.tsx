@@ -804,7 +804,7 @@ const WeeklyCapacityPlanner: React.FC = () => {
         <DragOverlay>
           {activeWorkOrder && (
             <div className="p-3 rounded-lg bg-primary text-primary-foreground shadow-lg text-xs max-w-[180px]">
-              <div className="font-mono font-medium">{activeWorkOrder.wo_number}</div>
+              <div className="font-semibold">{activeWorkOrder.wo_number}</div>
               <div className="text-[10px] opacity-80 truncate mt-0.5">
                 {formatProductType(activeWorkOrder.product_type)}
               </div>
@@ -1035,7 +1035,7 @@ const WeeklyCapacityPlanner: React.FC = () => {
         <DragOverlay>
           {activeWorkOrder && (
             <div className="p-3 rounded-lg bg-primary text-primary-foreground shadow-lg text-xs max-w-[180px]">
-              <div className="font-mono font-medium">{activeWorkOrder.wo_number}</div>
+              <div className="font-semibold">{activeWorkOrder.wo_number}</div>
               <div className="text-[10px] opacity-80 truncate mt-0.5">
                 {formatProductType(activeWorkOrder.product_type)}
               </div>

@@ -316,10 +316,10 @@ function KanbanColumn({
       <div className={`flex items-center justify-between px-3 py-2.5 ${headerStyles.bg} ${headerStyles.border} border-b transition-all duration-200 ${
         isOver ? 'opacity-100' : ''
       }`}>
-        <span className={`font-mono font-semibold text-sm ${headerStyles.text}`}>
+        <span className={`font-semibold text-sm ${headerStyles.text}`}>
           {t(status === 'in_progress' ? 'inProgress' : status)}
         </span>
-        <span className={`font-mono text-xs px-2 py-0.5 rounded-full ${headerStyles.bg} ${headerStyles.text} border ${headerStyles.border}`}>
+        <span className={`text-xs tabular-nums px-2 py-0.5 rounded-full ${headerStyles.bg} ${headerStyles.text} border ${headerStyles.border}`}>
           {workOrders.length}
         </span>
       </div>
@@ -604,7 +604,7 @@ export function WorkOrderKanbanView({ workOrders, onStatusChange, onCancel }: Wo
         }}>
           {activeWorkOrder && (
             <div className="bg-card border rounded-lg p-4 shadow-xl opacity-95 w-[260px] rotate-[2deg]">
-              <div className="font-mono font-semibold text-sm mb-2">{activeWorkOrder.wo_number}</div>
+              <div className="font-semibold text-sm mb-2">{activeWorkOrder.wo_number}</div>
               <ProductBreakdownBadges
                 breakdown={activeWorkOrder.productBreakdown}
                 batchSize={activeWorkOrder.batch_size}

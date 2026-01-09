@@ -314,7 +314,7 @@ const ProductionReports = () => {
                                 <div className="flex items-center justify-between gap-2">
                                   <div className="min-w-0 flex-1">
                                     <div className="flex items-center gap-2">
-                                      <span className="font-mono font-medium text-sm truncate">{wo.wo_number}</span>
+                                      <span className="font-semibold text-sm truncate">{wo.wo_number}</span>
                                       <StatusIndicator status={wo.status as any} size="sm" showIcon />
                                     </div>
                                     {wo.customer_name && (

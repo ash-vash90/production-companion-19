@@ -564,7 +564,7 @@ export default function ItemsManagement() {
                     <TableBody>
                       {products.map((product) => (
                         <TableRow key={product.id}>
-                          <TableCell className="font-mono font-medium">
+                          <TableCell className="font-semibold">
                             {product.item_code}
                           </TableCell>
                           <TableCell>{getDisplayName(product)}</TableCell>
@@ -582,7 +582,7 @@ export default function ItemsManagement() {
                               <span className="text-muted-foreground">—</span>
                             )}
                           </TableCell>
-                          <TableCell className="text-right font-mono">
+                          <TableCell className="text-right tabular-nums">
                             {product.stock != null ? (
                               <span className={product.stock <= 0 ? "text-destructive" : ""}>
                                 {Number(product.stock).toLocaleString()}
@@ -830,7 +830,7 @@ export default function ItemsManagement() {
                             <div className={`h-2 w-2 rounded-full ${webhook.enabled ? 'bg-green-500' : 'bg-muted-foreground'}`} />
                             <div>
                               <p className="font-medium">{webhook.name}</p>
-                              <p className="text-xs text-muted-foreground font-mono">
+                              <p className="text-xs text-muted-foreground">
                                 .../webhook-receiver?key={webhook.endpoint_key}
                               </p>
                             </div>
@@ -862,7 +862,7 @@ export default function ItemsManagement() {
                   <div className="space-y-2">
                     <Label>{language === "nl" ? "Ontvanger Endpoint" : "Receiver Endpoint"}</Label>
                     <div className="flex gap-2">
-                      <Input value={receiverEndpoint} readOnly className="font-mono text-sm" />
+                      <Input value={receiverEndpoint} readOnly className="text-sm" />
                       <Button
                         variant="outline"
                         size="icon"
@@ -914,7 +914,7 @@ export default function ItemsManagement() {
                     setTestPayload(e.target.value);
                     setParseResult(null);
                   }}
-                  className="font-mono text-sm min-h-[150px]"
+                  className="text-sm min-h-[150px]"
                 />
                 <div className="flex gap-2">
                   <Button
@@ -1113,7 +1113,7 @@ export default function ItemsManagement() {
                       <TableBody>
                         {webhookLogs.map((log) => (
                           <TableRow key={log.id}>
-                            <TableCell className="font-mono text-xs">
+                            <TableCell className="text-xs tabular-nums">
                               {format(new Date(log.created_at), "dd/MM HH:mm:ss")}
                             </TableCell>
                             <TableCell>
@@ -1121,7 +1121,7 @@ export default function ItemsManagement() {
                                 {log.response_status}
                               </Badge>
                             </TableCell>
-                            <TableCell className="font-mono text-xs truncate max-w-[300px]">
+                            <TableCell className="text-xs truncate max-w-[300px]">
                               {log.request_body ? JSON.stringify(log.request_body).slice(0, 100) + "..." : "—"}
                             </TableCell>
                             <TableCell>

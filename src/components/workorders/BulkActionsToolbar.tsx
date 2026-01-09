@@ -102,7 +102,7 @@ export function BulkActionsToolbar({
   // Inline version - renders as flex items in toolbar
   return (
     <div className="flex items-center gap-2 pl-2 border-l border-border">
-      <Badge variant="secondary" className="font-mono text-xs">
+      <Badge variant="secondary" className="tabular-nums text-xs">
         {selectedIds.length} {t('selected')}
       </Badge>
 

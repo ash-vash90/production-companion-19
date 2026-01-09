@@ -130,7 +130,7 @@ const NumberFormatSettings = () => {
                 value={woFormat.prefix}
                 onChange={(e) => setWoFormat({ ...woFormat, prefix: e.target.value })}
                 placeholder="WO"
-                className="font-mono"
+                className=""
               />
             </div>
             <div className="space-y-2">
@@ -168,7 +168,7 @@ const NumberFormatSettings = () => {
           </div>
           <div className="p-3 rounded-lg bg-muted/50 border">
             <span className="text-xs sm:text-sm text-muted-foreground">Preview: </span>
-            <span className="font-mono font-semibold text-sm sm:text-base">{previewWO}</span>
+            <span className="font-semibold text-sm sm:text-base">{previewWO}</span>
           </div>
         </CardContent>
       </Card>
@@ -191,9 +191,9 @@ const NumberFormatSettings = () => {
                   value={serialPrefixes[type]}
                   onChange={(e) => setSerialPrefixes({ ...serialPrefixes, [type]: e.target.value.toUpperCase() })}
                   maxLength={4}
-                  className="font-mono text-sm"
+                  className="text-sm"
                 />
-                <p className="text-[10px] sm:text-xs text-muted-foreground font-mono">{getSerialPreview(type)}</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground">{getSerialPreview(type)}</p>
               </div>
             ))}
           </div>
