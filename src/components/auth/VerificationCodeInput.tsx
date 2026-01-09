@@ -124,7 +124,7 @@ export const VerificationCodeInput: React.FC<VerificationCodeInputProps> = ({
           disabled={disabled}
           autoFocus={autoFocus && index === 0}
           className={cn(
-            "w-10 h-12 sm:w-12 sm:h-14 text-center text-xl sm:text-2xl font-data font-bold",
+            "w-10 h-12 sm:w-12 sm:h-14 text-center text-xl sm:text-2xl font-bold",
             "border-2 rounded-lg transition-all duration-200",
             "focus:outline-none focus:ring-2 focus:ring-offset-2",
             "bg-background text-foreground",

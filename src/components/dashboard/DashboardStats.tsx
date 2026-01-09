@@ -83,7 +83,7 @@ export function DashboardStats() {
       <div className="flex items-center gap-2">
         <Clock className="h-4 w-4 text-primary" />
         <span className="text-sm text-muted-foreground">{t('activeWorkOrdersTitle')}:</span>
-        <span className="font-semibold font-mono tabular-nums">
+        <span className="font-semibold tabular-nums tracking-wide">
           {displayStats.activeWorkOrders}
           <span className="text-muted-foreground font-normal">/{displayStats.totalWorkOrders}</span>
         </span>
@@ -93,21 +93,21 @@ export function DashboardStats() {
       <div className="flex items-center gap-2">
         <Factory className="h-4 w-4 text-warning" />
         <span className="text-sm text-muted-foreground">{t('inProduction')}:</span>
-        <span className="font-semibold font-mono tabular-nums">{displayStats.inProgressItems}</span>
+        <span className="font-semibold tabular-nums tracking-wide">{displayStats.inProgressItems}</span>
       </div>
 
       {/* Completed */}
       <div className="flex items-center gap-2">
         <CheckCircle2 className="h-4 w-4 text-success" />
         <span className="text-sm text-muted-foreground">{t('completedUnits')}:</span>
-        <span className="font-semibold font-mono tabular-nums">{displayStats.completedItems}</span>
+        <span className="font-semibold tabular-nums tracking-wide">{displayStats.completedItems}</span>
       </div>
 
       {/* Steps */}
       <div className="flex items-center gap-2">
         <TrendingUp className="h-4 w-4 text-muted-foreground" />
         <span className="text-sm text-muted-foreground">{t('stepExecutions')}:</span>
-        <span className="font-semibold font-mono tabular-nums">{displayStats.totalSteps}</span>
+        <span className="font-semibold tabular-nums tracking-wide">{displayStats.totalSteps}</span>
       </div>
 
       {isStale && (

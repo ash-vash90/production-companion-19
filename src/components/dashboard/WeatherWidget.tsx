@@ -111,7 +111,7 @@ export function WeatherWidget() {
       bg
     )}>
       <WeatherIcon className={cn("h-4 w-4", color)} />
-      <span className="font-data text-sm font-semibold">{weather.temperature}°C</span>
+      <span className="text-sm font-semibold">{weather.temperature}°C</span>
       <span className="text-xs text-muted-foreground hidden sm:inline">Putten</span>
     </div>
   );

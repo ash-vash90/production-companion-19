@@ -267,7 +267,7 @@ const MeasurementDialog: React.FC<MeasurementDialogProps> = ({
             const fieldLabel = getFieldLabel(field);
             return (
               <div key={field.name} className="space-y-4">
-                <Label htmlFor={field.name} className="text-xl font-data uppercase tracking-wider">
+                <Label htmlFor={field.name} className="text-xl uppercase tracking-wider">
                   {fieldLabel} {field.unit ? `(${field.unit})` : ''} *
                 </Label>
                 {field.type === 'pass_fail' ? (

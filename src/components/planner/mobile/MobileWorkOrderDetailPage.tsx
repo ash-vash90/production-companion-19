@@ -218,7 +218,7 @@ const MobileWorkOrderDetailPage: React.FC<MobileWorkOrderDetailPageProps> = ({
                 <Package className="h-4 w-4" />
                 {language === 'nl' ? 'Product' : 'Product'}
               </div>
-              <Badge variant="outline" className="font-mono">
+              <Badge variant="outline" className="font-semibold tracking-wide">
                 {formatProductType(workOrder.product_type)}
               </Badge>
               <p className="text-xs text-muted-foreground mt-1">
@@ -233,7 +233,7 @@ const MobileWorkOrderDetailPage: React.FC<MobileWorkOrderDetailPageProps> = ({
                 <DollarSign className="h-4 w-4" />
                 {language === 'nl' ? 'Waarde' : 'Value'}
               </div>
-              <p className="font-mono font-semibold">
+              <p className="font-semibold tabular-nums tracking-wide">
                 {workOrder.order_value ? `€${workOrder.order_value.toLocaleString('nl-NL')}` : '-'}
               </p>
             </CardContent>
