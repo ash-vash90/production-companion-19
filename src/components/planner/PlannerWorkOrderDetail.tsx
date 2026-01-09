@@ -164,7 +164,7 @@ const PlannerWorkOrderDetail: React.FC<PlannerWorkOrderDetailProps> = ({
       <div className="flex-none p-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
-            <h2 className="font-mono text-xl font-semibold truncate">{workOrder.wo_number}</h2>
+            <h2 className="text-xl font-semibold truncate tabular-nums">{workOrder.wo_number}</h2>
             <StatusIndicator status={workOrder.status as any} showIcon />
           </div>
           <div className="flex items-center gap-2">
@@ -215,7 +215,7 @@ const PlannerWorkOrderDetail: React.FC<PlannerWorkOrderDetailProps> = ({
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">{language === 'nl' ? 'Voortgang' : 'Progress'}</span>
-                  <span className="font-medium font-mono">
+                  <span className="font-medium tabular-nums">
                     {progress.completed}/{progress.total} ({progress.percent}%)
                   </span>
                 </div>
@@ -229,7 +229,7 @@ const PlannerWorkOrderDetail: React.FC<PlannerWorkOrderDetailProps> = ({
                     <Package className="h-3.5 w-3.5" />
                     {language === 'nl' ? 'Producttype' : 'Product Type'}
                   </div>
-                  <Badge variant="outline" className="font-mono">
+                  <Badge variant="outline" className="font-semibold">
                     {formatProductType(workOrder.product_type)}
                   </Badge>
                 </div>
@@ -238,7 +238,7 @@ const PlannerWorkOrderDetail: React.FC<PlannerWorkOrderDetailProps> = ({
                     <DollarSign className="h-3.5 w-3.5" />
                     {language === 'nl' ? 'Orderwaarde' : 'Order Value'}
                   </div>
-                  <p className="font-medium font-mono">
+                  <p className="font-medium tabular-nums">
                     {workOrder.order_value ? `€${workOrder.order_value.toLocaleString('nl-NL')}` : '-'}
                   </p>
                 </div>
@@ -247,7 +247,7 @@ const PlannerWorkOrderDetail: React.FC<PlannerWorkOrderDetailProps> = ({
               {/* Batch Size */}
               <div className="text-sm">
                 <span className="text-muted-foreground">{language === 'nl' ? 'Batchgrootte' : 'Batch Size'}: </span>
-                <span className="font-medium font-mono">{workOrder.batch_size} items</span>
+                <span className="font-medium tabular-nums">{workOrder.batch_size} items</span>
               </div>
 
               <Separator />
@@ -381,7 +381,7 @@ const PlannerWorkOrderDetail: React.FC<PlannerWorkOrderDetailProps> = ({
               {workOrder.external_order_number && (
                 <div className="text-sm">
                   <span className="text-muted-foreground">{language === 'nl' ? 'Extern ordernr' : 'External Order'}: </span>
-                  <span className="font-mono">{workOrder.external_order_number}</span>
+                  <span className="font-semibold tracking-wide">{workOrder.external_order_number}</span>
                 </div>
               )}
             </div>
