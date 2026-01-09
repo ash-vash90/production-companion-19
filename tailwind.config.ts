@@ -19,7 +19,7 @@ export default {
     extend: {
       fontFamily: {
         sans: ['Instrument Sans', 'system-ui', 'sans-serif'],
-        mono: ['JetBrains Mono', 'Consolas', 'monospace'],
+        mono: ['Instrument Sans', 'system-ui', 'sans-serif'],
         display: ['Unbounded', 'system-ui', 'sans-serif'],
       },
       colors: {
