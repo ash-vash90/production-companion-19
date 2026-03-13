@@ -690,7 +690,7 @@ const Auth = () => {
               <PasswordStrengthIndicator password={password} />
             </div>
             <div className="space-y-3">
-              <Label htmlFor="language" className="font-data text-sm md:text-base uppercase tracking-wider">Language / Taal</Label>
+              <Label htmlFor="language" className="label-ui text-sm md:text-base">Language / Taal</Label>
               <Select value={selectedLanguage} onValueChange={(value) => setSelectedLanguage(value as 'en' | 'nl')}>
                 <SelectTrigger className="h-10 md:h-11 text-sm md:text-base border-2">
                   <SelectValue />
