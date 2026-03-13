@@ -209,7 +209,7 @@ const BatchScanDialog: React.FC<BatchScanDialogProps> = ({
               </div>
 
               <div className="space-y-3">
-                <Label htmlFor="batchNumber" className="text-base font-data uppercase tracking-wider">
+                <Label htmlFor="batchNumber" className="text-base label-ui">
                   {language === 'nl' ? 'Batchnummer' : 'Batch Number'} *
                 </Label>
                 <p className="text-sm text-muted-foreground mb-2">
