@@ -732,7 +732,7 @@ const Auth = () => {
               {validationErrors.email && <p className="text-xs text-destructive">{validationErrors.email}</p>}
             </div>
             <div className="space-y-3">
-              <Label htmlFor="password" className="font-data text-sm md:text-base uppercase tracking-wider">{t('password')}</Label>
+              <Label htmlFor="password" className="label-ui text-sm md:text-base">{t('password')}</Label>
               <div className="relative">
                 <Input
                   id="password"
