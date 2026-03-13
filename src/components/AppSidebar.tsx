@@ -125,7 +125,7 @@ export function AppSidebar() {
           ) : (
             <>
               <RhosonicsLogo size={24} className="shrink-0" />
-              <span className="font-display text-sm text-sidebar-foreground whitespace-nowrap flex-1">
+              <span className="font-logo text-sm text-sidebar-foreground whitespace-nowrap flex-1">
                 Rhosonics <span className="font-medium">PMS</span>
               </span>
               <Button

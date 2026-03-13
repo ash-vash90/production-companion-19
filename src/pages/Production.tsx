@@ -402,7 +402,7 @@ const Production = () => {
                     <Input
                       value={workOrder.external_order_number || ''}
                       placeholder={t('enterOrderNumber')}
-                      className="h-8 text-sm font-data"
+                      className="h-8 text-sm font-semibold tracking-wide"
                       onChange={async (e) => {
                         const newValue = e.target.value;
                         try {
@@ -549,8 +549,8 @@ const Production = () => {
                     
                     {/* Serial number and info - flexible with truncation */}
                     <div className="flex-1 min-w-0">
-                      <p className="font-data text-sm md:text-base font-semibold truncate">{item.serial_number}</p>
-                      <p className="text-xs md:text-sm text-muted-foreground font-data truncate">
+                      <p className="text-sm md:text-base font-semibold tracking-wide truncate" style={{ fontFeatureSettings: "'tnum' 1" }}>{item.serial_number}</p>
+                      <p className="text-xs md:text-sm text-muted-foreground tracking-wide truncate" style={{ fontFeatureSettings: "'tnum' 1" }}>
                         {item.product_type || workOrder.product_type} • {t('step')} {item.current_step}
                       </p>
                     </div>

@@ -508,7 +508,7 @@ const Auth = () => {
 
             <form onSubmit={handleForgotPasswordStart} className="space-y-5">
               <div className="space-y-3">
-                <Label htmlFor="reset-email" className="font-data text-sm uppercase tracking-wider">
+                <Label htmlFor="reset-email" className="label-ui text-sm">
                   Email
                 </Label>
                 <Input
@@ -560,7 +560,7 @@ const Auth = () => {
 
             <form onSubmit={handleResetPassword} className="space-y-5">
               <div className="space-y-3">
-                <Label htmlFor="new-password" className="font-data text-sm uppercase tracking-wider">
+                <Label htmlFor="new-password" className="label-ui text-sm">
                   New Password
                 </Label>
                 <div className="relative">
@@ -590,7 +590,7 @@ const Auth = () => {
               </div>
 
               <div className="space-y-3">
-                <Label htmlFor="confirm-password" className="font-data text-sm uppercase tracking-wider">
+                <Label htmlFor="confirm-password" className="label-ui text-sm">
                   Confirm Password
                 </Label>
                 <div className="relative">
@@ -635,7 +635,7 @@ const Auth = () => {
         return (
           <form onSubmit={handleSignupStart} className="space-y-5">
             <div className="space-y-3">
-              <Label htmlFor="fullName" className="font-data text-sm md:text-base uppercase tracking-wider">{t('fullName')}</Label>
+              <Label htmlFor="fullName" className="label-ui text-sm md:text-base">{t('fullName')}</Label>
               <Input
                 id="fullName"
                 type="text"
@@ -649,7 +649,7 @@ const Auth = () => {
               {validationErrors.fullName && <p className="text-xs text-destructive">{validationErrors.fullName}</p>}
             </div>
             <div className="space-y-3">
-              <Label htmlFor="signup-email" className="font-data text-sm md:text-base uppercase tracking-wider">{t('email')}</Label>
+              <Label htmlFor="signup-email" className="label-ui text-sm md:text-base">{t('email')}</Label>
               <Input
                 id="signup-email"
                 type="email"
@@ -665,7 +665,7 @@ const Auth = () => {
               <p className="text-xs text-muted-foreground">Only @rhosonics.com email addresses</p>
             </div>
             <div className="space-y-3">
-              <Label htmlFor="signup-password" className="font-data text-sm md:text-base uppercase tracking-wider">{t('password')}</Label>
+              <Label htmlFor="signup-password" className="label-ui text-sm md:text-base">{t('password')}</Label>
               <div className="relative">
                 <Input
                   id="signup-password"
@@ -690,7 +690,7 @@ const Auth = () => {
               <PasswordStrengthIndicator password={password} />
             </div>
             <div className="space-y-3">
-              <Label htmlFor="language" className="font-data text-sm md:text-base uppercase tracking-wider">Language / Taal</Label>
+              <Label htmlFor="language" className="label-ui text-sm md:text-base">Language / Taal</Label>
               <Select value={selectedLanguage} onValueChange={(value) => setSelectedLanguage(value as 'en' | 'nl')}>
                 <SelectTrigger className="h-10 md:h-11 text-sm md:text-base border-2">
                   <SelectValue />
@@ -718,7 +718,7 @@ const Auth = () => {
         return (
           <form onSubmit={handleSignIn} className="space-y-5">
             <div className="space-y-3">
-              <Label htmlFor="email" className="font-data text-sm md:text-base uppercase tracking-wider">{t('email')}</Label>
+              <Label htmlFor="email" className="label-ui text-sm md:text-base">{t('email')}</Label>
               <Input
                 id="email"
                 type="email"
@@ -732,7 +732,7 @@ const Auth = () => {
               {validationErrors.email && <p className="text-xs text-destructive">{validationErrors.email}</p>}
             </div>
             <div className="space-y-3">
-              <Label htmlFor="password" className="font-data text-sm md:text-base uppercase tracking-wider">{t('password')}</Label>
+              <Label htmlFor="password" className="label-ui text-sm md:text-base">{t('password')}</Label>
               <div className="relative">
                 <Input
                   id="password"
@@ -819,7 +819,7 @@ const Auth = () => {
                 <h1 className="text-3xl md:text-4xl font-logo text-white lowercase tracking-tight">
                   rhosonics
                 </h1>
-                <p className="text-xs md:text-sm font-data uppercase tracking-[0.2em] text-slate-400">
+                <p className="text-xs md:text-sm label-ui tracking-[0.2em] text-slate-400">
                   Production System
                 </p>
               </div>
@@ -841,13 +841,13 @@ const Auth = () => {
                 <TabsList className="grid w-full grid-cols-2 h-12 bg-slate-800/50 border border-white/10 p-1">
                   <TabsTrigger 
                     value="login" 
-                    className="font-data text-sm uppercase tracking-wider text-slate-400 data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg transition-all"
+                    className="label-ui text-sm text-slate-400 data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg transition-all"
                   >
                     {t('login')}
                   </TabsTrigger>
                   <TabsTrigger 
                     value="signup" 
-                    className="font-data text-sm uppercase tracking-wider text-slate-400 data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg transition-all"
+                    className="label-ui text-sm text-slate-400 data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg transition-all"
                   >
                     {t('signup')}
                   </TabsTrigger>
@@ -882,7 +882,7 @@ const Auth = () => {
               className="text-slate-500 hover:text-white hover:bg-white/5 gap-2"
             >
               <Globe className="h-4 w-4" />
-              <span className="font-data text-xs uppercase tracking-wider">
+              <span className="label-ui text-xs">
                 {language === 'en' ? 'Nederlands' : 'English'}
               </span>
             </Button>
@@ -890,7 +890,7 @@ const Auth = () => {
         </Card>
         
         {/* Footer text */}
-        <p className="text-center text-slate-600 text-xs mt-6 font-data">
+        <p className="text-center text-slate-600 text-xs mt-6 label-ui">
           © {new Date().getFullYear()} Rhosonics B.V.
         </p>
       </div>
