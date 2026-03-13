@@ -882,7 +882,7 @@ const Auth = () => {
               className="text-slate-500 hover:text-white hover:bg-white/5 gap-2"
             >
               <Globe className="h-4 w-4" />
-              <span className="font-data text-xs uppercase tracking-wider">
+              <span className="label-ui text-xs">
                 {language === 'en' ? 'Nederlands' : 'English'}
               </span>
             </Button>
