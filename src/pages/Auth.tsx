@@ -665,7 +665,7 @@ const Auth = () => {
               <p className="text-xs text-muted-foreground">Only @rhosonics.com email addresses</p>
             </div>
             <div className="space-y-3">
-              <Label htmlFor="signup-password" className="font-data text-sm md:text-base uppercase tracking-wider">{t('password')}</Label>
+              <Label htmlFor="signup-password" className="label-ui text-sm md:text-base">{t('password')}</Label>
               <div className="relative">
                 <Input
                   id="signup-password"
