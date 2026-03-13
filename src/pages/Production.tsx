@@ -402,7 +402,7 @@ const Production = () => {
                     <Input
                       value={workOrder.external_order_number || ''}
                       placeholder={t('enterOrderNumber')}
-                      className="h-8 text-sm font-data"
+                      className="h-8 text-sm font-semibold tracking-wide"
                       onChange={async (e) => {
                         const newValue = e.target.value;
                         try {
