@@ -890,7 +890,7 @@ const Auth = () => {
         </Card>
         
         {/* Footer text */}
-        <p className="text-center text-slate-600 text-xs mt-6 font-data">
+        <p className="text-center text-slate-600 text-xs mt-6 label-ui">
           © {new Date().getFullYear()} Rhosonics B.V.
         </p>
       </div>
