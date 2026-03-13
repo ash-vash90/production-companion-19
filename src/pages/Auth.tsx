@@ -635,7 +635,7 @@ const Auth = () => {
         return (
           <form onSubmit={handleSignupStart} className="space-y-5">
             <div className="space-y-3">
-              <Label htmlFor="fullName" className="font-data text-sm md:text-base uppercase tracking-wider">{t('fullName')}</Label>
+              <Label htmlFor="fullName" className="label-ui text-sm md:text-base">{t('fullName')}</Label>
               <Input
                 id="fullName"
                 type="text"
