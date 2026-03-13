@@ -256,7 +256,7 @@ const BatchScanDialog: React.FC<BatchScanDialogProps> = ({
 
               {selectedMaterial?.requiresDate && (
                 <div className="space-y-3">
-                  <Label htmlFor="openingDate" className="text-base font-data uppercase tracking-wider">
+                  <Label htmlFor="openingDate" className="text-base label-ui">
                     {language === 'nl' ? 'Openingsdatum' : 'Opening Date'} *
                   </Label>
                   <Input
