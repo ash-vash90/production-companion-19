@@ -841,7 +841,7 @@ const Auth = () => {
                 <TabsList className="grid w-full grid-cols-2 h-12 bg-slate-800/50 border border-white/10 p-1">
                   <TabsTrigger 
                     value="login" 
-                    className="font-data text-sm uppercase tracking-wider text-slate-400 data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg transition-all"
+                    className="label-ui text-sm text-slate-400 data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg transition-all"
                   >
                     {t('login')}
                   </TabsTrigger>
