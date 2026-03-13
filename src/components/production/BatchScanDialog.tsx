@@ -270,7 +270,7 @@ const BatchScanDialog: React.FC<BatchScanDialogProps> = ({
             </div>
 
             <div className="space-y-3">
-              <Label className="text-base font-data uppercase tracking-wider">
+              <Label className="text-base label-ui">
                 {language === 'nl' ? 'Gescande Batches' : 'Scanned Batches'} ({scannedBatches.length})
               </Label>
               {loading ? (
