@@ -335,9 +335,9 @@ export function CreateWorkOrderWizard({ open, onOpenChange, onSuccess }: CreateW
   };
 
   const renderFormStep = () => (
-    <form onSubmit={handleCreate} className="space-y-4">
-      <div className="space-y-2">
-        <Label className="text-xs font-medium uppercase tracking-wider">
+    <form onSubmit={handleCreate} className="space-y-5">
+      <div className="space-y-1.5">
+        <Label className="label-ui text-xs">
           {language === 'nl' ? 'Item' : 'Item'} <span className="text-destructive">*</span>
         </Label>
         <ProductSelect
@@ -348,8 +348,8 @@ export function CreateWorkOrderWizard({ open, onOpenChange, onSuccess }: CreateW
         {errors.product && <p className="text-xs text-destructive">{errors.product}</p>}
       </div>
 
-      <div className="space-y-2">
-        <Label className="text-xs font-medium uppercase tracking-wider">
+      <div className="space-y-1.5">
+        <Label className="label-ui text-xs">
           {language === 'nl' ? 'Gepland aantal' : 'Planned Quantity'} <span className="text-destructive">*</span>
         </Label>
         <Input
@@ -357,79 +357,67 @@ export function CreateWorkOrderWizard({ open, onOpenChange, onSuccess }: CreateW
           min={1}
           value={quantity}
           onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
-          className={cn("text-base", errors.quantity && "border-destructive")}
+          className={cn("max-w-32 tabular-nums", errors.quantity && "border-destructive")}
         />
         {errors.quantity && <p className="text-xs text-destructive">{errors.quantity}</p>}
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-2">
-          <Label className="text-xs font-medium">
-            {language === 'nl' ? 'Geplande startdatum' : 'Planned Start Date'} <span className="text-destructive">*</span>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="space-y-1.5">
+          <Label className="label-ui text-xs">
+            {language === 'nl' ? 'Geplande startdatum' : 'Planned Start'} <span className="text-destructive">*</span>
           </Label>
           <Popover>
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
                 className={cn(
-                  "w-full h-10 px-3 text-base leading-5 font-normal flex items-center gap-2 justify-start text-left",
+                  "w-full h-10 px-3 font-normal justify-start text-left gap-2",
                   !plannedStartDate && "text-muted-foreground",
                   errors.plannedStartDate && "border-destructive",
                 )}
               >
-                <CalendarIcon className="h-4 w-4" />
-                {plannedStartDate ? format(plannedStartDate, "dd/MM/yyyy") : <span>{language === 'nl' ? 'Selecteer datum' : 'Select date'}</span>}
+                <CalendarIcon className="h-4 w-4 shrink-0" />
+                {plannedStartDate ? format(plannedStartDate, "dd/MM/yyyy") : (language === 'nl' ? 'Selecteer datum' : 'Select date')}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="single"
-                selected={plannedStartDate}
-                onSelect={setPlannedStartDate}
-                initialFocus
-                className="pointer-events-auto"
-              />
+              <Calendar mode="single" selected={plannedStartDate} onSelect={setPlannedStartDate} initialFocus className="pointer-events-auto" />
             </PopoverContent>
           </Popover>
           {errors.plannedStartDate && <p className="text-xs text-destructive">{errors.plannedStartDate}</p>}
         </div>
-        <div className="space-y-2">
-          <Label className="text-xs font-medium">
-            {language === 'nl' ? 'Geplande einddatum' : 'Planned End Date'} <span className="text-destructive">*</span>
+        <div className="space-y-1.5">
+          <Label className="label-ui text-xs">
+            {language === 'nl' ? 'Geplande einddatum' : 'Planned End'} <span className="text-destructive">*</span>
           </Label>
           <Popover>
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
                 className={cn(
-                  "w-full h-10 px-3 text-base leading-5 font-normal flex items-center gap-2 justify-start text-left",
+                  "w-full h-10 px-3 font-normal justify-start text-left gap-2",
                   !plannedEndDate && "text-muted-foreground",
                   errors.plannedEndDate && "border-destructive",
                 )}
               >
-                <CalendarIcon className="h-4 w-4" />
-                {plannedEndDate ? format(plannedEndDate, "dd/MM/yyyy") : <span>{language === 'nl' ? 'Selecteer datum' : 'Select date'}</span>}
+                <CalendarIcon className="h-4 w-4 shrink-0" />
+                {plannedEndDate ? format(plannedEndDate, "dd/MM/yyyy") : (language === 'nl' ? 'Selecteer datum' : 'Select date')}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="single"
-                selected={plannedEndDate}
-                onSelect={setPlannedEndDate}
-                initialFocus
-                className="pointer-events-auto"
-              />
+              <Calendar mode="single" selected={plannedEndDate} onSelect={setPlannedEndDate} initialFocus className="pointer-events-auto" />
             </PopoverContent>
           </Popover>
           {errors.plannedEndDate && <p className="text-xs text-destructive">{errors.plannedEndDate}</p>}
         </div>
       </div>
 
-      <DialogFooter className="pt-4">
-        <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+      <DialogFooter className="gap-2 pt-2">
+        <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="flex-1 sm:flex-none">
           {language === 'nl' ? 'Annuleren' : 'Cancel'}
         </Button>
-        <Button type="submit" disabled={!productId}>
+        <Button type="submit" disabled={!productId} className="flex-1 sm:flex-none">
           <Send className="mr-2 h-4 w-4" />
           {language === 'nl' ? 'Aanmaken & Sync naar Exact' : 'Create & Sync to Exact'}
         </Button>
