@@ -296,7 +296,7 @@ const BatchScanDialog: React.FC<BatchScanDialogProps> = ({
                         <div className="flex-1">
                           <div className="flex items-center gap-3">
                             <Badge variant="outline" className="h-8 px-3">{materialLabel}</Badge>
-                            <span className="font-data font-medium text-base">{batch.batch_number}</span>
+                            <span className="font-semibold text-base tracking-wide">{batch.batch_number}</span>
                           </div>
                           {batch.opening_date && (
                             <p className="text-sm text-muted-foreground mt-2">
