@@ -508,7 +508,7 @@ const Auth = () => {
 
             <form onSubmit={handleForgotPasswordStart} className="space-y-5">
               <div className="space-y-3">
-                <Label htmlFor="reset-email" className="font-data text-sm uppercase tracking-wider">
+                <Label htmlFor="reset-email" className="label-ui text-sm">
                   Email
                 </Label>
                 <Input
