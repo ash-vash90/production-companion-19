@@ -847,7 +847,7 @@ const Auth = () => {
                   </TabsTrigger>
                   <TabsTrigger 
                     value="signup" 
-                    className="font-data text-sm uppercase tracking-wider text-slate-400 data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg transition-all"
+                    className="label-ui text-sm text-slate-400 data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg transition-all"
                   >
                     {t('signup')}
                   </TabsTrigger>
