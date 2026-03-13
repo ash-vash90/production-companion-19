@@ -590,7 +590,7 @@ const Auth = () => {
               </div>
 
               <div className="space-y-3">
-                <Label htmlFor="confirm-password" className="font-data text-sm uppercase tracking-wider">
+                <Label htmlFor="confirm-password" className="label-ui text-sm">
                   Confirm Password
                 </Label>
                 <div className="relative">
