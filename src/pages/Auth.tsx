@@ -649,7 +649,7 @@ const Auth = () => {
               {validationErrors.fullName && <p className="text-xs text-destructive">{validationErrors.fullName}</p>}
             </div>
             <div className="space-y-3">
-              <Label htmlFor="signup-email" className="font-data text-sm md:text-base uppercase tracking-wider">{t('email')}</Label>
+              <Label htmlFor="signup-email" className="label-ui text-sm md:text-base">{t('email')}</Label>
               <Input
                 id="signup-email"
                 type="email"
