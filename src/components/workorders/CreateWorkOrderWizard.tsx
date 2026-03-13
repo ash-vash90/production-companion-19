@@ -546,7 +546,7 @@ export function CreateWorkOrderWizard({ open, onOpenChange, onSuccess }: CreateW
 
   return (
     <Dialog open={open} onOpenChange={wizardStep === 'form' || wizardStep === 'synced' || wizardStep === 'error' ? onOpenChange : undefined}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="max-w-xl">
         <DialogHeader>
           <DialogTitle>{getDialogTitle()}</DialogTitle>
           {wizardStep === 'form' && (

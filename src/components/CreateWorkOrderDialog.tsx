@@ -305,16 +305,17 @@ export function CreateWorkOrderDialog({ open, onOpenChange, onSuccess, trigger }
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-xl">
         <DialogHeader>
-          <DialogTitle className="text-lg">{t('createWorkOrder')}</DialogTitle>
-          <DialogDescription className="text-sm">{t('createWorkOrderDesc')}</DialogDescription>
+          <DialogTitle>{t('createWorkOrder')}</DialogTitle>
+          <DialogDescription>{t('createWorkOrderDesc')}</DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleCreate} className="space-y-4">
-          <div className="space-y-2">
-            <Label className="text-xs font-medium uppercase tracking-wider">{t('workOrderNumber')}</Label>
+        <form onSubmit={handleCreate} className="space-y-5">
+          {/* WO Number */}
+          <div className="space-y-1.5">
+            <Label className="label-ui text-xs">{t('workOrderNumber')}</Label>
             <div className="flex items-center gap-2">
-              <div className="flex-1 p-2.5 rounded-md border bg-muted/50 text-sm font-semibold">
+              <div className="flex-1 h-10 px-3 flex items-center rounded-md border bg-muted/50 text-sm font-semibold tabular-nums">
                 {generatingWO ? (
                   <span className="flex items-center gap-2 text-muted-foreground">
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -328,18 +329,19 @@ export function CreateWorkOrderDialog({ open, onOpenChange, onSuccess, trigger }
                 type="button"
                 variant="outline"
                 size="icon"
-                className="h-9 w-9"
+                className="h-10 w-10 shrink-0"
                 onClick={generateWONumber}
                 disabled={generatingWO}
               >
-                <RefreshCw className={`h-3.5 w-3.5 ${generatingWO ? 'animate-spin' : ''}`} />
+                <RefreshCw className={cn("h-4 w-4", generatingWO && "animate-spin")} />
               </Button>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label className="text-xs font-medium">
+          {/* Dates row */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label className="label-ui text-xs">
                 {language === 'nl' ? 'Startdatum' : 'Start Date'} <span className="text-destructive">*</span>
               </Label>
               <Popover>
@@ -347,29 +349,23 @@ export function CreateWorkOrderDialog({ open, onOpenChange, onSuccess, trigger }
                   <Button
                     variant="outline"
                     className={cn(
-                      "w-full h-10 px-3 text-base leading-5 font-normal flex items-center gap-2 justify-start text-left",
+                      "w-full h-10 px-3 font-normal justify-start text-left gap-2",
                       !startDate && "text-muted-foreground",
                       errors.startDate && "border-destructive",
                     )}
                   >
-                    <CalendarIcon className="h-4 w-4" />
-                    {startDate ? format(startDate, "dd/MM/yyyy") : <span>{t('selectDate')}</span>}
+                    <CalendarIcon className="h-4 w-4 shrink-0" />
+                    {startDate ? format(startDate, "dd/MM/yyyy") : t('selectDate')}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={startDate}
-                    onSelect={setStartDate}
-                    initialFocus
-                    className="pointer-events-auto"
-                  />
+                  <Calendar mode="single" selected={startDate} onSelect={setStartDate} initialFocus className="pointer-events-auto" />
                 </PopoverContent>
               </Popover>
               {errors.startDate && <p className="text-xs text-destructive">{errors.startDate}</p>}
             </div>
-            <div className="space-y-2">
-              <Label className="text-xs font-medium">
+            <div className="space-y-1.5">
+              <Label className="label-ui text-xs">
                 {language === 'nl' ? 'Verzenddatum' : 'Shipping Date'} <span className="text-destructive">*</span>
               </Label>
               <Popover>
@@ -377,60 +373,56 @@ export function CreateWorkOrderDialog({ open, onOpenChange, onSuccess, trigger }
                   <Button
                     variant="outline"
                     className={cn(
-                      "w-full h-10 px-3 text-base leading-5 font-normal flex items-center gap-2 justify-start text-left",
+                      "w-full h-10 px-3 font-normal justify-start text-left gap-2",
                       !shippingDate && "text-muted-foreground",
                       errors.shippingDate && "border-destructive",
                     )}
                   >
-                    <CalendarIcon className="h-4 w-4" />
-                    {shippingDate ? format(shippingDate, "dd/MM/yyyy") : <span>{t('selectDate')}</span>}
+                    <CalendarIcon className="h-4 w-4 shrink-0" />
+                    {shippingDate ? format(shippingDate, "dd/MM/yyyy") : t('selectDate')}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={shippingDate}
-                    onSelect={setShippingDate}
-                    initialFocus
-                    className="pointer-events-auto"
-                  />
+                  <Calendar mode="single" selected={shippingDate} onSelect={setShippingDate} initialFocus className="pointer-events-auto" />
                 </PopoverContent>
               </Popover>
               {errors.shippingDate && <p className="text-xs text-destructive">{errors.shippingDate}</p>}
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label className="text-xs font-medium">
+          {/* Customer & Order Number */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label className="label-ui text-xs">
                 {t('customer')} <span className="text-destructive">*</span>
               </Label>
               <Input
                 value={customerName}
                 onChange={(e) => setCustomerName(e.target.value)}
                 placeholder={t('customerPlaceholder')}
-                className={cn("text-base", errors.customerName && "border-destructive")}
+                className={cn(errors.customerName && "border-destructive")}
                 maxLength={255}
               />
               {errors.customerName && <p className="text-xs text-destructive">{errors.customerName}</p>}
             </div>
-            <div className="space-y-2">
-              <Label className="text-xs font-medium">
+            <div className="space-y-1.5">
+              <Label className="label-ui text-xs">
                 {t('orderNumber')} <span className="text-destructive">*</span>
               </Label>
               <Input
                 value={externalOrderNumber}
                 onChange={(e) => setExternalOrderNumber(e.target.value)}
                 placeholder={t('orderNumberPlaceholder')}
-                className={cn("text-base", errors.externalOrderNumber && "border-destructive")}
+                className={cn(errors.externalOrderNumber && "border-destructive")}
                 maxLength={100}
               />
               {errors.externalOrderNumber && <p className="text-xs text-destructive">{errors.externalOrderNumber}</p>}
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label className="text-xs font-medium">
+          {/* Order Value */}
+          <div className="space-y-1.5">
+            <Label className="label-ui text-xs">
               {t('value')} (€) <span className="text-destructive">*</span>
             </Label>
             <Input
@@ -440,58 +432,59 @@ export function CreateWorkOrderDialog({ open, onOpenChange, onSuccess, trigger }
               value={orderValue}
               onChange={(e) => setOrderValue(e.target.value)}
               placeholder="0.00"
-              className={cn("text-base", errors.orderValue && "border-destructive")}
+              className={cn("max-w-48", errors.orderValue && "border-destructive")}
             />
             {errors.orderValue && <p className="text-xs text-destructive">{errors.orderValue}</p>}
           </div>
 
-          <div className="space-y-2">
+          {/* Product Batches */}
+          <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <Label className="text-xs font-medium uppercase tracking-wider">{t('productBatches')}</Label>
-              <Badge variant="secondary" className="text-[10px]">
+              <Label className="label-ui text-xs">{t('productBatches')}</Label>
+              <Badge variant="secondary" className="text-[10px] tabular-nums">
                 {getTotalItems()} {t('items')}
               </Badge>
             </div>
             
-            <div className="space-y-2 max-h-[180px] overflow-y-auto pr-1">
+            <div className="space-y-2 max-h-[200px] overflow-y-auto">
               {productBatches.map((batch) => (
-                <div key={batch.id} className="flex items-center gap-2 p-2 rounded-md border bg-muted/30">
-                  <div className="flex-1">
+                <div key={batch.id} className="flex items-center gap-3 p-2.5 rounded-lg border bg-muted/30">
+                  <div className="flex-1 min-w-0">
                     <Select
                       value={batch.productType}
                       onValueChange={(value: ProductType) => updateProductBatch(batch.id, 'productType', value)}
                     >
-                      <SelectTrigger className="h-8 text-xs border">
+                      <SelectTrigger className="h-9 text-sm">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
                         {PRODUCT_TYPES.map(type => (
-                          <SelectItem key={type} value={type} className="text-xs">
+                          <SelectItem key={type} value={type} className="text-sm">
                             {formatProductType(type)}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="w-16">
+                  <div className="w-20">
                     <Input
                       type="number"
                       min="1"
                       max="500"
                       value={batch.quantity}
                       onChange={(e) => updateProductBatch(batch.id, 'quantity', Math.min(500, Math.max(1, parseInt(e.target.value) || 1)))}
-                      className="h-8 text-center text-xs"
+                      className="h-9 text-center text-sm tabular-nums"
                     />
                   </div>
                   <Button
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                    className="h-9 w-9 shrink-0 text-muted-foreground hover:text-destructive"
                     onClick={() => removeProductBatch(batch.id)}
                     disabled={productBatches.length === 1}
                   >
-                    <Trash2 className="h-3.5 w-3.5" />
+                    <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
               ))}
@@ -501,16 +494,15 @@ export function CreateWorkOrderDialog({ open, onOpenChange, onSuccess, trigger }
               type="button"
               variant="outline"
               size="sm"
-              className="w-full h-8 text-xs"
+              className="w-full"
               onClick={addProductBatch}
             >
-              <Plus className="h-3.5 w-3.5 mr-1" />
+              <Plus className="h-4 w-4 mr-1.5" />
               {t('addProductBatch')}
             </Button>
 
-            {/* Large batch warning */}
             {getTotalItems() > 100 && (
-              <div className="flex items-start gap-2 p-2.5 rounded-md bg-amber-500/10 border border-amber-500/20">
+              <div className="flex items-start gap-2.5 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
                 <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
                 <p className="text-xs text-amber-600 dark:text-amber-400">
                   {language === 'nl' 
@@ -522,23 +514,23 @@ export function CreateWorkOrderDialog({ open, onOpenChange, onSuccess, trigger }
             )}
           </div>
 
-          {/* Progress indicator during creation */}
+          {/* Progress */}
           {creating && (
-            <div className="space-y-2 p-3 rounded-md border bg-muted/30">
+            <div className="space-y-2 p-3 rounded-lg border bg-muted/30">
               <div className="flex items-center justify-between text-xs">
                 <span className="text-muted-foreground">{creationStatus}</span>
-                <span className="font-medium">{creationProgress}%</span>
+                <span className="font-medium tabular-nums">{creationProgress}%</span>
               </div>
-              <Progress value={creationProgress} className="h-2" />
+              <Progress value={creationProgress} className="h-1.5" />
             </div>
           )}
 
-          <DialogFooter className="gap-2">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} size="sm" className="flex-1">
+          <DialogFooter className="gap-2 pt-2">
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="flex-1 sm:flex-none">
               {t('cancel')}
             </Button>
-            <Button type="submit" disabled={creating} variant="default" size="sm" className="flex-1">
-              {creating && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
+            <Button type="submit" disabled={creating} className="flex-1 sm:flex-none">
+              {creating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {t('create')}
             </Button>
           </DialogFooter>
