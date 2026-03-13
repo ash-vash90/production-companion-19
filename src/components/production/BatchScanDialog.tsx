@@ -191,7 +191,7 @@ const BatchScanDialog: React.FC<BatchScanDialogProps> = ({
           <div className="space-y-5 py-4">
             <div className="space-y-4 p-5 border-2 rounded-lg bg-accent/20">
               <div className="space-y-3">
-                <Label htmlFor="materialType" className="text-base font-data uppercase tracking-wider">
+                <Label htmlFor="materialType" className="text-base label-ui">
                   {language === 'nl' ? 'Materiaaltype' : 'Material Type'} *
                 </Label>
                 <Select value={materialType} onValueChange={setMaterialType}>
