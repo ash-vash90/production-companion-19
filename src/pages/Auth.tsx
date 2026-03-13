@@ -819,7 +819,7 @@ const Auth = () => {
                 <h1 className="text-3xl md:text-4xl font-logo text-white lowercase tracking-tight">
                   rhosonics
                 </h1>
-                <p className="text-xs md:text-sm font-data uppercase tracking-[0.2em] text-slate-400">
+                <p className="text-xs md:text-sm label-ui tracking-[0.2em] text-slate-400">
                   Production System
                 </p>
               </div>
