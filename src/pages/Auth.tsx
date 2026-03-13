@@ -560,7 +560,7 @@ const Auth = () => {
 
             <form onSubmit={handleResetPassword} className="space-y-5">
               <div className="space-y-3">
-                <Label htmlFor="new-password" className="font-data text-sm uppercase tracking-wider">
+                <Label htmlFor="new-password" className="label-ui text-sm">
                   New Password
                 </Label>
                 <div className="relative">
