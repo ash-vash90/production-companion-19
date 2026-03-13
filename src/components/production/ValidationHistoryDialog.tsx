@@ -169,7 +169,7 @@ const ValidationHistoryDialog = ({ open, onOpenChange, workOrderItemId, serialNu
 
               {executions.length === 0 && (
                 <div className="text-center py-12 text-muted-foreground">
-                  <p className="font-data">No validation history found</p>
+                  <p className="font-semibold">No validation history found</p>
                 </div>
               )}
             </div>
