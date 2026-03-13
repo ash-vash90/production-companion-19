@@ -1,5 +1,13 @@
-/* Rhosonics Design System v2.0 */
+/* Rhosonics Design System v3.0 — Aligned with Brand System */
 /* Fonts loaded via index.html with non-render-blocking pattern */
+
+@font-face {
+  font-family: 'Primetime';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url('/fonts/primetime-light.woff2') format('woff2');
+}
 
 @tailwind base;
 @tailwind components;
@@ -7,130 +15,174 @@
 
 :root {
   /* ========================================
-     RHOSONICS BRAND COLORS - WCAG AA compliant
+     RHOSONICS BRAND COLORS — Brand System v3
+     Green: #33993c = 125 50% 40%
+     Lime:  #73B82E = 90 60% 45%
+     Obsidian: #14171F = 224 22% 10%
      ======================================== */
-  --rhosonics-green: 138 68% 28%;
-  --rhosonics-green-light: 138 68% 40%;
-  --rhosonics-green-glow: 138 68% 50%;
+  --rho-green: 125 50% 40%;
+  --rho-green-accent: 90 60% 45%;
+  --rho-green-glow: 90 70% 55%;
+  --rho-obsidian: 224 22% 10%;
+  --rho-obsidian-light: 224 22% 15%;
+
+  /* Legacy aliases (used by existing components) */
+  --rhosonics-green: var(--rho-green);
+  --rhosonics-green-light: var(--rho-green-accent);
+  --rhosonics-green-glow: var(--rho-green-glow);
+  --obsidian: var(--rho-obsidian);
+  --obsidian-light: var(--rho-obsidian-light);
 
   /* Lime accent for highlights */
-  --lime-accent: 128 57% 55%;
-  --lime-accent-light: 128 57% 65%;
+  --lime-accent: var(--rho-green-accent);
+  --lime-accent-light: 90 60% 60%;
 
   /* ========================================
-     OBSIDIAN/SLATE PALETTE
+     PRIMARY GREEN SCALE (50-900)
+     Based on #33993C (125 50% 40%)
      ======================================== */
-  --obsidian: 215 33% 10%;
-  --obsidian-light: 215 28% 15%;
-  --slate-50: 210 40% 98%;
-  --slate-100: 210 40% 96%;
-  --slate-200: 214 32% 91%;
-  --slate-300: 213 27% 84%;
-  --slate-400: 215 16% 62%;
-  --slate-500: 215 16% 47%;
-  --slate-600: 215 19% 35%;
-  --slate-700: 217 26% 27%;
-  --slate-800: 217 33% 17%;
-  --slate-900: 222 47% 11%;
-  
+  --primary-50: 125 45% 97%;
+  --primary-100: 125 42% 93%;
+  --primary-200: 125 40% 85%;
+  --primary-300: 125 42% 72%;
+  --primary-400: 125 45% 55%;
+  --primary-500: 125 50% 40%;
+  --primary-600: 125 52% 35%;
+  --primary-700: 125 55% 28%;
+  --primary-800: 125 58% 20%;
+  --primary-900: 125 60% 12%;
+
+  /* ========================================
+     MINERAL NEUTRALS — Environmental colors
+     Olive/stone tones for field contexts.
+     Must NEVER substitute for Slate UI neutrals.
+     ======================================== */
+  --mineral-neutral: 60 12% 48%;
+  --mineral-surface: 55 15% 91%;
+  --mineral-deep: 65 14% 32%;
+  --mineral-bronze: 55 20% 38%;
+
+  /* ========================================
+     SLATE SCALE — Aligned with Obsidian (224° hue family)
+     ======================================== */
+  --slate-50: 220 20% 98%;
+  --slate-100: 220 18% 96%;
+  --slate-200: 222 16% 91%;
+  --slate-300: 222 14% 84%;
+  --slate-400: 223 14% 42%;
+  --slate-500: 223 14% 35%;
+  --slate-600: 223 16% 30%;
+  --slate-700: 224 18% 24%;
+  --slate-800: 224 20% 17%;
+  --slate-900: 224 22% 11%;
+
   /* ========================================
      ECO SURFACE COLORS (for cards, panels)
      ======================================== */
-  --eco-surface: 131 44% 93%;
-  --eco-surface-hover: 131 44% 90%;
-  --eco-border: 140 84% 81%;
-  
+  --eco-surface: 125 43% 95%;
+  --eco-surface-hover: 125 43% 92%;
+  --eco-border: 125 50% 90%;
+
   /* ========================================
      SEMANTIC COLOR TOKENS
      ======================================== */
-  --background: 210 40% 98%;
-  --foreground: 228 25% 10%;
+  --background: var(--slate-50);
+  --foreground: var(--rho-obsidian);
   --card: 0 0% 100%;
-  --card-foreground: 228 25% 10%;
+  --card-foreground: var(--rho-obsidian);
   --popover: 0 0% 100%;
-  --popover-foreground: 228 25% 10%;
-  
-  /* Primary - Rhosonics green for buttons only - WCAG AA compliant */
-  --primary: 138 68% 28%;
+  --popover-foreground: var(--rho-obsidian);
+
+  /* Primary - Rhosonics green */
+  --primary: var(--rho-green);
   --primary-foreground: 0 0% 100%;
-  
-  /* Secondary - slate grays */
-  --secondary: 210 40% 96%;
-  --secondary-foreground: 228 25% 10%;
-  
-  /* Muted elements - WCAG AA compliant */
-  --muted: 214 32% 91%;
-  --muted-foreground: 215 19% 35%;
-  
+
+  /* Secondary */
+  --secondary: var(--slate-100);
+  --secondary-foreground: var(--rho-obsidian);
+
+  /* Muted */
+  --muted: var(--slate-100);
+  --muted-foreground: var(--slate-600);
+
   /* Accent */
-  --accent: 210 40% 96%;
-  --accent-foreground: 228 25% 10%;
-  
+  --accent: var(--eco-surface);
+  --accent-foreground: var(--rho-green);
+
   /* Destructive */
   --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 100%;
-  
-  /* Semantic status colors - WCAG AA compliant */
-  --success: 138 68% 28%;
+
+  /* Semantic status colors */
+  --success: 125 50% 40%;
   --success-foreground: 0 0% 100%;
-  --warning: 45 93% 47%;
+  --success-surface: 125 50% 97%;
+  --success-border: 125 40% 85%;
+  --warning: 38 92% 50%;
   --warning-foreground: 228 25% 10%;
-  --info: 200 70% 50%;
+  --warning-surface: 48 96% 97%;
+  --warning-border: 48 90% 80%;
+  --info: 215 19% 35%;
   --info-foreground: 0 0% 100%;
-  
+  --info-surface: 210 40% 97%;
+  --info-border: 214 32% 85%;
+  --error: 0 84% 51%;
+  --error-surface: 0 93% 97%;
+  --error-border: 0 80% 85%;
+
   /* ========================================
-     WORK ORDER STATUS COLORS - High contrast foregrounds
+     WORK ORDER STATUS COLORS
      ======================================== */
   --status-planned: 200 70% 50%;
   --status-planned-foreground: 0 0% 100%;
   --status-planned-bg: 200 70% 95%;
   --status-planned-border: 200 70% 70%;
-  
+
   --status-in-progress: 45 93% 47%;
   --status-in-progress-foreground: 0 0% 100%;
   --status-in-progress-bg: 45 93% 92%;
   --status-in-progress-border: 45 93% 60%;
-  
+
   --status-on-hold: 215 16% 47%;
   --status-on-hold-foreground: 0 0% 100%;
   --status-on-hold-bg: 215 16% 94%;
   --status-on-hold-border: 215 16% 70%;
-  
-  --status-completed: 138 68% 28%;
+
+  --status-completed: 125 50% 40%;
   --status-completed-foreground: 0 0% 100%;
-  --status-completed-bg: 138 68% 92%;
-  --status-completed-border: 138 68% 50%;
-  
+  --status-completed-bg: 125 50% 92%;
+  --status-completed-border: 125 50% 55%;
+
   --status-cancelled: 0 84% 60%;
   --status-cancelled-foreground: 0 0% 100%;
   --status-cancelled-bg: 0 84% 95%;
   --status-cancelled-border: 0 70% 70%;
-  
+
   /* Borders and inputs */
-  --border: 214 32% 91%;
-  --input: 214 32% 91%;
-  --ring: 138 68% 28%;
+  --border: var(--slate-200);
+  --input: var(--slate-200);
+  --ring: var(--rho-green);
 
   /* Charts - brand-aligned */
-  --chart-1: 138 68% 28%;
+  --chart-1: 125 50% 40%;
   --chart-2: 200 70% 50%;
-  --chart-3: 128 57% 55%;
+  --chart-3: 90 60% 45%;
   --chart-4: 45 93% 47%;
   --chart-5: 0 70% 55%;
-  
+
   /* Radius */
-  --radius: 0.5rem;
-  
-  /* Sidebar - matches background in light mode */
-  --sidebar: 210 40% 98%;
-  --sidebar-foreground: 228 25% 10%;
-  --sidebar-primary: 138 68% 28%;
+  --radius: 0.375rem;
+
+  /* Sidebar - obsidian in brand system */
+  --sidebar: var(--rho-obsidian);
+  --sidebar-foreground: var(--slate-100);
+  --sidebar-primary: var(--rho-green);
   --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 214 32% 91%;
-  --sidebar-accent-foreground: 228 25% 10%;
-  --sidebar-border: 214 32% 91%;
-  --sidebar-ring: 138 68% 28%;
-  
+  --sidebar-accent: 224 20% 15%;
+  --sidebar-accent-foreground: var(--slate-100);
+  --sidebar-border: 224 18% 20%;
+  --sidebar-ring: var(--rho-green);
+
   /* ========================================
      MOTION TIMING TOKENS
      ======================================== */
@@ -141,7 +193,7 @@
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
-  
+
   /* ========================================
      SHADOW TOKENS
      ======================================== */
@@ -150,85 +202,111 @@
   --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
   --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
   --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
-  --shadow-glow: 0 0 20px hsl(var(--primary) / 0.15);
+  --shadow-glow: 0 0 60px -10px hsl(var(--rho-green) / 0.4);
+  --shadow-glow-sm: 0 0 30px -5px hsl(var(--rho-green) / 0.3);
   --shadow-glow-lg: 0 0 40px hsl(var(--primary) / 0.2);
+  --shadow-mineral: 0 4px 20px -5px hsl(var(--mineral-neutral) / 0.25);
+
+  /* ========================================
+     GRADIENT TOKENS
+     ======================================== */
+  --gradient-brand: linear-gradient(135deg, hsl(var(--rho-green-accent)) 0%, hsl(var(--rho-green)) 100%);
+  --gradient-obsidian: linear-gradient(180deg, hsl(224 20% 18%) 0%, hsl(var(--rho-obsidian)) 100%);
+  --gradient-hero: radial-gradient(ellipse 80% 50% at 50% -20%, hsl(var(--rho-green) / 0.15) 0%, transparent 50%);
+  --gradient-metal: linear-gradient(135deg, hsl(210 40% 98%) 0%, hsl(214 32% 91%) 100%);
+  --gradient-ore: linear-gradient(180deg, hsl(215 25% 27%) 0%, hsl(var(--rho-obsidian)) 100%);
+  --gradient-mineral: linear-gradient(145deg, hsl(120 4% 64%) 0%, hsl(var(--mineral-neutral)) 100%);
+  --gradient-field: linear-gradient(180deg, hsl(var(--mineral-surface)) 0%, hsl(100 4% 94%) 100%);
+
+  /* ========================================
+     CHAMFER CLIPS — Industrial aesthetic
+     ======================================== */
+  --chamfer-lg: polygon(24px 0, 100% 0, 100% calc(100% - 24px), calc(100% - 24px) 100%, 0 100%, 0 24px);
+  --chamfer-md: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
+  --chamfer-sm: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+  --chamfer-btn: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+  --chamfer-btn-lg: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
 }
 
 .dark {
-  /* Dark mode using obsidian/slate palette - WCAG AA compliant */
-  --background: 215 33% 10%;
-  --foreground: 210 20% 95%;
-  --card: 215 28% 14%;
-  --card-foreground: 210 20% 95%;
-  --popover: 215 28% 14%;
-  --popover-foreground: 210 20% 95%;
-  --primary: 138 68% 50%;
-  --primary-foreground: 215 33% 8%;
-  --secondary: 215 25% 18%;
-  --secondary-foreground: 210 20% 93%;
-  --muted: 215 25% 20%;
-  --muted-foreground: 215 20% 75%;
-  --accent: 215 25% 20%;
-  --accent-foreground: 210 20% 93%;
-  --destructive: 0 72% 55%;
-  --destructive-foreground: 0 0% 100%;
-  --success: 138 68% 50%;
-  --success-foreground: 138 80% 8%;
+  /* Dark mode using obsidian palette */
+  --background: var(--rho-obsidian);
+  --foreground: var(--slate-100);
+  --card: 225 25% 12%;
+  --card-foreground: var(--slate-100);
+  --popover: 225 25% 12%;
+  --popover-foreground: var(--slate-100);
+  --primary: var(--rho-green);
+  --primary-foreground: 0 0% 100%;
+  --secondary: 225 20% 18%;
+  --secondary-foreground: var(--slate-100);
+  --muted: 225 20% 18%;
+  --muted-foreground: var(--slate-400);
+  --accent: 225 20% 18%;
+  --accent-foreground: var(--slate-100);
+  --destructive: 0 62% 30%;
+  --destructive-foreground: var(--slate-100);
+
+  --success: 125 50% 50%;
+  --success-foreground: 125 80% 8%;
   --warning: 45 93% 58%;
   --warning-foreground: 45 90% 10%;
   --info: 200 80% 65%;
   --info-foreground: 200 80% 10%;
-  
+
   /* Dark mode status colors */
   --status-planned: 200 80% 65%;
   --status-planned-foreground: 200 80% 85%;
   --status-planned-bg: 200 70% 15%;
   --status-planned-border: 200 70% 45%;
-  
+
   --status-in-progress: 45 93% 58%;
   --status-in-progress-foreground: 45 93% 85%;
   --status-in-progress-bg: 45 80% 12%;
   --status-in-progress-border: 45 80% 40%;
-  
+
   --status-on-hold: 215 20% 65%;
   --status-on-hold-foreground: 215 20% 80%;
   --status-on-hold-bg: 215 20% 18%;
   --status-on-hold-border: 215 20% 45%;
-  
-  --status-completed: 138 68% 50%;
-  --status-completed-foreground: 138 68% 85%;
-  --status-completed-bg: 138 50% 12%;
-  --status-completed-border: 138 60% 40%;
-  
+
+  --status-completed: 125 50% 50%;
+  --status-completed-foreground: 125 50% 85%;
+  --status-completed-bg: 125 50% 12%;
+  --status-completed-border: 125 60% 40%;
+
   --status-cancelled: 0 72% 55%;
   --status-cancelled-foreground: 0 72% 85%;
   --status-cancelled-bg: 0 60% 15%;
   --status-cancelled-border: 0 60% 45%;
-  --border: 215 20% 18%;
-  --input: 215 20% 20%;
-  --ring: 138 68% 50%;
-  --chart-1: 138 68% 50%;
+
+  --border: 225 20% 20%;
+  --input: 225 20% 20%;
+  --ring: var(--rho-green);
+
+  --chart-1: 125 50% 50%;
   --chart-2: 200 80% 65%;
-  --chart-3: 128 57% 58%;
+  --chart-3: 90 60% 50%;
   --chart-4: 45 93% 58%;
   --chart-5: 0 72% 62%;
 
   /* Dark eco surface */
-  --eco-surface: 215 28% 14%;
-  --eco-surface-hover: 215 28% 20%;
-  --eco-border: 215 20% 18%;
+  --eco-surface: 225 25% 14%;
+  --eco-surface-hover: 225 25% 20%;
+  --eco-border: 225 20% 20%;
 
-  --sidebar: 215 40% 8%;
-  --sidebar-foreground: 210 20% 95%;
-  --sidebar-primary: 138 68% 50%;
-  --sidebar-primary-foreground: 215 33% 8%;
-  --sidebar-accent: 215 28% 16%;
-  --sidebar-accent-foreground: 210 20% 93%;
-  --sidebar-border: 215 20% 16%;
-  --sidebar-ring: 138 68% 50%;
-  
+  --sidebar: 224 30% 8%;
+  --sidebar-foreground: var(--slate-100);
+  --sidebar-primary: var(--rho-green);
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 224 20% 16%;
+  --sidebar-accent-foreground: var(--slate-100);
+  --sidebar-border: 224 18% 16%;
+  --sidebar-ring: var(--rho-green);
+
   /* Dark shadows */
-  --shadow-glow: 0 0 20px hsl(var(--primary) / 0.25);
+  --shadow-glow: 0 0 60px -10px hsl(var(--rho-green) / 0.5);
+  --shadow-glow-sm: 0 0 30px -5px hsl(var(--rho-green) / 0.4);
   --shadow-glow-lg: 0 0 40px hsl(var(--primary) / 0.35);
 }
 
@@ -253,75 +331,87 @@
     margin: 0;
     padding: 0;
   }
-  
+
+  /* Selection highlight */
+  ::selection {
+    background: hsl(var(--rho-green) / 0.3);
+    color: hsl(var(--foreground));
+  }
+
   /* ========================================
      TYPOGRAPHY UTILITIES
      ======================================== */
   .font-logo {
     font-family: 'Unbounded', sans-serif;
     font-weight: 500;
-    text-transform: lowercase;
+    letter-spacing: -0.02em;
   }
-  
+
+  /* Primetime override via body class */
+  body.logo-primetime .font-logo,
+  body.logo-primetime [class*="font-logo"] {
+    font-family: 'Primetime', sans-serif;
+    font-weight: 300;
+    letter-spacing: -0.01em;
+  }
+
   .font-ui {
     font-family: 'Instrument Sans', sans-serif;
   }
-  
-  /* Data typography - uses semibold with tabular numbers for numeric alignment */
-  
+
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Instrument Sans', sans-serif;
     font-weight: 600;
     letter-spacing: -0.01em;
   }
-  
+
   /* Typography Scale Classes */
   .text-display {
     @apply text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight;
     line-height: 1.1;
   }
-  
+
   .text-hero {
     @apply text-2xl sm:text-3xl md:text-4xl font-semibold tracking-tight;
     line-height: 1.2;
   }
-  
+
   .text-section {
     @apply text-xl sm:text-2xl font-semibold tracking-tight;
     line-height: 1.3;
   }
-  
+
   .text-card-title {
     @apply text-lg font-semibold tracking-tight;
     line-height: 1.4;
   }
-  
+
   .text-body-lg {
     @apply text-base font-normal;
     line-height: 1.6;
   }
-  
+
   .text-body {
     @apply text-sm font-normal;
     line-height: 1.5;
   }
-  
+
   .text-caption {
     @apply text-xs font-medium text-muted-foreground;
     line-height: 1.4;
     letter-spacing: 0.01em;
   }
-  
+
   .text-data {
     @apply text-sm font-semibold tracking-wide;
     font-feature-settings: 'tnum' 1;
   }
-  
+
   .text-data-lg {
     @apply text-lg sm:text-xl font-semibold tracking-wide;
     font-feature-settings: 'tnum' 1;
   }
-  
+
   .text-data-xl {
     @apply text-2xl sm:text-3xl font-bold tracking-wide;
     font-feature-settings: 'tnum' 1;
@@ -329,6 +419,24 @@
 }
 
 @layer components {
+  /* ========================================
+     LABEL UTILITIES
+     ======================================== */
+  .label-ui {
+    @apply font-ui text-xs uppercase tracking-wider font-medium;
+  }
+
+  .label-tech {
+    @apply text-sm uppercase tracking-wide font-semibold;
+    font-feature-settings: 'tnum' 1;
+    letter-spacing: 0.05em;
+  }
+
+  .label-tech-sm {
+    @apply text-xs uppercase tracking-wider font-medium;
+    font-feature-settings: 'tnum' 1;
+  }
+
   /* ========================================
      CARD SURFACE STYLES
      ======================================== */
@@ -338,77 +446,170 @@
     transition: box-shadow var(--duration-normal) var(--ease-out),
                 transform var(--duration-normal) var(--ease-out);
   }
-  
+
   .card-surface:hover {
     box-shadow: var(--shadow-md);
   }
-  
+
   .card-surface-interactive {
     @apply card-surface cursor-pointer;
   }
-  
+
   .card-surface-interactive:hover {
     box-shadow: var(--shadow-lg);
     transform: translateY(-2px);
   }
-  
+
   .card-surface-interactive:active {
     transform: translateY(0) scale(0.99);
   }
-  
+
+  /* ========================================
+     BRAND CARD VARIANTS
+     ======================================== */
+  .card-eco {
+    @apply rounded-lg overflow-hidden relative transition-all duration-200;
+    background: hsl(var(--eco-surface));
+    border: 1px solid hsl(var(--eco-border));
+    box-shadow: var(--shadow-sm);
+  }
+
+  .card-eco:hover {
+    box-shadow: var(--shadow-glow-sm);
+    border-color: hsl(var(--rho-green) / 0.3);
+  }
+
+  .card-obsidian {
+    @apply overflow-hidden transition-all duration-200 rounded-lg;
+    background: hsl(var(--rho-obsidian));
+    border: 1px solid hsl(225 20% 20%);
+    color: hsl(var(--slate-100));
+  }
+
+  .card-obsidian:hover {
+    border-color: hsl(var(--rho-green) / 0.5);
+    transform: translateY(-2px);
+  }
+
+  .card-gradient {
+    @apply overflow-hidden relative;
+    background: var(--gradient-ore);
+    border: 1px solid hsl(225 20% 25%);
+    color: hsl(var(--slate-100));
+    border-radius: 0.75rem;
+  }
+
+  .card-mineral {
+    @apply overflow-hidden relative transition-all duration-200;
+    background: var(--gradient-field);
+    border: 1px solid hsl(var(--mineral-neutral) / 0.3);
+    border-radius: 0.5rem;
+  }
+
+  .card-mineral::before {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, hsl(var(--mineral-neutral)), hsl(var(--mineral-deep)));
+  }
+
+  .card-mineral:hover {
+    box-shadow: var(--shadow-mineral);
+    transform: translateY(-2px);
+  }
+
+  /* ========================================
+     CHAMFER SHAPES
+     ======================================== */
+  .chamfer-shape {
+    clip-path: var(--chamfer-btn);
+  }
+
+  .chamfer-lg {
+    clip-path: var(--chamfer-lg);
+  }
+
+  .chamfer-md {
+    clip-path: var(--chamfer-md);
+  }
+
+  .chamfer-sm {
+    clip-path: var(--chamfer-sm);
+  }
+
   /* ========================================
      GLASS EFFECT
      ======================================== */
   .glass {
     @apply bg-background/80 backdrop-blur-md border border-border/50;
   }
-  
+
   .glass-dark {
     @apply bg-sidebar/90 backdrop-blur-md border border-sidebar-border/50;
   }
-  
+
   /* ========================================
      GLOW EFFECTS
      ======================================== */
   .glow-primary {
     box-shadow: var(--shadow-glow);
   }
-  
+
   .glow-primary-lg {
     box-shadow: var(--shadow-glow-lg);
   }
-  
+
   .hover-glow:hover {
     box-shadow: var(--shadow-glow);
   }
-  
+
+  /* ========================================
+     NOISE TEXTURE OVERLAY
+     ======================================== */
+  .noise-overlay {
+    position: relative;
+  }
+
+  .noise-overlay::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+    opacity: 0.03;
+    pointer-events: none;
+    mix-blend-mode: overlay;
+  }
+
   /* ========================================
      STATUS INDICATOR STYLES
      ======================================== */
   .status-dot {
     @apply w-2 h-2 rounded-full flex-shrink-0;
   }
-  
+
   .status-dot-success {
     @apply status-dot bg-success;
     box-shadow: 0 0 8px hsl(var(--success) / 0.5);
   }
-  
+
   .status-dot-warning {
     @apply status-dot bg-warning;
     box-shadow: 0 0 8px hsl(var(--warning) / 0.5);
   }
-  
+
   .status-dot-destructive {
     @apply status-dot bg-destructive;
     box-shadow: 0 0 8px hsl(var(--destructive) / 0.5);
   }
-  
+
   .status-dot-info {
     @apply status-dot bg-info;
     box-shadow: 0 0 8px hsl(var(--info) / 0.5);
   }
-  
+
   /* ========================================
      DATA DISPLAY STYLES
      ======================================== */
@@ -416,24 +617,24 @@
     @apply font-semibold text-foreground tracking-wide;
     font-feature-settings: 'tnum' 1;
   }
-  
+
   .data-label {
     @apply text-xs font-medium text-muted-foreground uppercase tracking-wider;
   }
-  
+
   .data-cell {
     @apply px-3 py-2 bg-muted/30 rounded-md;
   }
-  
+
   /* ========================================
      BUTTON ENHANCEMENTS
      ======================================== */
   .btn-gradient {
-    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--rhosonics-green-light)) 100%);
+    background: var(--gradient-brand);
   }
-  
+
   .btn-gradient:hover {
-    background: linear-gradient(135deg, hsl(var(--rhosonics-green-light)) 0%, hsl(var(--primary)) 100%);
+    background: linear-gradient(135deg, hsl(var(--rho-green)) 0%, hsl(var(--rho-green-accent)) 100%);
   }
 }
 
@@ -441,65 +642,74 @@
   .text-balance {
     text-wrap: balance;
   }
-  
+
+  /* ========================================
+     GRADIENT TEXT
+     ======================================== */
+  .gradient-text {
+    background: var(--gradient-brand);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
   /* ========================================
      ANIMATION UTILITIES
      ======================================== */
   .animate-in {
     animation: fade-in var(--duration-standard) var(--ease-out) forwards;
   }
-  
+
   .animate-slide-up {
     animation: slide-up var(--duration-standard) var(--ease-out) forwards;
   }
-  
+
   .animate-slide-down {
     animation: slide-down var(--duration-standard) var(--ease-out) forwards;
   }
-  
+
   .animate-scale-in {
     animation: scale-in var(--duration-normal) var(--ease-spring) forwards;
   }
-  
+
   .animate-fade-in {
     animation: fade-in var(--duration-standard) var(--ease-out) forwards;
   }
-  
+
   /* Stagger children animations */
   .stagger-children > * {
     opacity: 0;
     animation: fade-in var(--duration-standard) var(--ease-out) forwards;
   }
-  
+
   .stagger-children > *:nth-child(1) { animation-delay: 0ms; }
   .stagger-children > *:nth-child(2) { animation-delay: 50ms; }
   .stagger-children > *:nth-child(3) { animation-delay: 100ms; }
   .stagger-children > *:nth-child(4) { animation-delay: 150ms; }
   .stagger-children > *:nth-child(5) { animation-delay: 200ms; }
   .stagger-children > *:nth-child(6) { animation-delay: 250ms; }
-  
+
   /* Hover lift effect */
   .hover-lift {
-    transition: transform var(--duration-normal) var(--ease-out),
-                box-shadow var(--duration-normal) var(--ease-out);
+    @apply transition-all duration-300;
   }
-  
+
   .hover-lift:hover {
-    transform: translateY(-2px);
+    transform: translateY(-4px);
     box-shadow: var(--shadow-lg);
   }
-  
+
   /* Transition utilities */
   .transition-fast {
     transition-duration: var(--duration-quick);
     transition-timing-function: var(--ease-out);
   }
-  
+
   .transition-normal {
     transition-duration: var(--duration-normal);
     transition-timing-function: var(--ease-out);
   }
-  
+
   .transition-slow {
     transition-duration: var(--duration-standard);
     transition-timing-function: var(--ease-out);
@@ -510,74 +720,44 @@
    KEYFRAME ANIMATIONS
    ======================================== */
 @keyframes fade-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 @keyframes slide-up {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes slide-down {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes scale-in {
-  from {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
 }
 
 @keyframes slide-in-right {
-  from {
-    opacity: 0;
-    transform: translateX(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
 }
 
 @keyframes pulse-glow {
-  0%, 100% {
-    box-shadow: 0 0 10px hsl(var(--primary) / 0.2);
-  }
-  50% {
-    box-shadow: 0 0 20px hsl(var(--primary) / 0.4);
-  }
+  0%, 100% { box-shadow: 0 0 10px hsl(var(--primary) / 0.2); }
+  50% { box-shadow: 0 0 20px hsl(var(--primary) / 0.4); }
 }
 
 @keyframes shimmer {
-  0% {
-    background-position: -200% 0;
-  }
-  100% {
-    background-position: 200% 0;
-  }
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes bootSequence {
+  0% { opacity: 0; transform: scale(0.8) rotate(-5deg); }
+  50% { opacity: 1; transform: scale(1.05) rotate(2deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0deg); }
 }
 
 /* ========================================
@@ -687,48 +867,27 @@
    ======================================== */
 
 /* Safe area utilities */
-.safe-area-top {
-  padding-top: env(safe-area-inset-top);
-}
-
-.safe-area-bottom {
-  padding-bottom: env(safe-area-inset-bottom);
-}
-
-.safe-area-left {
-  padding-left: env(safe-area-inset-left);
-}
-
-.safe-area-right {
-  padding-right: env(safe-area-inset-right);
-}
-
-.safe-area-pb {
-  padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
-}
-
-.safe-area-pt {
-  padding-top: max(0.5rem, env(safe-area-inset-top));
-}
+.safe-area-top { padding-top: env(safe-area-inset-top); }
+.safe-area-bottom { padding-bottom: env(safe-area-inset-bottom); }
+.safe-area-left { padding-left: env(safe-area-inset-left); }
+.safe-area-right { padding-right: env(safe-area-inset-right); }
+.safe-area-pb { padding-bottom: max(0.5rem, env(safe-area-inset-bottom)); }
+.safe-area-pt { padding-top: max(0.5rem, env(safe-area-inset-top)); }
 
 /* Touch-friendly form elements */
 @layer components {
-  /* Larger touch targets on mobile */
   @media (hover: none) and (pointer: coarse) {
-    /* Larger checkboxes and radios */
     input[type="checkbox"],
     input[type="radio"] {
       min-height: 24px;
       min-width: 24px;
     }
 
-    /* Larger select dropdowns */
     select {
       min-height: 48px;
       padding: 12px 16px;
     }
 
-    /* Better text inputs */
     input[type="text"],
     input[type="email"],
     input[type="password"],
@@ -739,42 +898,27 @@
     textarea {
       min-height: 48px;
       padding: 12px 16px;
-      font-size: 16px; /* Prevents iOS zoom on focus */
+      font-size: 16px;
     }
 
-    /* Touch-friendly buttons */
     .touch-btn {
       min-height: 48px;
       min-width: 48px;
       padding: 12px 20px;
     }
 
-    /* Touch-friendly list items */
     .touch-list-item {
       min-height: 56px;
       padding: 12px 16px;
     }
 
-    /* Touch card - larger padding and better tap areas */
-    .touch-card {
-      padding: 16px;
-    }
-
-    .touch-card-header {
-      padding: 16px 16px 12px;
-    }
-
-    .touch-card-content {
-      padding: 12px 16px 16px;
-    }
+    .touch-card { padding: 16px; }
+    .touch-card-header { padding: 16px 16px 12px; }
+    .touch-card-content { padding: 12px 16px 16px; }
   }
 
-  /* Mobile action bar spacing */
-  .has-action-bar {
-    padding-bottom: 80px;
-  }
+  .has-action-bar { padding-bottom: 80px; }
 
-  /* Pull to refresh indicator */
   .pull-refresh-indicator {
     @apply absolute left-1/2 -translate-x-1/2 flex items-center justify-center;
     top: -60px;
@@ -791,21 +935,10 @@
     color: hsl(var(--primary-foreground));
   }
 
-  /* Swipe gesture feedback */
-  .swipe-container {
-    touch-action: pan-y;
-    overflow-x: hidden;
-  }
+  .swipe-container { touch-action: pan-y; overflow-x: hidden; }
+  .swipe-item { transition: transform 0.2s ease-out; }
+  .swipe-item.swiping { transition: none; }
 
-  .swipe-item {
-    transition: transform 0.2s ease-out;
-  }
-
-  .swipe-item.swiping {
-    transition: none;
-  }
-
-  /* Bottom sheet handle */
   .sheet-handle {
     width: 40px;
     height: 4px;
@@ -815,91 +948,36 @@
   }
 }
 
-/* Mobile-specific layout utilities */
 @layer utilities {
-  /* Full screen mobile container */
-  .mobile-fullscreen {
-    @apply min-h-[100dvh] flex flex-col;
-  }
-
-  /* Mobile content area (accounts for header and action bar) */
+  .mobile-fullscreen { @apply min-h-[100dvh] flex flex-col; }
   .mobile-content {
     @apply flex-1 overflow-y-auto;
     padding-bottom: env(safe-area-inset-bottom);
   }
-
-  /* Mobile header */
   .mobile-header {
     @apply sticky top-0 z-40 bg-background/95 backdrop-blur-md border-b;
     padding-top: env(safe-area-inset-top);
   }
+  .mobile-stack { @apply flex flex-col gap-3; }
+  @media (min-width: 640px) { .mobile-stack { @apply gap-4; } }
 
-  /* Stacked mobile layout */
-  .mobile-stack {
-    @apply flex flex-col gap-3;
-  }
+  .touch-spacing { @apply p-4 gap-4; }
+  @media (min-width: 640px) { .touch-spacing { @apply p-6 gap-6; } }
 
-  @media (min-width: 640px) {
-    .mobile-stack {
-      @apply gap-4;
-    }
-  }
-
-  /* Touch-friendly spacing */
-  .touch-spacing {
-    @apply p-4 gap-4;
-  }
-
-  @media (min-width: 640px) {
-    .touch-spacing {
-      @apply p-6 gap-6;
-    }
-  }
-
-  /* Large touch target */
-  .touch-target {
-    @apply relative;
-  }
-
+  .touch-target { @apply relative; }
   .touch-target::before {
     content: '';
     @apply absolute;
-    top: -8px;
-    right: -8px;
-    bottom: -8px;
-    left: -8px;
+    top: -8px; right: -8px; bottom: -8px; left: -8px;
   }
 
-  /* Mobile-optimized text */
-  .mobile-text-lg {
-    @apply text-lg;
-  }
+  .mobile-text-lg { @apply text-lg; }
+  @media (min-width: 640px) { .mobile-text-lg { @apply text-base; } }
 
-  @media (min-width: 640px) {
-    .mobile-text-lg {
-      @apply text-base;
-    }
-  }
+  @media (hover: none) and (pointer: coarse) { .hide-touch { display: none !important; } }
+  .show-touch { display: none !important; }
+  @media (hover: none) and (pointer: coarse) { .show-touch { display: flex !important; } }
 
-  /* Hide on touch devices */
-  @media (hover: none) and (pointer: coarse) {
-    .hide-touch {
-      display: none !important;
-    }
-  }
-
-  /* Show only on touch devices */
-  .show-touch {
-    display: none !important;
-  }
-
-  @media (hover: none) and (pointer: coarse) {
-    .show-touch {
-      display: flex !important;
-    }
-  }
-
-  /* Prevent text selection on interactive elements */
   .no-select {
     -webkit-user-select: none;
     -moz-user-select: none;
@@ -907,7 +985,6 @@
     -webkit-touch-callout: none;
   }
 
-  /* Smooth momentum scrolling */
   .momentum-scroll {
     -webkit-overflow-scrolling: touch;
     overflow-y: auto;
@@ -916,81 +993,35 @@
 
 /* Tablet-specific optimizations */
 @media (min-width: 640px) and (max-width: 1023px) {
-  /* Two-column layout for tablets */
-  .tablet-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1rem;
-  }
-
-  /* Larger touch targets for tablets */
-  .tablet-touch-target {
-    min-height: 52px;
-    padding: 14px 18px;
-  }
-
-  /* Tablet sidebar adjustments */
-  .tablet-sidebar {
-    width: 280px;
-  }
-
-  /* Tablet card sizing */
-  .tablet-card {
-    padding: 20px;
-  }
+  .tablet-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+  .tablet-touch-target { min-height: 52px; padding: 14px 18px; }
+  .tablet-sidebar { width: 280px; }
+  .tablet-card { padding: 20px; }
 }
 
-/* Large tablet / landscape optimizations */
 @media (min-width: 768px) and (max-width: 1023px) and (orientation: landscape) {
-  .tablet-landscape-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 1rem;
-  }
+  .tablet-landscape-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
 }
 
 /* Animation for mobile interactions */
 @keyframes tap-feedback {
-  0% {
-    transform: scale(1);
-    opacity: 1;
-  }
-  50% {
-    transform: scale(0.97);
-    opacity: 0.8;
-  }
-  100% {
-    transform: scale(1);
-    opacity: 1;
-  }
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(0.97); opacity: 0.8; }
+  100% { transform: scale(1); opacity: 1; }
 }
 
-.tap-feedback:active {
-  animation: tap-feedback 0.15s ease-out;
-}
+.tap-feedback:active { animation: tap-feedback 0.15s ease-out; }
 
-/* Ripple effect for buttons */
-.ripple {
-  position: relative;
-  overflow: hidden;
-}
-
+.ripple { position: relative; overflow: hidden; }
 .ripple::after {
   content: '';
   position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 0;
-  height: 0;
+  top: 50%; left: 50%;
+  width: 0; height: 0;
   background: currentColor;
   opacity: 0.1;
   border-radius: 50%;
   transform: translate(-50%, -50%);
   transition: width 0.3s ease-out, height 0.3s ease-out, opacity 0.3s ease-out;
 }
-
-.ripple:active::after {
-  width: 200%;
-  height: 200%;
-  opacity: 0;
-}
+.ripple:active::after { width: 200%; height: 200%; opacity: 0; }

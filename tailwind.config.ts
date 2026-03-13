@@ -19,7 +19,9 @@ export default {
     extend: {
       fontFamily: {
         sans: ['Instrument Sans', 'system-ui', 'sans-serif'],
+        logo: ['Unbounded', 'system-ui', 'sans-serif'],
         display: ['Unbounded', 'system-ui', 'sans-serif'],
+        ui: ['Instrument Sans', 'system-ui', 'sans-serif'],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -30,6 +32,16 @@ export default {
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
+          50: "hsl(var(--primary-50))",
+          100: "hsl(var(--primary-100))",
+          200: "hsl(var(--primary-200))",
+          300: "hsl(var(--primary-300))",
+          400: "hsl(var(--primary-400))",
+          500: "hsl(var(--primary-500))",
+          600: "hsl(var(--primary-600))",
+          700: "hsl(var(--primary-700))",
+          800: "hsl(var(--primary-800))",
+          900: "hsl(var(--primary-900))",
         },
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
@@ -42,14 +54,25 @@ export default {
         success: {
           DEFAULT: "hsl(var(--success))",
           foreground: "hsl(var(--success-foreground))",
+          surface: "hsl(var(--success-surface))",
+          border: "hsl(var(--success-border))",
         },
         warning: {
           DEFAULT: "hsl(var(--warning))",
           foreground: "hsl(var(--warning-foreground))",
+          surface: "hsl(var(--warning-surface))",
+          border: "hsl(var(--warning-border))",
         },
         info: {
           DEFAULT: "hsl(var(--info))",
           foreground: "hsl(var(--info-foreground))",
+          surface: "hsl(var(--info-surface))",
+          border: "hsl(var(--info-border))",
+        },
+        error: {
+          DEFAULT: "hsl(var(--error))",
+          surface: "hsl(var(--error-surface))",
+          border: "hsl(var(--error-border))",
         },
         status: {
           planned: {
@@ -116,18 +139,37 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        // Rhosonics Custom Colors
+        rho: {
+          green: "hsl(var(--rho-green))",
+          "green-accent": "hsl(var(--rho-green-accent))",
+          "green-glow": "hsl(var(--rho-green-glow))",
+          obsidian: "hsl(var(--rho-obsidian))",
+        },
+        // Legacy aliases
         rhosonics: {
-          green: "hsl(var(--rhosonics-green))",
-          "green-light": "hsl(var(--rhosonics-green-light))",
-          "green-glow": "hsl(var(--rhosonics-green-glow))",
+          green: "hsl(var(--rho-green))",
+          "green-light": "hsl(var(--rho-green-accent))",
+          "green-glow": "hsl(var(--rho-green-glow))",
         },
         lime: {
-          DEFAULT: "hsl(var(--lime-accent))",
+          DEFAULT: "hsl(var(--rho-green-accent))",
           light: "hsl(var(--lime-accent-light))",
         },
         obsidian: {
-          DEFAULT: "hsl(var(--obsidian))",
-          light: "hsl(var(--obsidian-light))",
+          DEFAULT: "hsl(var(--rho-obsidian))",
+          light: "hsl(var(--rho-obsidian-light))",
+        },
+        eco: {
+          surface: "hsl(var(--eco-surface))",
+          "surface-hover": "hsl(var(--eco-surface-hover))",
+          border: "hsl(var(--eco-border))",
+        },
+        mineral: {
+          neutral: "hsl(var(--mineral-neutral))",
+          surface: "hsl(var(--mineral-surface))",
+          deep: "hsl(var(--mineral-deep))",
+          bronze: "hsl(var(--mineral-bronze))",
         },
         slate: {
           50: "hsl(var(--slate-50))",
@@ -140,11 +182,6 @@ export default {
           700: "hsl(var(--slate-700))",
           800: "hsl(var(--slate-800))",
           900: "hsl(var(--slate-900))",
-        },
-        eco: {
-          surface: "hsl(var(--eco-surface))",
-          "surface-hover": "hsl(var(--eco-surface-hover))",
-          border: "hsl(var(--eco-border))",
         },
       },
       borderRadius: {
@@ -159,7 +196,9 @@ export default {
         "elevated": "var(--shadow-lg)",
         "prominent": "var(--shadow-xl)",
         "glow": "var(--shadow-glow)",
+        "glow-sm": "var(--shadow-glow-sm)",
         "glow-lg": "var(--shadow-glow-lg)",
+        "mineral": "var(--shadow-mineral)",
       },
       keyframes: {
         "accordion-down": {
@@ -218,6 +257,11 @@ export default {
           from: { transform: "rotate(0deg)" },
           to: { transform: "rotate(360deg)" },
         },
+        "boot-sequence": {
+          "0%": { opacity: "0", transform: "scale(0.8) rotate(-5deg)" },
+          "50%": { opacity: "1", transform: "scale(1.05) rotate(2deg)" },
+          "100%": { opacity: "1", transform: "scale(1) rotate(0deg)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -234,6 +278,7 @@ export default {
         "pulse-glow": "pulse-glow 2s ease-in-out infinite",
         "shimmer": "shimmer 2s linear infinite",
         "spin-slow": "spin-slow 3s linear infinite",
+        "boot": "boot-sequence 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards",
       },
       transitionDuration: {
         "quick": "150ms",
