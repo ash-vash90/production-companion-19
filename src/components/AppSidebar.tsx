@@ -120,14 +120,19 @@ export function AppSidebar() {
               className="h-8 w-8"
               onClick={toggleSidebar}
             >
-              <PanelLeft className="h-4 w-4" />
+              <RhosonicsLogo size={20} className="shrink-0" />
             </Button>
           ) : (
             <>
-              <RhosonicsLogo size={24} className="shrink-0" />
-              <span className="font-logo text-sm text-sidebar-foreground whitespace-nowrap flex-1">
-                Rhosonics <span className="font-medium">PMS</span>
-              </span>
+              <RhosonicsLogo size={22} className="shrink-0" />
+              <div className="flex flex-col flex-1 min-w-0">
+                <span className="font-logo text-[0.8rem] text-sidebar-foreground lowercase leading-tight tracking-tight">
+                  rhosonics
+                </span>
+                <span className="label-ui text-[0.5rem] text-sidebar-foreground/40 tracking-[0.15em] leading-none">
+                  PMS
+                </span>
+              </div>
               <Button
                 variant="ghost"
                 size="icon"

@@ -15,6 +15,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { VerificationCodeInput } from '@/components/auth/VerificationCodeInput';
 import { PasswordStrengthIndicator, isPasswordValid } from '@/components/auth/PasswordStrengthIndicator';
 import { RhosonicsLogo } from '@/components/RhosonicsLogo';
+
 interface InviteData {
   email: string;
   role: string;
@@ -154,7 +155,6 @@ const Auth = () => {
     e.preventDefault();
     setValidationErrors({});
     
-    // Validate all fields
     const result = signupSchema.safeParse({ email, password, fullName });
     if (!result.success) {
       const errors: Record<string, string> = {};
@@ -168,7 +168,6 @@ const Auth = () => {
       return;
     }
 
-    // Send verification code
     setLoading(true);
     try {
       const response = await supabase.functions.invoke('send-verification-code', {
@@ -206,7 +205,6 @@ const Auth = () => {
 
     setLoading(true);
     try {
-      // Verify the code
       const verifyResponse = await supabase.functions.invoke('verify-code', {
         body: { email: email.trim(), code: verificationCode, type: 'signup' }
       });
@@ -220,7 +218,6 @@ const Auth = () => {
         return;
       }
 
-      // Code verified - now create the account
       const { error: signUpError } = await signUp(email.trim(), password, fullName.trim(), selectedLanguage);
       
       if (signUpError) {
@@ -232,7 +229,6 @@ const Auth = () => {
         return;
       }
 
-      // If this was an invite, mark it as used
       if (inviteData) {
         try {
           await supabase
@@ -273,7 +269,6 @@ const Auth = () => {
 
       if (response.error) throw response.error;
 
-      // Always show success (security - don't reveal if email exists)
       setCodeExpiresAt(new Date(Date.now() + 10 * 60 * 1000));
       setVerificationCode('');
       setView('forgot-verify');
@@ -761,7 +756,7 @@ const Auth = () => {
             <Button
               type="button"
               variant="link"
-              className="w-full text-sm text-muted-foreground hover:text-primary"
+              className="w-full text-sm text-white/40 hover:text-primary"
               onClick={() => {
                 setEmail('');
                 setValidationErrors({});
@@ -775,58 +770,64 @@ const Auth = () => {
     }
   };
 
-  // Determine if we should show tabs
   const showTabs = view === 'login' || view === 'signup';
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center relative overflow-hidden bg-slate-950">
-      {/* Dark gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-b from-slate-900 via-slate-950 to-slate-900" />
+    <div className="min-h-screen w-full flex items-center justify-center relative overflow-hidden" style={{ background: 'hsl(var(--rho-obsidian))' }}>
+      {/* Gradient background with brand colors */}
+      <div 
+        className="absolute inset-0"
+        style={{ 
+          background: `
+            radial-gradient(ellipse 80% 60% at 50% 120%, hsl(var(--rho-green) / 0.15) 0%, transparent 60%),
+            radial-gradient(ellipse 60% 40% at 80% 0%, hsl(var(--rho-obsidian-light)) 0%, transparent 50%),
+            linear-gradient(to bottom, hsl(var(--rho-obsidian)), hsl(224 22% 8%))
+          `
+        }}
+      />
       
-      {/* Particle animation */}
+      {/* Subtle particle animation */}
       <div className="absolute inset-0 overflow-hidden">
-        {[...Array(30)].map((_, i) => (
+        {[...Array(20)].map((_, i) => (
           <div
             key={i}
-            className="auth-particle absolute w-1 h-1 bg-primary/30 rounded-full"
+            className="auth-particle absolute w-0.5 h-0.5 rounded-full"
             style={{
+              background: `hsl(var(--rho-green) / ${0.15 + Math.random() * 0.2})`,
               left: `${Math.random() * 100}%`,
               top: `${Math.random() * 100}%`,
               animationDelay: `${Math.random() * 8}s`,
-              animationDuration: `${8 + Math.random() * 12}s`,
+              animationDuration: `${10 + Math.random() * 15}s`,
             }}
           />
         ))}
       </div>
-      
-      {/* Subtle vignette */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,rgba(0,0,0,0.4)_100%)]" />
 
       {/* Content */}
-      <div className="relative z-10 w-full max-w-lg mx-4 animate-fade-in">
-        <Card className="border-white/10 bg-slate-900/80 backdrop-blur-xl shadow-2xl min-h-[80vh] max-h-[85vh] overflow-hidden flex flex-col">
-          <CardHeader className="space-y-6 text-center pb-2 flex-shrink-0">
-            {/* Logo */}
-            <div className="flex flex-col items-center gap-4">
-              <div className="relative">
-                <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full scale-150" />
-                <div className="relative p-4 rounded-2xl bg-gradient-to-br from-primary to-primary/80 shadow-lg shadow-primary/20">
-                  <RhosonicsLogo size={48} className="text-white" />
-                </div>
-              </div>
-              
-              <div className="space-y-1">
-                <h1 className="text-3xl md:text-4xl font-logo text-white lowercase tracking-tight">
-                  rhosonics
-                </h1>
-                <p className="text-xs md:text-sm label-ui tracking-[0.2em] text-slate-400">
-                  Production System
-                </p>
-              </div>
-            </div>
+      <div className="relative z-10 w-full max-w-md mx-4 animate-fade-in">
+        {/* Brand header — outside card */}
+        <div className="flex flex-col items-center mb-8">
+          <div className="relative mb-5">
+            {/* Glow behind logo */}
+            <div 
+              className="absolute -inset-4 rounded-full blur-2xl opacity-30"
+              style={{ background: 'hsl(var(--rho-green))' }}
+            />
+            <RhosonicsLogo animated size={56} className="relative" />
+          </div>
+          <h1 className="font-logo text-[2rem] text-white lowercase tracking-tight leading-none">
+            rhosonics
+          </h1>
+          <p className="label-ui text-[0.65rem] tracking-[0.25em] text-white/35 mt-1.5">
+            Production Management System
+          </p>
+        </div>
 
+        {/* Auth card */}
+        <Card className="border-white/[0.08] bg-white/[0.04] backdrop-blur-xl shadow-2xl shadow-black/40">
+          <CardHeader className="pb-2 pt-6">
             {inviteData && view === 'signup' && (
-              <div className="flex items-center justify-center gap-2 p-3 bg-primary/20 border border-primary/30 rounded-xl">
+              <div className="flex items-center justify-center gap-2 p-3 bg-primary/15 border border-primary/20 rounded-lg">
                 <UserPlus className="h-4 w-4 text-primary" />
                 <span className="text-sm text-primary font-medium">
                   Invited as {inviteData.role}
@@ -835,19 +836,19 @@ const Auth = () => {
             )}
           </CardHeader>
           
-          <CardContent className="pt-2 flex-1 overflow-y-auto">
+          <CardContent className="pt-2">
             {showTabs ? (
               <Tabs value={view === 'signup' ? 'signup' : 'login'} onValueChange={(v) => setView(v as AuthView)} className="w-full">
-                <TabsList className="grid w-full grid-cols-2 h-12 bg-slate-800/50 border border-white/10 p-1">
+                <TabsList className="grid w-full grid-cols-2 h-11 bg-white/[0.04] border border-white/[0.08] p-1 rounded-lg">
                   <TabsTrigger 
                     value="login" 
-                    className="label-ui text-sm text-slate-400 data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg transition-all"
+                    className="label-ui text-sm text-white/40 data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-md rounded-md transition-all"
                   >
                     {t('login')}
                   </TabsTrigger>
                   <TabsTrigger 
                     value="signup" 
-                    className="label-ui text-sm text-slate-400 data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg transition-all"
+                    className="label-ui text-sm text-white/40 data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-md rounded-md transition-all"
                   >
                     {t('signup')}
                   </TabsTrigger>
@@ -874,14 +875,14 @@ const Auth = () => {
             )}
           </CardContent>
           
-          <CardFooter className="flex justify-center pb-6 pt-2">
+          <CardFooter className="flex justify-center pb-5 pt-2">
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setLanguage(language === 'en' ? 'nl' : 'en')}
-              className="text-slate-500 hover:text-white hover:bg-white/5 gap-2"
+              className="text-white/25 hover:text-white/60 hover:bg-white/5 gap-2"
             >
-              <Globe className="h-4 w-4" />
+              <Globe className="h-3.5 w-3.5" />
               <span className="label-ui text-xs">
                 {language === 'en' ? 'Nederlands' : 'English'}
               </span>
@@ -889,8 +890,8 @@ const Auth = () => {
           </CardFooter>
         </Card>
         
-        {/* Footer text */}
-        <p className="text-center text-slate-600 text-xs mt-6 label-ui">
+        {/* Footer */}
+        <p className="text-center text-white/20 text-[0.65rem] mt-6 label-ui tracking-wider">
           © {new Date().getFullYear()} Rhosonics B.V.
         </p>
       </div>
@@ -917,33 +918,33 @@ const Auth = () => {
           animation: float-up linear infinite;
         }
         .auth-form-dark label {
-          color: rgba(255, 255, 255, 0.8) !important;
+          color: rgba(255, 255, 255, 0.7) !important;
         }
         .auth-form-dark input {
-          background: rgba(255, 255, 255, 0.05) !important;
-          border-color: rgba(255, 255, 255, 0.15) !important;
+          background: rgba(255, 255, 255, 0.04) !important;
+          border-color: rgba(255, 255, 255, 0.1) !important;
           color: white !important;
         }
         .auth-form-dark input::placeholder {
-          color: rgba(255, 255, 255, 0.35) !important;
+          color: rgba(255, 255, 255, 0.25) !important;
         }
         .auth-form-dark input:focus {
           border-color: hsl(var(--primary)) !important;
-          box-shadow: 0 0 0 2px hsl(var(--primary) / 0.2) !important;
+          box-shadow: 0 0 0 2px hsl(var(--primary) / 0.15) !important;
         }
         .auth-form-dark .text-foreground {
           color: white !important;
         }
         .auth-form-dark .text-muted-foreground {
-          color: rgba(255, 255, 255, 0.6) !important;
+          color: rgba(255, 255, 255, 0.5) !important;
         }
         .auth-form-dark .text-destructive {
           color: hsl(0 84% 60%) !important;
         }
         .auth-form-dark select,
         .auth-form-dark [data-radix-select-trigger] {
-          background: rgba(255, 255, 255, 0.05) !important;
-          border-color: rgba(255, 255, 255, 0.15) !important;
+          background: rgba(255, 255, 255, 0.04) !important;
+          border-color: rgba(255, 255, 255, 0.1) !important;
           color: white !important;
         }
       `}</style>
